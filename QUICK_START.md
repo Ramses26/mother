@@ -118,8 +118,10 @@ docker compose version
 #### 2. Create Mount Points on Mother
 ```bash
 # On Mother
-sudo mkdir -p /mnt/synology/{rs-movies,rs-tv,rs-4kmedia}
-sudo mkdir -p /mnt/unraid
+sudo mkdir -p /mnt/synology/rs-movies
+sudo mkdir -p /mnt/synology/rs-tv
+sudo mkdir -p /mnt/synology/rs-4kmedia/{4kmovies,4ktv,downloads}
+sudo mkdir -p /mnt/unraid/media
 ```
 
 #### 3. Install NFS Client
@@ -128,13 +130,21 @@ sudo apt install -y nfs-common
 ```
 
 #### 4. Configure /etc/fstab
+
+**See [docs/NFS_MOUNT_COMPLETE.md](docs/NFS_MOUNT_COMPLETE.md) for complete instructions!**
+
 ```bash
 sudo nano /etc/fstab
 
-# Add these lines:
-10.0.0.160:/volume1/movies /mnt/synology/rs-movies nfs defaults 0 0
-10.0.0.88:/volume1/tv /mnt/synology/rs-tv nfs defaults 0 0
-10.0.1.203:/volume1/data /mnt/synology/rs-4kmedia nfs defaults 0 0
+# Add Synology mounts (5 mounts - adjust share names to match yours):
+10.0.0.160:/volume1/MOVIES /mnt/synology/rs-movies nfs defaults,nofail 0 0
+10.0.0.88:/volume1/TV /mnt/synology/rs-tv nfs defaults,nofail 0 0
+10.0.1.203:/volume1/4KMovies /mnt/synology/rs-4kmedia/4kmovies nfs defaults,nofail 0 0
+10.0.1.203:/volume1/4KTV /mnt/synology/rs-4kmedia/4ktv nfs defaults,nofail 0 0
+10.0.1.203:/volume1/Downloads /mnt/synology/rs-4kmedia/downloads nfs defaults,nofail 0 0
+
+# Add Unraid mount (1 mount - via VPN):
+192.168.1.10:/mnt/user/Media /mnt/unraid/media nfs defaults,nofail 0 0
 ```
 
 #### 5. Mount and Test
@@ -308,22 +318,24 @@ See [docs/INVENTORY_GUIDE.md](docs/INVENTORY_GUIDE.md) for complete instructions
 **Quick version:**
 ```bash
 # On Terminus (Ali's libraries - LOCAL, FAST):
-python3 generate_inventory.py /mnt/user/Movies -o ~/inventories/ali_movies
-# ... repeat for 4K Movies, TV Shows, 4K TV Shows
+python3 generate_inventory.py /mnt/user/Media/Movies -o ~/inventories/ali_movies
+python3 generate_inventory.py "/mnt/user/Media/4K Movies" -o ~/inventories/ali_4kmovies
+python3 generate_inventory.py "/mnt/user/Media/TV Shows" -o ~/inventories/ali_tv
+python3 generate_inventory.py "/mnt/user/Media/4K TV Shows" -o ~/inventories/ali_4ktv
 # Then: scp ~/inventories/ali_*.{json,csv} mother:/opt/mother/inventories/
 
 # On Mother (Chris's libraries - LOCAL, FAST):
 
-# Ali's Libraries
-python3 scripts/generate_inventory.py /mnt/unraid/Movies -o ali_movies
-python3 scripts/generate_inventory.py /mnt/unraid/"4K Movies" -o ali_4kmovies
-python3 scripts/generate_inventory.py /mnt/unraid/"TV Shows" -o ali_tv
-python3 scripts/generate_inventory.py /mnt/unraid/"4K TV Shows" -o ali_4ktv
+# Ali's Libraries (if running on Mother via VPN - SLOWER)
+python3 scripts/generate_inventory.py /mnt/unraid/media/Movies -o ali_movies
+python3 scripts/generate_inventory.py "/mnt/unraid/media/4K Movies" -o ali_4kmovies
+python3 scripts/generate_inventory.py "/mnt/unraid/media/TV Shows" -o ali_tv
+python3 scripts/generate_inventory.py "/mnt/unraid/media/4K TV Shows" -o ali_4ktv
 
 # Chris's Libraries (this will take DAYS)
-python3 scripts/generate_inventory.py /mnt/synology/rs-movies/movies -o chris_movies
+python3 scripts/generate_inventory.py /mnt/synology/rs-movies -o chris_movies
 python3 scripts/generate_inventory.py /mnt/synology/rs-4kmedia/4kmovies -o chris_4kmovies
-python3 scripts/generate_inventory.py /mnt/synology/rs-tv/tv -o chris_tv
+python3 scripts/generate_inventory.py /mnt/synology/rs-tv -o chris_tv
 python3 scripts/generate_inventory.py /mnt/synology/rs-4kmedia/4ktv -o chris_4ktv
 ```
 

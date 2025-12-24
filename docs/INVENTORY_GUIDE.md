@@ -97,19 +97,19 @@ screen -S inventory
 
 # Run for Ali's 4 libraries
 python3 ~/generate_inventory.py \
-  /mnt/user/Movies \
+  /mnt/user/Media/Movies \
   -o ~/inventories/ali_movies
 
 python3 ~/generate_inventory.py \
-  "/mnt/user/4K Movies" \
+  "/mnt/user/Media/4K Movies" \
   -o ~/inventories/ali_4kmovies
 
 python3 ~/generate_inventory.py \
-  "/mnt/user/TV Shows" \
+  "/mnt/user/Media/TV Shows" \
   -o ~/inventories/ali_tv
 
 python3 ~/generate_inventory.py \
-  "/mnt/user/4K TV Shows" \
+  "/mnt/user/Media/4K TV Shows" \
   -o ~/inventories/ali_4ktv
 
 # Detach: Ctrl+A, D
@@ -182,22 +182,22 @@ cd /opt/mother
 ```bash
 # Ali's HD Movies
 python3 scripts/generate_inventory.py \
-  /mnt/unraid/Movies \
+  /mnt/unraid/media/Movies \
   -o /opt/mother/inventories/ali_movies
 
 # Ali's 4K Movies
 python3 scripts/generate_inventory.py \
-  "/mnt/unraid/4K Movies" \
+  "/mnt/unraid/media/4K Movies" \
   -o /opt/mother/inventories/ali_4kmovies
 
 # Ali's HD TV
 python3 scripts/generate_inventory.py \
-  "/mnt/unraid/TV Shows" \
+  "/mnt/unraid/media/TV Shows" \
   -o /opt/mother/inventories/ali_tv
 
 # Ali's 4K TV
 python3 scripts/generate_inventory.py \
-  "/mnt/unraid/4K TV Shows" \
+  "/mnt/unraid/media/4K TV Shows" \
   -o /opt/mother/inventories/ali_4ktv
 
 # Chris's HD Movies
