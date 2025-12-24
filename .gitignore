@@ -1,0 +1,76 @@
+# Mother Project .gitignore
+
+# Environment variables and secrets
+.env
+*.env
+!.env.example
+
+# Local config files with credentials
+config/*/config.xml
+config/*/settings.json
+config/*/*.db
+config/*/*.db-shm
+config/*/*.db-wal
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# Node
+node_modules/
+npm-debug.log
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.csr
+
+# Database dumps
+*.sql
+*.dump
+
+# Credentials
+credentials/
+*.credentials
+
+# Personal notes
+NOTES.md
+TODO_PERSONAL.md
