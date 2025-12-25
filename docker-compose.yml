@@ -171,23 +171,8 @@ services:
     networks:
       - mother_network
 
-  # Seerr - Ali's Instance (External Access)
-  seerr-ali:
-    image: ghcr.io/seerr-team/seerr:latest
-    container_name: seerr-ali
-    environment:
-      - LOG_LEVEL=info
-      - TZ=${TZ}
-      - PORT=5055
-    volumes:
-      - ${CONFIG_PATH}/seerr-ali:/app/config
-    ports:
-      - "${SEERR_ALI_PORT}:5055"
-    restart: unless-stopped
-    networks:
-      - mother_network
-
-  # Seerr - Chris's Instance (Local Access)
+  # Seerr - Chris's Instance
+  # Note: Ali runs his own Seerr instance on Terminus
   seerr-chris:
     image: ghcr.io/seerr-team/seerr:latest
     container_name: seerr-chris
