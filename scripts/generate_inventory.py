@@ -65,9 +65,17 @@ QUALITY_PATTERNS = {
         (r'DVDRip|DVD-Rip', 'DVDRip'),
     ],
     'hdr': [
-        (r'HDR10\+|HDR10Plus', 'HDR10+'),
-        (r'HDR10|HDR', 'HDR'),
+        # Dolby Vision variants (check most specific first)
+        (r'DV.*HDR10\+|Dolby.?Vision.*HDR10\+|DoVi.*HDR10\+', 'DV HDR10+'),
+        (r'DV.*HDR10|Dolby.?Vision.*HDR10|DoVi.*HDR10', 'DV HDR10'),
+        (r'DV.*HLG|Dolby.?Vision.*HLG|DoVi.*HLG', 'DV HLG'),
+        (r'DV.*SDR|Dolby.?Vision.*SDR|DoVi.*SDR', 'DV SDR'),
         (r'DV|DoVi|Dolby.?Vision', 'DV'),
+        
+        # HDR variants (specific to generic)
+        (r'HDR10\+|HDR10Plus', 'HDR10+'),
+        (r'HDR10(?!\+)', 'HDR10'),
+        (r'HDR(?!10)', 'HDR'),
         (r'HLG', 'HLG'),
     ],
     'audio': [
