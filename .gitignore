@@ -6,11 +6,13 @@
 !.env.example
 
 # Local config files with credentials
-config/*/config.xml
-config/*/settings.json
-config/*/*.db
-config/*/*.db-shm
-config/*/*.db-wal
+configs/*/config.xml
+configs/*/settings.json
+configs/*/*.db
+configs/*/*.db-shm
+configs/*/*.db-wal
+configs/
+
 
 # Logs
 *.log

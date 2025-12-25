@@ -173,20 +173,20 @@ services:
 
   # Seerr - Chris's Instance
   # Note: Ali runs his own Seerr instance on Terminus
-  seerr-chris:
-    image: ghcr.io/seerr-team/seerr:latest
-    container_name: seerr-chris
-    environment:
-      - LOG_LEVEL=info
-      - TZ=${TZ}
-      - PORT=5056
-    volumes:
-      - ${CONFIG_PATH}/seerr-chris:/app/config
-    ports:
-      - "${SEERR_CHRIS_PORT}:5056"
-    restart: unless-stopped
-    networks:
-      - mother_network
+  #seerr-chris:
+  #  image: ghcr.io/seerr-team/seerr:latest
+  #  container_name: seerr-chris
+  #  environment:
+  #    - LOG_LEVEL=info
+  #    - TZ=${TZ}
+  #    - PORT=5056
+  #  volumes:
+  #    - ${CONFIG_PATH}/seerr-chris:/app/config
+  #  ports:
+  #    - "${SEERR_CHRIS_PORT}:5056"
+  # restart: unless-stopped
+  #  networks:
+  #    - mother_network
 
   # Nginx Proxy Manager - Reverse Proxy & SSL
   nginx-proxy-manager:
@@ -241,22 +241,21 @@ services:
     networks:
       - mother_network
 
-  # Webmin - System Administration
-  webmin:
-    image: lscr.io/linuxserver/webmin:latest
-    container_name: webmin
+  # Portainer - Docker Management Interface
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - ${CONFIG_PATH}/webmin:/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${CONFIG_PATH}/portainer:/data
     ports:
-      - "${WEBMIN_PORT}:10000"
+      - "${PORTAINER_PORT}:9000"
+      - "${PORTAINER_HTTPS_PORT}:9443"
     restart: unless-stopped
-    privileged: true
     networks:
-      - mother_network
+      - mother_network      
 
 networks:
   mother_network:
