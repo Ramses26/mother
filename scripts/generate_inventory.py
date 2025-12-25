@@ -1,388 +1,400 @@
 #!/usr/bin/env python3
-
 """
 Media Library Inventory Generator
-
-Purpose: Generate comprehensive inventory of media library with file hashes
-         for comparison and quality analysis
-
-Features:
-- Recursively scans media directories
-- Calculates MD5 hashes for file comparison
-- Extracts mediainfo metadata (resolution, codecs, bitrate)
-- Organizes data for TRASHGuides quality comparison
-- Exports to JSON and CSV formats
-
-Author: Project Mother
-Last Updated: 2024-12-23
+Scans media directories and generates JSON/CSV inventory files
 """
 
 import os
 import sys
 import json
-import csv
-import hashlib
 import argparse
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, List, Optional
-import subprocess
 import re
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+from datetime import datetime
 
-# Try to import optional dependencies
 try:
+    from pymediainfo import MediaInfo
     from tqdm import tqdm
-    HAS_TQDM = True
-except ImportError:
-    HAS_TQDM = False
-    print("Warning: tqdm not installed. Progress bars disabled.")
-    print("Install with: pip install tqdm")
+    import pandas as pd
+except ImportError as e:
+    print(f"Error: Missing required package: {e}")
+    print("Install with: pip3 install --break-system-packages pymediainfo tqdm pandas")
+    sys.exit(1)
 
-###############################################################################
-# Configuration
-###############################################################################
 
-# File extensions to include
-VIDEO_EXTENSIONS = {
-    '.mkv', '.mp4', '.avi', '.m4v', '.ts', '.m2ts',
-    '.iso', '.img', '.vob', '.mpeg', '.mpg', '.wmv', '.flv'
-}
-
-# Quality indicators from filenames (TRASHGuides style)
-QUALITY_PATTERNS = {
-    'resolution': [
-        (r'2160p|4K|UHD', '2160p'),
-        (r'1080p|FHD', '1080p'),
-        (r'720p|HD', '720p'),
-        (r'480p|SD', '480p'),
-    ],
-    'source': [
-        (r'BluRay|Blu-ray|BDMV|BDRip', 'BluRay'),
-        (r'Remux|REMUX', 'Remux'),
-        (r'WEB-DL|WEBDL|WEB DL', 'WEB-DL'),
-        (r'WEBRip|WEB-Rip|WEB Rip', 'WEBRip'),
-        (r'HDTV|HD-TV', 'HDTV'),
-        (r'DVDRip|DVD-Rip', 'DVDRip'),
-    ],
-    'hdr': [
-        # Dolby Vision variants (check most specific first)
-        (r'DV.*HDR10\+|Dolby.?Vision.*HDR10\+|DoVi.*HDR10\+', 'DV HDR10+'),
-        (r'DV.*HDR10|Dolby.?Vision.*HDR10|DoVi.*HDR10', 'DV HDR10'),
-        (r'DV.*HLG|Dolby.?Vision.*HLG|DoVi.*HLG', 'DV HLG'),
-        (r'DV.*SDR|Dolby.?Vision.*SDR|DoVi.*SDR', 'DV SDR'),
-        (r'DV|DoVi|Dolby.?Vision', 'DV'),
+class MediaInventory:
+    """Generates inventory of media files with detailed metadata"""
+    
+    # Supported video file extensions
+    VIDEO_EXTENSIONS = {'.mkv', '.mp4', '.avi', '.m4v', '.mov', '.wmv', '.flv', '.webm', '.ts'}
+    
+    # Regex patterns for metadata extraction
+    PATTERNS = {
+        # Resolution patterns
+        'resolution': [
+            (r'2160p|4K|UHD', '2160p'),
+            (r'1080p|1920x1080', '1080p'),
+            (r'720p|1280x720', '720p'),
+            (r'576p', '576p'),
+            (r'480p', '480p'),
+        ],
         
-        # HDR variants (specific to generic)
-        (r'HDR10\+|HDR10Plus', 'HDR10+'),
-        (r'HDR10(?!\+)', 'HDR10'),
-        (r'HDR(?!10)', 'HDR'),
-        (r'HLG', 'HLG'),
-    ],
-    'audio': [
-        (r'Atmos|ATMOS', 'Atmos'),
-        (r'TrueHD|True-HD', 'TrueHD'),
-        (r'DTS-HD.MA|DTS-HD|DTSHD', 'DTS-HD MA'),
-        (r'DTS-X|DTSX', 'DTS:X'),
-        (r'DD\+|DDP|E-AC-3', 'DD+'),
-        (r'DD|AC3|AC-3', 'DD'),
-        (r'AAC', 'AAC'),
-    ],
-    'codec': [
-        (r'x265|HEVC|H\.265', 'HEVC'),
-        (r'x264|AVC|H\.264', 'AVC'),
-        (r'AV1', 'AV1'),
-    ]
-}
-
-###############################################################################
-# Helper Functions
-###############################################################################
-
-def calculate_md5(filepath: Path, chunk_size: int = 8192) -> str:
-    """Calculate MD5 hash of a file"""
-    md5 = hashlib.md5()
-    try:
-        with open(filepath, 'rb') as f:
-            while chunk := f.read(chunk_size):
-                md5.update(chunk)
-        return md5.hexdigest()
-    except Exception as e:
-        print(f"Error hashing {filepath}: {e}")
-        return ""
-
-def extract_quality_info(filename: str) -> Dict[str, str]:
-    """Extract quality indicators from filename"""
-    info = {}
-    
-    for category, patterns in QUALITY_PATTERNS.items():
-        for pattern, value in patterns:
-            if re.search(pattern, filename, re.IGNORECASE):
-                info[category] = value
-                break
-    
-    return info
-
-def get_mediainfo(filepath: Path) -> Optional[Dict]:
-    """Get media information using mediainfo (if available)"""
-    try:
-        result = subprocess.run(
-            ['mediainfo', '--Output=JSON', str(filepath)],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
+        # Source/Quality patterns
+        'source': [
+            (r'Remux|REMUX', 'Remux'),
+            (r'BluRay|Blu-ray|BLURAY|BDRip|BRRip', 'BluRay'),
+            (r'WEB-DL|WEBDL|WEB\.DL', 'WEB-DL'),
+            (r'WEBRip|WEB-Rip|WEB\.Rip', 'WEBRip'),
+            (r'HDTV', 'HDTV'),
+            (r'DVD|DVDRip', 'DVD'),
+            (r'HDDVD|HD-DVD', 'HDDVD'),
+        ],
         
-        if result.returncode == 0:
-            return json.loads(result.stdout)
-    except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
-        pass
-    
-    return None
-
-def parse_mediainfo(mediainfo_data: Optional[Dict]) -> Dict:
-    """Parse mediainfo JSON to extract relevant fields"""
-    parsed = {
-        'video_codec': None,
-        'video_bitrate': None,
-        'resolution': None,
-        'hdr_format': None,
-        'audio_codec': None,
-        'audio_channels': None,
-        'audio_bitrate': None,
-        'runtime': None,
+        # Video codec patterns
+        'video_codec': [
+            (r'[xh]\.?265|HEVC', 'H.265'),
+            (r'[xh]\.?264|AVC', 'H.264'),
+            (r'VP9', 'VP9'),
+            (r'AV1', 'AV1'),
+            (r'VC-1|VC1', 'VC-1'),
+            (r'MPEG-?2', 'MPEG-2'),
+        ],
+        
+        # Audio codec patterns
+        'audio_codec': [
+            (r'TrueHD\.?Atmos|Atmos\.?TrueHD', 'TrueHD Atmos'),
+            (r'TrueHD', 'TrueHD'),
+            (r'DTS-HD\.?MA|DTS\.?HD\.?MA|DTSMA', 'DTS-HD MA'),
+            (r'DTS-HD|DTSHD', 'DTS-HD'),
+            (r'DTS-X|DTSX', 'DTS:X'),
+            (r'DTS', 'DTS'),
+            (r'DD\+\.?Atmos|EAC3\.?Atmos|Atmos\.?DD\+', 'DD+ Atmos'),
+            (r'DD\+|E-?AC-?3|EAC3', 'DD+'),
+            (r'DD|AC-?3|AC3(?!\.)', 'DD'),
+            (r'AAC', 'AAC'),
+            (r'FLAC', 'FLAC'),
+            (r'PCM', 'PCM'),
+            (r'Opus', 'Opus'),
+        ],
+        
+        # HDR format detection - ORDER MATTERS! Most specific first
+        'hdr': [
+            # Dolby Vision variants (check most specific first)
+            (r'DV.*HDR10\+|Dolby.?Vision.*HDR10\+|DoVi.*HDR10\+', 'DV HDR10+'),
+            (r'DV.*HDR10|Dolby.?Vision.*HDR10|DoVi.*HDR10', 'DV HDR10'),
+            (r'DV.*HLG|Dolby.?Vision.*HLG|DoVi.*HLG', 'DV HLG'),
+            (r'DV.*SDR|Dolby.?Vision.*SDR|DoVi.*SDR', 'DV SDR'),
+            (r'DV|DoVi|Dolby.?Vision', 'DV'),
+            
+            # HDR variants (specific to generic)
+            (r'HDR10\+|HDR10Plus', 'HDR10+'),
+            (r'HDR10(?!\+)', 'HDR10'),
+            (r'HDR(?!10)', 'HDR'),
+            (r'HLG', 'HLG'),
+        ],
+        
+        # Release group
+        'group': [
+            (r'-([A-Za-z0-9]+)(?:\[.*\])?$', r'\1'),  # Capture group at end
+        ],
     }
-    
-    if not mediainfo_data or 'media' not in mediainfo_data:
-        return parsed
-    
-    tracks = mediainfo_data['media'].get('track', [])
-    
-    for track in tracks:
-        track_type = track.get('@type', '')
-        
-        if track_type == 'Video':
-            parsed['video_codec'] = track.get('Format')
-            parsed['video_bitrate'] = track.get('BitRate')
-            
-            width = track.get('Width')
-            height = track.get('Height')
-            if width and height:
-                parsed['resolution'] = f"{width}x{height}"
-            
-            # HDR detection
-            if track.get('HDR_Format'):
-                parsed['hdr_format'] = track.get('HDR_Format')
-            elif 'HDR' in track.get('transfer_characteristics', ''):
-                parsed['hdr_format'] = 'HDR'
-        
-        elif track_type == 'Audio':
-            if not parsed['audio_codec']:  # Take first audio track
-                parsed['audio_codec'] = track.get('Format')
-                parsed['audio_channels'] = track.get('Channels')
-                parsed['audio_bitrate'] = track.get('BitRate')
-        
-        elif track_type == 'General':
-            parsed['runtime'] = track.get('Duration')
-    
-    return parsed
 
-def scan_directory(directory: Path, recursive: bool = True) -> List[Dict]:
-    """Scan directory and create inventory"""
-    inventory = []
-    
-    # Find all video files
-    if recursive:
-        video_files = [
-            f for f in directory.rglob('*')
-            if f.is_file() and f.suffix.lower() in VIDEO_EXTENSIONS
-        ]
-    else:
-        video_files = [
-            f for f in directory.iterdir()
-            if f.is_file() and f.suffix.lower() in VIDEO_EXTENSIONS
-        ]
-    
-    print(f"\nFound {len(video_files)} video files")
-    
-    # Process files
-    iterator = tqdm(video_files, desc="Processing") if HAS_TQDM else video_files
-    
-    for filepath in iterator:
-        if not HAS_TQDM:
-            print(f"Processing: {filepath.name}")
+    def __init__(self, root_path: str, output_base: str, verbose: bool = False):
+        """
+        Initialize inventory generator
         
-        # Get file stats
-        stats = filepath.stat()
+        Args:
+            root_path: Root directory to scan
+            output_base: Base path for output files (without extension)
+            verbose: Enable verbose output
+        """
+        self.root_path = Path(root_path)
+        self.output_base = output_base
+        self.verbose = verbose
+        self.inventory: List[Dict] = []
         
-        # Extract quality from filename
-        quality_info = extract_quality_info(filepath.name)
+        if not self.root_path.exists():
+            raise FileNotFoundError(f"Path does not exist: {root_path}")
         
-        # Get mediainfo
-        mediainfo_data = get_mediainfo(filepath)
-        parsed_media = parse_mediainfo(mediainfo_data)
+        if not self.root_path.is_dir():
+            raise NotADirectoryError(f"Path is not a directory: {root_path}")
+
+    def _extract_pattern(self, text: str, pattern_list: List[Tuple], default: str = '') -> str:
+        """
+        Extract information using regex patterns
         
-        # Calculate hash (optional, can be slow)
-        file_hash = ""
-        # Uncomment to enable hashing (will be very slow for large libraries)
-        # file_hash = calculate_md5(filepath)
-        
-        # Create inventory entry
-        entry = {
-            'filepath': str(filepath),
-            'filename': filepath.name,
-            'directory': str(filepath.parent),
-            'size_bytes': stats.st_size,
-            'size_gb': round(stats.st_size / (1024**3), 2),
-            'modified': datetime.fromtimestamp(stats.st_mtime).isoformat(),
-            'created': datetime.fromtimestamp(stats.st_ctime).isoformat(),
-            'extension': filepath.suffix.lower(),
+        Args:
+            text: Text to search
+            pattern_list: List of (pattern, replacement) tuples
+            default: Default value if no match
             
-            # Quality from filename
-            'filename_resolution': quality_info.get('resolution', 'Unknown'),
-            'filename_source': quality_info.get('source', 'Unknown'),
-            'filename_hdr': quality_info.get('hdr', 'None'),
-            'filename_audio': quality_info.get('audio', 'Unknown'),
-            'filename_codec': quality_info.get('codec', 'Unknown'),
+        Returns:
+            Extracted value or default
+        """
+        for pattern, replacement in pattern_list:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                if callable(replacement):
+                    return replacement(match)
+                elif '\\' in replacement:
+                    return match.expand(replacement)
+                else:
+                    return replacement
+        return default
+
+    def _get_mediainfo(self, file_path: Path) -> Optional[MediaInfo]:
+        """
+        Get MediaInfo object for file
+        
+        Args:
+            file_path: Path to media file
             
-            # Mediainfo data
-            'video_codec': parsed_media['video_codec'],
-            'video_bitrate': parsed_media['video_bitrate'],
-            'resolution': parsed_media['resolution'],
-            'hdr_format': parsed_media['hdr_format'],
-            'audio_codec': parsed_media['audio_codec'],
-            'audio_channels': parsed_media['audio_channels'],
-            'audio_bitrate': parsed_media['audio_bitrate'],
-            'runtime': parsed_media['runtime'],
+        Returns:
+            MediaInfo object or None on error
+        """
+        try:
+            return MediaInfo.parse(str(file_path))
+        except Exception as e:
+            if self.verbose:
+                print(f"Error reading {file_path}: {e}")
+            return None
+
+    def _extract_metadata(self, file_path: Path) -> Dict:
+        """
+        Extract comprehensive metadata from media file
+        
+        Args:
+            file_path: Path to media file
             
-            # Hash (if calculated)
-            'md5_hash': file_hash,
+        Returns:
+            Dictionary of metadata
+        """
+        filename = file_path.name
+        parent_dir = file_path.parent.name
+        
+        # Get MediaInfo data
+        media_info = self._get_mediainfo(file_path)
+        
+        # Extract from filename
+        resolution = self._extract_pattern(filename, self.PATTERNS['resolution'])
+        source = self._extract_pattern(filename, self.PATTERNS['source'])
+        video_codec_fn = self._extract_pattern(filename, self.PATTERNS['video_codec'])
+        audio_codec_fn = self._extract_pattern(filename, self.PATTERNS['audio_codec'])
+        hdr = self._extract_pattern(filename, self.PATTERNS['hdr'])
+        group = self._extract_pattern(filename, self.PATTERNS['group'])
+        
+        # Initialize metadata
+        metadata = {
+            'title': parent_dir,
+            'filename': filename,
+            'path': str(file_path),
+            'size_bytes': file_path.stat().st_size,
+            'size_gb': round(file_path.stat().st_size / (1024**3), 2),
+            'resolution': resolution,
+            'width': None,
+            'height': None,
+            'video_codec': video_codec_fn,
+            'audio_codec': audio_codec_fn,
+            'hdr': hdr,
+            'source': source,
+            'group': group,
+            'duration_minutes': None,
+            'bitrate_mbps': None,
         }
         
-        inventory.append(entry)
-    
-    return inventory
+        # Extract from MediaInfo if available
+        if media_info:
+            for track in media_info.tracks:
+                if track.track_type == 'General':
+                    if track.duration:
+                        metadata['duration_minutes'] = round(int(track.duration) / 60000, 1)
+                    if track.overall_bit_rate:
+                        metadata['bitrate_mbps'] = round(int(track.overall_bit_rate) / 1_000_000, 2)
+                
+                elif track.track_type == 'Video':
+                    if track.width:
+                        metadata['width'] = int(track.width)
+                    if track.height:
+                        metadata['height'] = int(track.height)
+                    
+                    # Override codec from MediaInfo if more accurate
+                    if track.format:
+                        if 'HEVC' in track.format or 'H.265' in track.format:
+                            metadata['video_codec'] = 'H.265'
+                        elif 'AVC' in track.format or 'H.264' in track.format:
+                            metadata['video_codec'] = 'H.264'
+                        elif 'AV1' in track.format:
+                            metadata['video_codec'] = 'AV1'
+                        elif 'VP9' in track.format:
+                            metadata['video_codec'] = 'VP9'
+                    
+                    # Check for HDR in MediaInfo if not found in filename
+                    if not metadata['hdr'] and hasattr(track, 'hdr_format'):
+                        if track.hdr_format:
+                            if 'Dolby Vision' in track.hdr_format:
+                                metadata['hdr'] = 'DV'
+                            elif 'HDR10+' in track.hdr_format:
+                                metadata['hdr'] = 'HDR10+'
+                            elif 'HDR10' in track.hdr_format:
+                                metadata['hdr'] = 'HDR10'
+                            elif 'HLG' in track.hdr_format:
+                                metadata['hdr'] = 'HLG'
+        
+        return metadata
 
-def save_json(inventory: List[Dict], output_file: Path):
-    """Save inventory to JSON"""
-    with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(inventory, f, indent=2, ensure_ascii=False)
-    print(f"\n✅ Saved JSON: {output_file}")
+    def scan(self) -> int:
+        """
+        Scan directory for media files and build inventory
+        
+        Returns:
+            Number of files processed
+        """
+        print(f"Scanning: {self.root_path}")
+        
+        # Find all video files
+        video_files = []
+        for ext in self.VIDEO_EXTENSIONS:
+            video_files.extend(self.root_path.rglob(f'*{ext}'))
+        
+        print(f"Found {len(video_files)} video files")
+        
+        # Process each file with progress bar
+        for file_path in tqdm(video_files, desc="Processing", unit="file"):
+            try:
+                metadata = self._extract_metadata(file_path)
+                self.inventory.append(metadata)
+            except Exception as e:
+                if self.verbose:
+                    print(f"Error processing {file_path}: {e}")
+        
+        return len(self.inventory)
 
-def save_csv(inventory: List[Dict], output_file: Path):
-    """Save inventory to CSV"""
-    if not inventory:
-        return
-    
-    with open(output_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=inventory[0].keys())
-        writer.writeheader()
-        writer.writerows(inventory)
-    print(f"✅ Saved CSV: {output_file}")
+    def save_json(self) -> str:
+        """
+        Save inventory as JSON
+        
+        Returns:
+            Output file path
+        """
+        output_file = f"{self.output_base}.json"
+        
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(self.inventory, f, indent=2, ensure_ascii=False)
+        
+        print(f"Saved JSON: {output_file}")
+        return output_file
 
-def print_summary(inventory: List[Dict]):
-    """Print inventory summary"""
-    print("\n" + "="*60)
-    print("INVENTORY SUMMARY")
-    print("="*60)
-    
-    total_files = len(inventory)
-    total_size_gb = sum(item['size_gb'] for item in inventory)
-    
-    print(f"Total Files: {total_files}")
-    print(f"Total Size: {total_size_gb:.2f} GB ({total_size_gb/1024:.2f} TB)")
-    
-    # Resolution breakdown
-    resolutions = {}
-    for item in inventory:
-        res = item['filename_resolution']
-        resolutions[res] = resolutions.get(res, 0) + 1
-    
-    print("\nResolution Breakdown:")
-    for res, count in sorted(resolutions.items(), key=lambda x: x[1], reverse=True):
-        print(f"  {res}: {count} files")
-    
-    # Source breakdown
-    sources = {}
-    for item in inventory:
-        src = item['filename_source']
-        sources[src] = sources.get(src, 0) + 1
-    
-    print("\nSource Breakdown:")
-    for src, count in sorted(sources.items(), key=lambda x: x[1], reverse=True):
-        print(f"  {src}: {count} files")
-    
-    print("="*60)
+    def save_csv(self) -> str:
+        """
+        Save inventory as CSV
+        
+        Returns:
+            Output file path
+        """
+        output_file = f"{self.output_base}.csv"
+        
+        if not self.inventory:
+            print("No data to save")
+            return ""
+        
+        df = pd.DataFrame(self.inventory)
+        df.to_csv(output_file, index=False, encoding='utf-8')
+        
+        print(f"Saved CSV: {output_file}")
+        return output_file
 
-###############################################################################
-# Main
-###############################################################################
+    def print_summary(self):
+        """Print summary statistics"""
+        if not self.inventory:
+            print("No files in inventory")
+            return
+        
+        df = pd.DataFrame(self.inventory)
+        
+        print("\n" + "="*60)
+        print("INVENTORY SUMMARY")
+        print("="*60)
+        print(f"Total files: {len(self.inventory)}")
+        print(f"Total size: {df['size_gb'].sum():.2f} GB")
+        
+        if 'resolution' in df.columns:
+            print("\nResolutions:")
+            print(df['resolution'].value_counts().to_string())
+        
+        if 'hdr' in df.columns and df['hdr'].notna().any():
+            print("\nHDR Formats:")
+            print(df[df['hdr'].notna()]['hdr'].value_counts().to_string())
+        
+        if 'source' in df.columns:
+            print("\nSources:")
+            print(df['source'].value_counts().to_string())
+        
+        print("="*60)
+
 
 def main():
+    """Main entry point"""
     parser = argparse.ArgumentParser(
-        description='Generate media library inventory with quality analysis'
+        description='Generate media library inventory with detailed metadata',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s /mnt/media/Movies -o ~/inventories/movies
+  %(prog)s "/mnt/media/TV Shows" -o ~/inventories/tv --verbose
+        """
     )
+    
     parser.add_argument(
-        'directory',
-        type=Path,
-        help='Directory to scan'
+        'path',
+        help='Root directory to scan'
     )
+    
     parser.add_argument(
         '-o', '--output',
-        type=Path,
-        help='Output file prefix (will create .json and .csv)',
-        default=None
+        required=True,
+        help='Output file base (without extension, will create .json and .csv)'
     )
+    
     parser.add_argument(
-        '--no-recursive',
+        '-v', '--verbose',
         action='store_true',
-        help='Do not scan subdirectories'
-    )
-    parser.add_argument(
-        '--hash',
-        action='store_true',
-        help='Calculate MD5 hashes (SLOW for large libraries)'
+        help='Enable verbose output'
     )
     
     args = parser.parse_args()
     
-    # Validate directory
-    if not args.directory.exists():
-        print(f"Error: Directory not found: {args.directory}")
-        sys.exit(1)
-    
-    if not args.directory.is_dir():
-        print(f"Error: Not a directory: {args.directory}")
-        sys.exit(1)
-    
-    # Determine output filename
-    if args.output:
-        output_prefix = args.output
-    else:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_prefix = Path(f"inventory_{timestamp}")
-    
-    # Scan directory
-    print(f"\n📁 Scanning: {args.directory}")
-    print(f"Recursive: {not args.no_recursive}")
-    print(f"Hashing: {args.hash}")
-    
-    inventory = scan_directory(args.directory, recursive=not args.no_recursive)
-    
-    if not inventory:
-        print("\n❌ No video files found")
-        sys.exit(1)
-    
-    # Save results
-    save_json(inventory, output_prefix.with_suffix('.json'))
-    save_csv(inventory, output_prefix.with_suffix('.csv'))
-    
-    # Print summary
-    print_summary(inventory)
-    
-    print(f"\n✅ Inventory generation complete!")
-    print(f"📄 Files created:")
-    print(f"   - {output_prefix}.json")
-    print(f"   - {output_prefix}.csv")
+    try:
+        # Create inventory
+        inventory = MediaInventory(
+            root_path=args.path,
+            output_base=args.output,
+            verbose=args.verbose
+        )
+        
+        # Scan directory
+        count = inventory.scan()
+        
+        if count == 0:
+            print("No video files found!")
+            return 1
+        
+        # Save outputs
+        inventory.save_json()
+        inventory.save_csv()
+        
+        # Print summary
+        inventory.print_summary()
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        return 1
+
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
