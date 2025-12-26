@@ -1,0 +1,1252 @@
+================================================================================
+MEDIA LIBRARY COMPARISON REPORT (FIXED VERSION)
+================================================================================
+
+Generated: 2025-12-26 19:19:12
+
+STATISTICS
+--------------------------------------------------------------------------------
+Total comparisons: 242
+Ali only: 80
+Chris only: 13
+Ali has better version: 103
+Chris has better version: 8
+Equal quality: 38
+⚠️  NEEDS REVIEW (will overwrite): 111
+
+================================================================================
+⚠️  FILES THAT WILL OVERWRITE EXISTING (REVIEW REQUIRED)
+================================================================================
+
+Title: The Predator (2018)
+  Will replace: The Predator 2018 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv (score: 2000)
+  With: The Predator (2018) {imdb-tt3829266} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2000, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Guardians of the Galaxy Vol. 2 (2017)
+  Will replace: Guardians.of.the.Galaxy.Vol.2.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv (score: 1800)
+  With: Guardians of the Galaxy Vol. 2 (2017) {imdb-tt3896198} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1800, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Matrix Reloaded (2003)
+  Will replace: The.Matrix.Reloaded.2003.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv (score: 2300)
+  With: The Matrix Reloaded (2003) {imdb-tt0234215} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2300, diff: +30)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Saving Private Ryan (1998)
+  Will replace: Saving.Private.Ryan.1998.2160p.UHD.BluRay.X265-IAMABLE.mkv (score: 1800)
+  With: Saving Private Ryan (1998) {imdb-tt0120815} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv (score: 2350)
+  Reason: Ali's version is higher quality (score: 2350 vs 1800, diff: +550)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Fast & Furious 6 (2013)
+  Will replace: Fast & Furious 6 (2013) Remux-2160p Proper.mkv (score: 2000)
+  With: Fast and Furious 6 (2013) {imdb-tt1905041} {edition-Extended} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv (score: 2100)
+  Reason: Ali's version is higher quality (score: 2100 vs 2000, diff: +100)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Matrix Revolutions (2003)
+  Will replace: The.Matrix-Revolutions.2003.UHD.BluRay.HDR.10Bit.2160p.DD.5.1.H265-d3g.mkv (score: 2150)
+  With: The.Matrix.Revolutions.2003.2160p.UHD.BluRay.TrueHD.7.1.DV.x265-W4NK3R.mkv (score: 2200)
+  Reason: Ali's version is higher quality (score: 2200 vs 2150, diff: +50)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Black Panther Wakanda Forever (2022)
+  Will replace: Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv (score: 2230)
+  With: Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2230, diff: +100)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Deadpool (2016)
+  Will replace: Deadpool (2016) Remux-2160p.mkv (score: 2000)
+  With: Deadpool (2016) {imdb-tt1431045} [Hybrid][Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SEV.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2000, diff: +330)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Thor Ragnarok (2017)
+  Will replace: Thor Ragnarok 2017 2160p UHD HDR10+ BluRay x265 TrueHD Atmos 7 1-UnKn0wn.mkv (score: 2150)
+  With: Thor Ragnarok (2017) {imdb-tt3501632} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Dune (2021)
+  Will replace: Dune (2021) Remux-2160p.mkv (score: 2150)
+  With: Dune (2021) {imdb-tt1160419} [Bluray-2160p Proper][DV HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Jaws (1975)
+  Will replace: Jaws.1975.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv (score: 2000)
+  With: Jaws (1975) {imdb-tt0073195} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv (score: 2350)
+  Reason: Ali's version is higher quality (score: 2350 vs 2000, diff: +350)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: John Wick Chapter 2 (2017)
+  Will replace: John.Wick.Chapter.2.2017.2160p.UHD.Bluray.Remux.HDR10.HEVC.Atmos.TrueHD.7.1-4K4U.mkv (score: 2300)
+  With: John Wick Chapter 2 (2017) {imdb-tt4425200} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2300, diff: +30)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Top Gun Maverick (2022)
+  Will replace: Top Gun Maverick (2022) WEBDL-2160p.mkv (score: 1750)
+  With: Top Gun Maverick (2022) {imdb-tt1745960} {edition-Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1750, diff: +580)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Blade Runner (1982)
+  Will replace: Blade.Runner.1982.The.Final.Cut.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (score: 2250)
+  With: Blade Runner (1982) {imdb-tt0083658} {edition-Final Cut} [Remux-2160p][HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2550)
+  Reason: Ali's version is higher quality (score: 2550 vs 2250, diff: +300)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Dark Knight (2008)
+  Will replace: The Dark Knight 2008 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv (score: 2000)
+  With: The Dark Knight (2008) {imdb-tt0468569} [Hybrid][Remux-2160p][DV HDR10][TrueHD 5.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2000, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Star Wars (1977)
+  Will replace: Star Wars (1977) Remux-2160p.mkv (score: 2150)
+  With: Star Wars (1977) {imdb-tt0076759} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Alien Romulus (2024)
+  Will replace: Alien Romulus (2024) {imdb-tt18412256} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv (score: 2030)
+  With: Alien Romulus (2024) {imdb-tt18412256} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2030, diff: +300)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Army of the Dead (2021)
+  Will replace: Army.of.the.Dead.2021.2160p.HDR.NF.WEBRip.DDP.Atmos.5.1.x265-TrollUHD-FZ.mkv (score: 1850)
+  With: Army of the Dead (2021) {imdb-tt0993840} [NF][WEBDL-2160p][DV HDR10][EAC3 Atmos 5.1][HEVC]-SiC.mkv (score: 2030)
+  Reason: Ali's version is higher quality (score: 2030 vs 1850, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Mad Max Fury Road (2015)
+  Will replace: Mad Max Fury Road 2015 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv (score: 2000)
+  With: Mad Max Fury Road (2015) {imdb-tt1392190} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2000, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Solo A Star Wars Story (2018)
+  Will replace: Solo A Star Wars Story (2018) {imdb-tt3778644} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv (score: 2330)
+  With: Solo A Star Wars Story (2018) {imdb-tt3778644} [Bluray-2160p Proper][HDR10][TrueHD Atmos 7.1][x265]-TnP.mkv (score: 2350)
+  Reason: Chris's version is higher quality (score: 2350 vs 2330, diff: +20)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Star Trek Into Darkness (2013)
+  Will replace: Star.Trek.Into.Darkness.2013.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (score: 2250)
+  With: Star Trek Into Darkness (2013) {imdb-tt1408101} {edition-Imax} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-Flights.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2250, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Twister (1996)
+  Will replace: Twister (1996) Remux-1080p.mkv (score: 1500)
+  With: Twister (1996) {imdb-tt0117998} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1500, diff: +830)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Avengers Infinity War (2018)
+  Will replace: Avengers.Infinity.War.2018.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (score: 2250)
+  With: Avengers Infinity War (2018) {imdb-tt4154756} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2250, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: War for the Planet of the Apes (2017)
+  Will replace: War.for.the.Planet.of.the.Apes.2017.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv (score: 2050)
+  With: War for the Planet of the Apes (2017) {imdb-tt3450958} [Hybrid][Bluray-2160p][DV HDR10Plus][EAC3 Atmos 8.0][x265]-BiTOR.mkv (score: 2230)
+  Reason: Ali's version is higher quality (score: 2230 vs 2050, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Suicide Squad (2021)
+  Will replace: The.Suicide.Squad.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (score: 2150)
+  With: The Suicide Squad (2021) {imdb-tt6334354} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Avengers Age of Ultron (2015)
+  Will replace: Avengers.Age.of.Ultron.2015.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv (score: 2050)
+  With: Avengers Age of Ultron (2015) {imdb-tt2395427} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2050, diff: +480)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Ad Astra (2019)
+  Will replace: Ad Astra (2019) Remux-2160p.mkv (score: 2150)
+  With: Ad Astra (2019) {imdb-tt2935510} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-KeYBLaDE.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Interstellar (2014)
+  Will replace: Interstellar.2014.2160p.UHD.BluRay.x265-TERMiNAL.mkv (score: 1800)
+  With: Interstellar (2014) {imdb-tt0816692} {edition-Imax} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv (score: 2080)
+  Reason: Ali's version is higher quality (score: 2080 vs 1800, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: E.T. the Extra-Terrestrial (1982)
+  Will replace: E.T.the.Extra-Terrestrial.1982.2160p.UHD.BluRay.x265-DEPTH.mkv (score: 1800)
+  With: E.T. the Extra-Terrestrial (1982) {imdb-tt0083866} [Bluray-2160p][HDR10][DTS-X 7.1][x265]-CtrlHD.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1800, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Ghostbusters (1984)
+  Will replace: Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (score: 2250)
+  With: Ghostbusters (1984) {imdb-tt0087332} - [Remux-2160p Proper][TrueHD Atmos 7.1][DV HDR10][HEVC]-BLURANiUM.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2250, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Hunger Games (2012)
+  Will replace: The Hunger Games (2012) Remux-2160p.mkv (score: 2150)
+  With: The Hunger Games (2012) {imdb-tt1392170} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Tenet (2020)
+  Will replace: Tenet (2020) {imdb-tt6723592} {edition-Imax} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv (score: 2080)
+  With: Tenet (2020) {imdb-tt6723592} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv (score: 2100)
+  Reason: Chris's version is higher quality (score: 2100 vs 2080, diff: +20)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Edge of Tomorrow (2014)
+  Will replace: Edge of Tomorrow.2014.2160p.UHD.BluRay.HDR.DoVi.TrueHD 7.1.Atmos.x265-SPHD.mkv (score: 2200)
+  With: Edge of Tomorrow (2014) {imdb-tt1631867} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2200, diff: +130)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Deadpool 2 (2018)
+  Will replace: Deadpool 2 (2018) Remux-2160p.mkv (score: 2000)
+  With: Deadpool 2 (2018) {imdb-tt5463162} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2350)
+  Reason: Ali's version is higher quality (score: 2350 vs 2000, diff: +350)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Star Trek VI The Undiscovered Country (1991)
+  Will replace: Star Trek VI The Undiscovered Country (1991) Bluray-2160p.mkv (score: 1800)
+  With: Star Trek VI The Undiscovered Country (1991) {imdb-tt0102975} {edition-Theatrical Cut} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv (score: 2230)
+  Reason: Ali's version is higher quality (score: 2230 vs 1800, diff: +430)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Hunger Games Mockingjay - Part 2 (2015)
+  Will replace: The Hunger Games Mockingjay - Part 2 (2015) Remux-2160p.mkv (score: 2150)
+  With: The Hunger Games Mockingjay Part 2 (2015) {imdb-tt1951266} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Deadpool 3 (2024)
+  Will replace: Deadpool and Wolverine (2024) {imdb-tt6263850} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv (score: 2030)
+  With: Deadpool and Wolverine (2024) {imdb-tt6263850} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2030, diff: +300)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Apocalypse Now (1979)
+  Will replace: Apocalypse.Now.1979.Redux.2160p.UHD.BluRay.x265-JustWatch.mkv (score: 1800)
+  With: Apocalypse Now (1979) {imdb-tt0078788} {edition-Theatrical Cut} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1800, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Alien (1979)
+  Will replace: Alien (1979) {imdb-tt0078748} {edition-Theatrical Cut} [Remux-2160p][HDR10Plus][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv (score: 2100)
+  With: Alien.1979.2160p.Director.Cut.UHD.HDR10+Remux.DTS-HD.MA5.1-SHD.mkv (score: 2340)
+  Reason: Chris's version is higher quality (score: 2340 vs 2100, diff: +240)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Hunt for Red October (1990)
+  Will replace: The Hunt for Red October.1990.2160p.UHD.BluRay.TrueHD5.1.x265-HQMUX.mkv (score: 2050)
+  With: The Hunt for Red October (1990) {imdb-tt0099810} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2050, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Twisters (2024)
+  Will replace: Twisters (2024) {imdb-tt12584954} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv (score: 2030)
+  With: Twisters (2024) {imdb-tt12584954} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-SPHD.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2030, diff: +300)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Captain America The First Avenger (2011)
+  Will replace: Captain.America.The.First.Avenger.2011.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv (score: 2050)
+  With: Captain America The First Avenger (2011) {imdb-tt0458339} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-KeYBLaDE.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2050, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Star Trek First Contact (1996)
+  Will replace: Star.Trek.VIII.First.Contact.1996.2160p.WEB-DL.DDP5.1.H.265-ABBiE.mkv (score: 1700)
+  With: Star Trek First Contact (1996) {imdb-tt0117731} [Bluray-2160p][DV HDR10][TrueHD 7.1][x265]-SPHD.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1700, diff: +630)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Close Encounters of the Third Kind (1977)
+  Will replace: Close Encounters of the Third Kind (1977) {imdb-tt0075860} {edition-Directors Cut} [Bluray-2160p][DV HDR10][AC3 5.1][x265]-BHDStudio.mp4 (score: 2180)
+  With: Close.Encounters.Of.The.Third.Kind.1977.DC.2160p.BluRay.HDR10.10bit.x265.HEVC.DTS-HD.MA.5.1-PHOCiS.mkv (score: 2340)
+  Reason: Chris's version is higher quality (score: 2340 vs 2180, diff: +160)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Dark Knight Rises (2012)
+  Will replace: The Dark Knight Rises 2012 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv (score: 2000)
+  With: The Dark Knight Rises (2012) {imdb-tt1345836} [Hybrid][Remux-2160p][DV HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv (score: 2280)
+  Reason: Ali's version is higher quality (score: 2280 vs 2000, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Top Gun (1986)
+  Will replace: Top Gun (1986) {imdb-tt0092099} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv (score: 2230)
+  With: Top Gun 1986 2160p UHD DV HDR10 BluRay SL TrueHD Atmos7 1 H265-SHD.mkv (score: 2330)
+  Reason: Chris's version is higher quality (score: 2330 vs 2230, diff: +100)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Iron Man 3 (2013)
+  Will replace: Iron.Man.3.2013.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv (score: 2300)
+  With: Iron Man 3 (2013) {imdb-tt1300854} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2300, diff: +30)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Hunger Games Catching Fire (2013)
+  Will replace: The Hunger Games Catching Fire (2013) Remux-2160p.mkv (score: 2150)
+  With: The Hunger Games Catching Fire (2013) {imdb-tt1951264} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Hunger Games Mockingjay - Part 1 (2014)
+  Will replace: The Hunger Games Mockingjay - Part 1 (2014) Remux-2160p.mkv (score: 2150)
+  With: The Hunger Games Mockingjay Part 1 (2014) {imdb-tt1951265} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Lord of the Rings The Return of the King (2003)
+  Will replace: The Lord of the Rings The Return of the King (2003) Remux-2160p.mkv (score: 2001)
+  With: The Lord of the Rings The Return of the King (2003) {imdb-tt0167260} {edition-Extended} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2531)
+  Reason: Ali's version is higher quality (score: 2531 vs 2001, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Joker (2019)
+  Will replace: Joker.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (score: 2250)
+  With: Joker (2019) {imdb-tt7286456} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-MgB.mkv (score: 2350)
+  Reason: Ali's version is higher quality (score: 2350 vs 2250, diff: +100)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Star Trek The Motion Picture (1979)
+  Will replace: Star Trek The Motion Picture (1979) Remux-2160p.mkv (score: 2150)
+  With: Star Trek The Motion Picture (1979) {imdb-tt0079945} [Bluray-2160p][DV][TrueHD Atmos 7.1][x265]-VD0N.mkv (score: 2200)
+  Reason: Ali's version is higher quality (score: 2200 vs 2150, diff: +50)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Avengers Endgame (2019)
+  Will replace: Avengers.Endgame.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (score: 2250)
+  With: Avengers Endgame (2019) {imdb-tt4154796} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2250, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Braveheart (1995)
+  Will replace: Braveheart.1995.2160p.UHD.BluRay.X265-IAMABLE.mkv (score: 1800)
+  With: Braveheart (1995) {imdb-tt0112573} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1800, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Pitch Black (2000)
+  Will replace: Pitch.Black.2000.Directors.Cut.REPACK.2160p.UHD.BluRay.DTS-HD.MA.5.1.HDR.x265-CtrlHD.mkv (score: 2290)
+  With: Pitch Black (2000) {imdb-tt0134847} {edition-Director's Cut} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2290, diff: +240)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Batman Begins (2005)
+  Will replace: Batman Begins (2005) {imdb-tt0372784} [Hybrid][Remux-2160p][DV HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv (score: 2280)
+  With: Batman.Begins.2005.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv (score: 2490)
+  Reason: Chris's version is higher quality (score: 2490 vs 2280, diff: +210)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Rocketman (2019)
+  Will replace: Rocketman 2019 2160p UHD Blu-ray HEVC Atmos x265 - SumVision.mkv (score: 1800)
+  With: Rocketman (2019) {imdb-tt2066051} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv (score: 2230)
+  Reason: Ali's version is higher quality (score: 2230 vs 1800, diff: +430)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: 2001 A Space Odyssey (1968)
+  Will replace: 2001 A Space Odyssey (1968) {imdb-tt0062622} [Remux-2160p Proper][DV HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv (score: 2280)
+  With: 2001.A.Space.Odyssey.1968.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv (score: 2490)
+  Reason: Chris's version is higher quality (score: 2490 vs 2280, diff: +210)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Matrix Resurrections (2021)
+  Will replace: The Matrix Resurrections (2021) WEBDL-2160p.mkv (score: 1750)
+  With: The Matrix Resurrections (2021) {imdb-tt10838180} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1750, diff: +580)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Avengers (2012)
+  Will replace: The.Avengers.2012.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (score: 2250)
+  With: The Avengers (2012) {imdb-tt0848228} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2250, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Inception (2010)
+  Will replace: Inception.2010.2160p.UHD.BluRay.x265-TERMiNAL.mkv (score: 1800)
+  With: Inception (2010) {imdb-tt1375666} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-MainFrame.mkv (score: 2080)
+  Reason: Ali's version is higher quality (score: 2080 vs 1800, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Black Widow (2021)
+  Will replace: Black.Widow.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv (score: 2050)
+  With: Black Widow (2021) {imdb-tt3480822} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2050, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Dracula (1992)
+  Will replace: Bram Stoker's Dracula 1992 2160p UHD Blu-Ray Remux HEVC Atmos - BluDragon.mkv (score: 2000)
+  With: Bram Stokers Dracula (1992) {imdb-tt0103874} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2000, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Dunkirk (2017)
+  Will replace: Dunkirk 2017 2160p UHD BluRay HDR DTS x265-SadeceBluRay.mkv (score: 2050)
+  With: Dunkirk (2017) {imdb-tt5013056} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-W4NK3R.mkv (score: 2080)
+  Reason: Ali's version is higher quality (score: 2080 vs 2050, diff: +30)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Hacksaw Ridge (2016)
+  Will replace: Hacksaw.Ridge.2016.2160p.UHD.BluRay.x265-TERMiNAL.mkv (score: 1800)
+  With: Hacksaw Ridge (2016) {imdb-tt2119532} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1800, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Passengers (2016)
+  Will replace: Passengers.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (score: 2250)
+  With: Passengers (2016) {imdb-tt1355644} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2250, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Blade (1998)
+  Will replace: Blade (1998) Bluray-2160p.mkv (score: 1800)
+  With: Blade (1998) {imdb-tt0120611} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1800, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Logan (2017)
+  Will replace: Logan.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv (score: 1800)
+  With: Logan (2017) {imdb-tt3315342} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv (score: 2350)
+  Reason: Ali's version is higher quality (score: 2350 vs 1800, diff: +550)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Gladiator (2000)
+  Will replace: Gladiator.2000.Extended.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR.mkv (score: 2230)
+  With: Gladiator (2000) {imdb-tt0172495} {edition-Extended Cut} [Remux-2160p][DV HDR10][DTS-X 7.1][HEVC]-FraMeSToR.mkv (score: 2510)
+  Reason: Ali's version is higher quality (score: 2510 vs 2230, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: V for Vendetta (2005)
+  Will replace: V.for.Vendetta.2005.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv (score: 2000)
+  With: V for Vendetta (2006) {imdb-tt0434409} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2000, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Uncharted (2022)
+  Will replace: Uncharted (2022) WEBDL-2160p.mkv (score: 1600)
+  With: Uncharted (2022) {imdb-tt1464335} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1600, diff: +730)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Godzilla vs. Kong (2021)
+  Will replace: Godzilla.vs.Kong.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv (score: 2050)
+  With: Godzilla vs. Kong (2021) {imdb-tt5034838} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2050, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Iron Man (2008)
+  Will replace: Iron.Man.2008.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv (score: 2100)
+  With: Iron Man (2008) {imdb-tt0371746} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2100, diff: +230)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Captain Marvel (2019)
+  Will replace: Captain Marvel (2019) Remux-2160p.mkv (score: 2000)
+  With: Captain Marvel (2019) {imdb-tt4154664} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2000, diff: +330)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Empire Strikes Back (1980)
+  Will replace: The Empire Strikes Back (1980) Bluray-2160p.mkv (score: 1800)
+  With: The Empire Strikes Back (1980) {imdb-tt0080684} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv (score: 2350)
+  Reason: Ali's version is higher quality (score: 2350 vs 1800, diff: +550)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Guardians of the Galaxy (2014)
+  Will replace: Guardians.Of.The.Galaxy.2014.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv (score: 2300)
+  With: Guardians of the Galaxy (2014) {imdb-tt2015381} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2300, diff: +30)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Return of the Jedi (1983)
+  Will replace: Return of the Jedi (1983) Remux-2160p.mkv (score: 2000)
+  With: Return of the Jedi (1983) {imdb-tt0086190} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2000, diff: +330)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Bohemian Rhapsody (2018)
+  Will replace: Bohemian Rhapsody (2018) Remux-2160p.mkv (score: 2000)
+  With: Bohemian Rhapsody (2018) {imdb-tt1727824} [Bluray-2160p][HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2150)
+  Reason: Ali's version is higher quality (score: 2150 vs 2000, diff: +150)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Pacific Rim (2013)
+  Will replace: Pacific.Rim.2013.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (score: 2150)
+  With: Pacific Rim (2013) {imdb-tt1663662} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Lord of the Rings The Two Towers (2002)
+  Will replace: The Lord of the Rings The Two Towers (2002) Remux-2160p.mkv (score: 2001)
+  With: The.Lord.of.the.Rings.The.Two.Towers.2002.Extended.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv (score: 2151)
+  Reason: Ali's version is higher quality (score: 2151 vs 2001, diff: +150)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Furious 7 (2015)
+  Will replace: Furious 7 (2015) Remux-2160p.mkv (score: 2000)
+  With: Furious.Seven.2015.Extended.2160p.UHD.BluRay.DTS-HD.HR.7.1.HDR.x265-CtrlHD.mkv (score: 2050)
+  Reason: Ali's version is higher quality (score: 2050 vs 2000, diff: +50)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Black Adam (2022)
+  Will replace: Black Adam (2022) WEBDL-2160p Proper.mkv (score: 1750)
+  With: Black Adam.2022.2160p.UHD.BluRay.HDR.DoVi.TrueHD 7.1.Atmos.x265-SPHD.mkv (score: 2200)
+  Reason: Ali's version is higher quality (score: 2200 vs 1750, diff: +450)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: John Wick (2014)
+  Will replace: John.Wick.2014.2160p.UHD.BluRay.HDR.TrueHD.Atmos.7.1.x265-Absinth.mkv (score: 2050)
+  With: John Wick (2014) {imdb-tt2911666} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2050, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Star Trek III The Search for Spock (1984)
+  Will replace: Star.Trek.III.The.Search.for.Spock.1984.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (score: 2150)
+  With: Star Trek III The Search for Spock (1984) {imdb-tt0088170} [Bluray-2160p Proper][DV HDR10][EAC3 7.1][x265]-hallowed.mkv (score: 2230)
+  Reason: Ali's version is higher quality (score: 2230 vs 2150, diff: +80)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Star Trek V The Final Frontier (1989)
+  Will replace: Star Trek V The Final Frontier (1989) Bluray-2160p.mkv (score: 1800)
+  With: Star Trek V The Final Frontier (1989) {imdb-tt0098382} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv (score: 2230)
+  Reason: Ali's version is higher quality (score: 2230 vs 1800, diff: +430)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Zombieland (2009)
+  Will replace: Zombieland.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv (score: 1800)
+  With: Zombieland (2009) {imdb-tt1156398} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1800, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Mortal Kombat (2021)
+  Will replace: Mortal Kombat (2021) {imdb-tt0293429} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv (score: 2330)
+  With: Mortal Kombat (2021) {imdb-tt0293429} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (score: 2350)
+  Reason: Ali's version is higher quality (score: 2350 vs 2330, diff: +20)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Heat (1995)
+  Will replace: Heat.1995.Directors.Definitive.Edition.2160p.HDR.WEB-DL.DTS-HD.MA.5.1.HEVC-BLUTONiUM.mkv (score: 2090)
+  With: Heat (1995) {imdb-tt0113277} [Remux-2160p][HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv (score: 2300)
+  Reason: Ali's version is higher quality (score: 2300 vs 2090, diff: +210)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Indiana Jones and the Temple of Doom (1984)
+  Will replace: indiana.jones.and.the.temple.of.doom.1984.2160p.uhd.bluray.x265-seskapile.mkv (score: 1800)
+  With: Indiana Jones and the Temple of Doom (1984) {imdb-tt0087469} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1800, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Apollo 13 (1995)
+  Will replace: Apollo 13 (1995) Remux-2160p.mkv (score: 2000)
+  With: Apollo.13.1995.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR-Scrambled.mkv (score: 2230)
+  Reason: Ali's version is higher quality (score: 2230 vs 2000, diff: +230)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Red Sparrow (2018)
+  Will replace: Red.Sparrow.2018.2160p.UHD.BluRay.x265-WhiteRhino.mkv (score: 1800)
+  With: Red Sparrow (2018) {imdb-tt2873282} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1800, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Iron Man 2 (2010)
+  Will replace: Iron.Man.2.2010.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv (score: 2050)
+  With: Iron Man 2 (2010) {imdb-tt1228705} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2050, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Matrix (1999)
+  Will replace: The.Matrix.1999.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv (score: 2000)
+  With: The Matrix (1999) {imdb-tt0133093} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2000, diff: +330)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Earth One Amazing Day (2017)
+  Will replace: Earth.One.Amazing.Day.2017.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (score: 2250)
+  With: Earth One Amazing Day (2017) {imdb-tt6238896} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2250, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Star Trek II The Wrath of Khan (1982)
+  Will replace: Star.Trek.II.The.Wrath.of.Khan.1982.Director's.Cut.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (score: 2150)
+  With: Star Trek II The Wrath of Khan (1982) {imdb-tt0084726} {edition-Theatrical Cut} [Bluray-2160p Proper][DV HDR10][EAC3 7.1][x265]-hallowed.mkv (score: 2230)
+  Reason: Ali's version is higher quality (score: 2230 vs 2150, diff: +80)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Kingdom of Heaven (2005)
+  Will replace: Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Theatrical} [WEBDL-2160p][HDR10][EAC3 5.1][h265]-SMURF.mkv (score: 2050)
+  With: Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Director's Cut} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2050, diff: +280)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: 300 (2006)
+  Will replace: 300.2006.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv (score: 2000)
+  With: 300 (2006) {imdb-tt0416449} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2000, diff: +530)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Indiana Jones and the Kingdom of the Crystal Skull (2008)
+  Will replace: Indiana.Jones.and.the.Kingdom.of.the.Crystal.Skull.2008.2160p.HDR.UHD.BluRay.TrueHD.7.1.Atmos.2Audio.x265-10bit-HDS.mkv (score: 2300)
+  With: Indiana Jones and the Kingdom of the Crystal Skull (2008) {imdb-tt0367882} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2300, diff: +30)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Lord of the Rings The Fellowship of the Ring (2001)
+  Will replace: The Lord of the Rings The Fellowship of the Ring (2001) Remux-2160p.mkv (score: 2001)
+  With: The.Lord.of.the.Rings.The.Fellowship.of.the.Ring.2001.Extended.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv (score: 2151)
+  Reason: Ali's version is higher quality (score: 2151 vs 2001, diff: +150)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Jurassic Park (1993)
+  Will replace: Jurassic.Park.1993.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (score: 2150)
+  With: Jurassic Park (1993) {imdb-tt0107290} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-HiDt.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: A Beautiful Planet (2016)
+  Will replace: A Beautiful Planet (2016) {imdb-tt2800050} [Remux-2160p][HDR10Plus][DTS-X 7.1][HEVC]-FraMeSToR.mkv (score: 2330)
+  With: A.Beautiful.Planet.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-X-EPSiLON.mkv (score: 2480)
+  Reason: Chris's version is higher quality (score: 2480 vs 2330, diff: +150)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Lost World Jurassic Park (1997)
+  Will replace: The.Lost.World.Jurassic.Park.1997.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (score: 2150)
+  With: The Lost World Jurassic Park (1997) {imdb-tt0119567} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-HiDt.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Avatar The Way of Water (2022)
+  Will replace: Avatar The Way of Water (2022) WEBDL-2160p.mkv (score: 1600)
+  With: Avatar The Way of Water (2022) {imdb-tt1630029} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2350)
+  Reason: Ali's version is higher quality (score: 2350 vs 1600, diff: +750)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Revenant (2015)
+  Will replace: The.Revenant.2015.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR-AsRequested.mkv (score: 2240)
+  With: The Revenant (2015) {imdb-tt1663202} {edition-Open Matte} [Remux-2160p][DV HDR10Plus][TrueHD Atmos 7.1][h265]-Benflix.mkv (score: 2530)
+  Reason: Ali's version is higher quality (score: 2530 vs 2240, diff: +290)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Wonder Woman 1984 (2020)
+  Will replace: Wonder.Woman.2017.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv (score: 2300)
+  With: Wonder Woman 1984 (2020) {imdb-tt7126948} {edition-Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2300, diff: +30)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Star Trek (2009)
+  Will replace: Star.Trek.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv (score: 1800)
+  With: Star Trek (2009) {imdb-tt0796366} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv (score: 2350)
+  Reason: Ali's version is higher quality (score: 2350 vs 1800, diff: +550)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Raiders of the Lost Ark (1981)
+  Will replace: Raiders.Of.The.Lost.Ark.1981.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv (score: 2100)
+  With: Raiders of the Lost Ark (1981) {imdb-tt0082971} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2100, diff: +230)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Shazam! Fury of the Gods (2023)
+  Will replace: Shazam! Fury of the Gods (2023) Remux-2160p.mkv (score: 2150)
+  With: Shazam! Fury of the Gods (2023) {imdb-tt10151854} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 2150, diff: +180)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Spider-Man No Way Home (2021)
+  Will replace: Spider-Man No Way Home (2021) WEBDL-2160p.mkv (score: 1600)
+  With: Spider-Man No Way Home (2021) {imdb-tt10872600} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (score: 2330)
+  Reason: Ali's version is higher quality (score: 2330 vs 1600, diff: +730)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: The Martian (2015)
+  Will replace: The.Martian.2015.EXTENDED.2160p.BluRay.x265.10bit.HDR.TrueHD.7.1.Atmos-TERMiNAL.mkv (score: 2300)
+  With: The Martian (2015) {imdb-tt3659388} {edition-Extended Cut} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv (score: 2350)
+  Reason: Ali's version is higher quality (score: 2350 vs 2300, diff: +50)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+Title: Star Trek IV The Voyage Home (1986)
+  Will replace: Star.Trek.IV.The.Voyage.Home.1986.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (score: 2150)
+  With: Star Trek IV The Voyage Home (1986) {imdb-tt0092007} [Bluray-2160p Proper][DV HDR10][EAC3 7.1][x265]-hallowed.mkv (score: 2230)
+  Reason: Ali's version is higher quality (score: 2230 vs 2150, diff: +80)
+  ⚠️  Move old file to REVIEW folder before syncing!
+
+================================================================================
+FILES TO COPY TO CHRIS (80)
+================================================================================
+
+Title: Lawrence of Arabia (1962)
+  File: Lawrence.of.Arabia.1962.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Size: 94.55 GB
+  Quality Score: 2000
+  Reason: Only Ali has this file
+
+Title: The Mummy Returns (2001)
+  File: The Mummy Returns (2001) {imdb-tt0209163} [Bluray-2160p][HDR10][DTS-X 7.1][x265]-CtrlHD.mkv
+  Size: 45.57 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Godzilla (2014)
+  File: Godzilla (2014) {imdb-tt0831387} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+  Size: 44.77 GB
+  Quality Score: 2350
+  Reason: Only Ali has this file
+
+Title: Tron (1982)
+  File: Tron (1982) {imdb-tt0084827} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPx.mkv
+  Size: 15.05 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Blade Runner 2049 (2017)
+  File: Blade.Runner.2049.2017.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.HYBRID.REMUX-FraMeSToR.mkv
+  Size: 73.33 GB
+  Quality Score: 2000
+  Reason: Ali has additional version (lower quality: 2000 vs 2550)
+
+Title: Mission Impossible II (2000)
+  File: Mission.Impossible.II.2000.2160p.UHD.BluRay.HEVC.DV.TrueHD.5.1.x265-SPHD.mkv
+  Size: 29.31 GB
+  Quality Score: 2200
+  Reason: Only Ali has this file
+
+Title: Guardians of the Galaxy Vol. 3 (2023)
+  File: Guardians of the Galaxy Vol. 3 (2023) {imdb-tt6791350} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv
+  Size: 34.70 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Thor (2011)
+  File: Thor (2011) {imdb-tt0800369} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-KeYBLaDE.mkv
+  Size: 22.33 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Constantine (2005)
+  File: Constantine (2005) {imdb-tt0360486} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 33.46 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Spider-Man Far From Home (2019)
+  File: Spider-Man Far From Home (2019) {imdb-tt6320628} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 18.91 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Venom (2018)
+  File: Venom (2018) {imdb-tt1270797} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 19.08 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Ghostbusters (1984)
+  File: Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Size: 47.53 GB
+  Quality Score: 2250
+  Reason: Ali has additional version (lower quality: 2250 vs 2530)
+
+Title: The Fantastic 4 First Steps (2025)
+  File: The Fantastic 4 First Steps (2025) {imdb-tt10676052} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPx.mkv
+  Size: 22.44 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Star Trek Generations (1994) {imdb-tt0111280}
+  File: Star Trek Generations (1994) {imdb-tt0111280} [Bluray-2160p][DV HDR10][TrueHD 7.1][x265]-SPHD.mkv
+  Size: 27.43 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Cars 2 (2011)
+  File: Cars 2 (2011) {imdb-tt1216475} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv
+  Size: 21.15 GB
+  Quality Score: 2350
+  Reason: Only Ali has this file
+
+Title: Willy Wonka and the Chocolate Factory (1971)
+  File: Willy Wonka and the Chocolate Factory (1971) {imdb-tt0067992} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-MainFrame.mkv
+  Size: 34.00 GB
+  Quality Score: 2080
+  Reason: Only Ali has this file
+
+Title: What Happened to Monday (2017)
+  File: What Happened to Monday (2017) {imdb-tt1536537} [Bluray-2160p][PQ][TrueHD 5.1][x265]-BEN.mkv
+  Size: 24.74 GB
+  Quality Score: 2050
+  Reason: Only Ali has this file
+
+Title: Mission Impossible Rogue Nation (2015)
+  File: Mission Impossible Rogue Nation (2015) {imdb-tt2381249} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+  Size: 24.98 GB
+  Quality Score: 2350
+  Reason: Only Ali has this file
+
+Title: Indiana Jones and the Dial of Destiny (2023)
+  File: Indiana Jones and the Dial of Destiny (2023) {imdb-tt1462764} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 71.85 GB
+  Quality Score: 2530
+  Reason: Only Ali has this file
+
+Title: The Godfather Part II (1974)
+  File: The Godfather Part II (1974) {imdb-tt0071562} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv
+  Size: 62.34 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Zombieland Double Tap (2019)
+  File: Zombieland Double Tap (2019) {imdb-tt1560220} [Bluray-2160p][DV HDR10][DTS-X 7.1][x265]-MainFrame.mkv
+  Size: 17.66 GB
+  Quality Score: 2310
+  Reason: Only Ali has this file
+
+Title: Terminator 2 Judgment Day (1991)
+  File: Terminator 2 Judgment Day (1991) {imdb-tt0103064} {edition-Theatrical Cut} [Remux-2160p][PQ][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 49.01 GB
+  Quality Score: 2000
+  Reason: Only Ali has this file
+
+Title: Terminator 2 Judgment Day (1991)
+  File: Terminator 2 Judgment Day 1991 Remastered Theatrical Cut GER 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+  Size: 48.96 GB
+  Quality Score: 2000
+  Reason: Only Ali has this file
+
+Title: Forrest Gump (1994)
+  File: Forrest Gump (1994) {imdb-tt0109830} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 50.07 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Spider-Man Homecoming (2017)
+  File: Spider-Man Homecoming (2017) {imdb-tt2250912} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 25.32 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: The Super Mario Bros. Movie (2023)
+  File: The Super Mario Bros. Movie (2023) {imdb-tt6718170} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 21.43 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Mission Impossible Fallout (2018)
+  File: Mission Impossible Fallout (2018) {imdb-tt4912910} {edition-Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 51.19 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: The Phantom of the Opera (2004)
+  File: The Phantom of the Opera (2004) {imdb-tt0293508} [Remux-2160p][HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 38.66 GB
+  Quality Score: 2300
+  Reason: Only Ali has this file
+
+Title: The Wizard of Oz (1939)
+  File: The Wizard of Oz (1939) {imdb-tt0032138} [Remux-2160p][DV HDR10Plus][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 48.49 GB
+  Quality Score: 2280
+  Reason: Only Ali has this file
+
+Title: Mission Impossible Ghost Protocol (2011)
+  File: Mission Impossible Ghost Protocol (2011) {imdb-tt1229238} [Bluray-2160p][HDR10][TrueHD 7.1][x265]-HQMUX.mkv
+  Size: 25.72 GB
+  Quality Score: 2350
+  Reason: Only Ali has this file
+
+Title: Star Trek Beyond (2016)
+  File: Star Trek Beyond (2016) {imdb-tt2660888} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 38.17 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Dawn of the Planet of the Apes (2014)
+  File: Dawn of the Planet of the Apes (2014) {imdb-tt2103281} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+  Size: 15.36 GB
+  Quality Score: 2230
+  Reason: Only Ali has this file
+
+Title: Furiosa A Mad Max Saga (2024)
+  File: Furiosa A Mad Max Saga (2024) {imdb-tt12037194} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 40.40 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Furiosa A Mad Max Saga (2024)
+  File: Furiosa A Mad Max Saga (2024) {imdb-tt12037194} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  Size: 15.13 GB
+  Quality Score: 2030
+  Reason: Only Ali has this file
+
+Title: Venom The Last Dance (2024)
+  File: Venom The Last Dance (2024) {imdb-tt16366836} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 23.21 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Gladiator II (2024)
+  File: Gladiator II (2024) {imdb-tt9218128} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 73.06 GB
+  Quality Score: 2530
+  Reason: Only Ali has this file
+
+Title: TRON Ares (2025)
+  File: TRON Ares (2025) {imdb-tt6604188} - [MA][WEBDL-2160p][EAC3 Atmos 5.1][DV HDR10][h265]-BYNDR.mkv
+  Size: 21.02 GB
+  Quality Score: 2030
+  Reason: Only Ali has this file
+
+Title: Pulp Fiction (1994)
+  File: Pulp Fiction (1994) {imdb-tt0110912} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-W4NK3R.mkv
+  Size: 32.31 GB
+  Quality Score: 2080
+  Reason: Only Ali has this file
+
+Title: The Fifth Element (1997)
+  File: The Fifth Element (1997) {imdb-tt0119116} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 56.64 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Star Trek Insurrection (1998) {imdb-tt0120844}
+  File: Star Trek Insurrection (1998) {imdb-tt0120844} [Bluray-2160p][DV HDR10][TrueHD 7.1][x265]-SPHD.mkv
+  Size: 28.43 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Mission Impossible III (2006)
+  File: Mission Impossible III (2006) {imdb-tt0317919} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv
+  Size: 29.20 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Extraction 2 (2023)
+  File: Extraction 2 (2023) {imdb-tt12263384} [NF][WEBDL-2160p][DV HDR10][EAC3 Atmos 5.1][h265]-HONE.mkv
+  Size: 17.09 GB
+  Quality Score: 2030
+  Reason: Only Ali has this file
+
+Title: Blade II (2002)
+  File: Blade II (2002) {imdb-tt0187738} [WEBDL-2160p][DV HDR10][DTS-HD MA 7.1][h265]-FLUX.mkv
+  Size: 21.99 GB
+  Quality Score: 1880
+  Reason: Only Ali has this file
+
+Title: Thor The Dark World (2013)
+  File: Thor The Dark World (2013) {imdb-tt1981115} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+  Size: 22.83 GB
+  Quality Score: 2350
+  Reason: Only Ali has this file
+
+Title: The Lion King (1994)
+  File: The Lion King (1994) {imdb-tt0110357} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 19.02 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: The Lion King (2019)
+  File: The Lion King (2019) {imdb-tt6105098} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-BHDStudio.mp4
+  Size: 13.86 GB
+  Quality Score: 2230
+  Reason: Only Ali has this file
+
+Title: Extraction (2020)
+  File: Extraction (2020) {imdb-tt8936646} [NF][WEBDL-2160p][DV HDR10][EAC3 Atmos 5.1][HEVC]-SiC.mkv
+  Size: 13.09 GB
+  Quality Score: 2030
+  Reason: Only Ali has this file
+
+Title: Civil War (2024)
+  File: Civil War (2024) {imdb-tt17279496} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 22.60 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Superman (2025)
+  File: Superman (2025) {imdb-tt5950044} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-SPHD.mkv
+  Size: 43.47 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: The Shawshank Redemption (1994)
+  File: The Shawshank Redemption (1994) {imdb-tt0111161} [Bluray-2160p][DV HDR10][EAC3 5.1][x265]-hallowed.mkv
+  Size: 16.70 GB
+  Quality Score: 2230
+  Reason: Only Ali has this file
+
+Title: Gladiator (2000)
+  File: Gladiator.2000.Extended.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Size: 57.06 GB
+  Quality Score: 2230
+  Reason: Ali has additional version (lower quality: 2230 vs 2510)
+
+Title: Godzilla Minus One (2023)
+  File: Godzilla Minus One (2023) {imdb-tt23289160} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 22.73 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Zack Snyders Justice League (2021)
+  File: Zack Snyders Justice League (2021) {imdb-tt12361974} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 52.30 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Captain America Brave New World (2025)
+  File: Captain America Brave New World (2025) {imdb-tt14513804} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 20.78 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Mission Impossible 8 (2025)
+  File: Mission Impossible The Final Reckoning (2025) {imdb-tt9603208} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-SPHD.mkv
+  Size: 47.70 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Cars (2006)
+  File: Cars.2006.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Size: 24.69 GB
+  Quality Score: 2300
+  Reason: Only Ali has this file
+
+Title: The Northman (2022)
+  File: The Northman (2022) {imdb-tt11138512} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 40.23 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Venom Let There Be Carnage (2021)
+  File: Venom Let There Be Carnage (2021) {imdb-tt7097896} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 25.41 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Godzilla x Kong The New Empire (2024)
+  File: Godzilla x Kong The New Empire (2024) {imdb-tt14539740} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 34.77 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Rise of the Planet of the Apes (2011)
+  File: Rise of the Planet of the Apes (2011) {imdb-tt1318514} [Bluray-2160p][DV HDR10][EAC3 5.1][x265]-HONE.mkv
+  Size: 18.08 GB
+  Quality Score: 2230
+  Reason: Only Ali has this file
+
+Title: Wicked (2024)
+  File: Wicked (2024) {imdb-tt1262426} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 45.65 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Thunderbolts- (2025)
+  File: Thunderbolts- (2025) {imdb-tt20969586} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-D3US.mkv
+  Size: 26.55 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Coco (2017)
+  File: Coco (2017) {imdb-tt2380307} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 40.57 GB
+  Quality Score: 2530
+  Reason: Only Ali has this file
+
+Title: Star Trek Nemesis (2002) {imdb-tt0253754}
+  File: Star Trek Nemesis (2002) {imdb-tt0253754} [Bluray-2160p][DV HDR10][TrueHD 7.1][x265]-SPHD.mkv
+  Size: 29.03 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: The Terminator (1984)
+  File: The Terminator (1984) {imdb-tt0088247} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv
+  Size: 39.43 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Life of Pi (2012)
+  File: Life.Of.Pi.2012.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Size: 46.66 GB
+  Quality Score: 2240
+  Reason: Only Ali has this file
+
+Title: The Ten Commandments (1956)
+  File: The.Ten.Commandments.1956.UHD.BluRay.2160p.DTS-HD.MA.5.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  Size: 86.98 GB
+  Quality Score: 2390
+  Reason: Only Ali has this file
+
+Title: The Godfather (1972)
+  File: The Godfather (1972) {imdb-tt0068646} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv
+  Size: 56.76 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Cars 3 (2017)
+  File: Cars 3 (2017) {imdb-tt3606752} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv
+  Size: 22.96 GB
+  Quality Score: 2350
+  Reason: Only Ali has this file
+
+Title: Warfare (2025)
+  File: Warfare (2025) {imdb-tt31434639} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-MainFrame.mkv
+  Size: 24.38 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: TRON Legacy (2010)
+  File: TRON Legacy (2010) {imdb-tt1104001} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv
+  Size: 36.31 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Pacific Rim Uprising (2018)
+  File: Pacific Rim Uprising (2018) {imdb-tt2557478} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 30.31 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Brotherhood of the Wolf (2001)
+  File: Brotherhood of the Wolf (2001) {imdb-tt0237534} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 48.64 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Kingdom of the Planet of the Apes (2024)
+  File: Kingdom of the Planet of the Apes (2024) {imdb-tt11389872} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 27.73 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: The Godfather Part III (1990)
+  File: The Godfather Part III (1990) {imdb-tt0099674} - {edition-Directors Cut} [Bluray-2160p][TrueHD 5.1][DV HDR10][x265]-SPHD.mkv
+  Size: 45.86 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+Title: Frankenstein (2025)
+  File: Frankenstein (2025) {imdb-tt1312221} - [NF][WEBDL-2160p][EAC3 Atmos 5.1][DV HDR10][h265]-Kitsune.mkv
+  Size: 21.18 GB
+  Quality Score: 2030
+  Reason: Only Ali has this file
+
+Title: Wonder Woman (2017)
+  File: Wonder Woman (2017) {imdb-tt0451279} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 34.62 GB
+  Quality Score: 2330
+  Reason: Ali has additional version (lower quality: 2330 vs 2330)
+
+Title: The Spy Who Loved Me (1977)
+  File: The.Spy.Who.Loved.Me.1977.INTERNAL.2160p.WEB.H265-DEFLATE.mkv
+  Size: 17.41 GB
+  Quality Score: 1000
+  Reason: Only Ali has this file
+
+Title: Eternals (2021)
+  File: Eternals.2021.2160p.UHD.BluRay.ATMOS.DV.x265-W4NK3R.mkv
+  Size: 27.15 GB
+  Quality Score: 1950
+  Reason: Only Ali has this file
+
+Title: The Greatest Showman (2017)
+  File: The Greatest Showman (2017) {imdb-tt1485796} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 31.93 GB
+  Quality Score: 2330
+  Reason: Only Ali has this file
+
+================================================================================
+FILES TO COPY TO ALI (13)
+================================================================================
+
+Title: Independence Day (1996)
+  File: Independence Day (1996) Remux-2160p Proper.mkv
+  Size: 43.31 GB
+  Quality Score: 2000
+  Reason: Only Chris has this file
+
+Title: Doctor Strange (2016)
+  File: Doctor Strange (2016) Remux-2160p.mkv
+  Size: 45.57 GB
+  Quality Score: 2150
+  Reason: Only Chris has this file
+
+Title: The Outfit (2022)
+  File: The Outfit (2022) WEBDL-2160p.mkv
+  Size: 11.00 GB
+  Quality Score: 1600
+  Reason: Only Chris has this file
+
+Title: Ghostbusters Afterlife (2021)
+  File: Ghostbusters Afterlife (2021) WEBDL-2160p.mkv
+  Size: 13.09 GB
+  Quality Score: 1600
+  Reason: Only Chris has this file
+
+Title: Oblivion (2013)
+  File: Oblivion (2013) Remux-2160p.mkv
+  Size: 52.38 GB
+  Quality Score: 2000
+  Reason: Only Chris has this file
+
+Title: Alien (1979)
+  File: Alien.1979.DC.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Size: 23.23 GB
+  Quality Score: 1800
+  Reason: Chris has additional version (lower quality: 1800 vs 2340)
+
+Title: Pirates of the Caribbean The Curse of the Black Pearl (2003)
+  File: Pirates of the Caribbean The Curse of the Black Pearl (2003) WEBRip-2160p.mkv
+  Size: 19.35 GB
+  Quality Score: 1500
+  Reason: Only Chris has this file
+
+Title: Prey (2022)
+  File: Prey (2022) WEBDL-2160p.mkv
+  Size: 14.25 GB
+  Quality Score: 1600
+  Reason: Only Chris has this file
+
+Title: Jurassic World Dominion (2022)
+  File: Jurassic World Dominion (2022) WEBDL-2160p.mkv
+  Size: 25.91 GB
+  Quality Score: 1750
+  Reason: Only Chris has this file
+
+Title: Doctor Strange in the Multiverse of Madness (2022)
+  File: Doctor Strange in the Multiverse of Madness (2022) WEBDL-2160p.mkv
+  Size: 22.00 GB
+  Quality Score: 1750
+  Reason: Only Chris has this file
+
+Title: Master and Commander The Far Side of the World (2003)
+  File: Master and Commander The Far Side of the World (2003) Remux-1080p.mkv
+  Size: 31.57 GB
+  Quality Score: 1500
+  Reason: Chris has additional version (lower quality: 1500 vs 2330)
+
+Title: Wonder Woman 1984 (2020)
+  File: Wonder.Woman.1984.2020.2160p.HMAX.WEB-DL.DDP5.1.Atmos.HDR.HEVC-TOMMY.mkv
+  Size: 19.73 GB
+  Quality Score: 1950
+  Reason: Chris has additional version (lower quality: 1950 vs 2300)
+
+Title: Resident Evil Welcome to Raccoon City (2021)
+  File: Resident Evil Welcome to Raccoon City (2021) WEBDL-2160p.mkv
+  Size: 11.42 GB
+  Quality Score: 1600
+  Reason: Only Chris has this file
+
