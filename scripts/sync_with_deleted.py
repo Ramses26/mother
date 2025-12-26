@@ -4,18 +4,13 @@ Intelligent Sync Script - WITH DELETED FOLDER PROTECTION
 
 Purpose: Sync media and upgrade quality, moving replaced files to Deleted folder
 
-Logic:
-1. Different resolutions = different libraries (both kept)
-   - Ali's Avatar 1080p in /Movies/ + Chris's Avatar 2160p in /4K Movies/ = BOTH KEPT
-   
-2. Same resolution, better quality = UPGRADE with protection
-   - Ali's Avatar 1080p BluRay (score 1500) in /Movies/
-   - Chris's Avatar 1080p Remux (score 1800) in /Movies/
-   - Result: Move Ali's to /Deleted/Movies/, copy Chris's better version
-
-3. Deleted folders for manual review:
-   - Ali: \\media\Deleted\Movies, \Deleted\4kMovies, \Deleted\tvshows, \Deleted\4ktvshows
-   - Chris: Similar structure on Synology
+Paths updated for actual Mother server NFS mounts:
+- HD Movies:  /mnt/synology/rs-movies (10.0.0.160)
+- HD TV:      /mnt/synology/rs-tv (10.0.0.88)
+- 4K Movies:  /mnt/synology/rs-4kmedia/4kmovies (10.0.1.203)
+- 4K TV:      /mnt/synology/rs-4kmedia/4ktv (10.0.1.203)
+- Deleted:    /mnt/synology/rs-4kmedia/deleted (10.0.1.203) ← FIXED: lowercase!
+- Ali Unraid: /mnt/unraid/media (192.168.1.10)
 
 Author: Project Mother
 Last Updated: 2024-12-26
@@ -31,37 +26,37 @@ from datetime import datetime
 from typing import List, Dict, Optional
 
 ###############################################################################
-# Configuration
+# Configuration - ACTUAL PATHS FROM MOTHER SERVER
 ###############################################################################
 
-# Deleted folder paths
+# Deleted folder paths - ALL on 10.0.1.203 (most space: 184TB free)
 DELETED_FOLDERS = {
     # Ali's Unraid
-    'ali_movies': '/mnt/media/Deleted/Movies',
-    'ali_4kmovies': '/mnt/media/Deleted/4kMovies',
-    'ali_tv': '/mnt/media/Deleted/tvshows',
-    'ali_4ktv': '/mnt/media/Deleted/4ktvshows',
+    'ali_movies': '/mnt/unraid/media/Deleted/Movies',
+    'ali_4kmovies': '/mnt/unraid/media/Deleted/4kMovies',
+    'ali_tv': '/mnt/unraid/media/Deleted/tvshows',
+    'ali_4ktv': '/mnt/unraid/media/Deleted/4ktvshows',
     
-    # Chris's Synology  
-    'chris_movies': '/mnt/synology/Deleted/Movies',
-    'chris_4kmovies': '/mnt/synology/Deleted/4kMovies',
-    'chris_tv': '/mnt/synology/Deleted/tvshows',
-    'chris_4ktv': '/mnt/synology/Deleted/4ktvshows',
+    # Chris's Synology - ALL centralized on 10.0.1.203 (FIXED: lowercase!)
+    'chris_movies': '/mnt/synology/rs-4kmedia/deleted/movies',
+    'chris_4kmovies': '/mnt/synology/rs-4kmedia/deleted/4kmovies',
+    'chris_tv': '/mnt/synology/rs-4kmedia/deleted/tvshows',
+    'chris_4ktv': '/mnt/synology/rs-4kmedia/deleted/4ktv',
 }
 
-# Destination folders
+# Destination folders - ACTUAL NFS MOUNT PATHS
 DESTINATIONS = {
-    # Ali's Unraid
-    'ali_movies': '/mnt/media/Movies',
-    'ali_4kmovies': '/mnt/media/4K Movies',
-    'ali_tv': '/mnt/media/TV Shows',
-    'ali_4ktv': '/mnt/media/4K TV Shows',
+    # Ali's Unraid (via VPN)
+    'ali_movies': '/mnt/unraid/media/Movies',
+    'ali_4kmovies': '/mnt/unraid/media/4K Movies',
+    'ali_tv': '/mnt/unraid/media/TV Shows',
+    'ali_4ktv': '/mnt/unraid/media/4K TV Shows',
     
-    # Chris's Synology
-    'chris_movies': '/mnt/synology/rs-movies',
-    'chris_4kmovies': '/mnt/synology/rs-4kmedia/4kmovies',
-    'chris_tv': '/mnt/synology/rs-tv',
-    'chris_4ktv': '/mnt/synology/rs-4kmedia/4ktv',
+    # Chris's Synology - ACTUAL MOUNT POINTS
+    'chris_movies': '/mnt/synology/rs-movies',              # 10.0.0.160
+    'chris_4kmovies': '/mnt/synology/rs-4kmedia/4kmovies',  # 10.0.1.203
+    'chris_tv': '/mnt/synology/rs-tv',                      # 10.0.0.88
+    'chris_4ktv': '/mnt/synology/rs-4kmedia/4ktv',          # 10.0.1.203
 }
 
 ###############################################################################
@@ -377,18 +372,28 @@ Examples:
     -t movies \\
     -d "Chris → Ali"
 
+Actual Mount Paths on Mother Server:
+  HD Movies:  /mnt/synology/rs-movies (10.0.0.160)
+  HD TV:      /mnt/synology/rs-tv (10.0.0.88)
+  4K Movies:  /mnt/synology/rs-4kmedia/4kmovies (10.0.1.203)
+  4K TV:      /mnt/synology/rs-4kmedia/4ktv (10.0.1.203)
+  Deleted:    /mnt/synology/rs-4kmedia/deleted (10.0.1.203 - lowercase!)
+  Ali Unraid: /mnt/unraid/media (192.168.1.10)
+
 Deleted Folder Structure:
-  Ali's Unraid:
-    - /mnt/media/Deleted/Movies
-    - /mnt/media/Deleted/4kMovies
-    - /mnt/media/Deleted/tvshows
-    - /mnt/media/Deleted/4ktvshows
+  All Chris's deleted files centralized on 10.0.1.203 (184TB free):
+    /mnt/synology/rs-4kmedia/deleted/
+    ├── movies/      ← Replaced HD movies (from 10.0.0.160)
+    ├── 4kmovies/    ← Replaced 4K movies (from 10.0.1.203)
+    ├── tvshows/     ← Replaced HD TV (from 10.0.0.88)
+    └── 4ktv/        ← Replaced 4K TV (from 10.0.1.203) - FIXED!
   
-  Chris's Synology:
-    - /mnt/synology/Deleted/Movies
-    - /mnt/synology/Deleted/4kMovies
-    - /mnt/synology/Deleted/tvshows
-    - /mnt/synology/Deleted/4ktvshows
+  Ali's deleted files on Unraid:
+    /mnt/unraid/media/Deleted/
+    ├── Movies/
+    ├── 4kMovies/
+    ├── tvshows/
+    └── 4ktvshows/
 
 How It Works:
   1. New files → Just copy to destination
