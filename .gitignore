@@ -13,6 +13,9 @@ configs/*/*.db-shm
 configs/*/*.db-wal
 configs/
 
+# EXCEPTION: Allow recyclarr config (no sensitive data)
+!configs/recyclarr/
+!configs/recyclarr/**
 
 # Logs
 *.log
