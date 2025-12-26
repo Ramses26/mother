@@ -236,19 +236,67 @@
   - [ ] Configure access policies for each service
   - [ ] Test authentication flow
 
-### Phase 6: Automation & Cleanup
-- [ ] **Torrent Cleanup Script**
-  - [ ] Write script to identify torrents >90 days old
-  - [ ] Implement safe deletion (verify not actively seeding)
-  - [ ] Add logging and notifications
-  - [ ] Set up cron job for daily execution
-  - [ ] Test with sample data
-  - [ ] Monitor for 2 weeks before trusting fully
+### Phase 6: Advanced Torrent Management
+**Reference:** `docs/CROSS_SEED_QBIT_MANAGE.md` (Complete setup guide)
 
-- [ ] **Cross-seed Automation**
-  - [ ] Configure automated cross-seed scanning
-  - [ ] Set up notification for successful cross-seeds
-  - [ ] Monitor ratio and seeding stats
+- [ ] **cross-seed Setup (Hardlink-based Cross-Seeding)**
+  - [ ] Review CROSS_SEED_QBIT_MANAGE.md documentation
+  - [ ] Verify cross-seed container running (already deployed)
+  - [ ] Create config.js with Prowlarr/qBittorrent connection
+  - [ ] Configure hardlink settings (linkType: "hardlink")
+  - [ ] Set up linkDirs and dataDirs (MUST be same Docker volume!)
+  - [ ] Configure matching mode (partial for renamed media)
+  - [ ] Set search cadence (24h recommended)
+  - [ ] Test Prowlarr connection
+  - [ ] Test qBittorrent connection
+  - [ ] Run manual search: `docker exec cross-seed cross-seed search`
+  - [ ] Verify hardlinks created (check inode numbers: `ls -lhi`)
+  - [ ] Verify torrents added to qBittorrent with cross-seed tag
+  - [ ] Monitor for 1 week to ensure working correctly
+  - [ ] Document any tracker-specific issues
+
+- [ ] **qbit-manage Setup (120-Day Automated Removal)**
+  - [ ] Review CROSS_SEED_QBIT_MANAGE.md documentation
+  - [ ] Add qbit-manage to docker-compose.yml
+  - [ ] Create config.yml with qBittorrent connection
+  - [ ] Configure categories and tracker tags
+  - [ ] Enable hardlink detection (nohardlinks section)
+  - [ ] Configure share limits:
+    - [ ] Movies with hardlinks: 120 days (10,368,000 seconds)
+    - [ ] Movies without hardlinks: 30 days (2,592,000 seconds)
+    - [ ] TV with hardlinks: 120 days
+    - [ ] TV without hardlinks: 30 days
+    - [ ] Cross-seeds: 60 days (5,184,000 seconds)
+  - [ ] Enable RecycleBin (30 day retention)
+  - [ ] Set QBT_DRY_RUN=true (CRITICAL: Test first!)
+  - [ ] Deploy container
+  - [ ] Review dry run logs thoroughly
+  - [ ] Verify hardlink detection working correctly
+  - [ ] Verify it's not planning to delete anything important
+  - [ ] Test RecycleBin functionality
+  - [ ] Set QBT_DRY_RUN=false (after thorough testing)
+  - [ ] Monitor closely for 2 weeks
+  - [ ] Check RecycleBin regularly
+  - [ ] Verify media files NOT being deleted (only torrents)
+  - [ ] Document any issues or edge cases
+
+- [ ] **Integration Verification**
+  - [ ] Download test movie via Radarr
+  - [ ] Verify imported to /movies/ (hardlink created)
+  - [ ] Wait for cross-seed to find it (may take up to 24h)
+  - [ ] Verify cross-seed creates hardlink (not copy!)
+  - [ ] Check disk space: `du -sh /downloads/` vs `du -sh /movies/`
+  - [ ] Verify qbit-manage detects hardlink
+  - [ ] Confirm torrent NOT tagged as "noHL"
+  - [ ] Test manual torrent removal (verify file remains)
+  - [ ] Monitor ratio improvements across multiple trackers
+
+- [ ] **Benefits Verification**
+  - [ ] Calculate disk space savings from hardlinks
+  - [ ] Monitor ratio improvements (expect 2-3x from cross-seeds)
+  - [ ] Verify 120-day cleanup working as expected
+  - [ ] Confirm no important files deleted
+  - [ ] Document actual vs expected performance
 
 ### Phase 7: Data Synchronization
 - [ ] **Initial Sync Strategy**
@@ -437,9 +485,12 @@
 - **2024-12-23:** Quality profiles - Ali's TRASHGuides preferences are standard
 - **2024-12-23:** Sync direction - One-way from Chris's Synology to Ali's Unraid
 - **2024-12-23:** Private trackers - Switch to Chris's IP (74.83.151.194)
+- **2024-12-25:** HDR Priority - HDR10 (300pts) > DV HDR10 (280pts) > HDR (250pts) > DV (150pts) > HDR10+ (100pts)
+- **2024-12-25:** Indexer Choice - Prowlarr (modern, auto-sync to all *arr apps)
+- **2024-12-25:** Cross-Seeding - Use cross-seed with hardlinks (zero disk space overhead)
+- **2024-12-25:** Torrent Management - Use qbit-manage for automated 120-day removal with hardlink protection
 
 ### Questions for Later
-- Jackett vs Prowlarr - needs evaluation
 - Authelia vs Authentik - needs evaluation
 - Syncthing vs rclone - needs evaluation
 - Final Mother IP address - needs assignment
