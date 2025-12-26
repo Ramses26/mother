@@ -11,11 +11,10 @@ configs/*/settings.json
 configs/*/*.db
 configs/*/*.db-shm
 configs/*/*.db-wal
-configs/
 
-# EXCEPTION: Allow recyclarr config (no sensitive data)
+# Ignore all configs EXCEPT recyclarr
+configs/*
 !configs/recyclarr/
-!configs/recyclarr/**
 
 # Logs
 *.log
