@@ -1,0 +1,17 @@
+# Recyclarr Docker Runtime Files - DO NOT COMMIT
+
+# Docker-generated directories
+cache/
+configs/
+includes/
+logs/
+repos/
+
+# Recyclarr runtime files
+settings.yml
+*.log
+
+# Keep our config files
+!recyclarr.yml
+!.env.example
+!*.md
