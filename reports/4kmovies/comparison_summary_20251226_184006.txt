@@ -1,0 +1,2284 @@
+================================================================================
+MEDIA LIBRARY COMPARISON REPORT
+================================================================================
+
+Generated: 2025-12-26 18:40:06
+
+STATISTICS
+--------------------------------------------------------------------------------
+Total titles compared: 357
+Ali only: 195
+Chris only: 128
+Ali has better version: 0
+Chris has better version: 0
+Equal quality: 34
+
+================================================================================
+FILES TO COPY TO CHRIS (195)
+================================================================================
+
+Title: 300 framestor mkv
+  File: 300 (2006) {imdb-tt0416449} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 52.82 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: a beautiful planet framestor mkv
+  File: A Beautiful Planet (2016) {imdb-tt2800050} [Remux-2160p][HDR10Plus][DTS-X 7.1][HEVC]-FraMeSToR.mkv
+  Size: 17.33 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: a space odyssey framestor mkv
+  File: 2001 A Space Odyssey (1968) {imdb-tt0062622} [Remux-2160p Proper][DV HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 72.05 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: ad astra keyblade mkv
+  File: Ad Astra (2019) {imdb-tt2935510} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-KeYBLaDE.mkv
+  Size: 25.93 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: alien framestor mkv
+  File: Alien (1979) {imdb-tt0078748} {edition-Theatrical Cut} [Remux-2160p][HDR10Plus][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 44.29 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: alien romulus w4nk3r mkv
+  File: Alien Romulus (2024) {imdb-tt18412256} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 29.16 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: apocalypse now w4nk3r mkv
+  File: Apocalypse Now (1979) {imdb-tt0078788} {edition-Theatrical Cut} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 37.35 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: apollo 13 p x 7 1 framestor scrambled mkv
+  File: Apollo.13.1995.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR-Scrambled.mkv
+  Size: 44.12 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: army of the dead sic mkv
+  File: Army of the Dead (2021) {imdb-tt0993840} [NF][WEBDL-2160p][DV HDR10][EAC3 Atmos 5.1][HEVC]-SiC.mkv
+  Size: 16.05 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: avatar the way of water w4nk3r mkv
+  File: Avatar The Way of Water (2022) {imdb-tt1630029} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 54.67 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: avengers age of ultron framestor mkv
+  File: Avengers Age of Ultron (2015) {imdb-tt2395427} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 49.32 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: avengers endgame framestor mkv
+  File: Avengers Endgame (2019) {imdb-tt4154796} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 53.90 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: avengers infinity war framestor mkv
+  File: Avengers Infinity War (2018) {imdb-tt4154756} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 54.94 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: batman begins framestor mkv
+  File: Batman Begins (2005) {imdb-tt0372784} [Hybrid][Remux-2160p][DV HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 56.49 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: black adam p dovi 7 1 sphd mkv
+  File: Black Adam.2022.2160p.UHD.BluRay.HDR.DoVi.TrueHD 7.1.Atmos.x265-SPHD.mkv
+  Size: 31.24 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: black panther wakanda forever w4nk3r mkv
+  File: Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 31.16 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: black widow w4nk3r mkv
+  File: Black Widow (2021) {imdb-tt3480822} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 26.99 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: blade ii flux mkv
+  File: Blade II (2002) {imdb-tt0187738} [WEBDL-2160p][DV HDR10][DTS-HD MA 7.1][h265]-FLUX.mkv
+  Size: 21.99 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: blade mainframe mkv
+  File: Blade (1998) {imdb-tt0120611} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 33.06 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: blade runner framestor mkv
+  File: Blade Runner (1982) {imdb-tt0083658} {edition-Final Cut} [Remux-2160p][HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 45.76 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: blade runner p 7 1 hybrid framestor mkv
+  File: Blade.Runner.2049.2017.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.HYBRID.REMUX-FraMeSToR.mkv
+  Size: 73.33 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: bohemian rhapsody w4nk3r mkv
+  File: Bohemian Rhapsody (2018) {imdb-tt1727824} [Bluray-2160p][HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 26.35 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: bram stokers dracula framestor mkv
+  File: Bram Stokers Dracula (1992) {imdb-tt0103874} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 61.28 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: braveheart mainframe mkv
+  File: Braveheart (1995) {imdb-tt0112573} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 64.03 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: brotherhood of the wolf sphd mkv
+  File: Brotherhood of the Wolf (2001) {imdb-tt0237534} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 48.64 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: captain america brave new world mainframe mkv
+  File: Captain America Brave New World (2025) {imdb-tt14513804} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 20.78 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: captain america civil war p w4nk3r mkv
+  File: Captain.America.Civil.War.2016.2160p.UHD.BluRay.ATMOS.HDR.x265-W4NK3R.mkv
+  Size: 28.74 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: captain america the first avenger keyblade mkv
+  File: Captain America The First Avenger (2011) {imdb-tt0458339} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-KeYBLaDE.mkv
+  Size: 24.25 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: captain america the winter soldier w4nk3r mkv
+  File: Captain America The Winter Soldier (2014) {imdb-tt1843866} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 24.77 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: captain marvel w4nk3r mkv
+  File: Captain Marvel (2019) {imdb-tt4154664} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 25.46 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: cars 2 ctrlhd mkv
+  File: Cars 2 (2011) {imdb-tt1216475} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv
+  Size: 21.15 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: cars 3 ctrlhd mkv
+  File: Cars 3 (2017) {imdb-tt3606752} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv
+  Size: 22.96 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: cars p 7 1 ctrlhd mkv
+  File: Cars.2006.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Size: 24.69 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: civil war mainframe mkv
+  File: Civil War (2024) {imdb-tt17279496} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 22.60 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: close encounters of the third kind bhdstudio mp4
+  File: Close Encounters of the Third Kind (1977) {imdb-tt0075860} {edition-Directors Cut} [Bluray-2160p][DV HDR10][AC3 5.1][x265]-BHDStudio.mp4
+  Size: 15.98 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: coco framestor mkv
+  File: Coco (2017) {imdb-tt2380307} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 40.57 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: constantine mainframe mkv
+  File: Constantine (2005) {imdb-tt0360486} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 33.46 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: dawn of the planet of the apes hallowed mkv
+  File: Dawn of the Planet of the Apes (2014) {imdb-tt2103281} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+  Size: 15.36 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: deadpool 2 mainframe mkv
+  File: Deadpool 2 (2018) {imdb-tt5463162} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 29.62 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: deadpool and wolverine w4nk3r mkv
+  File: Deadpool and Wolverine (2024) {imdb-tt6263850} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 26.48 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: deadpool sev mkv
+  File: Deadpool (2016) {imdb-tt1431045} [Hybrid][Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SEV.mkv
+  Size: 22.42 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: dune w4nk3r mkv
+  File: Dune (2021) {imdb-tt1160419} [Bluray-2160p Proper][DV HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 43.40 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: dunkirk w4nk3r mkv
+  File: Dunkirk (2017) {imdb-tt5013056} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-W4NK3R.mkv
+  Size: 19.98 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: e t the extra terrestrial ctrlhd mkv
+  File: E.T. the Extra-Terrestrial (1982) {imdb-tt0083866} [Bluray-2160p][HDR10][DTS-X 7.1][x265]-CtrlHD.mkv
+  Size: 38.81 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: earth one amazing day framestor mkv
+  File: Earth One Amazing Day (2017) {imdb-tt6238896} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 48.74 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: edge of tomorrow sphd mkv
+  File: Edge of Tomorrow (2014) {imdb-tt1631867} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 36.83 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: eternals p w4nk3r mkv
+  File: Eternals.2021.2160p.UHD.BluRay.ATMOS.DV.x265-W4NK3R.mkv
+  Size: 27.15 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: extraction 2 hone mkv
+  File: Extraction 2 (2023) {imdb-tt12263384} [NF][WEBDL-2160p][DV HDR10][EAC3 Atmos 5.1][h265]-HONE.mkv
+  Size: 17.09 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: extraction sic mkv
+  File: Extraction (2020) {imdb-tt8936646} [NF][WEBDL-2160p][DV HDR10][EAC3 Atmos 5.1][HEVC]-SiC.mkv
+  Size: 13.09 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: fast and furious 6 ctrlhd mkv
+  File: Fast and Furious 6 (2013) {imdb-tt1905041} {edition-Extended} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv
+  Size: 28.75 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: forrest gump w4nk3r mkv
+  File: Forrest Gump (1994) {imdb-tt0109830} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 50.07 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: frankenstein kitsune mkv
+  File: Frankenstein (2025) {imdb-tt1312221} - [NF][WEBDL-2160p][EAC3 Atmos 5.1][DV HDR10][h265]-Kitsune.mkv
+  Size: 21.18 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: furiosa a mad max saga flux mkv
+  File: Furiosa A Mad Max Saga (2024) {imdb-tt12037194} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  Size: 15.13 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: furiosa a mad max saga mainframe mkv
+  File: Furiosa A Mad Max Saga (2024) {imdb-tt12037194} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 40.40 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: furious seven extended p hr 7 1 ctrlhd mkv
+  File: Furious.Seven.2015.Extended.2160p.UHD.BluRay.DTS-HD.HR.7.1.HDR.x265-CtrlHD.mkv
+  Size: 25.91 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: ghostbusters bluranium mkv
+  File: Ghostbusters (1984) {imdb-tt0087332} - [Remux-2160p Proper][TrueHD Atmos 7.1][DV HDR10][HEVC]-BLURANiUM.mkv
+  Size: 65.23 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: gladiator framestor mkv
+  File: Gladiator (2000) {imdb-tt0172495} {edition-Extended Cut} [Remux-2160p][DV HDR10][DTS-X 7.1][HEVC]-FraMeSToR.mkv
+  Size: 69.42 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: gladiator ii framestor mkv
+  File: Gladiator II (2024) {imdb-tt9218128} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 73.06 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: godzilla hqmux mkv
+  File: Godzilla (2014) {imdb-tt0831387} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+  Size: 44.77 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: godzilla minus one w4nk3r mkv
+  File: Godzilla Minus One (2023) {imdb-tt23289160} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 22.73 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: godzilla vs kong w4nk3r mkv
+  File: Godzilla vs. Kong (2021) {imdb-tt5034838} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 25.52 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: godzilla x kong the new empire mainframe mkv
+  File: Godzilla x Kong The New Empire (2024) {imdb-tt14539740} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 34.77 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: guardians of the galaxy sphd mkv
+  File: Guardians of the Galaxy (2014) {imdb-tt2015381} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 22.51 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: guardians of the galaxy vol 2 sphd mkv
+  File: Guardians of the Galaxy Vol. 2 (2017) {imdb-tt3896198} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 35.58 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: guardians of the galaxy vol 3 sphd mkv
+  File: Guardians of the Galaxy Vol. 3 (2023) {imdb-tt6791350} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv
+  Size: 34.70 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: hacksaw ridge mainframe mkv
+  File: Hacksaw Ridge (2016) {imdb-tt2119532} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 27.61 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: heat framestor mkv
+  File: Heat (1995) {imdb-tt0113277} [Remux-2160p][HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 54.69 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: inception mainframe mkv
+  File: Inception (2010) {imdb-tt1375666} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-MainFrame.mkv
+  Size: 35.33 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: indiana jones and the dial of destiny framestor mkv
+  File: Indiana Jones and the Dial of Destiny (2023) {imdb-tt1462764} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 71.85 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: indiana jones and the kingdom of the crystal skull w4nk3r mkv
+  File: Indiana Jones and the Kingdom of the Crystal Skull (2008) {imdb-tt0367882} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 32.87 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: indiana jones and the last crusade p 7 1 framestor mkv
+  File: Indiana.Jones.and.the.Last.Crusade.1989.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  Size: 51.61 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: indiana jones and the temple of doom w4nk3r mkv
+  File: Indiana Jones and the Temple of Doom (1984) {imdb-tt0087469} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 39.66 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: interstellar sphd mkv
+  File: Interstellar (2014) {imdb-tt0816692} {edition-Imax} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+  Size: 56.24 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: iron man 2 mainframe mkv
+  File: Iron Man 2 (2010) {imdb-tt1228705} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 24.31 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: iron man 3 mainframe mkv
+  File: Iron Man 3 (2013) {imdb-tt1300854} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 18.75 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: iron man mainframe mkv
+  File: Iron Man (2008) {imdb-tt0371746} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 25.92 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: jaws hqmux mkv
+  File: Jaws (1975) {imdb-tt0073195} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+  Size: 37.78 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: john wick chapter 2 sphd mkv
+  File: John Wick Chapter 2 (2017) {imdb-tt4425200} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 35.08 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: john wick sphd mkv
+  File: John Wick (2014) {imdb-tt2911666} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 40.61 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: joker mgb mkv
+  File: Joker (2019) {imdb-tt7286456} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-MgB.mkv
+  Size: 21.82 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: jungle cruise p 5 1 bhdstudio mp4
+  File: Jungle.Cruise.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Size: 14.64 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: jurassic park hidt mkv
+  File: Jurassic Park (1993) {imdb-tt0107290} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-HiDt.mkv
+  Size: 42.48 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: kingdom of heaven sphd mkv
+  File: Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Director's Cut} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 52.19 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: kingdom of the planet of the apes w4nk3r mkv
+  File: Kingdom of the Planet of the Apes (2024) {imdb-tt11389872} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 27.73 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: lawrence of arabia p 7 1 framestor mkv
+  File: Lawrence.of.Arabia.1962.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Size: 94.55 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: life of pi p ma 7 1 framestor mkv
+  File: Life.Of.Pi.2012.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Size: 46.66 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: logan ctrlhd mkv
+  File: Logan (2017) {imdb-tt3315342} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv
+  Size: 19.58 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: mad max fury road framestor mkv
+  File: Mad Max Fury Road (2015) {imdb-tt1392190} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 42.66 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: mission impossible fallout sphd mkv
+  File: Mission Impossible Fallout (2018) {imdb-tt4912910} {edition-Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 51.19 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: mission impossible ghost protocol hqmux mkv
+  File: Mission Impossible Ghost Protocol (2011) {imdb-tt1229238} [Bluray-2160p][HDR10][TrueHD 7.1][x265]-HQMUX.mkv
+  Size: 25.72 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: mission impossible ii p 5 1 sphd mkv
+  File: Mission.Impossible.II.2000.2160p.UHD.BluRay.HEVC.DV.TrueHD.5.1.x265-SPHD.mkv
+  Size: 29.31 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: mission impossible iii sphd mkv
+  File: Mission Impossible III (2006) {imdb-tt0317919} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv
+  Size: 29.20 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: mission impossible rogue nation hqmux mkv
+  File: Mission Impossible Rogue Nation (2015) {imdb-tt2381249} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+  Size: 24.98 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: mission impossible the final reckoning sphd mkv
+  File: Mission Impossible The Final Reckoning (2025) {imdb-tt9603208} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-SPHD.mkv
+  Size: 47.70 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: mortal kombat hqmux mkv
+  File: Mortal Kombat (2021) {imdb-tt0293429} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv
+  Size: 33.14 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: pacific rim mainframe mkv
+  File: Pacific Rim (2013) {imdb-tt1663662} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 17.21 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: pacific rim uprising w4nk3r mkv
+  File: Pacific Rim Uprising (2018) {imdb-tt2557478} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 30.31 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: passengers framestor mkv
+  File: Passengers (2016) {imdb-tt1355644} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 47.84 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: pitch black framestor mkv
+  File: Pitch Black (2000) {imdb-tt0134847} {edition-Director's Cut} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 48.27 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: pulp fiction w4nk3r mkv
+  File: Pulp Fiction (1994) {imdb-tt0110912} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-W4NK3R.mkv
+  Size: 32.31 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: raiders of the lost ark w4nk3r mkv
+  File: Raiders of the Lost Ark (1981) {imdb-tt0082971} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 36.91 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: red sparrow mainframe mkv
+  File: Red Sparrow (2018) {imdb-tt2873282} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 21.07 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: return of the jedi hidt mkv
+  File: Return of the Jedi (1983) {imdb-tt0086190} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv
+  Size: 29.75 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: rise of the planet of the apes hone mkv
+  File: Rise of the Planet of the Apes (2011) {imdb-tt1318514} [Bluray-2160p][DV HDR10][EAC3 5.1][x265]-HONE.mkv
+  Size: 18.08 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: rocketman hone mkv
+  File: Rocketman (2019) {imdb-tt2066051} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv
+  Size: 15.36 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: saving private ryan hqmux mkv
+  File: Saving Private Ryan (1998) {imdb-tt0120815} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+  Size: 42.61 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: shazam! fury of the gods w4nk3r mkv
+  File: Shazam! Fury of the Gods (2023) {imdb-tt10151854} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 37.69 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: solo a star wars story hidt mkv
+  File: Solo A Star Wars Story (2018) {imdb-tt3778644} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv
+  Size: 31.45 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: spider man far from home w4nk3r mkv
+  File: Spider-Man Far From Home (2019) {imdb-tt6320628} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 18.91 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: spider man homecoming w4nk3r mkv
+  File: Spider-Man Homecoming (2017) {imdb-tt2250912} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 25.32 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: spider man no way home w4nk3r mkv
+  File: Spider-Man No Way Home (2021) {imdb-tt10872600} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 22.66 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek beyond sphd mkv
+  File: Star Trek Beyond (2016) {imdb-tt2660888} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 38.17 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek ctrlhd mkv
+  File: Star Trek (2009) {imdb-tt0796366} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv
+  Size: 43.37 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek first contact sphd mkv
+  File: Star Trek First Contact (1996) {imdb-tt0117731} [Bluray-2160p][DV HDR10][TrueHD 7.1][x265]-SPHD.mkv
+  Size: 32.77 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek generations sphd mkv
+  File: Star Trek Generations (1994) {imdb-tt0111280} [Bluray-2160p][DV HDR10][TrueHD 7.1][x265]-SPHD.mkv
+  Size: 27.43 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek ii the wrath of khan hallowed mkv
+  File: Star Trek II The Wrath of Khan (1982) {imdb-tt0084726} {edition-Theatrical Cut} [Bluray-2160p Proper][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+  Size: 14.90 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek iii the search for spock hallowed mkv
+  File: Star Trek III The Search for Spock (1984) {imdb-tt0088170} [Bluray-2160p Proper][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+  Size: 13.88 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek insurrection sphd mkv
+  File: Star Trek Insurrection (1998) {imdb-tt0120844} [Bluray-2160p][DV HDR10][TrueHD 7.1][x265]-SPHD.mkv
+  Size: 28.43 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek into darkness flights mkv
+  File: Star Trek Into Darkness (2013) {imdb-tt1408101} {edition-Imax} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-Flights.mkv
+  Size: 49.77 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek iv the voyage home hallowed mkv
+  File: Star Trek IV The Voyage Home (1986) {imdb-tt0092007} [Bluray-2160p Proper][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+  Size: 15.68 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek nemesis sphd mkv
+  File: Star Trek Nemesis (2002) {imdb-tt0253754} [Bluray-2160p][DV HDR10][TrueHD 7.1][x265]-SPHD.mkv
+  Size: 29.03 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek the motion picture vd0n mkv
+  File: Star Trek The Motion Picture (1979) {imdb-tt0079945} [Bluray-2160p][DV][TrueHD Atmos 7.1][x265]-VD0N.mkv
+  Size: 42.69 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek v the final frontier hallowed mkv
+  File: Star Trek V The Final Frontier (1989) {imdb-tt0098382} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+  Size: 14.04 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star trek vi the undiscovered country hallowed mkv
+  File: Star Trek VI The Undiscovered Country (1991) {imdb-tt0102975} {edition-Theatrical Cut} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+  Size: 14.53 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: star wars hidt mkv
+  File: Star Wars (1977) {imdb-tt0076759} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv
+  Size: 28.49 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: superman sphd mkv
+  File: Superman (2025) {imdb-tt5950044} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-SPHD.mkv
+  Size: 43.47 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: tenet sphd mkv
+  File: Tenet (2020) {imdb-tt6723592} {edition-Imax} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+  Size: 44.98 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: terminator 2 judgment day framestor mkv
+  File: Terminator 2 Judgment Day (1991) {imdb-tt0103064} {edition-Theatrical Cut} [Remux-2160p][PQ][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 49.01 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: terminator 2 judgment day remastered theatrical cut ger p blu ray ma 5 1 bludragon mkv
+  File: Terminator 2 Judgment Day 1991 Remastered Theatrical Cut GER 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+  Size: 48.96 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the avengers framestor mkv
+  File: The Avengers (2012) {imdb-tt0848228} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 50.06 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the batman mainframe mkv
+  File: The Batman (2022) {imdb-tt1877830} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 35.80 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the dark knight framestor mkv
+  File: The Dark Knight (2008) {imdb-tt0468569} [Hybrid][Remux-2160p][DV HDR10][TrueHD 5.1][HEVC]-FraMeSToR.mkv
+  Size: 53.75 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the dark knight rises framestor mkv
+  File: The Dark Knight Rises (2012) {imdb-tt1345836} [Hybrid][Remux-2160p][DV HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 69.98 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the empire strikes back hqmux mkv
+  File: The Empire Strikes Back (1980) {imdb-tt0080684} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+  Size: 27.57 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the fantastic 4 first steps spx mkv
+  File: The Fantastic 4 First Steps (2025) {imdb-tt10676052} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPx.mkv
+  Size: 22.44 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the fifth element w4nk3r mkv
+  File: The Fifth Element (1997) {imdb-tt0119116} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 56.64 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the godfather part ii sphd mkv
+  File: The Godfather Part II (1974) {imdb-tt0071562} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv
+  Size: 62.34 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the godfather part iii sphd mkv
+  File: The Godfather Part III (1990) {imdb-tt0099674} - {edition-Directors Cut} [Bluray-2160p][TrueHD 5.1][DV HDR10][x265]-SPHD.mkv
+  Size: 45.86 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the godfather sphd mkv
+  File: The Godfather (1972) {imdb-tt0068646} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv
+  Size: 56.76 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the greatest showman sphd mkv
+  File: The Greatest Showman (2017) {imdb-tt1485796} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 31.93 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the hunger games catching fire mainframe mkv
+  File: The Hunger Games Catching Fire (2013) {imdb-tt1951264} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 37.53 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the hunger games mainframe mkv
+  File: The Hunger Games (2012) {imdb-tt1392170} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 36.40 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the hunger games mockingjay part 1 mainframe mkv
+  File: The Hunger Games Mockingjay Part 1 (2014) {imdb-tt1951265} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 22.41 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the hunger games mockingjay part 2 mainframe mkv
+  File: The Hunger Games Mockingjay Part 2 (2015) {imdb-tt1951266} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 26.62 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the hunt for red october w4nk3r mkv
+  File: The Hunt for Red October (1990) {imdb-tt0099810} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-W4NK3R.mkv
+  Size: 34.40 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the lion king bhdstudio mp4
+  File: The Lion King (2019) {imdb-tt6105098} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-BHDStudio.mp4
+  Size: 13.86 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the lion king mainframe mkv
+  File: The Lion King (1994) {imdb-tt0110357} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 19.02 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the lord of the rings the fellowship of the ring extended p 7 1 framestor mkv
+  File: The.Lord.of.the.Rings.The.Fellowship.of.the.Ring.2001.Extended.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  Size: 117.37 GB
+  Quality Score: 1
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the lord of the rings the return of the king framestor mkv
+  File: The Lord of the Rings The Return of the King (2003) {imdb-tt0167260} {edition-Extended} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 131.43 GB
+  Quality Score: 1
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the lord of the rings the two towers extended p 7 1 framestor mkv
+  File: The.Lord.of.the.Rings.The.Two.Towers.2002.Extended.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  Size: 112.30 GB
+  Quality Score: 1
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the lost world jurassic park hidt mkv
+  File: The Lost World Jurassic Park (1997) {imdb-tt0119567} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-HiDt.mkv
+  Size: 32.99 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the martian ctrlhd mkv
+  File: The Martian (2015) {imdb-tt3659388} {edition-Extended Cut} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv
+  Size: 33.54 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the matrix reloaded w4nk3r mkv
+  File: The Matrix Reloaded (2003) {imdb-tt0234215} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 42.28 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the matrix resurrections w4nk3r mkv
+  File: The Matrix Resurrections (2021) {imdb-tt10838180} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 47.55 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the matrix revolutions p 7 1 w4nk3r mkv
+  File: The.Matrix.Revolutions.2003.2160p.UHD.BluRay.TrueHD.7.1.DV.x265-W4NK3R.mkv
+  Size: 38.35 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the matrix w4nk3r mkv
+  File: The Matrix (1999) {imdb-tt0133093} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 40.09 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the mummy returns ctrlhd mkv
+  File: The Mummy Returns (2001) {imdb-tt0209163} [Bluray-2160p][HDR10][DTS-X 7.1][x265]-CtrlHD.mkv
+  Size: 45.57 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the northman sphd mkv
+  File: The Northman (2022) {imdb-tt11138512} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 40.23 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the phantom of the opera framestor mkv
+  File: The Phantom of the Opera (2004) {imdb-tt0293508} [Remux-2160p][HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 38.66 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the predator framestor mkv
+  File: The Predator (2018) {imdb-tt3829266} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Size: 48.58 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the revenant benflix mkv
+  File: The Revenant (2015) {imdb-tt1663202} {edition-Open Matte} [Remux-2160p][DV HDR10Plus][TrueHD Atmos 7.1][h265]-Benflix.mkv
+  Size: 69.33 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the shawshank redemption hallowed mkv
+  File: The Shawshank Redemption (1994) {imdb-tt0111161} [Bluray-2160p][DV HDR10][EAC3 5.1][x265]-hallowed.mkv
+  Size: 16.70 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the spy who loved me internal p web h265 deflate mkv
+  File: The.Spy.Who.Loved.Me.1977.INTERNAL.2160p.WEB.H265-DEFLATE.mkv
+  Size: 17.41 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the suicide squad w4nk3r mkv
+  File: The Suicide Squad (2021) {imdb-tt6334354} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 32.60 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the super mario bros movie w4nk3r mkv
+  File: The Super Mario Bros. Movie (2023) {imdb-tt6718170} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 21.43 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the ten commandments p ma 5 1 framestor mkv
+  File: The.Ten.Commandments.1956.UHD.BluRay.2160p.DTS-HD.MA.5.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  Size: 86.98 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the terminator sphd mkv
+  File: The Terminator (1984) {imdb-tt0088247} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv
+  Size: 39.43 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: the wizard of oz framestor mkv
+  File: The Wizard of Oz (1939) {imdb-tt0032138} [Remux-2160p][DV HDR10Plus][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+  Size: 48.49 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: thor keyblade mkv
+  File: Thor (2011) {imdb-tt0800369} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-KeYBLaDE.mkv
+  Size: 22.33 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: thor ragnarok legi0n mkv
+  File: Thor Ragnarok (2017) {imdb-tt3501632} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv
+  Size: 27.55 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: thor the dark world hqmux mkv
+  File: Thor The Dark World (2013) {imdb-tt1981115} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+  Size: 22.83 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: thunderbolts d3us mkv
+  File: Thunderbolts- (2025) {imdb-tt20969586} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-D3US.mkv
+  Size: 26.55 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: top gun hallowed mkv
+  File: Top Gun (1986) {imdb-tt0092099} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+  Size: 14.44 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: top gun maverick mainframe mkv
+  File: Top Gun Maverick (2022) {imdb-tt1745960} {edition-Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 30.03 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: total recall p 7 1 framestor mkv
+  File: Total.Recall.1990.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  Size: 49.44 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: tron ares byndr mkv
+  File: TRON Ares (2025) {imdb-tt6604188} - [MA][WEBDL-2160p][EAC3 Atmos 5.1][DV HDR10][h265]-BYNDR.mkv
+  Size: 21.02 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: tron legacy sphd mkv
+  File: TRON Legacy (2010) {imdb-tt1104001} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv
+  Size: 36.31 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: tron spx mkv
+  File: Tron (1982) {imdb-tt0084827} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPx.mkv
+  Size: 15.05 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: twister mainframe mkv
+  File: Twister (1996) {imdb-tt0117998} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 32.31 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: twisters sphd mkv
+  File: Twisters (2024) {imdb-tt12584954} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Size: 50.12 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: uncharted w4nk3r mkv
+  File: Uncharted (2022) {imdb-tt1464335} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 29.88 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: v for vendetta framestor mkv
+  File: V for Vendetta (2006) {imdb-tt0434409} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv
+  Size: 66.01 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: venom let there be carnage w4nk3r mkv
+  File: Venom Let There Be Carnage (2021) {imdb-tt7097896} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 25.41 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: venom the last dance mainframe mkv
+  File: Venom The Last Dance (2024) {imdb-tt16366836} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 23.21 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: venom w4nk3r mkv
+  File: Venom (2018) {imdb-tt1270797} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 19.08 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: war for the planet of the apes bitor mkv
+  File: War for the Planet of the Apes (2017) {imdb-tt3450958} [Hybrid][Bluray-2160p][DV HDR10Plus][EAC3 Atmos 8.0][x265]-BiTOR.mkv
+  Size: 19.68 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: warfare mainframe mkv
+  File: Warfare (2025) {imdb-tt31434639} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-MainFrame.mkv
+  Size: 24.38 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: what happened to monday ben mkv
+  File: What Happened to Monday (2017) {imdb-tt1536537} [Bluray-2160p][PQ][TrueHD 5.1][x265]-BEN.mkv
+  Size: 24.74 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: wicked mainframe mkv
+  File: Wicked (2024) {imdb-tt1262426} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 45.65 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: willy wonka and the chocolate factory mainframe mkv
+  File: Willy Wonka and the Chocolate Factory (1971) {imdb-tt0067992} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-MainFrame.mkv
+  Size: 34.00 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: wonder woman mainframe mkv
+  File: Wonder Woman (2017) {imdb-tt0451279} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 34.62 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: wonder woman w4nk3r mkv
+  File: Wonder Woman 1984 (2020) {imdb-tt7126948} {edition-Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 44.00 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: zack snyders justice league w4nk3r mkv
+  File: Zack Snyders Justice League (2021) {imdb-tt12361974} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 52.30 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: zombieland double tap mainframe mkv
+  File: Zombieland Double Tap (2019) {imdb-tt1560220} [Bluray-2160p][DV HDR10][DTS-X 7.1][x265]-MainFrame.mkv
+  Size: 17.66 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+Title: zombieland mainframe mkv
+  File: Zombieland (2009) {imdb-tt1156398} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Size: 22.75 GB
+  Quality Score: 0
+  Reason: Only Ali has this file
+  Action: Copy from Ali to Chris
+
+================================================================================
+FILES TO COPY TO ALI (128)
+================================================================================
+
+Title: 300 p 7 1 framestor mkv
+  File: 300.2006.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Size: 52.79 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: a beautiful planet p x epsilon mkv
+  File: A.Beautiful.Planet.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-X-EPSiLON.mkv
+  Size: 17.33 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: a space odyssey repack p ma 5 1 epsilon mkv
+  File: 2001.A.Space.Odyssey.1968.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv
+  Size: 69.80 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: ad astra p mkv
+  File: Ad Astra (2019) Remux-2160p.mkv
+  Size: 46.16 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: alien dc p iamable mkv
+  File: Alien.1979.DC.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Size: 23.23 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: alien p director cut hdr10+ ma5 1 shd mkv
+  File: Alien.1979.2160p.Director.Cut.UHD.HDR10+Remux.DTS-HD.MA5.1-SHD.mkv
+  Size: 43.85 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: alien romulus flux mkv
+  File: Alien Romulus (2024) {imdb-tt18412256} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  Size: 21.02 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: apocalypse now redux p justwatch mkv
+  File: Apocalypse.Now.1979.Redux.2160p.UHD.BluRay.x265-JustWatch.mkv
+  Size: 36.05 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: apollo 13 p mkv
+  File: Apollo 13 (1995) Remux-2160p.mkv
+  Size: 43.26 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: army of the dead p nf ddp 5 1 trolluhd fz mkv
+  File: Army.of.the.Dead.2021.2160p.HDR.NF.WEBRip.DDP.Atmos.5.1.x265-TrollUHD-FZ.mkv
+  Size: 18.37 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: avatar the way of water webdl p mkv
+  File: Avatar The Way of Water (2022) WEBDL-2160p.mkv
+  Size: 28.33 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: avengers age of ultron p absinth mkv
+  File: Avengers.Age.of.Ultron.2015.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+  Size: 16.53 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: avengers endgame p epsilon mkv
+  File: Avengers.Endgame.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Size: 52.97 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: avengers infinity war p epsilon mkv
+  File: Avengers.Infinity.War.2018.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Size: 53.74 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: batman begins p ma 5 1 epsilon mkv
+  File: Batman.Begins.2005.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv
+  Size: 55.65 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: black adam webdl p proper mkv
+  File: Black Adam (2022) WEBDL-2160p Proper.mkv
+  Size: 22.23 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: black panther wakanda forever hone mkv
+  File: Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv
+  Size: 21.71 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: black widow p truehd7 1 hdchina mkv
+  File: Black.Widow.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv
+  Size: 25.35 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: blade p mkv
+  File: Blade (1998) Bluray-2160p.mkv
+  Size: 38.53 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: blade runner the final cut p epsilon mkv
+  File: Blade.Runner.1982.The.Final.Cut.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Size: 45.86 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: bohemian rhapsody p mkv
+  File: Bohemian Rhapsody (2018) Remux-2160p.mkv
+  Size: 40.44 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: bram stoker's dracula p blu ray bludragon mkv
+  File: Bram Stoker's Dracula 1992 2160p UHD Blu-Ray Remux HEVC Atmos - BluDragon.mkv
+  Size: 50.14 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: braveheart p iamable mkv
+  File: Braveheart.1995.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Size: 52.26 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: captain america civil war p ddp 7 1 english weasley hone) mkv
+  File: Captain America - Civil War (2016) (2160p UHD BluRay x265 DV HDR DDP 7.1 English - Weasley HONE).mkv
+  Size: 20.91 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: captain america the first avenger p absinth mkv
+  File: Captain.America.The.First.Avenger.2011.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+  Size: 19.40 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: captain america the winter soldier hdr10 p ac 3 7 1 d3g mkv
+  File: Captain.America.The.Winter.Soldier.2014.UHD.BluRay.HDR10.2160p.AC-3.TrueHD.7.1.Atmos.HEVC-d3g.mkv
+  Size: 22.65 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: captain marvel p mkv
+  File: Captain Marvel (2019) Remux-2160p.mkv
+  Size: 46.25 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: close encounters of the third kind dc p hdr10 10bit ma 5 1 phocis mkv
+  File: Close.Encounters.Of.The.Third.Kind.1977.DC.2160p.BluRay.HDR10.10bit.x265.HEVC.DTS-HD.MA.5.1-PHOCiS.mkv
+  Size: 14.68 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: deadpool 2 p mkv
+  File: Deadpool 2 (2018) Remux-2160p.mkv
+  Size: 50.58 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: deadpool and wolverine flux mkv
+  File: Deadpool and Wolverine (2024) {imdb-tt6263850} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  Size: 22.48 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: deadpool p mkv
+  File: Deadpool (2016) Remux-2160p.mkv
+  Size: 38.68 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: doctor strange in the multiverse of madness webdl p mkv
+  File: Doctor Strange in the Multiverse of Madness (2022) WEBDL-2160p.mkv
+  Size: 22.00 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: doctor strange p mkv
+  File: Doctor Strange (2016) Remux-2160p.mkv
+  Size: 45.57 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: dune p mkv
+  File: Dune (2021) Remux-2160p.mkv
+  Size: 69.20 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: dunkirk p sadecebluray mkv
+  File: Dunkirk 2017 2160p UHD BluRay HDR DTS x265-SadeceBluRay.mkv
+  Size: 19.22 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: e t the extra terrestrial p depth mkv
+  File: E.T.the.Extra-Terrestrial.1982.2160p.UHD.BluRay.x265-DEPTH.mkv
+  Size: 29.58 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: earth one amazing day p epsilon mkv
+  File: Earth.One.Amazing.Day.2017.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Size: 43.49 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: edge of tomorrow p dovi 7 1 sphd mkv
+  File: Edge of Tomorrow.2014.2160p.UHD.BluRay.HDR.DoVi.TrueHD 7.1.Atmos.x265-SPHD.mkv
+  Size: 36.83 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: fast & furious 6 p proper mkv
+  File: Fast & Furious 6 (2013) Remux-2160p Proper.mkv
+  Size: 43.56 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: furious 7 p mkv
+  File: Furious 7 (2015) Remux-2160p.mkv
+  Size: 45.89 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: ghostbusters afterlife webdl p mkv
+  File: Ghostbusters Afterlife (2021) WEBDL-2160p.mkv
+  Size: 13.09 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: godzilla vs kong p truehd7 1 hdchina mkv
+  File: Godzilla.vs.Kong.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv
+  Size: 27.23 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: guardians of the galaxy p 7 1 ctrlhd mkv
+  File: Guardians.Of.The.Galaxy.2014.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Size: 14.89 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: guardians of the galaxy vol 2 p terminal mkv
+  File: Guardians.of.the.Galaxy.Vol.2.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+  Size: 17.75 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: hacksaw ridge p terminal mkv
+  File: Hacksaw.Ridge.2016.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+  Size: 17.12 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: heat directors definitive edition p ma 5 1 blutonium mkv
+  File: Heat.1995.Directors.Definitive.Edition.2160p.HDR.WEB-DL.DTS-HD.MA.5.1.HEVC-BLUTONiUM.mkv
+  Size: 35.22 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: inception p terminal mkv
+  File: Inception.2010.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+  Size: 23.97 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: independence day p proper mkv
+  File: Independence Day (1996) Remux-2160p Proper.mkv
+  Size: 43.31 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: indiana jones and the kingdom of the crystal skull p 7 1 2audio 10bit hds mkv
+  File: Indiana.Jones.and.the.Kingdom.of.the.Crystal.Skull.2008.2160p.HDR.UHD.BluRay.TrueHD.7.1.Atmos.2Audio.x265-10bit-HDS.mkv
+  Size: 19.51 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: indiana jones and the last crusade p mkv
+  File: Indiana Jones and the Last Crusade (1989) Remux-2160p.mkv
+  Size: 51.55 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: indiana jones and the temple of doom p seskapile mkv
+  File: indiana.jones.and.the.temple.of.doom.1984.2160p.uhd.bluray.x265-seskapile.mkv
+  Size: 32.22 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: interstellar p terminal mkv
+  File: Interstellar.2014.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+  Size: 33.34 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: iron man 2 p absinth mkv
+  File: Iron.Man.2.2010.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+  Size: 19.98 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: iron man 3 p 7 1 ctrlhd mkv
+  File: Iron.Man.3.2013.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Size: 16.86 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: iron man p hdr10 7 1 4k4u mkv
+  File: Iron.Man.2008.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv
+  Size: 17.29 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: jaws p 7 1 framestor mkv
+  File: Jaws.1975.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Size: 65.99 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: john wick chapter 2 p hdr10 7 1 4k4u mkv
+  File: John.Wick.Chapter.2.2017.2160p.UHD.Bluray.Remux.HDR10.HEVC.Atmos.TrueHD.7.1-4K4U.mkv
+  Size: 70.65 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: john wick p 7 1 absinth mkv
+  File: John.Wick.2014.2160p.UHD.BluRay.HDR.TrueHD.Atmos.7.1.x265-Absinth.mkv
+  Size: 19.20 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: joker p epsilon mkv
+  File: Joker.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Size: 46.65 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: jungle cruise p mkv
+  File: Jungle Cruise (2021) Remux-2160p.mkv
+  Size: 52.75 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: jurassic park p 5 1 bhdstudio mp4
+  File: Jurassic.Park.1993.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Size: 14.43 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: jurassic world dominion webdl p mkv
+  File: Jurassic World Dominion (2022) WEBDL-2160p.mkv
+  Size: 25.91 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: kingdom of heaven smurf mkv
+  File: Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Theatrical} [WEBDL-2160p][HDR10][EAC3 5.1][h265]-SMURF.mkv
+  Size: 16.59 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: logan p terminal mkv
+  File: Logan.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+  Size: 14.84 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: mad max fury road p blu ray 7 1 bludragon mkv
+  File: Mad Max Fury Road 2015 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv
+  Size: 42.30 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: master and commander the far side of the world p mkv
+  File: Master and Commander The Far Side of the World (2003) Remux-1080p.mkv
+  Size: 31.57 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: mortal kombat legi0n mkv
+  File: Mortal Kombat (2021) {imdb-tt0293429} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv
+  Size: 27.14 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: oblivion p mkv
+  File: Oblivion (2013) Remux-2160p.mkv
+  Size: 52.38 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: pacific rim p 5 1 bhdstudio mp4
+  File: Pacific.Rim.2013.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Size: 15.12 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: passengers p epsilon mkv
+  File: Passengers.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Size: 47.15 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: pirates of the caribbean the curse of the black pearl p mkv
+  File: Pirates of the Caribbean The Curse of the Black Pearl (2003) WEBRip-2160p.mkv
+  Size: 19.35 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: pitch black directors cut repack p ma 5 1 ctrlhd mkv
+  File: Pitch.Black.2000.Directors.Cut.REPACK.2160p.UHD.BluRay.DTS-HD.MA.5.1.HDR.x265-CtrlHD.mkv
+  Size: 45.93 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: prey webdl p mkv
+  File: Prey (2022) WEBDL-2160p.mkv
+  Size: 14.25 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: raiders of the lost ark p hdr10 7 1 4k4u mkv
+  File: Raiders.Of.The.Lost.Ark.1981.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv
+  Size: 16.52 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: red sparrow p whiterhino mkv
+  File: Red.Sparrow.2018.2160p.UHD.BluRay.x265-WhiteRhino.mkv
+  Size: 14.12 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: resident evil welcome to raccoon city webdl p mkv
+  File: Resident Evil Welcome to Raccoon City (2021) WEBDL-2160p.mkv
+  Size: 11.42 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: return of the jedi p mkv
+  File: Return of the Jedi (1983) Remux-2160p.mkv
+  Size: 44.81 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: rocketman p blu ray sumvision mkv
+  File: Rocketman 2019 2160p UHD Blu-ray HEVC Atmos x265 - SumVision.mkv
+  Size: 18.72 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: saving private ryan p iamable mkv
+  File: Saving.Private.Ryan.1998.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Size: 41.09 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: shazam! fury of the gods p mkv
+  File: Shazam! Fury of the Gods (2023) Remux-2160p.mkv
+  Size: 57.08 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: solo a star wars story tnp mkv
+  File: Solo A Star Wars Story (2018) {imdb-tt3778644} [Bluray-2160p Proper][HDR10][TrueHD Atmos 7.1][x265]-TnP.mkv
+  Size: 37.20 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: spider man no way home webdl p mkv
+  File: Spider-Man No Way Home (2021) WEBDL-2160p.mkv
+  Size: 21.48 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: star trek ii the wrath of khan director's cut p 5 1 bhdstudio mp4
+  File: Star.Trek.II.The.Wrath.of.Khan.1982.Director's.Cut.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Size: 13.46 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: star trek iii the search for spock p 5 1 bhdstudio mp4
+  File: Star.Trek.III.The.Search.for.Spock.1984.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Size: 12.16 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: star trek into darkness p epsilon mkv
+  File: Star.Trek.Into.Darkness.2013.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Size: 51.23 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: star trek iv the voyage home p 5 1 bhdstudio mp4
+  File: Star.Trek.IV.The.Voyage.Home.1986.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Size: 13.70 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: star trek p iamable mkv
+  File: Star.Trek.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Size: 37.94 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: star trek the motion picture p mkv
+  File: Star Trek The Motion Picture (1979) Remux-2160p.mkv
+  Size: 75.48 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: star trek v the final frontier p mkv
+  File: Star Trek V The Final Frontier (1989) Bluray-2160p.mkv
+  Size: 23.92 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: star trek vi the undiscovered country p mkv
+  File: Star Trek VI The Undiscovered Country (1991) Bluray-2160p.mkv
+  Size: 21.13 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: star trek viii first contact p ddp5 1 abbie mkv
+  File: Star.Trek.VIII.First.Contact.1996.2160p.WEB-DL.DDP5.1.H.265-ABBiE.mkv
+  Size: 10.31 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: star wars p mkv
+  File: Star Wars (1977) Remux-2160p.mkv
+  Size: 49.02 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: tenet ctrlhd mkv
+  File: Tenet (2020) {imdb-tt6723592} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv
+  Size: 33.81 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the avengers repack p epsilon mkv
+  File: The.Avengers.2012.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Size: 48.74 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the batman w4nk3r mkv
+  File: The Batman (2022) {imdb-tt1877830} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Size: 43.14 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the dark knight p blu ray ma 5 1 bludragon mkv
+  File: The Dark Knight 2008 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+  Size: 54.55 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the dark knight rises p blu ray ma 5 1 bludragon mkv
+  File: The Dark Knight Rises 2012 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+  Size: 69.21 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the empire strikes back p mkv
+  File: The Empire Strikes Back (1980) Bluray-2160p.mkv
+  Size: 31.23 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the hunger games catching fire p mkv
+  File: The Hunger Games Catching Fire (2013) Remux-2160p.mkv
+  Size: 72.67 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the hunger games mockingjay part 1 p mkv
+  File: The Hunger Games Mockingjay - Part 1 (2014) Remux-2160p.mkv
+  Size: 61.90 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the hunger games mockingjay part 2 p mkv
+  File: The Hunger Games Mockingjay - Part 2 (2015) Remux-2160p.mkv
+  Size: 70.94 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the hunger games p mkv
+  File: The Hunger Games (2012) Remux-2160p.mkv
+  Size: 70.37 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the hunt for red october p truehd5 1 hqmux mkv
+  File: The Hunt for Red October.1990.2160p.UHD.BluRay.TrueHD5.1.x265-HQMUX.mkv
+  Size: 22.69 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the lord of the rings the fellowship of the ring p mkv
+  File: The Lord of the Rings The Fellowship of the Ring (2001) Remux-2160p.mkv
+  Size: 111.68 GB
+  Quality Score: 1
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the lord of the rings the return of the king p mkv
+  File: The Lord of the Rings The Return of the King (2003) Remux-2160p.mkv
+  Size: 124.27 GB
+  Quality Score: 1
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the lord of the rings the two towers p mkv
+  File: The Lord of the Rings The Two Towers (2002) Remux-2160p.mkv
+  Size: 105.93 GB
+  Quality Score: 1
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the lost world jurassic park p 5 1 bhdstudio mp4
+  File: The.Lost.World.Jurassic.Park.1997.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Size: 14.87 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the martian extended p 10bit 7 1 terminal mkv
+  File: The.Martian.2015.EXTENDED.2160p.BluRay.x265.10bit.HDR.TrueHD.7.1.Atmos-TERMiNAL.mkv
+  Size: 20.35 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the matrix p 7 1 framestor mkv
+  File: The.Matrix.1999.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Size: 52.44 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the matrix reloaded p 7 1 ctrlhd mkv
+  File: The.Matrix.Reloaded.2003.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Size: 45.99 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the matrix resurrections webdl p mkv
+  File: The Matrix Resurrections (2021) WEBDL-2160p.mkv
+  Size: 19.24 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the matrix revolutions 10bit p 5 1 h265 d3g mkv
+  File: The.Matrix-Revolutions.2003.UHD.BluRay.HDR.10Bit.2160p.DD.5.1.H265-d3g.mkv
+  Size: 28.61 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the outfit webdl p mkv
+  File: The Outfit (2022) WEBDL-2160p.mkv
+  Size: 11.00 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the predator p blu ray 7 1 bludragon mkv
+  File: The Predator 2018 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv
+  Size: 47.47 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the revenant p ma 7 1 framestor asrequested mkv
+  File: The.Revenant.2015.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR-AsRequested.mkv
+  Size: 45.48 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: the suicide squad p 5 1 bhdstudio mp4
+  File: The.Suicide.Squad.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Size: 15.30 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: thor ragnarok p hdr10+ 7 1 unkn0wn mkv
+  File: Thor Ragnarok 2017 2160p UHD HDR10+ BluRay x265 TrueHD Atmos 7 1-UnKn0wn.mkv
+  Size: 20.11 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: top gun maverick webdl p mkv
+  File: Top Gun Maverick (2022) WEBDL-2160p.mkv
+  Size: 22.95 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: top gun p hdr10 sl atmos7 1 h265 shd mkv
+  File: Top Gun 1986 2160p UHD DV HDR10 BluRay SL TrueHD Atmos7 1 H265-SHD.mkv
+  Size: 23.00 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: total recall p mkv
+  File: Total Recall (1990) Remux-2160p.mkv
+  Size: 71.07 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: twister p mkv
+  File: Twister (1996) Remux-1080p.mkv
+  Size: 26.00 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: twisters flux mkv
+  File: Twisters (2024) {imdb-tt12584954} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  Size: 21.80 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: uncharted webdl p mkv
+  File: Uncharted (2022) WEBDL-2160p.mkv
+  Size: 20.56 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: v for vendetta p 7 1 framestor mkv
+  File: V.for.Vendetta.2005.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Size: 65.98 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: war for the planet of the apes p absinth mkv
+  File: War.for.the.Planet.of.the.Apes.2017.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+  Size: 22.83 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: wonder woman p 7 1 ctrlhd mkv
+  File: Wonder.Woman.2017.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Size: 44.77 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: wonder woman p hmax ddp5 1 tommy mkv
+  File: Wonder.Woman.1984.2020.2160p.HMAX.WEB-DL.DDP5.1.Atmos.HDR.HEVC-TOMMY.mkv
+  Size: 19.73 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
+Title: zombieland p iamable mkv
+  File: Zombieland.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Size: 14.05 GB
+  Quality Score: 0
+  Reason: Only Chris has this file
+  Action: Copy from Chris to Ali
+
