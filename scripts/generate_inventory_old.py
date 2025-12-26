@@ -2,10 +2,6 @@
 """
 Media Library Inventory Generator
 Scans media directories and generates JSON/CSV inventory files
-
-FIXED: Now properly handles nested season folders for TV shows
-- /TV/Show/Episode.mkv → title: "Show" ✅
-- /TV/Show/01/Episode.mkv → title: "Show" ✅ (was "01" ❌)
 """
 
 import os
@@ -147,44 +143,6 @@ class MediaInventory:
                     return replacement
         return default
 
-    def _get_show_title(self, file_path: Path) -> str:
-        """
-        Extract show/movie title from file path
-        Handles both flat and season-subfolder structures
-        
-        Examples:
-            /Movies/Avatar (2009)/Avatar.mkv → "Avatar (2009)"
-            /TV/Battlestar/S01E01.mkv → "Battlestar"
-            /TV/IT Crowd/03/S03E02.mkv → "IT Crowd" (goes up 1 level!)
-            
-        Args:
-            file_path: Path to media file
-            
-        Returns:
-            Show or movie title
-        """
-        parent_name = file_path.parent.name
-        
-        # Check if parent folder looks like a season folder
-        # Patterns: "01", "02", "Season 1", "Season 01", "S01", etc.
-        season_patterns = [
-            r'^\d{1,2}$',  # Just numbers: "01", "1", "15"
-            r'^Season\s*\d+$',  # "Season 1", "Season 01"
-            r'^S\d{1,2}$',  # "S1", "S01"
-        ]
-        
-        is_season_folder = any(
-            re.match(pattern, parent_name, re.IGNORECASE)
-            for pattern in season_patterns
-        )
-        
-        if is_season_folder:
-            # Go up one more level to get show name
-            return file_path.parent.parent.name
-        else:
-            # Use immediate parent
-            return parent_name
-
     def _get_mediainfo(self, file_path: Path) -> Optional[MediaInfo]:
         """
         Get MediaInfo object for file
@@ -213,15 +171,7 @@ class MediaInventory:
             Dictionary of metadata
         """
         filename = file_path.name
-        
-        # FIXED: Use _get_show_title() to handle nested season folders
-        parent_dir = self._get_show_title(file_path)
-        
-        # Calculate relative path from root
-        try:
-            relative_path = file_path.relative_to(self.root_path)
-        except ValueError:
-            relative_path = file_path
+        parent_dir = file_path.parent.name
         
         # Get MediaInfo data
         media_info = self._get_mediainfo(file_path)
@@ -239,7 +189,6 @@ class MediaInventory:
             'title': parent_dir,
             'filename': filename,
             'path': str(file_path),
-            'relative_path': str(relative_path),
             'size_bytes': file_path.stat().st_size,
             'size_gb': round(file_path.stat().st_size / (1024**3), 2),
             'resolution': resolution,
@@ -387,15 +336,12 @@ class MediaInventory:
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(
-        description='Generate media library inventory with detailed metadata (FIXED for TV shows)',
+        description='Generate media library inventory with detailed metadata',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s /mnt/media/Movies -o ~/inventories/movies
   %(prog)s "/mnt/media/TV Shows" -o ~/inventories/tv --verbose
-  
-FIXED: Now handles nested season folders correctly:
-  /TV/Show Name/01/Episode.mkv  → title: "Show Name" (not "01")
         """
     )
     
