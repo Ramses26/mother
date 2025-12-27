@@ -21,7 +21,7 @@ radarr:
   #---------------------------------------------------------------------------
   radarr-hd:
     base_url: http://radarr-hd:7878
-    api_key: !env RADARR_HD_API_KEY
+    api_key: ${RADARR_HD_API_KEY}
     
     delete_old_custom_formats: true
     replace_existing_custom_formats: true
@@ -120,7 +120,7 @@ radarr:
   #---------------------------------------------------------------------------
   radarr-4k:
     base_url: http://radarr-4k:7878
-    api_key: !env RADARR_4K_API_KEY
+    api_key: ${RADARR_4K_API_KEY}
     
     delete_old_custom_formats: true
     replace_existing_custom_formats: true
@@ -223,7 +223,7 @@ sonarr:
   #---------------------------------------------------------------------------
   sonarr-hd:
     base_url: http://sonarr-hd:8989
-    api_key: !env SONARR_HD_API_KEY
+    api_key: ${SONARR_HD_API_KEY}
     
     delete_old_custom_formats: true
     replace_existing_custom_formats: true
@@ -320,7 +320,7 @@ sonarr:
   #---------------------------------------------------------------------------
   sonarr-4k:
     base_url: http://sonarr-4k:8989
-    api_key: !env SONARR_4K_API_KEY
+    api_key: ${SONARR_4K_API_KEY}
     
     delete_old_custom_formats: true
     replace_existing_custom_formats: true
