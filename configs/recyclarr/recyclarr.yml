@@ -24,21 +24,12 @@ radarr:
       - template: radarr-quality-profile-remux-web-1080p
       - template: radarr-custom-formats-remux-web-1080p
     
+    # TRaSH naming schemes
     media_naming:
-      folder: plex
+      folder: default
       movie:
         rename: true
-        standard: plex
-    
-    # Boost HDR scoring for both profiles
-    custom_formats:
-      - trash_ids:
-          - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
-        assign_scores_to:
-          - name: HD-Bluray + WEB
-            score: 400
-          - name: Remux + WEB 1080p
-            score: 400
+        standard: default
 
   #---------------------------------------------------------------------------
   # Radarr-4K: 4K Movies (UHD-Bluray+WEB AND Remux+WEB profiles)
@@ -61,19 +52,10 @@ radarr:
       - template: radarr-custom-formats-remux-web-2160p
     
     media_naming:
-      folder: plex
+      folder: default
       movie:
         rename: true
-        standard: plex
-    
-    custom_formats:
-      - trash_ids:
-          - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
-        assign_scores_to:
-          - name: UHD-Bluray + WEB
-            score: 500
-          - name: Remux + WEB 2160p
-            score: 500
+        standard: default
 
 sonarr:
   #---------------------------------------------------------------------------
@@ -93,34 +75,25 @@ sonarr:
       - template: sonarr-v4-custom-formats-web-1080p
     
     media_naming:
-      series: plex
-      season: plex
+      series: default
+      season: default
       episodes:
         rename: true
         standard: default
         daily: default
         anime: default
     
-    # Create custom Remux profile (no TRaSH template for Sonarr Remux)
+    # Create custom Remux profile - FIXED quality name!
     quality_profiles:
       - name: Remux-1080p
         reset_unmatched_scores:
           enabled: true
         upgrade:
           allowed: true
-          until_quality: Remux-1080p
+          until_quality: Bluray-1080p Remux  # Fixed! Was "Remux-1080p"
           until_score: 10000
         qualities:
-          - name: Remux-1080p
-    
-    custom_formats:
-      - trash_ids:
-          - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
-        assign_scores_to:
-          - name: WEB-1080p
-            score: 200
-          - name: Remux-1080p
-            score: 200
+          - name: Bluray-1080p Remux  # Fixed! Was "Remux-1080p"
 
   #---------------------------------------------------------------------------
   # Sonarr-4K: 4K TV Shows
@@ -139,31 +112,22 @@ sonarr:
       - template: sonarr-v4-custom-formats-web-2160p
     
     media_naming:
-      series: plex
-      season: plex
+      series: default
+      season: default
       episodes:
         rename: true
         standard: default
         daily: default
         anime: default
     
-    # Create custom 4K Remux profile
+    # Create custom 4K Remux profile - FIXED quality name!
     quality_profiles:
       - name: Remux-2160p
         reset_unmatched_scores:
           enabled: true
         upgrade:
           allowed: true
-          until_quality: Remux-2160p
+          until_quality: Bluray-2160p Remux  # Fixed! Was "Remux-2160p"
           until_score: 10000
         qualities:
-          - name: Remux-2160p
-    
-    custom_formats:
-      - trash_ids:
-          - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
-        assign_scores_to:
-          - name: WEB-2160p
-            score: 400
-          - name: Remux-2160p
-            score: 400
+          - name: Bluray-2160p Remux  # Fixed! Was "Remux-2160p"
