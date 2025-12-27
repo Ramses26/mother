@@ -40,7 +40,7 @@ radarr:
         standard: plex
     
     # Create additional Remux profile
-    quality_profiles:
+    assign_scores_to:
       - name: HD-Remux ONLY
         reset_unmatched_scores:
           enabled: true
@@ -63,7 +63,7 @@ radarr:
           - 7357cf5161efbf8c4d5d0c30b4815ee2  # Obfuscated
           - 5c44f52a8714fdd79bb4d98e2673be1f  # Retags
           - f537cf427b64c38c8e36298f657e4828  # Scene
-        quality_profiles:
+        assign_scores_to:
           - name: HD-Bluray + WEB
             score: -10000
           - name: HD-Remux ONLY
@@ -79,7 +79,7 @@ radarr:
           - e0c07d59beb37348e975a930d5e50319  # Criterion Collection
           - 9d27d9d2181838f76dee150882bdc58c  # Masters of Cinema
           - db9b4c4b53d312a876a3dc8c28be97ee6 # Vinegar Syndrome
-        quality_profiles:
+        assign_scores_to:
           - name: HD-Bluray + WEB
           - name: HD-Remux ONLY
       
@@ -89,7 +89,7 @@ radarr:
       #-----------------------------------------------------------------------
       - trash_ids:
           - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
-        quality_profiles:
+        assign_scores_to:
           - name: HD-Bluray + WEB
             score: 400  # Boost! WEB+HDR10 > SDR Bluray
           - name: HD-Remux ONLY
@@ -97,7 +97,7 @@ radarr:
       
       - trash_ids:
           - e23edd2482476e595fb990b12e7c609c  # DV HDR10
-        quality_profiles:
+        assign_scores_to:
           - name: HD-Bluray + WEB
             score: 350
           - name: HD-Remux ONLY
@@ -109,7 +109,7 @@ radarr:
       - trash_ids:
           - 496f355514737f7d83bf7aa4d24f8169  # TrueHD Atmos
           - 2f22d89048b01681dde8afe203bf2e95  # DTS:X
-        quality_profiles:
+        assign_scores_to:
           - name: HD-Bluray + WEB
             score: 400
           - name: HD-Remux ONLY
@@ -139,7 +139,7 @@ radarr:
         standard: plex
     
     # Create additional 4K Remux profile
-    quality_profiles:
+    assign_scores_to:
       - name: UHD-Remux ONLY
         reset_unmatched_scores:
           enabled: true
@@ -162,7 +162,7 @@ radarr:
           - 7357cf5161efbf8c4d5d0c30b4815ee2  # Obfuscated
           - 5c44f52a8714fdd79bb4d98e2673be1f  # Retags
           - f537cf427b64c38c8e36298f657e4828  # Scene
-        quality_profiles:
+        assign_scores_to:
           - name: UHD-Bluray + WEB
             score: -10000
           - name: UHD-Remux ONLY
@@ -178,7 +178,7 @@ radarr:
           - e0c07d59beb37348e975a930d5e50319  # Criterion Collection
           - 9d27d9d2181838f76dee150882bdc58c  # Masters of Cinema
           - db9b4c4b53d312a876a3dc8c28be97ee6 # Vinegar Syndrome
-        quality_profiles:
+        assign_scores_to:
           - name: UHD-Bluray + WEB
           - name: UHD-Remux ONLY
       
@@ -187,7 +187,7 @@ radarr:
       #-----------------------------------------------------------------------
       - trash_ids:
           - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
-        quality_profiles:
+        assign_scores_to:
           - name: UHD-Bluray + WEB
             score: 500  # Higher for 4K!
           - name: UHD-Remux ONLY
@@ -195,7 +195,7 @@ radarr:
       
       - trash_ids:
           - e23edd2482476e595fb990b12e7c609c  # DV HDR10
-        quality_profiles:
+        assign_scores_to:
           - name: UHD-Bluray + WEB
             score: 450
           - name: UHD-Remux ONLY
@@ -207,7 +207,7 @@ radarr:
       - trash_ids:
           - 496f355514737f7d83bf7aa4d24f8169  # TrueHD Atmos
           - 2f22d89048b01681dde8afe203bf2e95  # DTS:X
-        quality_profiles:
+        assign_scores_to:
           - name: UHD-Bluray + WEB
             score: 500
           - name: UHD-Remux ONLY
@@ -245,7 +245,7 @@ sonarr:
         anime: default
     
     # Create additional Bluray and Remux profiles
-    quality_profiles:
+    assign_scores_to:
       - name: Bluray-1080p
         reset_unmatched_scores:
           enabled: true
@@ -286,7 +286,7 @@ sonarr:
           - ec8fa7296b64e8cd390a1600981f3923  # Repack/Proper
           - eb3d5cc0a2be0db205fb823640db6a3c  # Repack v2
           - 44e7c4de10ae50265753082e5dc76047  # Repack v3
-        quality_profiles:
+        assign_scores_to:
           - name: WEB-1080p
           - name: Bluray-1080p
           - name: Remux-1080p
@@ -297,7 +297,7 @@ sonarr:
           - e1a997ddb54e3ecbfe06341ad323c458  # Obfuscated
           - 06d66ab109d4d2eddb2794d21526d140  # Retags
           - 1b3994c551cbb92a2c781af061f4ab44  # Scene
-        quality_profiles:
+        assign_scores_to:
           - name: WEB-1080p
             score: -10000
           - name: Bluray-1080p
@@ -307,7 +307,7 @@ sonarr:
       
       - trash_ids:
           - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
-        quality_profiles:
+        assign_scores_to:
           - name: WEB-1080p
             score: 200
           - name: Bluray-1080p
@@ -342,7 +342,7 @@ sonarr:
         anime: default
     
     # Create additional 4K Bluray and Remux profiles
-    quality_profiles:
+    assign_scores_to:
       - name: Bluray-2160p
         reset_unmatched_scores:
           enabled: true
@@ -378,7 +378,7 @@ sonarr:
           - ec8fa7296b64e8cd390a1600981f3923  # Repack/Proper
           - eb3d5cc0a2be0db205fb823640db6a3c  # Repack v2
           - 44e7c4de10ae50265753082e5dc76047  # Repack v3
-        quality_profiles:
+        assign_scores_to:
           - name: WEB-2160p
           - name: Bluray-2160p
           - name: Remux-2160p
@@ -389,7 +389,7 @@ sonarr:
           - e1a997ddb54e3ecbfe06341ad323c458  # Obfuscated
           - 06d66ab109d4d2eddb2794d21526d140  # Retags
           - 1b3994c551cbb92a2c781af061f4ab44  # Scene
-        quality_profiles:
+        assign_scores_to:
           - name: WEB-2160p
             score: -10000
           - name: Bluray-2160p
@@ -399,7 +399,7 @@ sonarr:
       
       - trash_ids:
           - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
-        quality_profiles:
+        assign_scores_to:
           - name: WEB-2160p
             score: 400
           - name: Bluray-2160p
