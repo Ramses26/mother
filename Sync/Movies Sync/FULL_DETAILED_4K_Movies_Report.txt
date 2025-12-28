@@ -1,0 +1,1137 @@
+================================================================================
+FINAL 4K MOVIES COMPARISON REPORT
+================================================================================
+Generated: 2025-12-28 01:49:48.790929
+
+CORRECT LOGIC APPLIED:
+- 4K Movies: Only 4K vs 4K comparisons (separate library)
+
+STATISTICS
+--------------------------------------------------------------------------------
+Total unique 4k movies: 235
+  Ali only: 75
+  Chris only: 10
+  Both have: 149
+  Cross-library (4K vs non-4K): 1
+    - Ali has better: 94
+    - Chris has better: 6
+    - Equal quality: 49
+    - Different editions: 17
+
+================================================================================
+CROSS-LIBRARY MOVIES (4K vs non-4K) - KEPT SEPARATE (1)
+================================================================================
+One person has movie in 4K, other has in 1080p/720p.
+These are DIFFERENT LIBRARIES - keep both!
+NO ACTION REQUIRED - just documenting.
+
+
+Movie: Twister (1996)
+  Ali has: 2160p (4K)
+  Chris has: 1080p (1080p)
+  → Keep BOTH - different libraries!
+
+================================================================================
+⚠️  QUALITY UPGRADES NEEDED
+================================================================================
+
+ALI HAS BETTER VERSION (94 movies)
+--------------------------------------------------------------------------------
+
+Movie: Uncharted (2022)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Uncharted (2022) WEBDL-2160p.mkv
+    Quality: 2160p WEB-DL (score: 5300)
+  WITH (Ali):
+    File: Uncharted (2022) {imdb-tt1464335} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +1850 points
+
+Movie: Spider-Man No Way Home (2021)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Spider-Man No Way Home (2021) WEBDL-2160p.mkv
+    Quality: 2160p WEB-DL (score: 5300)
+  WITH (Ali):
+    File: Spider-Man No Way Home (2021) {imdb-tt10872600} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +1800 points
+
+Movie: Star Trek First Contact (1996)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Star.Trek.VIII.First.Contact.1996.2160p.WEB-DL.DDP5.1.H.265-ABBiE.mkv
+    Quality: 2160p WEB-DL (score: 5350)
+  WITH (Ali):
+    File: Star Trek First Contact (1996) {imdb-tt0117731} [Bluray-2160p][DV HDR10][TrueHD 7.1][x265]-SPHD.mkv
+    Quality: 2160p BluRay (score: 6950)
+  Improvement: +1600 points
+
+Movie: Avengers Age of Ultron (2015)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Avengers.Age.of.Ultron.2015.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+    Quality: 2160p BluRay (score: 6150)
+  WITH (Ali):
+    File: Avengers Age of Ultron (2015) {imdb-tt2395427} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7650)
+  Improvement: +1500 points
+
+Movie: Avatar The Way of Water (2022)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Avatar The Way of Water (2022) WEBDL-2160p.mkv
+    Quality: 2160p WEB-DL (score: 5300)
+  WITH (Ali):
+    File: Avatar The Way of Water (2022) {imdb-tt1630029} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 6750)
+  Improvement: +1450 points
+
+Movie: Guardians of the Galaxy Vol. 2 (2017)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Guardians.of.the.Galaxy.Vol.2.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+    Quality: 2160p BluRay (score: 5750)
+  WITH (Ali):
+    File: Guardians of the Galaxy Vol. 2 (2017) {imdb-tt3896198} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +1400 points
+
+Movie: Wonder Woman 1984 (2020)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Wonder.Woman.1984.2020.2160p.HMAX.WEB-DL.DDP5.1.Atmos.HDR.HEVC-TOMMY.mkv
+    Quality: 2160p WEB-DL (score: 5750)
+  WITH (Ali):
+    File: Wonder Woman 1984 (2020) {imdb-tt7126948} {edition-Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +1400 points
+
+Movie: Braveheart (1995)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Braveheart.1995.2160p.UHD.BluRay.X265-IAMABLE.mkv
+    Quality: 2160p BluRay (score: 5850)
+  WITH (Ali):
+    File: Braveheart (1995) {imdb-tt0112573} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7200)
+  Improvement: +1350 points
+
+Movie: Zombieland (2009)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Zombieland.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv
+    Quality: 2160p BluRay (score: 5800)
+  WITH (Ali):
+    File: Zombieland (2009) {imdb-tt1156398} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +1350 points
+
+Movie: Hacksaw Ridge (2016)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Hacksaw.Ridge.2016.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+    Quality: 2160p BluRay (score: 5750)
+  WITH (Ali):
+    File: Hacksaw Ridge (2016) {imdb-tt2119532} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +1350 points
+
+Movie: Apocalypse Now (1979)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Apocalypse.Now.1979.Redux.2160p.UHD.BluRay.x265-JustWatch.mkv
+    Quality: 2160p BluRay (score: 5800)
+  WITH (Ali):
+    File: Apocalypse Now (1979) {imdb-tt0078788} {edition-Theatrical Cut} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +1350 points
+
+Movie: Red Sparrow (2018)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Red.Sparrow.2018.2160p.UHD.BluRay.x265-WhiteRhino.mkv
+    Quality: 2160p BluRay (score: 5750)
+  WITH (Ali):
+    File: Red Sparrow (2018) {imdb-tt2873282} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +1350 points
+
+Movie: Kingdom of Heaven (2005)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Theatrical} [WEBDL-2160p][HDR10][EAC3 5.1][h265]-SMURF.mkv
+    Quality: 2160p WEB-DL (score: 5800)
+  WITH (Ali):
+    File: Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Director's Cut} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +1350 points
+
+Movie: The Lord of the Rings The Return of the King (2003)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The Lord of the Rings The Return of the King (2003) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 6400)
+  WITH (Ali):
+    File: The Lord of the Rings The Return of the King (2003) {imdb-tt0167260} {edition-Extended} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +1300 points
+
+Movie: The Predator (2018)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The Predator 2018 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv
+    Quality: 2160p Remux (score: 6400)
+  WITH (Ali):
+    File: The Predator (2018) {imdb-tt3829266} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +1300 points
+
+Movie: Indiana Jones and the Temple of Doom (1984)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: indiana.jones.and.the.temple.of.doom.1984.2160p.uhd.bluray.x265-seskapile.mkv
+    Quality: 2160p BluRay (score: 5850)
+  WITH (Ali):
+    File: Indiana Jones and the Temple of Doom (1984) {imdb-tt0087469} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +1300 points
+
+Movie: Dracula (1992)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Bram Stoker's Dracula 1992 2160p UHD Blu-Ray Remux HEVC Atmos - BluDragon.mkv
+    Quality: 2160p Remux (score: 6400)
+  WITH (Ali):
+    File: Bram Stokers Dracula (1992) {imdb-tt0103874} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +1300 points
+
+Movie: Mad Max Fury Road (2015)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Mad Max Fury Road 2015 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv
+    Quality: 2160p Remux (score: 6400)
+  WITH (Ali):
+    File: Mad Max Fury Road (2015) {imdb-tt1392190} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +1300 points
+
+Movie: Blade (1998)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Blade (1998) Bluray-2160p.mkv
+    Quality: 2160p BluRay (score: 5850)
+  WITH (Ali):
+    File: Blade (1998) {imdb-tt0120611} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +1300 points
+
+Movie: The Lord of the Rings The Two Towers (2002)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The Lord of the Rings The Two Towers (2002) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 6400)
+  WITH (Ali):
+    File: The.Lord.of.the.Rings.The.Two.Towers.2002.Extended.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7600)
+  Improvement: +1200 points
+
+Movie: The Matrix Resurrections (2021)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The Matrix Resurrections (2021) WEBDL-2160p.mkv
+    Quality: 2160p WEB-DL (score: 5950)
+  WITH (Ali):
+    File: The Matrix Resurrections (2021) {imdb-tt10838180} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +1200 points
+
+Movie: The Lord of the Rings The Fellowship of the Ring (2001)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The Lord of the Rings The Fellowship of the Ring (2001) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 6400)
+  WITH (Ali):
+    File: The.Lord.of.the.Rings.The.Fellowship.of.the.Ring.2001.Extended.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7600)
+  Improvement: +1200 points
+
+Movie: Top Gun Maverick (2022)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Top Gun Maverick (2022) WEBDL-2160p.mkv
+    Quality: 2160p WEB-DL (score: 6000)
+  WITH (Ali):
+    File: Top Gun Maverick (2022) {imdb-tt1745960} {edition-Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +1150 points
+
+Movie: Inception (2010)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Inception.2010.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+    Quality: 2160p BluRay (score: 5800)
+  WITH (Ali):
+    File: Inception (2010) {imdb-tt1375666} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 6950)
+  Improvement: +1150 points
+
+Movie: Interstellar (2014)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Interstellar.2014.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+    Quality: 2160p BluRay (score: 5800)
+  WITH (Ali):
+    File: Interstellar (2014) {imdb-tt0816692} {edition-Imax} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+    Quality: 2160p BluRay (score: 6950)
+  Improvement: +1150 points
+
+Movie: Black Adam (2022)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Black Adam (2022) WEBDL-2160p Proper.mkv
+    Quality: 2160p WEB-DL (score: 6000)
+  WITH (Ali):
+    File: Black Adam.2022.2160p.UHD.BluRay.HDR.DoVi.TrueHD 7.1.Atmos.x265-SPHD.mkv
+    Quality: 2160p BluRay (score: 7050)
+  Improvement: +1050 points
+
+Movie: Pitch Black (2000)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Pitch.Black.2000.Directors.Cut.REPACK.2160p.UHD.BluRay.DTS-HD.MA.5.1.HDR.x265-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6700)
+  WITH (Ali):
+    File: Pitch Black (2000) {imdb-tt0134847} {edition-Director's Cut} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +1000 points
+
+Movie: The Revenant (2015)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The.Revenant.2015.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR-AsRequested.mkv
+    Quality: 2160p Remux (score: 6750)
+  WITH (Ali):
+    File: The Revenant (2015) {imdb-tt1663202} {edition-Open Matte} [Remux-2160p][DV HDR10Plus][TrueHD Atmos 7.1][h265]-Benflix.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +950 points
+
+Movie: The Avengers (2012)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The.Avengers.2012.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+    Quality: 2160p Remux (score: 6750)
+  WITH (Ali):
+    File: The Avengers (2012) {imdb-tt0848228} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +950 points
+
+Movie: Twisters (2024)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Twisters (2024) {imdb-tt12584954} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+    Quality: 2160p WEB-DL (score: 6250)
+  WITH (Ali):
+    File: Twisters (2024) {imdb-tt12584954} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-SPHD.mkv
+    Quality: 2160p BluRay (score: 7200)
+  Improvement: +950 points
+
+Movie: Logan (2017)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Logan.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+    Quality: 2160p BluRay (score: 5750)
+  WITH (Ali):
+    File: Logan (2017) {imdb-tt3315342} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6700)
+  Improvement: +950 points
+
+Movie: Heat (1995)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Heat.1995.Directors.Definitive.Edition.2160p.HDR.WEB-DL.DTS-HD.MA.5.1.HEVC-BLUTONiUM.mkv
+    Quality: 2160p WEB-DL (score: 6100)
+  WITH (Ali):
+    File: Heat (1995) {imdb-tt0113277} [Remux-2160p][HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7050)
+  Improvement: +950 points
+
+Movie: Ghostbusters (1984)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+    Quality: 2160p Remux (score: 6800)
+  WITH (Ali):
+    File: Ghostbusters (1984) {imdb-tt0087332} - [Remux-2160p Proper][TrueHD Atmos 7.1][DV HDR10][HEVC]-BLURANiUM.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +900 points
+
+Movie: Alien Romulus (2024)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Alien Romulus (2024) {imdb-tt18412256} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+    Quality: 2160p WEB-DL (score: 6250)
+  WITH (Ali):
+    File: Alien Romulus (2024) {imdb-tt18412256} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +900 points
+
+Movie: Avengers Endgame (2019)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Avengers.Endgame.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+    Quality: 2160p Remux (score: 6750)
+  WITH (Ali):
+    File: Avengers Endgame (2019) {imdb-tt4154796} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7650)
+  Improvement: +900 points
+
+Movie: Star Trek VI The Undiscovered Country (1991)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Star Trek VI The Undiscovered Country (1991) Bluray-2160p.mkv
+    Quality: 2160p BluRay (score: 5800)
+  WITH (Ali):
+    File: Star Trek VI The Undiscovered Country (1991) {imdb-tt0102975} {edition-Theatrical Cut} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+    Quality: 2160p BluRay (score: 6700)
+  Improvement: +900 points
+
+Movie: Jurassic Park (1993)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Jurassic.Park.1993.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+    Quality: 2160p BluRay (score: 6250)
+  WITH (Ali):
+    File: Jurassic Park (1993) {imdb-tt0107290} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-HiDt.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +900 points
+
+Movie: Star Trek Into Darkness (2013)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Star.Trek.Into.Darkness.2013.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+    Quality: 2160p Remux (score: 6800)
+  WITH (Ali):
+    File: Star Trek Into Darkness (2013) {imdb-tt1408101} {edition-Imax} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-Flights.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +900 points
+
+Movie: Iron Man 2 (2010)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Iron.Man.2.2010.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+    Quality: 2160p BluRay (score: 6200)
+  WITH (Ali):
+    File: Iron Man 2 (2010) {imdb-tt1228705} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +900 points
+
+Movie: The Lost World Jurassic Park (1997)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The.Lost.World.Jurassic.Park.1997.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+    Quality: 2160p BluRay (score: 6250)
+  WITH (Ali):
+    File: The Lost World Jurassic Park (1997) {imdb-tt0119567} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-HiDt.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +900 points
+
+Movie: The Empire Strikes Back (1980)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The Empire Strikes Back (1980) Bluray-2160p.mkv
+    Quality: 2160p BluRay (score: 5850)
+  WITH (Ali):
+    File: The Empire Strikes Back (1980) {imdb-tt0080684} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+    Quality: 2160p BluRay (score: 6750)
+  Improvement: +900 points
+
+Movie: The Suicide Squad (2021)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The.Suicide.Squad.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+    Quality: 2160p BluRay (score: 6250)
+  WITH (Ali):
+    File: The Suicide Squad (2021) {imdb-tt6334354} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +900 points
+
+Movie: Captain America The First Avenger (2011)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Captain.America.The.First.Avenger.2011.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+    Quality: 2160p BluRay (score: 6200)
+  WITH (Ali):
+    File: Captain America The First Avenger (2011) {imdb-tt0458339} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-KeYBLaDE.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +900 points
+
+Movie: Star Trek (2009)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Star.Trek.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv
+    Quality: 2160p BluRay (score: 5850)
+  WITH (Ali):
+    File: Star Trek (2009) {imdb-tt0796366} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6750)
+  Improvement: +900 points
+
+Movie: Avengers Infinity War (2018)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Avengers.Infinity.War.2018.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+    Quality: 2160p Remux (score: 6800)
+  WITH (Ali):
+    File: Avengers Infinity War (2018) {imdb-tt4154756} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +900 points
+
+Movie: Earth One Amazing Day (2017)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Earth.One.Amazing.Day.2017.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+    Quality: 2160p Remux (score: 6800)
+  WITH (Ali):
+    File: Earth One Amazing Day (2017) {imdb-tt6238896} [Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +900 points
+
+Movie: Rocketman (2019)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Rocketman 2019 2160p UHD Blu-ray HEVC Atmos x265 - SumVision.mkv
+    Quality: 2160p BluRay (score: 5800)
+  WITH (Ali):
+    File: Rocketman (2019) {imdb-tt2066051} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv
+    Quality: 2160p BluRay (score: 6700)
+  Improvement: +900 points
+
+Movie: Saving Private Ryan (1998)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Saving.Private.Ryan.1998.2160p.UHD.BluRay.X265-IAMABLE.mkv
+    Quality: 2160p BluRay (score: 5850)
+  WITH (Ali):
+    File: Saving Private Ryan (1998) {imdb-tt0120815} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+    Quality: 2160p BluRay (score: 6750)
+  Improvement: +900 points
+
+Movie: Passengers (2016)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Passengers.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+    Quality: 2160p Remux (score: 6800)
+  WITH (Ali):
+    File: Passengers (2016) {imdb-tt1355644} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +900 points
+
+Movie: The Hunt for Red October (1990)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The Hunt for Red October.1990.2160p.UHD.BluRay.TrueHD5.1.x265-HQMUX.mkv
+    Quality: 2160p BluRay (score: 6100)
+  WITH (Ali):
+    File: The Hunt for Red October (1990) {imdb-tt0099810} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 6950)
+  Improvement: +850 points
+
+Movie: Deadpool 3 (2024)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Deadpool and Wolverine (2024) {imdb-tt6263850} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+    Quality: 2160p WEB-DL (score: 6250)
+  WITH (Ali):
+    File: Deadpool and Wolverine (2024) {imdb-tt6263850} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +850 points
+
+Movie: Star Trek V The Final Frontier (1989)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Star Trek V The Final Frontier (1989) Bluray-2160p.mkv
+    Quality: 2160p BluRay (score: 5850)
+  WITH (Ali):
+    File: Star Trek V The Final Frontier (1989) {imdb-tt0098382} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+    Quality: 2160p BluRay (score: 6700)
+  Improvement: +850 points
+
+Movie: Gladiator (2000)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Gladiator.2000.Extended.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 6550)
+  WITH (Ali):
+    File: Gladiator (2000) {imdb-tt0172495} {edition-Extended Cut} [Remux-2160p][DV HDR10][DTS-X 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7400)
+  Improvement: +850 points
+
+Movie: The Dark Knight (2008)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The Dark Knight 2008 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+    Quality: 2160p Remux (score: 6700)
+  WITH (Ali):
+    File: The Dark Knight (2008) {imdb-tt0468569} [Hybrid][Remux-2160p][DV HDR10][TrueHD 5.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7500)
+  Improvement: +800 points
+
+Movie: V for Vendetta (2005)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: V.for.Vendetta.2005.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 6900)
+  WITH (Ali):
+    File: V for Vendetta (2006) {imdb-tt0434409} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +800 points
+
+Movie: 300 (2006)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: 300.2006.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 6900)
+  WITH (Ali):
+    File: 300 (2006) {imdb-tt0416449} [Hybrid][Remux-2160p][DV HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7700)
+  Improvement: +800 points
+
+Movie: The Dark Knight Rises (2012)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The Dark Knight Rises 2012 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+    Quality: 2160p Remux (score: 6700)
+  WITH (Ali):
+    File: The Dark Knight Rises (2012) {imdb-tt1345836} [Hybrid][Remux-2160p][DV HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7500)
+  Improvement: +800 points
+
+Movie: Pacific Rim (2013)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Pacific.Rim.2013.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+    Quality: 2160p BluRay (score: 6250)
+  WITH (Ali):
+    File: Pacific Rim (2013) {imdb-tt1663662} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7050)
+  Improvement: +800 points
+
+Movie: Return of the Jedi (1983)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Return of the Jedi (1983) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 6350)
+  WITH (Ali):
+    File: Return of the Jedi (1983) {imdb-tt0086190} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +800 points
+
+Movie: Captain Marvel (2019)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Captain Marvel (2019) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 6400)
+  WITH (Ali):
+    File: Captain Marvel (2019) {imdb-tt4154664} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +700 points
+
+Movie: Deadpool (2016)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Deadpool (2016) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 6400)
+  WITH (Ali):
+    File: Deadpool (2016) {imdb-tt1431045} [Hybrid][Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SEV.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +700 points
+
+Movie: Army of the Dead (2021)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Army.of.the.Dead.2021.2160p.HDR.NF.WEBRip.DDP.Atmos.5.1.x265-TrollUHD-FZ.mkv
+    Quality: 2160p WEBRip (score: 5550)
+  WITH (Ali):
+    File: Army of the Dead (2021) {imdb-tt0993840} [NF][WEBDL-2160p][DV HDR10][EAC3 Atmos 5.1][HEVC]-SiC.mkv
+    Quality: 2160p WEB-DL (score: 6200)
+  Improvement: +650 points
+
+Movie: Guardians of the Galaxy (2014)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Guardians.Of.The.Galaxy.2014.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6450)
+  WITH (Ali):
+    File: Guardians of the Galaxy (2014) {imdb-tt2015381} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +650 points
+
+Movie: Iron Man 3 (2013)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Iron.Man.3.2013.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6450)
+  WITH (Ali):
+    File: Iron Man 3 (2013) {imdb-tt1300854} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +650 points
+
+Movie: The Matrix Reloaded (2003)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The.Matrix.Reloaded.2003.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6550)
+  WITH (Ali):
+    File: The Matrix Reloaded (2003) {imdb-tt0234215} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +600 points
+
+Movie: E.T. the Extra-Terrestrial (1982)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: E.T.the.Extra-Terrestrial.1982.2160p.UHD.BluRay.x265-DEPTH.mkv
+    Quality: 2160p BluRay (score: 5850)
+  WITH (Ali):
+    File: E.T. the Extra-Terrestrial (1982) {imdb-tt0083866} [Bluray-2160p][HDR10][DTS-X 7.1][x265]-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6450)
+  Improvement: +600 points
+
+Movie: Wonder Woman (2017)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Wonder.Woman.2017.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6550)
+  WITH (Ali):
+    File: Wonder Woman (2017) {imdb-tt0451279} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +600 points
+
+Movie: War for the Planet of the Apes (2017)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: War.for.the.Planet.of.the.Apes.2017.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+    Quality: 2160p BluRay (score: 6200)
+  WITH (Ali):
+    File: War for the Planet of the Apes (2017) {imdb-tt3450958} [Hybrid][Bluray-2160p][DV HDR10Plus][EAC3 Atmos 8.0][x265]-BiTOR.mkv
+    Quality: 2160p BluRay (score: 6750)
+  Improvement: +550 points
+
+Movie: Indiana Jones and the Last Crusade (1989)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Indiana Jones and the Last Crusade (1989) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 7100)
+  WITH (Ali):
+    File: Indiana.Jones.and.the.Last.Crusade.1989.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7600)
+  Improvement: +500 points
+
+Movie: John Wick (2014)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: John.Wick.2014.2160p.UHD.BluRay.HDR.TrueHD.Atmos.7.1.x265-Absinth.mkv
+    Quality: 2160p BluRay (score: 6700)
+  WITH (Ali):
+    File: John Wick (2014) {imdb-tt2911666} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+    Quality: 2160p BluRay (score: 7200)
+  Improvement: +500 points
+
+Movie: Dunkirk (2017)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Dunkirk 2017 2160p UHD BluRay HDR DTS x265-SadeceBluRay.mkv
+    Quality: 2160p BluRay (score: 6400)
+  WITH (Ali):
+    File: Dunkirk (2017) {imdb-tt5013056} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 6900)
+  Improvement: +500 points
+
+Movie: The Matrix Revolutions (2003)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The.Matrix-Revolutions.2003.UHD.BluRay.HDR.10Bit.2160p.DD.5.1.H265-d3g.mkv
+    Quality: 2160p BluRay (score: 6350)
+  WITH (Ali):
+    File: The.Matrix.Revolutions.2003.2160p.UHD.BluRay.TrueHD.7.1.DV.x265-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 6850)
+  Improvement: +500 points
+
+Movie: Blade Runner (1982)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Blade.Runner.1982.The.Final.Cut.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+    Quality: 2160p Remux (score: 6800)
+  WITH (Ali):
+    File: Blade Runner (1982) {imdb-tt0083658} {edition-Final Cut} [Remux-2160p][HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7300)
+  Improvement: +500 points
+
+Movie: Total Recall (1990)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Total Recall (1990) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 7100)
+  WITH (Ali):
+    File: Total.Recall.1990.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7600)
+  Improvement: +500 points
+
+Movie: Star Trek IV The Voyage Home (1986)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Star.Trek.IV.The.Voyage.Home.1986.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+    Quality: 2160p BluRay (score: 6250)
+  WITH (Ali):
+    File: Star Trek IV The Voyage Home (1986) {imdb-tt0092007} [Bluray-2160p Proper][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+    Quality: 2160p BluRay (score: 6700)
+  Improvement: +450 points
+
+Movie: Indiana Jones and the Kingdom of the Crystal Skull (2008)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Indiana.Jones.and.the.Kingdom.of.the.Crystal.Skull.2008.2160p.HDR.UHD.BluRay.TrueHD.7.1.Atmos.2Audio.x265-10bit-HDS.mkv
+    Quality: 2160p BluRay (score: 6700)
+  WITH (Ali):
+    File: Indiana Jones and the Kingdom of the Crystal Skull (2008) {imdb-tt0367882} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +450 points
+
+Movie: Iron Man (2008)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Iron.Man.2008.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv
+    Quality: 2160p BluRay (score: 6650)
+  WITH (Ali):
+    File: Iron Man (2008) {imdb-tt0371746} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +450 points
+
+Movie: Star Trek III The Search for Spock (1984)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Star.Trek.III.The.Search.for.Spock.1984.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+    Quality: 2160p BluRay (score: 6250)
+  WITH (Ali):
+    File: Star Trek III The Search for Spock (1984) {imdb-tt0088170} [Bluray-2160p Proper][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+    Quality: 2160p BluRay (score: 6700)
+  Improvement: +450 points
+
+Movie: Bohemian Rhapsody (2018)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Bohemian Rhapsody (2018) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 6350)
+  WITH (Ali):
+    File: Bohemian Rhapsody (2018) {imdb-tt1727824} [Bluray-2160p][HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 6800)
+  Improvement: +450 points
+
+Movie: Raiders of the Lost Ark (1981)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Raiders.Of.The.Lost.Ark.1981.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv
+    Quality: 2160p BluRay (score: 6700)
+  WITH (Ali):
+    File: Raiders of the Lost Ark (1981) {imdb-tt0082971} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +450 points
+
+Movie: Star Trek II The Wrath of Khan (1982)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Star.Trek.II.The.Wrath.of.Khan.1982.Director's.Cut.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+    Quality: 2160p BluRay (score: 6250)
+  WITH (Ali):
+    File: Star Trek II The Wrath of Khan (1982) {imdb-tt0084726} {edition-Theatrical Cut} [Bluray-2160p Proper][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+    Quality: 2160p BluRay (score: 6700)
+  Improvement: +450 points
+
+Movie: Tenet (2020)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Tenet (2020) {imdb-tt6723592} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6550)
+  WITH (Ali):
+    File: Tenet (2020) {imdb-tt6723592} {edition-Imax} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+    Quality: 2160p BluRay (score: 6950)
+  Improvement: +400 points
+
+Movie: Solo A Star Wars Story (2018)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Solo A Star Wars Story (2018) {imdb-tt3778644} [Bluray-2160p Proper][HDR10][TrueHD Atmos 7.1][x265]-TnP.mkv
+    Quality: 2160p BluRay (score: 6750)
+  WITH (Ali):
+    File: Solo A Star Wars Story (2018) {imdb-tt3778644} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +400 points
+
+Movie: Godzilla vs. Kong (2021)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Godzilla.vs.Kong.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv
+    Quality: 2160p BluRay (score: 6750)
+  WITH (Ali):
+    File: Godzilla vs. Kong (2021) {imdb-tt5034838} [Bluray-2160p][DV HDR10Plus][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +400 points
+
+Movie: Black Widow (2021)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Black.Widow.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv
+    Quality: 2160p BluRay (score: 6700)
+  WITH (Ali):
+    File: Black Widow (2021) {imdb-tt3480822} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +400 points
+
+Movie: Black Panther Wakanda Forever (2022)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv
+    Quality: 2160p BluRay (score: 6700)
+  WITH (Ali):
+    File: Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7100)
+  Improvement: +400 points
+
+Movie: Deadpool 2 (2018)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Deadpool 2 (2018) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 6400)
+  WITH (Ali):
+    File: Deadpool 2 (2018) {imdb-tt5463162} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Quality: 2160p BluRay (score: 6750)
+  Improvement: +350 points
+
+Movie: Thor Ragnarok (2017)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Thor Ragnarok 2017 2160p UHD HDR10+ BluRay x265 TrueHD Atmos 7 1-UnKn0wn.mkv
+    Quality: 2160p BluRay (score: 6800)
+  WITH (Ali):
+    File: Thor Ragnarok (2017) {imdb-tt3501632} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +350 points
+
+Movie: 2001 A Space Odyssey (1968)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: 2001.A.Space.Odyssey.1968.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv
+    Quality: 2160p Remux (score: 7200)
+  WITH (Ali):
+    File: 2001 A Space Odyssey (1968) {imdb-tt0062622} [Remux-2160p Proper][DV HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7500)
+  Improvement: +300 points
+
+Movie: Batman Begins (2005)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Batman.Begins.2005.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv
+    Quality: 2160p Remux (score: 7200)
+  WITH (Ali):
+    File: Batman Begins (2005) {imdb-tt0372784} [Hybrid][Remux-2160p][DV HDR10][DTS-HD MA 5.1][HEVC]-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 7500)
+  Improvement: +300 points
+
+Movie: The Matrix (1999)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: The.Matrix.1999.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 6900)
+  WITH (Ali):
+    File: The Matrix (1999) {imdb-tt0133093} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +250 points
+
+Movie: Apollo 13 (1995)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Apollo 13 (1995) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 6350)
+  WITH (Ali):
+    File: Apollo.13.1995.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR-Scrambled.mkv
+    Quality: 2160p Remux (score: 6550)
+  Improvement: +200 points
+
+Movie: Fast & Furious 6 (2013)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Fast & Furious 6 (2013) Remux-2160p Proper.mkv
+    Quality: 2160p Remux (score: 6350)
+  WITH (Ali):
+    File: Fast and Furious 6 (2013) {imdb-tt1905041} {edition-Extended} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6550)
+  Improvement: +200 points
+
+Movie: Furious 7 (2015)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Chris):
+    File: Furious 7 (2015) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 6350)
+  WITH (Ali):
+    File: Furious.Seven.2015.Extended.2160p.UHD.BluRay.DTS-HD.HR.7.1.HDR.x265-CtrlHD.mkv
+    Quality: 2160p BluRay (score: 6500)
+  Improvement: +150 points
+
+
+CHRIS HAS BETTER VERSION (6 movies)
+--------------------------------------------------------------------------------
+
+Movie: Jungle Cruise (2021)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Ali):
+    File: Jungle.Cruise.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+    Quality: 2160p BluRay (score: 6250)
+  WITH (Chris):
+    File: Jungle Cruise (2021) Remux-2160p.mkv
+    Quality: 2160p Remux (score: 7100)
+  Improvement: +850 points
+
+Movie: Top Gun (1986)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Ali):
+    File: Top Gun (1986) {imdb-tt0092099} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-hallowed.mkv
+    Quality: 2160p BluRay (score: 6700)
+  WITH (Chris):
+    File: Top Gun 1986 2160p UHD DV HDR10 BluRay SL TrueHD Atmos7 1 H265-SHD.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +450 points
+
+Movie: Mortal Kombat (2021)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Ali):
+    File: Mortal Kombat (2021) {imdb-tt0293429} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv
+    Quality: 2160p BluRay (score: 6750)
+  WITH (Chris):
+    File: Mortal Kombat (2021) {imdb-tt0293429} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv
+    Quality: 2160p BluRay (score: 7150)
+  Improvement: +400 points
+
+Movie: Captain America Civil War (2016)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Ali):
+    File: Captain.America.Civil.War.2016.2160p.UHD.BluRay.ATMOS.HDR.x265-W4NK3R.mkv
+    Quality: 2160p BluRay (score: 6200)
+  WITH (Chris):
+    File: Captain America - Civil War (2016) (2160p UHD BluRay x265 DV HDR DDP 7.1 English - Weasley HONE).mkv
+    Quality: 2160p BluRay (score: 6600)
+  Improvement: +400 points
+
+Movie: Jaws (1975)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Ali):
+    File: Jaws (1975) {imdb-tt0073195} [Bluray-2160p][HDR10][TrueHD Atmos 7.1][x265]-HQMUX.mkv
+    Quality: 2160p BluRay (score: 6750)
+  WITH (Chris):
+    File: Jaws.1975.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+    Quality: 2160p Remux (score: 6900)
+  Improvement: +150 points
+
+Movie: John Wick Chapter 2 (2017)
+  Quality Upgrade: Same resolution (4K)
+  REPLACE (Ali):
+    File: John Wick Chapter 2 (2017) {imdb-tt4425200} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+    Quality: 2160p BluRay (score: 7150)
+  WITH (Chris):
+    File: John.Wick.Chapter.2.2017.2160p.UHD.Bluray.Remux.HDR10.HEVC.Atmos.TrueHD.7.1-4K4U.mkv
+    Quality: 2160p Remux (score: 7300)
+  Improvement: +150 points
+
+
+================================================================================
+MOVIES ONLY ALI HAS (75)
+================================================================================
+  Blade II (2002): 4K (21.99 GB)
+  Blade Runner 2049 (2017): 4K (73.33 GB)
+  Brotherhood of the Wolf (2001): 4K (48.64 GB)
+  Captain America Brave New World (2025): 4K (20.78 GB)
+  Cars 2 (2011): 4K (21.15 GB)
+  Cars 3 (2017): 4K (22.96 GB)
+  Cars (2006): 4K (24.69 GB)
+  Civil War (2024): 4K (22.60 GB)
+  Coco (2017): 4K (40.57 GB)
+  Constantine (2005): 4K (33.46 GB)
+  Dawn of the Planet of the Apes (2014): 4K (15.36 GB)
+  Eternals (2021): 4K (27.15 GB)
+  Extraction 2 (2023): 4K (17.09 GB)
+  Extraction (2020): 4K (13.09 GB)
+  The Fantastic 4 First Steps (2025): 4K (22.44 GB)
+  The Fifth Element (1997): 4K (56.64 GB)
+  Forrest Gump (1994): 4K (50.07 GB)
+  Frankenstein (2025): 4K (21.18 GB)
+  Furiosa A Mad Max Saga (2024): 4K (40.40 GB)
+  Gladiator II (2024): 4K (73.06 GB)
+  The Godfather Part II (1974): 4K (62.34 GB)
+  The Godfather Part III (1990): 4K (45.86 GB)
+  The Godfather (1972): 4K (56.76 GB)
+  Godzilla Minus One (2023): 4K (22.73 GB)
+  Godzilla x Kong The New Empire (2024): 4K (34.77 GB)
+  Godzilla (2014): 4K (44.77 GB)
+  The Greatest Showman (2017): 4K (31.93 GB)
+  Guardians of the Galaxy Vol. 3 (2023): 4K (34.70 GB)
+  Indiana Jones and the Dial of Destiny (2023): 4K (71.85 GB)
+  Kingdom of the Planet of the Apes (2024): 4K (27.73 GB)
+  Lawrence of Arabia (1962): 4K (94.55 GB)
+  Life of Pi (2012): 4K (46.66 GB)
+  The Lion King (1994): 4K (19.02 GB)
+  The Lion King (2019): 4K (13.86 GB)
+  Mission Impossible 8 (2025): 4K (47.70 GB)
+  Mission Impossible Fallout (2018): 4K (51.19 GB)
+  Mission Impossible Ghost Protocol (2011): 4K (25.72 GB)
+  Mission Impossible II (2000): 4K (29.31 GB)
+  Mission Impossible III (2006): 4K (29.20 GB)
+  Mission Impossible Rogue Nation (2015): 4K (24.98 GB)
+  The Mummy Returns (2001): 4K (45.57 GB)
+  The Northman (2022): 4K (40.23 GB)
+  Pacific Rim Uprising (2018): 4K (30.31 GB)
+  The Phantom of the Opera (2004): 4K (38.66 GB)
+  Pulp Fiction (1994): 4K (32.31 GB)
+  Rise of the Planet of the Apes (2011): 4K (18.08 GB)
+  The Shawshank Redemption (1994): 4K (16.70 GB)
+  Spider-Man Far From Home (2019): 4K (18.91 GB)
+  Spider-Man Homecoming (2017): 4K (25.32 GB)
+  The Spy Who Loved Me (1977): 4K (17.41 GB)
+  Star Trek Beyond (2016): 4K (38.17 GB)
+  Star Trek Generations (1994) {imdb-tt0111280}: 4K (27.43 GB)
+  Star Trek Insurrection (1998) {imdb-tt0120844}: 4K (28.43 GB)
+  Star Trek Nemesis (2002) {imdb-tt0253754}: 4K (29.03 GB)
+  The Super Mario Bros. Movie (2023): 4K (21.43 GB)
+  Superman (2025): 4K (43.47 GB)
+  The Ten Commandments (1956): 4K (86.98 GB)
+  Terminator 2 Judgment Day (1991): 4K (49.01 GB)
+  The Terminator (1984): 4K (39.43 GB)
+  Thor The Dark World (2013): 4K (22.83 GB)
+  Thor (2011): 4K (22.33 GB)
+  Thunderbolts- (2025): 4K (26.55 GB)
+  TRON Ares (2025): 4K (21.02 GB)
+  TRON Legacy (2010): 4K (36.31 GB)
+  Tron (1982): 4K (15.05 GB)
+  Venom Let There Be Carnage (2021): 4K (25.41 GB)
+  Venom The Last Dance (2024): 4K (23.21 GB)
+  Venom (2018): 4K (19.08 GB)
+  Warfare (2025): 4K (24.38 GB)
+  What Happened to Monday (2017): 4K (24.74 GB)
+  Wicked (2024): 4K (45.65 GB)
+  Willy Wonka and the Chocolate Factory (1971): 4K (34.00 GB)
+  The Wizard of Oz (1939): 4K (48.49 GB)
+  Zack Snyders Justice League (2021): 1080p (52.30 GB)
+  Zombieland Double Tap (2019): 4K (17.66 GB)
+
+================================================================================
+MOVIES ONLY CHRIS HAS (10)
+================================================================================
+  Doctor Strange in the Multiverse of Madness (2022): 4K (22.00 GB)
+  Doctor Strange (2016): 4K (45.57 GB)
+  Ghostbusters Afterlife (2021): 4K (13.09 GB)
+  Independence Day (1996): 4K (43.31 GB)
+  Jurassic World Dominion (2022): 4K (25.91 GB)
+  Oblivion (2013): 4K (52.38 GB)
+  The Outfit (2022): 4K (11.00 GB)
+  Pirates of the Caribbean The Curse of the Black Pearl (2003): 4K (19.35 GB)
+  Prey (2022): 4K (14.25 GB)
+  Resident Evil Welcome to Raccoon City (2021): 4K (11.42 GB)
