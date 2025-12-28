@@ -4,23 +4,25 @@ This directory contains all automation scripts for the Mother project.
 
 **Last Updated:** 2024-12-28
 
-## Quick Start - Movie Analysis Workflow
+## Quick Start - Library Analysis
 
 ```bash
-# Full analysis (inventory + comparison)
+# Full analysis (Movies + TV, 4K + 1080p)
+./scripts/analyze_all.sh
+
+# Movies only
 ./scripts/analyze_movies.sh
+./scripts/analyze_movies.sh --4k        # Just 4K movies
+./scripts/analyze_movies.sh --1080p     # Just 1080p movies
 
-# Just 1080p movies
-./scripts/analyze_movies.sh --1080p
+# TV Shows only
+./scripts/analyze_tv.sh
+./scripts/analyze_tv.sh --4k            # Just 4K TV
+./scripts/analyze_tv.sh --1080p         # Just 1080p TV
 
-# Just 4K movies
-./scripts/analyze_movies.sh --4k
-
-# Regenerate inventories only
-./scripts/analyze_movies.sh --inventory-only
-
-# Compare using existing inventories
-./scripts/analyze_movies.sh --compare-only
+# Other options
+./scripts/analyze_movies.sh --inventory-only   # Just generate inventories
+./scripts/analyze_movies.sh --compare-only     # Just run comparison
 ```
 
 ---
@@ -29,8 +31,22 @@ This directory contains all automation scripts for the Mother project.
 
 ### 📊 Library Analysis
 
+#### `analyze_all.sh`
+Master script to run complete library analysis.
+
+**Usage:**
+```bash
+./scripts/analyze_all.sh              # Full analysis (Movies + TV)
+./scripts/analyze_all.sh --movies     # Movies only
+./scripts/analyze_all.sh --tv         # TV shows only
+./scripts/analyze_all.sh --4k         # 4K libraries only
+./scripts/analyze_all.sh --1080p      # 1080p libraries only
+```
+
+---
+
 #### `analyze_movies.sh`
-**NEW!** Automated workflow for movie library analysis.
+Automated workflow for movie library analysis.
 
 **Usage:**
 ```bash
@@ -41,7 +57,21 @@ This directory contains all automation scripts for the Mother project.
 ./scripts/analyze_movies.sh --compare-only     # Just run comparison
 ```
 
-**Features:**
+---
+
+#### `analyze_tv.sh`
+Automated workflow for TV show library analysis.
+
+**Usage:**
+```bash
+./scripts/analyze_tv.sh                  # Full analysis
+./scripts/analyze_tv.sh --4k             # 4K TV shows only
+./scripts/analyze_tv.sh --1080p          # 1080p TV shows only
+./scripts/analyze_tv.sh --inventory-only # Just generate inventories
+./scripts/analyze_tv.sh --compare-only   # Just run comparison
+```
+
+**Features (all analysis scripts):**
 - Generates inventories for both Ali (Unraid) and Chris (Synology)
 - Runs quality comparisons with Project Mother scoring
 - Outputs detailed reports and sync scripts
