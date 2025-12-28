@@ -1,20 +1,28 @@
 ###############################################################################
-# Recyclarr Configuration - TRaSH Templates (HD-Bluray+WEB + Remux+WEB)
-# Last Updated: 2024-12-26
+# Recyclarr Configuration - Project Mother
+#
+# Based on TRaSH Guides with custom scoring for:
+# - 1080p HDR bonus (+400)
+# - x265 (no HDR/DV) blocking (allows HDR x265, blocks SDR x265)
+# - Audio priority (Atmos > HDR at 1080p)
+# - TV Show Bluray/Remux profiles
+#
+# Last Updated: 2024-12-28
 ###############################################################################
 
 radarr:
   #---------------------------------------------------------------------------
-  # Radarr-HD: 1080p Movies (HD-Bluray+WEB AND Remux+WEB profiles)
+  # Radarr-HD: 1080p Movies
+  # Profiles: HD-Bluray+WEB, Remux+WEB-1080p
   #---------------------------------------------------------------------------
   radarr-hd:
     base_url: http://radarr-hd:7878
     api_key: !env_var RADARR_HD_API_KEY
-    
+
     delete_old_custom_formats: true
     replace_existing_custom_formats: true
-    
-    # Include BOTH HD templates (creates 2 profiles)
+
+    # Include TRaSH templates for both profiles
     include:
       - template: radarr-quality-definition-movie
       # HD-Bluray + WEB profile
@@ -23,20 +31,96 @@ radarr:
       # Remux + WEB 1080p profile
       - template: radarr-quality-profile-remux-web-1080p
       - template: radarr-custom-formats-remux-web-1080p
-    
-    # Media naming - configure manually in Radarr UI if needed
+
+    # Custom format overrides for 1080p HDR bonus and x265 policy
+    custom_formats:
+      # Use x265 (no HDR/DV) instead of x265 (HD)
+      # This allows 1080p HDR x265 releases (downscaled 4K) while blocking SDR x265 re-encodes
+      - trash_ids:
+          - 839bea857ed2c0a8e3f673de7b5a1f0e  # x265 (no HDR/DV)
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: -10000
+          - name: Remux + WEB 1080p
+            score: -10000
+
+      # HDR bonus for 1080p (+400) - these are downscaled 4K releases
+      - trash_ids:
+          - e23edd2482476e595fb990b12e7c609c  # DV HDR10
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 400
+          - name: Remux + WEB 1080p
+            score: 400
+
+      - trash_ids:
+          - 58d6a88f13e2db7f5059c41047876f00  # DV
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 350
+          - name: Remux + WEB 1080p
+            score: 350
+
+      - trash_ids:
+          - 55d53828b9d81cbe20b02efd00aa0efd  # DV HLG
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 350
+          - name: Remux + WEB 1080p
+            score: 350
+
+      - trash_ids:
+          - a3e19f8f627608af0211acd02bf89735  # DV SDR
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 300
+          - name: Remux + WEB 1080p
+            score: 300
+
+      - trash_ids:
+          - e61e28db95d22bedcadf030b8f156d96  # HDR
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 400
+          - name: Remux + WEB 1080p
+            score: 400
+
+      - trash_ids:
+          - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 400
+          - name: Remux + WEB 1080p
+            score: 400
+
+      - trash_ids:
+          - b974a6cd08c1066250f1f177d7aa1225  # HDR10+
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 350
+          - name: Remux + WEB 1080p
+            score: 350
+
+      - trash_ids:
+          - 9364dd386c9b4a1100dde8264690c83a  # HLG
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 300
+          - name: Remux + WEB 1080p
+            score: 300
 
   #---------------------------------------------------------------------------
-  # Radarr-4K: 4K Movies (UHD-Bluray+WEB AND Remux+WEB profiles)
+  # Radarr-4K: 4K Movies
+  # Profiles: UHD-Bluray+WEB, Remux+WEB-2160p
   #---------------------------------------------------------------------------
   radarr-4k:
     base_url: http://radarr-4k:7878
     api_key: !env_var RADARR_4K_API_KEY
-    
+
     delete_old_custom_formats: true
     replace_existing_custom_formats: true
-    
-    # Include BOTH 4K templates (creates 2 profiles)
+
+    # Include TRaSH templates for both 4K profiles
     include:
       - template: radarr-quality-definition-movie
       # UHD-Bluray + WEB profile
@@ -45,26 +129,141 @@ radarr:
       # Remux + WEB 2160p profile
       - template: radarr-quality-profile-remux-web-2160p
       - template: radarr-custom-formats-remux-web-2160p
-    
-    # Media naming - configure manually in Radarr UI if needed
+
+    # 4K HDR scoring - use TRaSH defaults (higher scores for 4K)
+    # DV HDR10: +800, HDR10: +700, DV: +400, HDR10+: +300
+    # No custom overrides needed - TRaSH defaults are correct for 4K
 
 sonarr:
   #---------------------------------------------------------------------------
   # Sonarr-HD: 1080p TV Shows
+  # Profiles: WEB-1080p (default), Bluray-1080p, Remux-1080p
   #---------------------------------------------------------------------------
   sonarr-hd:
     base_url: http://sonarr-hd:8989
     api_key: !env_var SONARR_HD_API_KEY
-    
+
     delete_old_custom_formats: true
     replace_existing_custom_formats: true
-    
-    # Include TRaSH WEB template
+
+    # Include TRaSH WEB template as base
     include:
       - template: sonarr-quality-definition-series
       - template: sonarr-v4-quality-profile-web-1080p
       - template: sonarr-v4-custom-formats-web-1080p
-    
+
+    # Custom format overrides
+    custom_formats:
+      # Use x265 (no HDR/DV) - allows 1080p HDR x265, blocks SDR x265
+      - trash_ids:
+          - 9b64dff695c2115facf1b6ea59c9bd07  # x265 (no HDR/DV) - Sonarr
+        assign_scores_to:
+          - name: WEB-1080p
+            score: -10000
+          - name: Bluray-1080p
+            score: -10000
+          - name: Remux-1080p
+            score: -10000
+
+      # HDR bonus for 1080p TV (+400)
+      - trash_ids:
+          - 7878c33f1963fefb3d6c8657d46c2f0a  # DV HDR10 - Sonarr
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 400
+          - name: Bluray-1080p
+            score: 400
+          - name: Remux-1080p
+            score: 400
+
+      - trash_ids:
+          - 6d0d8de7b57e35518ac0308b0ddf404e  # DV - Sonarr
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 350
+          - name: Bluray-1080p
+            score: 350
+          - name: Remux-1080p
+            score: 350
+
+      - trash_ids:
+          - 1f733af03141f068a540eec352589a89  # DV HLG - Sonarr
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 350
+          - name: Bluray-1080p
+            score: 350
+          - name: Remux-1080p
+            score: 350
+
+      - trash_ids:
+          - 27954b0a80571b47d3a3e75e4cd8da8d  # DV SDR - Sonarr
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 300
+          - name: Bluray-1080p
+            score: 300
+          - name: Remux-1080p
+            score: 300
+
+      - trash_ids:
+          - 2b239ed870daba8126a53bd5dc8dc1c8  # HDR - Sonarr
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 400
+          - name: Bluray-1080p
+            score: 400
+          - name: Remux-1080p
+            score: 400
+
+      - trash_ids:
+          - 7d08e720f01e4948a6be3c8ceb199ef8  # HDR10 - Sonarr
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 400
+          - name: Bluray-1080p
+            score: 400
+          - name: Remux-1080p
+            score: 400
+
+      - trash_ids:
+          - 3497f2e847b8ea1fb420df1b88196f13  # HDR10+ - Sonarr
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 350
+          - name: Bluray-1080p
+            score: 350
+          - name: Remux-1080p
+            score: 350
+
+      - trash_ids:
+          - b7aa55d6c3815e96b5fdb52f1c1f8dbe  # HLG - Sonarr
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 300
+          - name: Bluray-1080p
+            score: 300
+          - name: Remux-1080p
+            score: 300
+
+      # HD Bluray Tier groups for Bluray profiles
+      - trash_ids:
+          - d6819cba26b1a6508138d25fb5e32293  # HD Bluray Tier 01
+        assign_scores_to:
+          - name: Bluray-1080p
+            score: 1800
+          - name: Remux-1080p
+            score: 1800
+
+      - trash_ids:
+          - c2216b7b8aa545dc1ce8388c618f8d57  # HD Bluray Tier 02
+        assign_scores_to:
+          - name: Bluray-1080p
+            score: 1500
+          - name: Remux-1080p
+            score: 1500
+
+    # Media naming
     media_naming:
       series: default
       season: default
@@ -73,35 +272,77 @@ sonarr:
         standard: default
         daily: default
         anime: default
-    
-    # Create custom Remux profile - FIXED quality name!
+
+    # Create Bluray and Remux profiles
     quality_profiles:
+      - name: Bluray-1080p
+        reset_unmatched_scores:
+          enabled: true
+        upgrade:
+          allowed: true
+          until_quality: Bluray-1080p
+          until_score: 10000
+        qualities:
+          - name: Bluray-1080p
+          - name: WEB 1080p
+            qualities:
+              - WEBDL-1080p
+              - WEBRip-1080p
+
       - name: Remux-1080p
         reset_unmatched_scores:
           enabled: true
         upgrade:
           allowed: true
-          until_quality: Bluray-1080p Remux  # Fixed! Was "Remux-1080p"
+          until_quality: Bluray-1080p Remux
           until_score: 10000
         qualities:
-          - name: Bluray-1080p Remux  # Fixed! Was "Remux-1080p"
+          - name: Bluray-1080p Remux
+          - name: Bluray-1080p
+          - name: WEB 1080p
+            qualities:
+              - WEBDL-1080p
+              - WEBRip-1080p
 
   #---------------------------------------------------------------------------
   # Sonarr-4K: 4K TV Shows
+  # Profiles: WEB-2160p (default), Bluray-2160p, Remux-2160p
   #---------------------------------------------------------------------------
   sonarr-4k:
     base_url: http://sonarr-4k:8989
     api_key: !env_var SONARR_4K_API_KEY
-    
+
     delete_old_custom_formats: true
     replace_existing_custom_formats: true
-    
-    # Include TRaSH WEB template
+
+    # Include TRaSH WEB template as base
     include:
       - template: sonarr-quality-definition-series
       - template: sonarr-v4-quality-profile-web-2160p
       - template: sonarr-v4-custom-formats-web-2160p
-    
+
+    # 4K uses TRaSH default HDR scores (higher than 1080p)
+    # DV HDR10: 1500+, HDR10: 1000+, etc.
+
+    # Custom formats for UHD Bluray Tiers
+    custom_formats:
+      - trash_ids:
+          - 4b900e171e5d4ae5b6d5a5fe8f1f6b3d  # UHD Bluray Tier 01
+        assign_scores_to:
+          - name: Bluray-2160p
+            score: 2500
+          - name: Remux-2160p
+            score: 2500
+
+      - trash_ids:
+          - ac1e6e3b080101c1b2b3f75c8d9e2e6a  # UHD Bluray Tier 02
+        assign_scores_to:
+          - name: Bluray-2160p
+            score: 2000
+          - name: Remux-2160p
+            score: 2000
+
+    # Media naming
     media_naming:
       series: default
       season: default
@@ -110,15 +351,34 @@ sonarr:
         standard: default
         daily: default
         anime: default
-    
-    # Create custom 4K Remux profile - FIXED quality name!
+
+    # Create 4K Bluray and Remux profiles
     quality_profiles:
+      - name: Bluray-2160p
+        reset_unmatched_scores:
+          enabled: true
+        upgrade:
+          allowed: true
+          until_quality: Bluray-2160p
+          until_score: 10000
+        qualities:
+          - name: Bluray-2160p
+          - name: WEB 2160p
+            qualities:
+              - WEBDL-2160p
+              - WEBRip-2160p
+
       - name: Remux-2160p
         reset_unmatched_scores:
           enabled: true
         upgrade:
           allowed: true
-          until_quality: Bluray-2160p Remux  # Fixed! Was "Remux-2160p"
+          until_quality: Bluray-2160p Remux
           until_score: 10000
         qualities:
-          - name: Bluray-2160p Remux  # Fixed! Was "Remux-2160p"
+          - name: Bluray-2160p Remux
+          - name: Bluray-2160p
+          - name: WEB 2160p
+            qualities:
+              - WEBDL-2160p
+              - WEBRip-2160p

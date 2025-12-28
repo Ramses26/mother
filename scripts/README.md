@@ -2,7 +2,52 @@
 
 This directory contains all automation scripts for the Mother project.
 
+**Last Updated:** 2024-12-28
+
+## Quick Start - Movie Analysis Workflow
+
+```bash
+# Full analysis (inventory + comparison)
+./scripts/analyze_movies.sh
+
+# Just 1080p movies
+./scripts/analyze_movies.sh --1080p
+
+# Just 4K movies
+./scripts/analyze_movies.sh --4k
+
+# Regenerate inventories only
+./scripts/analyze_movies.sh --inventory-only
+
+# Compare using existing inventories
+./scripts/analyze_movies.sh --compare-only
+```
+
+---
+
 ## Scripts Overview
+
+### 📊 Library Analysis
+
+#### `analyze_movies.sh`
+**NEW!** Automated workflow for movie library analysis.
+
+**Usage:**
+```bash
+./scripts/analyze_movies.sh              # Full analysis
+./scripts/analyze_movies.sh --4k         # 4K movies only
+./scripts/analyze_movies.sh --1080p      # 1080p movies only
+./scripts/analyze_movies.sh --inventory-only   # Just generate inventories
+./scripts/analyze_movies.sh --compare-only     # Just run comparison
+```
+
+**Features:**
+- Generates inventories for both Ali (Unraid) and Chris (Synology)
+- Runs quality comparisons with Project Mother scoring
+- Outputs detailed reports and sync scripts
+- Flags misplaced files (wrong library)
+
+---
 
 ### 📦 Deployment & Management
 
@@ -188,7 +233,7 @@ python3 scripts/generate_inventory.py \\\\unraid\\media\\4K TV Shows -o ali_4ktv
 ---
 
 #### `compare_libraries.py`
-Compare two library inventories and generate sync plan based on TRASHGuides quality scoring.
+**UPDATED 2024-12-28** - Compare two library inventories using Project Mother scoring.
 
 **Usage:**
 ```bash
@@ -199,16 +244,25 @@ python3 scripts/compare_libraries.py ali_movies.json chris_movies.json -o /path/
 ```
 
 **Output:**
-- `comparison_summary_[timestamp].txt` - Human-readable report
-- `sync_plan_[timestamp].csv` - CSV file for sync automation
+- `detailed_comparison_[timestamp].txt` - Human-readable report with all actions
+- `sync_plan_[timestamp].csv` - CSV file for review
+- `sync_actions_[timestamp].sh` - Executable sync script (DRY RUN by default)
 
-**Quality Scoring:**
-Based on TRASHGuides recommendations with Ali's preferences:
-- Resolution: 2160p > 1080p > 720p > 480p
-- Source: Remux > BluRay > WEB-DL > WEBRip > HDTV
-- HDR: HDR10+ > HDR > DV (Ali prefers HDR over Dolby Vision)
-- Audio: Atmos > TrueHD > DTS-HD MA > DTS:X
-- Codec: AV1 > HEVC > AVC
+**Key Features:**
+- **Option C Analysis:** Uses path to determine library type (4K vs 1080p)
+- **TRaSH Filename Parsing:** Extracts quality from `[Bluray-1080p][DTS-HD MA 5.1][HDR]` format
+- **Misplaced File Detection:** Flags 4K files in 1080p libraries (and vice versa)
+- **Deleted Folder Handling:** Generates moves to proper deleted folders
+
+**Quality Scoring (from HDR & Audio Format Preferences.md):**
+- **Resolution:** 2160p (+4000) > 1080p (+2000) > 720p (+1000)
+- **Source:** Remux (+2000) > BluRay (+1500) > WEB-DL (+1000)
+- **Audio:** TrueHD Atmos (+500) > DTS-HD MA (+400) > DTS (+200)
+- **HDR 4K:** DV HDR10 (+800) > HDR10 (+700) > DV (+400)
+- **HDR 1080p:** Any HDR (+400) - bonus for downscaled 4K releases
+- **Codec:** AV1 (+250) > HEVC (+200) > AVC (+100)
+
+**Priority Note:** Audio trumps HDR at 1080p (Atmos +500 > HDR +400)
 
 **Example workflow:**
 ```bash

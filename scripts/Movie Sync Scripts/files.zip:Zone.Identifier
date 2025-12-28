@@ -1,5 +1,0 @@
-[ZoneTransfer]
-ZoneId=3
-ReferrerUrl=https://claude.ai/chat/bb3b52ab-60b7-40ac-be9a-35bee62a9ff1
-HostUrl=https://claude.ai/api/organizations/e50168a8-409e-470a-bc2f-428ac4b711dd/conversations/bb3b52ab-60b7-40ac-be9a-35bee62a9ff1/wiggle/download-files?paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2Fproject_mother_targeted_FIXED.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2FRSYNC_ERROR_FIX.txt&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2Fproject_mother_targeted_FIXED.sh
-ser-data%2Foutputs%2Fscripts%2FDELETE_Synology_Movies.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2FDELETE_Unraid_Movies.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2FDOWNLOAD_ALL_5_FILES.txt
