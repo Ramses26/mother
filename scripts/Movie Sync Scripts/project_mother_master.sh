@@ -147,7 +147,7 @@ if [[ "$CURRENT_STATE" =~ ^(START|PREFLIGHT_DONE)$ ]]; then
     log "From: /mnt/unraid/media/Movies/"
     log "To:   /mnt/synology/rs-movies/"
     
-    RSYNC_OPTS="-avh --stats --log-file=$LOG_FILE.rsync_movies_ali_to_chris"
+    RSYNC_OPTS="-avh --stats --no-perms --no-owner --no-group --log-file=$LOG_FILE.rsync_movies_ali_to_chris"
     [ "$DRY_RUN" == "true" ] && RSYNC_OPTS="$RSYNC_OPTS --dry-run"
     
     if rsync $RSYNC_OPTS /mnt/unraid/media/Movies/ /mnt/synology/rs-movies/; then
@@ -163,7 +163,7 @@ if [[ "$CURRENT_STATE" =~ ^(START|PREFLIGHT_DONE)$ ]]; then
     log "From: /mnt/synology/rs-movies/"
     log "To:   /mnt/unraid/media/Movies/"
     
-    RSYNC_OPTS="-avh --stats --log-file=$LOG_FILE.rsync_movies_chris_to_ali"
+    RSYNC_OPTS="-avh --stats --no-perms --no-owner --no-group --log-file=$LOG_FILE.rsync_movies_chris_to_ali"
     [ "$DRY_RUN" == "true" ] && RSYNC_OPTS="$RSYNC_OPTS --dry-run"
     
     if rsync $RSYNC_OPTS /mnt/synology/rs-movies/ /mnt/unraid/media/Movies/; then
@@ -238,7 +238,7 @@ if [[ "$CURRENT_STATE" =~ ^(START|PREFLIGHT_DONE|MOVIES_SYNCED|MOVIES_DELETED)$ 
     log "From: /mnt/unraid/media/4K Movies/"
     log "To:   /mnt/synology/rs-4kmedia/4kmovies/"
     
-    RSYNC_OPTS="-avh --stats --log-file=$LOG_FILE.rsync_4k_ali_to_chris"
+    RSYNC_OPTS="-avh --stats --no-perms --no-owner --no-group --log-file=$LOG_FILE.rsync_4k_ali_to_chris"
     [ "$DRY_RUN" == "true" ] && RSYNC_OPTS="$RSYNC_OPTS --dry-run"
     
     if rsync $RSYNC_OPTS "/mnt/unraid/media/4K Movies/" /mnt/synology/rs-4kmedia/4kmovies/; then
@@ -254,7 +254,7 @@ if [[ "$CURRENT_STATE" =~ ^(START|PREFLIGHT_DONE|MOVIES_SYNCED|MOVIES_DELETED)$ 
     log "From: /mnt/synology/rs-4kmedia/4kmovies/"
     log "To:   /mnt/unraid/media/4K Movies/"
     
-    RSYNC_OPTS="-avh --stats --log-file=$LOG_FILE.rsync_4k_chris_to_ali"
+    RSYNC_OPTS="-avh --stats --no-perms --no-owner --no-group --log-file=$LOG_FILE.rsync_4k_chris_to_ali"
     [ "$DRY_RUN" == "true" ] && RSYNC_OPTS="$RSYNC_OPTS --dry-run"
     
     if rsync $RSYNC_OPTS /mnt/synology/rs-4kmedia/4kmovies/ "/mnt/unraid/media/4K Movies/"; then

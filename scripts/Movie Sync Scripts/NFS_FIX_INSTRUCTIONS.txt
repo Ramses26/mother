@@ -1,0 +1,88 @@
+================================================================================
+QUICK FIX - NFS Permission Errors SOLVED
+================================================================================
+
+PROBLEM: "Operation not permitted" errors
+CAUSE: rsync trying to preserve permissions on NFS mount
+FIX: Added --no-perms --no-owner --no-group flags
+
+
+🛑 STOP CURRENT EXECUTION (Run these commands NOW)
+================================================================================
+
+# 1. Attach to screen
+screen -r project-mother
+
+# 2. Press Ctrl+C to stop
+
+# 3. Exit screen
+exit
+
+# 4. Kill any lingering processes
+pkill -f rsync
+pkill -f project_mother
+
+# 5. Clear state
+rm -f /opt/mother/.project_mother_state
+
+
+✅ FIXED VERSION IS ALREADY IN PLACE
+================================================================================
+
+The master script has been updated with:
+  --no-perms --no-owner --no-group
+
+This tells rsync to NOT try to preserve ownership/permissions on NFS mounts.
+
+
+🚀 RESTART WITH FIX
+================================================================================
+
+Download the fixed script:
+  1. Re-download the scripts folder
+  2. Copy to Mother: scp -r scripts/* mother:/opt/mother/scripts/
+  
+Or apply fix manually on Mother:
+  
+  Edit /opt/mother/scripts/project_mother_master.sh
+  
+  Find all 4 rsync commands and change:
+    RSYNC_OPTS="-avh --stats --log-file=..."
+  To:
+    RSYNC_OPTS="-avh --stats --no-perms --no-owner --no-group --log-file=..."
+
+Then restart:
+  cd /opt/mother/scripts
+  bash quick_start.sh
+
+
+📋 WHY THIS HAPPENS
+================================================================================
+
+NFS mounts often don't allow chown/chmod operations, especially when:
+  - Mounted with "all_squash" or "root_squash"
+  - User doesn't have admin rights on remote filesystem
+  - Synology has specific user/permission restrictions
+
+The --no-perms --no-owner --no-group flags tell rsync:
+  "Just copy the files, don't try to preserve ownership/permissions"
+
+This is SAFE and CORRECT for this use case:
+  ✓ Files still get copied properly
+  ✓ Content is identical
+  ✓ Only metadata (ownership) is different
+  ✓ Both Radarr and Plex work fine regardless of ownership
+
+
+✅ READY TO GO AFTER RESTART
+================================================================================
+
+Once you restart with the fixed script:
+  - Rsync will copy files without permission errors
+  - Everything else works the same
+  - Safe for overnight execution
+
+The fix is already applied, just restart!
+
+
+================================================================================

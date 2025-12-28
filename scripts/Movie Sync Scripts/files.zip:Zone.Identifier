@@ -1,4 +1,5 @@
 [ZoneTransfer]
 ZoneId=3
 ReferrerUrl=https://claude.ai/chat/bb3b52ab-60b7-40ac-be9a-35bee62a9ff1
-HostUrl=https://claude.ai/api/organizations/e50168a8-409e-470a-bc2f-428ac4b711dd/conversations/bb3b52ab-60b7-40ac-be9a-35bee62a9ff1/wiggle/download-files?paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2FOVERNIGHT_EXECUTION_GUIDE.txt&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2FREADME.md&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2Fquick_start.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2Fpreflight_checks.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2Fproject_mother_master.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2Fverify_completion.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2FSTART_HERE.txt
+HostUrl=https://claude.ai/api/organizations/e50168a8-409e-470a-bc2f-428ac4b711dd/conversations/bb3b52ab-60b7-40ac-be9a-35bee62a9ff1/wiggle/download-files?paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2FNFS_FIX_INSTRUCTIONS.txt&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2Fproject_mother_master.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2Femergency_fix.sh
+2Fuser-data%2Foutputs%2Fscripts%2Fpreflight_checks.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2Fproject_mother_master.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2Fverify_completion.sh&paths=%2Fmnt%2Fuser-data%2Foutputs%2Fscripts%2FSTART_HERE.txt
