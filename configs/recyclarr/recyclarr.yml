@@ -109,6 +109,52 @@ radarr:
           - name: Remux + WEB 1080p
             score: 300
 
+      # Atmos-first audio preference (higher than HDR at 1080p)
+      - trash_ids:
+          - 496f355514737f7d83bf7aa4d24f8169  # TrueHD Atmos
+          - 2f22d89048b01681dde8afe203bf2e95  # DTS:X
+          - 417804f7f2c4308c1f4c5d380d4c4475  # ATMOS (undefined)
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 450
+          - name: Remux + WEB 1080p
+            score: 450
+
+      - trash_ids:
+          - 1af239278386be2919e1bcee0bde047e  # DD+ Atmos
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 425
+          - name: Remux + WEB 1080p
+            score: 425
+
+      # Boutique movie versions (slight bonus)
+      - trash_ids:
+          - 0f12c086e289cf966fa5948eac571f44  # Hybrid
+          - 570bc9ebecd92723d2d21500f4be314c  # Remaster
+          - eca37840c13c6ef2dd0262b141a5482f  # 4K Remaster
+          - e0c07d59beb37348e975a930d5e50319  # Criterion Collection
+          - 9d27d9d2181838f76dee150882bdc58c  # Masters of Cinema
+          - db9b4c4b53d312a3ca5f1378f6440fc9  # Vinegar Syndrome
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 150
+          - name: Remux + WEB 1080p
+            score: 150
+
+      # Optional unwanted release filters from TRaSH
+      - trash_ids:
+          - b6832f586342ef70d9c128d40c07b872  # Bad Dual Groups
+          - ae9b7c9ebde1f3bd336a8cbd1ec4c5e5  # No-RlsGroup
+          - 7357cf5161efbf8c4d5d0c30b4815ee2  # Obfuscated
+          - 5c44f52a8714fdd79bb4d98e2673be1f  # Retags
+          - f537cf427b64c38c8e36298f657e4828  # Scene
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: -10000
+          - name: Remux + WEB 1080p
+            score: -10000
+
   #---------------------------------------------------------------------------
   # Radarr-4K: 4K Movies
   # Profiles: UHD-Bluray+WEB, Remux+WEB-2160p
@@ -130,9 +176,55 @@ radarr:
       - template: radarr-quality-profile-remux-web-2160p
       - template: radarr-custom-formats-remux-web-2160p
 
-    # 4K HDR scoring - use TRaSH defaults (higher scores for 4K)
-    # DV HDR10: +800, HDR10: +700, DV: +400, HDR10+: +300
-    # No custom overrides needed - TRaSH defaults are correct for 4K
+    # 4K HDR scoring stays on TRaSH defaults (DV HDR10 +800, HDR10 +700, DV +400, HDR10+ +300).
+    # Custom formats below add Atmos priority plus the optional release filters.
+
+    custom_formats:
+      # Atmos-first audio preference (higher than HDR at 4K)
+      - trash_ids:
+          - 496f355514737f7d83bf7aa4d24f8169  # TrueHD Atmos
+          - 2f22d89048b01681dde8afe203bf2e95  # DTS:X
+          - 417804f7f2c4308c1f4c5d380d4c4475  # ATMOS (undefined)
+        assign_scores_to:
+          - name: UHD Bluray + WEB
+            score: 900
+          - name: Remux + WEB 2160p
+            score: 900
+
+      - trash_ids:
+          - 1af239278386be2919e1bcee0bde047e  # DD+ Atmos
+        assign_scores_to:
+          - name: UHD Bluray + WEB
+            score: 800
+          - name: Remux + WEB 2160p
+            score: 800
+
+      # Boutique movie versions (slight bonus)
+      - trash_ids:
+          - 0f12c086e289cf966fa5948eac571f44  # Hybrid
+          - 570bc9ebecd92723d2d21500f4be314c  # Remaster
+          - eca37840c13c6ef2dd0262b141a5482f  # 4K Remaster
+          - e0c07d59beb37348e975a930d5e50319  # Criterion Collection
+          - 9d27d9d2181838f76dee150882bdc58c  # Masters of Cinema
+          - db9b4c4b53d312a3ca5f1378f6440fc9  # Vinegar Syndrome
+        assign_scores_to:
+          - name: UHD Bluray + WEB
+            score: 200
+          - name: Remux + WEB 2160p
+            score: 200
+
+      # Optional unwanted release filters from TRaSH
+      - trash_ids:
+          - b6832f586342ef70d9c128d40c07b872  # Bad Dual Groups
+          - ae9b7c9ebde1f3bd336a8cbd1ec4c5e5  # No-RlsGroup
+          - 7357cf5161efbf8c4d5d0c30b4815ee2  # Obfuscated
+          - 5c44f52a8714fdd79bb4d98e2673be1f  # Retags
+          - f537cf427b64c38c8e36298f657e4828  # Scene
+        assign_scores_to:
+          - name: UHD Bluray + WEB
+            score: -10000
+          - name: Remux + WEB 2160p
+            score: -10000
 
 sonarr:
   #---------------------------------------------------------------------------
@@ -263,6 +355,81 @@ sonarr:
           - name: Remux-1080p
             score: 1500
 
+      # Apply TRaSH WEB-1080p CFs to Bluray/Remux profiles
+      - trash_ids:
+          - 85c61753df5da1fb2aab6f2a47426b09  # BR-DISK
+          - 9c11cd3f07101cdba90a2d81cf0e56b4  # LQ
+          - e2315f990da2e2cbfc9fa5b7a6fcfe48  # LQ (Release Title)
+          - 47435ece6b99a0b477caf360e79ba0bb  # x265 (HD)
+          - fbcb31d8dabd2a319072b84fc0b7249c  # Extras
+          - 15a05bc7c1a36e2b57fd628f8977e2fc  # AV1
+          - ec8fa7296b64e8cd390a1600981f3923  # Repack/Proper
+          - eb3d5cc0a2be0db205fb823640db6a3c  # Repack v2
+          - 44e7c4de10ae50265753082e5dc76047  # Repack v3
+          - d660701077794679fd59e8bdf4ce3a29  # AMZN
+          - f67c9ca88f463a48346062e8ad07713f  # ATVP
+          - 77a7b25585c18af08f60b1547bb9b4fb  # Criterion Channel
+          - 36b72f59f4ea20aad9316f475f2d9fbb  # DCU
+          - dc5f2bb0e0262155b5fedd0f6c5d2b55  # Discovery+
+          - 89358767a60cc28783cdc3d0be9388a4  # DSNP
+          - 7a235133c87f7da4c8cccceca7e3c7a6  # HBO
+          - a880d6abc21e7c16884f3ae393f84179  # HMAX
+          - f6cce30f1733d5c8194222a7507909bb  # Hulu
+          - 0ac24a2a68a9700bcb7eeca8e5cd644c  # iTunes
+          - 81d1fbf600e2540cee87f3a23f9d3c1c  # MAX
+          - d34870697c9db575f17700212167be23  # Netflix
+          - 1656adc6d7bb2c8cca6acfb6592db421  # Peacock
+          - c67a75ae4a1715f2bb4d492755ba4195  # Paramount+
+          - ae58039e1319178e6be73caab5c42166  # Showtime
+          - 1efe8da11bfd74fbbcd4d8117ddb9213  # Stan
+          - 9623c5c9cac8e939c1b9aedd32f640bf  # Syfy
+          - 218e93e5702f44a68ad9e3c6ba87d2f0  # HD Streaming Boost
+          - e6258996055b9fbab7e9cb2f75819294  # WEB Tier 01
+          - 58790d4e2fdcd9733aa7ae68ba2bb503  # WEB Tier 02
+          - d84935abd3f8556dcd51d4f27e22d0a6  # WEB Tier 03
+          - d0c516558625b04b363fa6c5c2c7cfd4  # WEB Scene
+        assign_scores_to:
+          - name: Bluray-1080p
+          - name: Remux-1080p
+
+      # Optional release blockers applied to every 1080p TV profile
+      - trash_ids:
+          - 32b367365729d530ca1c124a0b180c64  # Bad Dual Groups
+          - 82d40da2bc6923f41e14394075dd4b03  # No-RlsGroup
+          - e1a997ddb54e3ecbfe06341ad323c458  # Obfuscated
+          - 06d66ab109d4d2eddb2794d21526d140  # Retags
+          - 1b3994c551cbb92a2c781af061f4ab44  # Scene
+        assign_scores_to:
+          - name: WEB-1080p
+            score: -10000
+          - name: Bluray-1080p
+            score: -10000
+          - name: Remux-1080p
+            score: -10000
+
+      # Atmos-first audio for TV (keeps HDR bonus but prefers lossless Atmos)
+      - trash_ids:
+          - 496f355514737f7d83bf7aa4d24f8169  # TrueHD Atmos
+          - 2f22d89048b01681dde8afe203bf2e95  # DTS:X
+          - 417804f7f2c4308c1f4c5d380d4c4475  # ATMOS (undefined)
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 450
+          - name: Bluray-1080p
+            score: 450
+          - name: Remux-1080p
+            score: 450
+
+      - trash_ids:
+          - 1af239278386be2919e1bcee0bde047e  # DD+ Atmos
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 425
+          - name: Bluray-1080p
+            score: 425
+          - name: Remux-1080p
+            score: 425
+
     # Media naming
     media_naming:
       series: default
@@ -341,6 +508,83 @@ sonarr:
             score: 2000
           - name: Remux-2160p
             score: 2000
+
+      # Apply TRaSH WEB-2160p CFs to Bluray/Remux profiles
+      - trash_ids:
+          - 505d871304820ba7106b693be6fe4a9e  # HDR (unified)
+          - 85c61753df5da1fb2aab6f2a47426b09  # BR-DISK
+          - 9c11cd3f07101cdba90a2d81cf0e56b4  # LQ
+          - e2315f990da2e2cbfc9fa5b7a6fcfe48  # LQ (Release Title)
+          - 47435ece6b99a0b477caf360e79ba0bb  # x265 (HD)
+          - fbcb31d8dabd2a319072b84fc0b7249c  # Extras
+          - 15a05bc7c1a36e2b57fd628f8977e2fc  # AV1
+          - ec8fa7296b64e8cd390a1600981f3923  # Repack/Proper
+          - eb3d5cc0a2be0db205fb823640db6a3c  # Repack v2
+          - 44e7c4de10ae50265753082e5dc76047  # Repack v3
+          - d660701077794679fd59e8bdf4ce3a29  # AMZN
+          - f67c9ca88f463a48346062e8ad07713f  # ATVP
+          - 77a7b25585c18af08f60b1547bb9b4fb  # Criterion Channel
+          - 36b72f59f4ea20aad9316f475f2d9fbb  # DCU
+          - dc5f2bb0e0262155b5fedd0f6c5d2b55  # DSCP
+          - 89358767a60cc28783cdc3d0be9388a4  # DSNP
+          - 7a235133c87f7da4c8cccceca7e3c7a6  # HBO
+          - a880d6abc21e7c16884f3ae393f84179  # HMAX
+          - f6cce30f1733d5c8194222a7507909bb  # Hulu
+          - 0ac24a2a68a9700bcb7eeca8e5cd644c  # iTunes
+          - 81d1fbf600e2540cee87f3a23f9d3c1c  # MAX
+          - d34870697c9db575f17700212167be23  # Netflix
+          - 1656adc6d7bb2c8cca6acfb6592db421  # Peacock
+          - c67a75ae4a1715f2bb4d492755ba4195  # Paramount+
+          - ae58039e1319178e6be73caab5c42166  # Showtime
+          - 1efe8da11bfd74fbbcd4d8117ddb9213  # Stan
+          - 9623c5c9cac8e939c1b9aedd32f640bf  # Syfy
+          - 43b3cf48cb385cd3eac608ee6bca7f09  # UHD Streaming Boost
+          - 218e93e5702f44a68ad9e3c6ba87d2f0  # HD Streaming Boost
+          - e6258996055b9fbab7e9cb2f75819294  # WEB Tier 01
+          - 58790d4e2fdcd9733aa7ae68ba2bb503  # WEB Tier 02
+          - d84935abd3f8556dcd51d4f27e22d0a6  # WEB Tier 03
+          - d0c516558625b04b363fa6c5c2c7cfd4  # WEB Scene
+        assign_scores_to:
+          - name: Bluray-2160p
+          - name: Remux-2160p
+
+      # Optional release blockers applied to every 4K TV profile
+      - trash_ids:
+          - 32b367365729d530ca1c124a0b180c64  # Bad Dual Groups
+          - 82d40da2bc6923f41e14394075dd4b03  # No-RlsGroup
+          - e1a997ddb54e3ecbfe06341ad323c458  # Obfuscated
+          - 06d66ab109d4d2eddb2794d21526d140  # Retags
+          - 1b3994c551cbb92a2c781af061f4ab44  # Scene
+        assign_scores_to:
+          - name: WEB-2160p
+            score: -10000
+          - name: Bluray-2160p
+            score: -10000
+          - name: Remux-2160p
+            score: -10000
+
+      # Atmos-first audio for 4K TV
+      - trash_ids:
+          - 496f355514737f7d83bf7aa4d24f8169  # TrueHD Atmos
+          - 2f22d89048b01681dde8afe203bf2e95  # DTS:X
+          - 417804f7f2c4308c1f4c5d380d4c4475  # ATMOS (undefined)
+        assign_scores_to:
+          - name: WEB-2160p
+            score: 900
+          - name: Bluray-2160p
+            score: 900
+          - name: Remux-2160p
+            score: 900
+
+      - trash_ids:
+          - 1af239278386be2919e1bcee0bde047e  # DD+ Atmos
+        assign_scores_to:
+          - name: WEB-2160p
+            score: 800
+          - name: Bluray-2160p
+            score: 800
+          - name: Remux-2160p
+            score: 800
 
     # Media naming
     media_naming:
