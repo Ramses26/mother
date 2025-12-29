@@ -126,6 +126,11 @@ Is it nature documentary? → YES → Consider Remux profile (visual quality!)
 - Always prefer HDR when available
 - HDR adds 400 points in 1080p, 500 points in 4K!
 
+### **Atmos Beats HDR when both exist**
+- TrueHD Atmos / DTS:X is scored higher than HDR now (450 for HD, 900 for 4K)
+- DD+ Atmos still outranks HDR10 in both stacks
+- Result: grab the release that has Atmos + HDR whenever possible
+
 ### **Atmos Matters**
 - TrueHD Atmos / DTS:X adds 400-500 points
 - Dramatically improves the experience
@@ -202,6 +207,9 @@ Breaking Bad (2008) - S01E01 - Pilot [WEBDL-1080p][DDP5.1]-NTb.mkv
 ## ⚡ **Quick Commands**
 
 ```bash
+# Recommended nightly cron (add with `crontab -e`)
+0 3 * * * docker exec recyclarr recyclarr sync >> /opt/mother/logs/recyclarr.log 2>&1
+
 # Sync all profiles
 docker exec recyclarr recyclarr sync
 

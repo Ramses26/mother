@@ -227,6 +227,25 @@ services:
   # Requires PostgreSQL and Redis - more complex setup
   # See Authentik documentation for full configuration
 
+  # Tautulli - Plex Monitoring & Statistics
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:latest
+    container_name: tautulli
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_PATH}/tautulli:/config
+      # Optional: Mount Plex logs for real-time log parsing
+      # Requires NFS/SMB mount from Plex server (10.0.0.250)
+      # - /mnt/plex/logs:/plex_logs:ro
+    ports:
+      - "${TAUTULLI_PORT}:8181"
+    restart: unless-stopped
+    networks:
+      - mother_network
+
   # Dozzle - Docker Log Viewer
   dozzle:
     image: amir20/dozzle:latest

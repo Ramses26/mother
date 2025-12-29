@@ -67,7 +67,8 @@
 #### **Customized Scores:**
 - ✅ HDR10: 400 points (HD), 500 points (4K) - **1080p+HDR > 1080p SDR!**
 - ✅ DV HDR10: 350 points (HD), 450 points (4K)
-- ✅ TrueHD Atmos / DTS:X: 400 points (HD), 500 points (4K)
+- ✅ TrueHD Atmos / DTS:X: **450** points (HD), **900** points (4K) so Atmos > HDR when both are present
+- ✅ DD+ Atmos: 425 points (HD), 800 points (4K)
 
 ---
 
@@ -83,13 +84,13 @@
 
 ### **Sonarr-HD (1080p TV):**
 5. **WEB-1080p** - From TRaSH template (default for TV)
-6. **Bluray-1080p** - We created (special shows)
-7. **Remux-1080p** - We created (very special shows)
+6. **Bluray-1080p** - Custom profile with the full TRaSH WEB CF stack applied
+7. **Remux-1080p** - Custom profile with the same TRaSH CFs + Bluray tiers
 
 ### **Sonarr-4K (4K TV):**
 8. **WEB-2160p** - From TRaSH template (default 4K TV)
-9. **Bluray-2160p** - We created (special 4K shows)
-10. **Remux-2160p** - We created (very special 4K shows)
+9. **Bluray-2160p** - Custom profile with the TRaSH WEB-2160p CF stack applied
+10. **Remux-2160p** - Custom profile with the same TRaSH CFs + UHD Bluray tiers
 
 ---
 
