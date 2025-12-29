@@ -86,16 +86,21 @@ scan_library() {
     log_info "Starting scan: $output_name"
     log_info "  Path: $path"
     log_info "  Screen: $screen_name"
+    log_info "  Mode: $([ "$FAST_MODE" = true ] && echo 'FAST (filename only)' || echo 'Full (MediaInfo)')"
+
+    local fast_flag=""
+    [ "$FAST_MODE" = true ] && fast_flag="--fast"
 
     screen -dmS "$screen_name" bash -c "
         cd '$SCRIPT_DIR'
         echo '============================================'
         echo 'Scan: $output_name'
         echo 'Path: $path'
+        echo 'Mode: $([ \"$FAST_MODE\" = true ] && echo FAST || echo Full)'
         echo 'Started: \$(date)'
         echo '============================================'
         echo ''
-        python3 generate_inventory.py '$path' -o '$INVENTORY_DIR/$output_name'
+        python3 generate_inventory.py '$path' -o '$INVENTORY_DIR/$output_name' $fast_flag
         echo ''
         echo '============================================'
         echo 'Completed: \$(date)'
@@ -137,6 +142,7 @@ main() {
     local do_4k=true
     local do_1080p=true
     local status_only=false
+    FAST_MODE=true  # Default to fast mode (filename parsing only)
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -157,6 +163,14 @@ main() {
                 do_4k=false
                 shift
                 ;;
+            --fast)
+                FAST_MODE=true
+                shift
+                ;;
+            --full)
+                FAST_MODE=false
+                shift
+                ;;
             --status|-s)
                 status_only=true
                 shift
@@ -169,13 +183,16 @@ main() {
                 echo "  --tv            Scan TV shows only"
                 echo "  --4k            Scan 4K libraries only"
                 echo "  --1080p         Scan 1080p libraries only"
+                echo "  --fast          Fast mode: filename parsing only (DEFAULT)"
+                echo "  --full          Full mode: use MediaInfo (slow over NFS)"
                 echo "  --status, -s    Show running scans and inventory files"
                 echo "  -h, --help      Show this help"
                 echo ""
                 echo "Examples:"
-                echo "  $0                # Scan everything"
+                echo "  $0                # Scan everything (fast mode)"
                 echo "  $0 --movies       # Movies only (1080p + 4K)"
                 echo "  $0 --tv --1080p   # 1080p TV only"
+                echo "  $0 --full         # Full MediaInfo scan (slow)"
                 echo "  $0 --status       # Check progress"
                 exit 0
                 ;;

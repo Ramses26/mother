@@ -104,23 +104,25 @@ class MediaInventory:
         ],
     }
 
-    def __init__(self, root_path: str, output_base: str, verbose: bool = False):
+    def __init__(self, root_path: str, output_base: str, verbose: bool = False, fast: bool = False):
         """
         Initialize inventory generator
-        
+
         Args:
             root_path: Root directory to scan
             output_base: Base path for output files (without extension)
             verbose: Enable verbose output
+            fast: Skip MediaInfo (filename-only parsing, much faster for NFS)
         """
         self.root_path = Path(root_path)
         self.output_base = output_base
         self.verbose = verbose
+        self.fast = fast
         self.inventory: List[Dict] = []
-        
+
         if not self.root_path.exists():
             raise FileNotFoundError(f"Path does not exist: {root_path}")
-        
+
         if not self.root_path.is_dir():
             raise NotADirectoryError(f"Path is not a directory: {root_path}")
 
@@ -223,9 +225,9 @@ class MediaInventory:
         except ValueError:
             relative_path = file_path
         
-        # Get MediaInfo data
-        media_info = self._get_mediainfo(file_path)
-        
+        # Get MediaInfo data (skip in fast mode)
+        media_info = None if self.fast else self._get_mediainfo(file_path)
+
         # Extract from filename
         resolution = self._extract_pattern(filename, self.PATTERNS['resolution'])
         source = self._extract_pattern(filename, self.PATTERNS['source'])
@@ -415,7 +417,13 @@ FIXED: Now handles nested season folders correctly:
         action='store_true',
         help='Enable verbose output'
     )
-    
+
+    parser.add_argument(
+        '--fast',
+        action='store_true',
+        help='Fast mode: skip MediaInfo, parse filenames only (much faster for NFS/network)'
+    )
+
     args = parser.parse_args()
     
     try:
@@ -423,7 +431,8 @@ FIXED: Now handles nested season folders correctly:
         inventory = MediaInventory(
             root_path=args.path,
             output_base=args.output,
-            verbose=args.verbose
+            verbose=args.verbose,
+            fast=args.fast
         )
         
         # Scan directory

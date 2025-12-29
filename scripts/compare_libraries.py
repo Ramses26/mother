@@ -32,29 +32,52 @@ from collections import defaultdict
 # Library Path Configuration
 ###############################################################################
 
-# Synology paths
+# Mother's mount paths (rsync runs FROM Mother)
+# Synology (Chris) - mounted on Mother via NFS
 SYNOLOGY_PATHS = {
     'movies_1080p': '/mnt/synology/rs-movies',
     'movies_4k': '/mnt/synology/rs-4kmedia/4kmovies',
     'tv_1080p': '/mnt/synology/rs-tv',
     'tv_4k': '/mnt/synology/rs-4kmedia/4ktv',
-    'deleted_movies': '/mnt/synology/Deleted/Movies',
-    'deleted_4k_movies': '/mnt/synology/Deleted/4kMovies',
-    'deleted_tv': '/mnt/synology/Deleted/tvshows',
-    'deleted_4k_tv': '/mnt/synology/Deleted/4ktvshows',
+    'downloads': '/mnt/synology/rs-4kmedia/downloads',
+    'deleted': '/mnt/synology/rs-4kmedia/deleted',
+    'deleted_movies': '/mnt/synology/rs-4kmedia/deleted/Movies',
+    'deleted_4k_movies': '/mnt/synology/rs-4kmedia/deleted/4K Movies',
+    'deleted_tv': '/mnt/synology/rs-4kmedia/deleted/TV Shows',
+    'deleted_4k_tv': '/mnt/synology/rs-4kmedia/deleted/4K TV Shows',
 }
 
-# Unraid paths
+# Unraid (Ali) - mounted on Mother via NFS over VPN
 UNRAID_PATHS = {
     'movies_1080p': '/mnt/unraid/media/Movies',
     'movies_4k': '/mnt/unraid/media/4K Movies',
     'tv_1080p': '/mnt/unraid/media/TV Shows',
     'tv_4k': '/mnt/unraid/media/4K TV Shows',
-    'deleted_movies': '/mnt/unraid/media/Deleted/Movies',
-    'deleted_4k_movies': '/mnt/unraid/media/Deleted/4kMovies',
-    'deleted_tv': '/mnt/unraid/media/Deleted/tvshows',
-    'deleted_4k_tv': '/mnt/unraid/media/Deleted/4ktvshows',
+    'deleted_movies': '/mnt/unraid/media/Deleted Movies',
+    'deleted_4k_movies': '/mnt/unraid/media/Deleted Movies',  # Same folder for 4K
+    'deleted_tv': '/mnt/unraid/media/Deleted TV',
+    'deleted_4k_tv': '/mnt/unraid/media/Deleted TV',  # Same folder for 4K
 }
+
+# Path translations: Inventory paths → Mother mount paths
+# Inventories are generated on Terminus (for Unraid) and Mother (for Synology)
+PATH_TRANSLATIONS = [
+    # Terminus inventory paths → Mother mount paths (Unraid)
+    ('/mnt/media/4K Movies', '/mnt/unraid/media/4K Movies'),
+    ('/mnt/media/4K TV Shows', '/mnt/unraid/media/4K TV Shows'),
+    ('/mnt/media/Movies', '/mnt/unraid/media/Movies'),
+    ('/mnt/media/TV Shows', '/mnt/unraid/media/TV Shows'),
+    ('/mnt/media/Deleted', '/mnt/unraid/media/Deleted'),
+    # Mother inventory paths are already correct (Synology)
+    # '/mnt/synology/...' stays as-is
+]
+
+def translate_path_to_mother(path: str) -> str:
+    """Translate inventory path to Mother's mount path for rsync"""
+    for old_prefix, new_prefix in PATH_TRANSLATIONS:
+        if path.startswith(old_prefix):
+            return path.replace(old_prefix, new_prefix, 1)
+    return path  # Already a Mother path (Synology)
 
 ###############################################################################
 # Quality Scoring (From HDR & Audio Format Preferences.md)
@@ -631,9 +654,18 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
     script_file = output_dir / f'sync_actions_{timestamp}.sh'
     with open(script_file, 'w', encoding='utf-8') as f:
         f.write("#!/bin/bash\n")
+        f.write("#" + "="*78 + "\n")
         f.write("# Project Mother Sync Script\n")
+        f.write("# RUN THIS ON MOTHER (10.0.0.162)\n")
+        f.write("#" + "="*78 + "\n")
         f.write(f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write("# Review carefully before executing!\n\n")
+        f.write("#\n")
+        f.write("# This script uses Mother's mount paths:\n")
+        f.write("#   Synology: /mnt/synology/rs-*\n")
+        f.write("#   Unraid:   /mnt/unraid/media/*\n")
+        f.write("#\n")
+        f.write("# Review carefully before executing!\n")
+        f.write("#" + "="*78 + "\n\n")
         f.write("set -e\n\n")
 
         f.write("# DRY RUN MODE - Remove 'echo' to execute\n")
@@ -652,49 +684,59 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
         for result in all_results:
             if result.deleted_path and result.winner != 'tie':
                 if result.winner == 'ali' and result.chris_file:
-                    src = result.chris_file.path
+                    src = translate_path_to_mother(result.chris_file.path)
+                    deleted = translate_path_to_mother(result.deleted_path)
                     f.write(f'# Move Chris\'s lower quality version\n')
-                    f.write(f'run_cmd mv "{src}" "{result.deleted_path}/"\n\n')
+                    f.write(f'run_cmd mv "{src}" "{deleted}/"\n\n')
                 elif result.winner == 'chris' and result.ali_file:
-                    src = result.ali_file.path
+                    src = translate_path_to_mother(result.ali_file.path)
+                    deleted = translate_path_to_mother(result.deleted_path)
                     f.write(f'# Move Ali\'s lower quality version\n')
-                    f.write(f'run_cmd mv "{src}" "{result.deleted_path}/"\n\n')
+                    f.write(f'run_cmd mv "{src}" "{deleted}/"\n\n')
 
-        # Copies
-        f.write("\n# === COPY FILES ===\n\n")
+        # Copies - Ali's files go to Synology, Chris's files go to Unraid
+        # All paths translated to Mother's mount points
+        f.write("\n# === COPY BETTER QUALITY FILES ===\n\n")
         for result in all_results:
             if result.winner == 'ali' and result.ali_file:
-                # Determine destination based on library type
-                if 'synology' in result.ali_file.path.lower():
-                    # Ali file is on synology, copy to unraid
-                    if result.ali_file.library_type == '4k_movies':
-                        dest = UNRAID_PATHS['movies_4k']
+                # Ali has better version - copy from Unraid to Synology
+                src = translate_path_to_mother(result.ali_file.path)
+                lib_type = result.ali_file.library_type or ''
+
+                if '4k' in lib_type.lower() or '4k' in src.lower():
+                    if 'tv' in lib_type.lower() or 'TV' in src:
+                        dest = SYNOLOGY_PATHS['tv_4k']
                     else:
-                        dest = UNRAID_PATHS['movies_1080p']
-                else:
-                    # Ali file is on unraid, copy to synology
-                    if result.ali_file.library_type == '4k_movies':
                         dest = SYNOLOGY_PATHS['movies_4k']
+                else:
+                    if 'tv' in lib_type.lower() or 'TV' in src:
+                        dest = SYNOLOGY_PATHS['tv_1080p']
                     else:
                         dest = SYNOLOGY_PATHS['movies_1080p']
 
-                f.write(f'# Copy Ali\'s version\n')
-                f.write(f'run_cmd rsync -avP "{result.ali_file.path}" "{dest}/"\n\n')
+                f.write(f'# Ali has better: {result.ali_file.title}\n')
+                f.write(f'# Score: Ali={result.ali_score} vs Chris={result.chris_score}\n')
+                f.write(f'run_cmd rsync -avP "{src}" "{dest}/"\n\n')
 
             elif result.winner == 'chris' and result.chris_file:
-                if 'synology' in result.chris_file.path.lower():
-                    if result.chris_file.library_type == '4k_movies':
+                # Chris has better version - copy from Synology to Unraid
+                src = translate_path_to_mother(result.chris_file.path)
+                lib_type = result.chris_file.library_type or ''
+
+                if '4k' in lib_type.lower() or '4k' in src.lower():
+                    if 'tv' in lib_type.lower() or 'TV' in src:
+                        dest = UNRAID_PATHS['tv_4k']
+                    else:
                         dest = UNRAID_PATHS['movies_4k']
+                else:
+                    if 'tv' in lib_type.lower() or 'TV' in src:
+                        dest = UNRAID_PATHS['tv_1080p']
                     else:
                         dest = UNRAID_PATHS['movies_1080p']
-                else:
-                    if result.chris_file.library_type == '4k_movies':
-                        dest = SYNOLOGY_PATHS['movies_4k']
-                    else:
-                        dest = SYNOLOGY_PATHS['movies_1080p']
 
-                f.write(f'# Copy Chris\'s version\n')
-                f.write(f'run_cmd rsync -avP "{result.chris_file.path}" "{dest}/"\n\n')
+                f.write(f'# Chris has better: {result.chris_file.title}\n')
+                f.write(f'# Score: Chris={result.chris_score} vs Ali={result.ali_score}\n')
+                f.write(f'run_cmd rsync -avP "{src}" "{dest}/"\n\n')
 
     print(f"✅ Sync script: {script_file}")
 
