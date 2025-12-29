@@ -348,6 +348,9 @@ class MediaFile:
     is_valid_placement: bool = True
     placement_warning: str = ''
     quality_score: int = 0
+    tmdb_id: str = ''  # TMDB ID extracted from filename (e.g., "530915")
+    imdb_id: str = ''  # IMDB ID if available
+    year: str = ''     # Year from title/filename
 
 @dataclass
 class ComparisonResult:
@@ -360,6 +363,7 @@ class ComparisonResult:
     reason: str
     action: str
     deleted_path: str = ''  # Path to move loser file
+    match_type: str = ''  # 'tmdb', 'imdb', 'title_year', 'unmatched'
 
 ###############################################################################
 # Scoring Functions
@@ -393,6 +397,40 @@ def calculate_quality_score(media_file: MediaFile) -> int:
 
     return score
 
+def extract_ids_from_filename(filename: str) -> Tuple[str, str, str]:
+    """
+    Extract TMDB ID, IMDB ID, and year from filename.
+
+    TRaSH naming format examples:
+        Movie (2019) {tmdb-530915} - [Bluray-1080p]...
+        Movie (2019) {imdb-tt1234567} - [Bluray-1080p]...
+        Movie (2019) {tmdb-530915} {imdb-tt1234567} - [Bluray-1080p]...
+
+    Returns:
+        Tuple of (tmdb_id, imdb_id, year)
+    """
+    tmdb_id = ''
+    imdb_id = ''
+    year = ''
+
+    # Extract TMDB ID: {tmdb-123456}
+    tmdb_match = re.search(r'\{tmdb-(\d+)\}', filename, re.IGNORECASE)
+    if tmdb_match:
+        tmdb_id = tmdb_match.group(1)
+
+    # Extract IMDB ID: {imdb-tt1234567}
+    imdb_match = re.search(r'\{imdb-(tt\d+)\}', filename, re.IGNORECASE)
+    if imdb_match:
+        imdb_id = imdb_match.group(1)
+
+    # Extract year: (2019) or (1976)
+    year_match = re.search(r'\((\d{4})\)', filename)
+    if year_match:
+        year = year_match.group(1)
+
+    return tmdb_id, imdb_id, year
+
+
 def parse_inventory_file(file_entry: Dict) -> MediaFile:
     """Convert inventory entry to MediaFile with parsed quality info"""
     path = file_entry.get('path', '')
@@ -400,6 +438,9 @@ def parse_inventory_file(file_entry: Dict) -> MediaFile:
 
     # Parse filename for quality attributes
     parsed = parse_trash_filename(filename)
+
+    # Extract TMDB/IMDB IDs and year from filename
+    tmdb_id, imdb_id, year = extract_ids_from_filename(filename)
 
     # Detect library type from path
     library_type = detect_library_type(path)
@@ -423,6 +464,9 @@ def parse_inventory_file(file_entry: Dict) -> MediaFile:
         codec=codec,
         release_group=parsed['release_group'],
         library_type=library_type,
+        tmdb_id=tmdb_id,
+        imdb_id=imdb_id,
+        year=year,
     )
 
     # Validate placement
@@ -467,26 +511,128 @@ def get_deleted_path(media_file: MediaFile, owner: str) -> str:
     else:
         return paths['deleted_movies']  # Default
 
-def match_files(ali_files: List[MediaFile], chris_files: List[MediaFile]) -> Dict[str, Tuple[List[MediaFile], List[MediaFile]]]:
-    """Match files between two inventories by normalized title"""
-    matches = defaultdict(lambda: ([], []))
+def get_match_key(media_file: MediaFile) -> Tuple[str, str]:
+    """
+    Get the best match key for a file.
 
-    # Index by normalized title
-    ali_index = defaultdict(list)
+    Priority:
+    1. TMDB ID (most reliable)
+    2. IMDB ID (also reliable)
+    3. Normalized title + year (fallback, less reliable)
+
+    Returns:
+        Tuple of (key_type, key_value)
+        key_type: 'tmdb', 'imdb', 'title', or 'title_no_year'
+    """
+    if media_file.tmdb_id:
+        return ('tmdb', f'tmdb-{media_file.tmdb_id}')
+    elif media_file.imdb_id:
+        return ('imdb', f'imdb-{media_file.imdb_id}')
+    elif media_file.year:
+        # Title + year is reasonably unique
+        normalized = normalize_title(media_file.title)
+        return ('title', f'{normalized}_{media_file.year}')
+    else:
+        # No year - high risk of mismatch
+        normalized = normalize_title(media_file.title)
+        return ('title_no_year', normalized)
+
+
+def match_files(ali_files: List[MediaFile], chris_files: List[MediaFile]) -> Dict[str, Tuple[List[MediaFile], List[MediaFile], str]]:
+    """
+    Match files between two inventories.
+
+    Priority: TMDB ID > IMDB ID > Title+Year > Title only
+
+    Returns:
+        Dict mapping match_key to (ali_files, chris_files, match_type)
+        match_type indicates how the match was made
+    """
+    matches = defaultdict(lambda: ([], [], ''))
+
+    # Build indices for Ali's files
+    ali_by_tmdb = defaultdict(list)
+    ali_by_imdb = defaultdict(list)
+    ali_by_title_year = defaultdict(list)
+    ali_by_title = defaultdict(list)
+
     for f in ali_files:
-        title = normalize_title(f.title)
-        ali_index[title].append(f)
+        if f.tmdb_id:
+            ali_by_tmdb[f.tmdb_id].append(f)
+        if f.imdb_id:
+            ali_by_imdb[f.imdb_id].append(f)
+        normalized = normalize_title(f.title)
+        if f.year:
+            ali_by_title_year[f'{normalized}_{f.year}'].append(f)
+        ali_by_title[normalized].append(f)
 
-    chris_index = defaultdict(list)
+    # Build indices for Chris's files
+    chris_by_tmdb = defaultdict(list)
+    chris_by_imdb = defaultdict(list)
+    chris_by_title_year = defaultdict(list)
+    chris_by_title = defaultdict(list)
+
     for f in chris_files:
-        title = normalize_title(f.title)
-        chris_index[title].append(f)
+        if f.tmdb_id:
+            chris_by_tmdb[f.tmdb_id].append(f)
+        if f.imdb_id:
+            chris_by_imdb[f.imdb_id].append(f)
+        normalized = normalize_title(f.title)
+        if f.year:
+            chris_by_title_year[f'{normalized}_{f.year}'].append(f)
+        chris_by_title[normalized].append(f)
 
-    # Find all unique titles
-    all_titles = set(ali_index.keys()) | set(chris_index.keys())
+    # Track which files have been matched
+    ali_matched = set()
+    chris_matched = set()
 
-    for title in all_titles:
-        matches[title] = (ali_index.get(title, []), chris_index.get(title, []))
+    # Pass 1: Match by TMDB ID (most reliable)
+    all_tmdb_ids = set(ali_by_tmdb.keys()) | set(chris_by_tmdb.keys())
+    for tmdb_id in all_tmdb_ids:
+        key = f'tmdb-{tmdb_id}'
+        ali_set = ali_by_tmdb.get(tmdb_id, [])
+        chris_set = chris_by_tmdb.get(tmdb_id, [])
+        matches[key] = (ali_set, chris_set, 'tmdb')
+        for f in ali_set:
+            ali_matched.add(id(f))
+        for f in chris_set:
+            chris_matched.add(id(f))
+
+    # Pass 2: Match remaining by IMDB ID
+    for imdb_id in set(ali_by_imdb.keys()) | set(chris_by_imdb.keys()):
+        ali_set = [f for f in ali_by_imdb.get(imdb_id, []) if id(f) not in ali_matched]
+        chris_set = [f for f in chris_by_imdb.get(imdb_id, []) if id(f) not in chris_matched]
+        if ali_set or chris_set:
+            key = f'imdb-{imdb_id}'
+            matches[key] = (ali_set, chris_set, 'imdb')
+            for f in ali_set:
+                ali_matched.add(id(f))
+            for f in chris_set:
+                chris_matched.add(id(f))
+
+    # Pass 3: Match remaining by Title + Year
+    for title_year in set(ali_by_title_year.keys()) | set(chris_by_title_year.keys()):
+        ali_set = [f for f in ali_by_title_year.get(title_year, []) if id(f) not in ali_matched]
+        chris_set = [f for f in chris_by_title_year.get(title_year, []) if id(f) not in chris_matched]
+        if ali_set or chris_set:
+            key = f'title-{title_year}'
+            matches[key] = (ali_set, chris_set, 'title_year')
+            for f in ali_set:
+                ali_matched.add(id(f))
+            for f in chris_set:
+                chris_matched.add(id(f))
+
+    # Pass 4: Remaining files with no match (only one side has them)
+    # These are unique to one library - DON'T match by title alone (too risky)
+    for f in ali_files:
+        if id(f) not in ali_matched:
+            key = f'ali_only_{id(f)}'
+            matches[key] = ([f], [], 'unmatched')
+
+    for f in chris_files:
+        if id(f) not in chris_matched:
+            key = f'chris_only_{id(f)}'
+            matches[key] = ([], [f], 'unmatched')
 
     return matches
 
@@ -578,6 +724,14 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
     """Generate comparison reports and sync scripts"""
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
+    # Find files missing TMDB ID (need renaming)
+    files_missing_tmdb = []
+    for r in all_results:
+        if r.ali_file and not r.ali_file.tmdb_id:
+            files_missing_tmdb.append(('Ali', r.ali_file))
+        if r.chris_file and not r.chris_file.tmdb_id:
+            files_missing_tmdb.append(('Chris', r.chris_file))
+
     # Statistics
     stats = {
         'total': len(all_results),
@@ -587,6 +741,7 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
         'chris_better': len([r for r in all_results if r.winner == 'chris' and r.ali_file]),
         'tie': len([r for r in all_results if r.winner == 'tie']),
         'misplaced': len(misplaced_files),
+        'missing_tmdb': len(files_missing_tmdb),
     }
 
     # Generate detailed report
@@ -605,7 +760,8 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
         f.write(f"Ali better (replace Chris's): {stats['ali_better']}\n")
         f.write(f"Chris better (replace Ali's): {stats['chris_better']}\n")
         f.write(f"Equal quality (no action): {stats['tie']}\n")
-        f.write(f"Misplaced files (wrong library): {stats['misplaced']}\n\n")
+        f.write(f"Misplaced files (wrong library): {stats['misplaced']}\n")
+        f.write(f"Files missing TMDB ID: {stats['missing_tmdb']}\n\n")
 
         # Misplaced files warning
         if misplaced_files:
@@ -616,6 +772,36 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
                 f.write(f"  {mf.filename}\n")
                 f.write(f"    Path: {mf.path}\n")
                 f.write(f"    Warning: {mf.placement_warning}\n\n")
+
+        # Files missing TMDB ID (need renaming)
+        if files_missing_tmdb:
+            f.write("="*100 + "\n")
+            f.write("⚠️  FILES MISSING TMDB ID (NEED RENAMING)\n")
+            f.write("="*100 + "\n")
+            f.write("These files don't follow TRaSH naming format.\n")
+            f.write("Rename to: Movie (Year) {tmdb-XXXXX} - [Quality][Audio][HDR][Codec]-Group.mkv\n")
+            f.write("Use Radarr/Sonarr to rename, or FileBot with TMDB lookup.\n\n")
+
+            ali_missing = [(o, f) for o, f in files_missing_tmdb if o == 'Ali']
+            chris_missing = [(o, f) for o, f in files_missing_tmdb if o == 'Chris']
+
+            if ali_missing:
+                f.write(f"Ali's files missing TMDB ID ({len(ali_missing)}):\n")
+                for _, mf in ali_missing[:50]:  # Limit to 50
+                    f.write(f"  - {mf.filename}\n")
+                    f.write(f"    Path: {mf.path}\n")
+                if len(ali_missing) > 50:
+                    f.write(f"  ... and {len(ali_missing) - 50} more\n")
+                f.write("\n")
+
+            if chris_missing:
+                f.write(f"Chris's files missing TMDB ID ({len(chris_missing)}):\n")
+                for _, mf in chris_missing[:50]:  # Limit to 50
+                    f.write(f"  - {mf.filename}\n")
+                    f.write(f"    Path: {mf.path}\n")
+                if len(chris_missing) > 50:
+                    f.write(f"  ... and {len(chris_missing) - 50} more\n")
+                f.write("\n")
 
         # Files to sync
         f.write("="*100 + "\n")
@@ -629,14 +815,25 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
             title = result.ali_file.title if result.ali_file else result.chris_file.title
             f.write(f"Title: {title}\n")
 
+            # Show match type and IDs
+            match_type_label = {
+                'tmdb': 'TMDB ID (reliable)',
+                'imdb': 'IMDB ID (reliable)',
+                'title_year': 'Title+Year (verify manually)',
+                'unmatched': 'Unique (no match found)'
+            }.get(result.match_type, result.match_type)
+            f.write(f"  Match: {match_type_label}\n")
+
             if result.ali_file:
-                f.write(f"  Ali: {result.ali_file.filename} (Score: {result.ali_score})\n")
+                tmdb_info = f" [TMDB:{result.ali_file.tmdb_id}]" if result.ali_file.tmdb_id else ""
+                f.write(f"  Ali: {result.ali_file.filename} (Score: {result.ali_score}){tmdb_info}\n")
                 f.write(f"       [{result.ali_file.resolution}][{result.ali_file.source}][{result.ali_file.audio}][{result.ali_file.hdr}][{result.ali_file.codec}]\n")
             else:
                 f.write(f"  Ali: (none)\n")
 
             if result.chris_file:
-                f.write(f"  Chris: {result.chris_file.filename} (Score: {result.chris_score})\n")
+                tmdb_info = f" [TMDB:{result.chris_file.tmdb_id}]" if result.chris_file.tmdb_id else ""
+                f.write(f"  Chris: {result.chris_file.filename} (Score: {result.chris_score}){tmdb_info}\n")
                 f.write(f"         [{result.chris_file.resolution}][{result.chris_file.source}][{result.chris_file.audio}][{result.chris_file.hdr}][{result.chris_file.codec}]\n")
             else:
                 f.write(f"  Chris: (none)\n")
@@ -812,15 +1009,28 @@ def main():
         print(f"\n⚠️  Found {len(misplaced_files)} misplaced files!")
 
     # Match files
-    print("\n🔍 Matching files by title...")
+    print("\n🔍 Matching files...")
     matches = match_files(ali_files, chris_files)
-    print(f"   Found {len(matches)} unique titles")
+
+    # Count match types
+    match_stats = {'tmdb': 0, 'imdb': 0, 'title_year': 0, 'unmatched': 0}
+    for key, (ali_set, chris_set, match_type) in matches.items():
+        match_stats[match_type] = match_stats.get(match_type, 0) + 1
+
+    print(f"   Total matches: {len(matches)}")
+    print(f"   By TMDB ID:    {match_stats.get('tmdb', 0)} (reliable)")
+    print(f"   By IMDB ID:    {match_stats.get('imdb', 0)} (reliable)")
+    print(f"   By Title+Year: {match_stats.get('title_year', 0)} (less reliable)")
+    print(f"   Unmatched:     {match_stats.get('unmatched', 0)} (unique to one library)")
 
     # Compare files
     print("\n⚖️  Comparing quality (using Project Mother scoring)...")
     all_results = []
-    for title, (ali_set, chris_set) in matches.items():
+    for key, (ali_set, chris_set, match_type) in matches.items():
         results = compare_file_sets(ali_set, chris_set)
+        # Add match_type to results for reporting
+        for r in results:
+            r.match_type = match_type
         all_results.extend(results)
 
     # Generate reports
