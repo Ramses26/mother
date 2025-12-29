@@ -106,6 +106,22 @@ services:
     restart: unless-stopped
     networks:
       - mother_network
+      
+  #Media Requesting Docker
+  overseerr:
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=${TZ}  
+      - PORT=5055 #optional
+    ports:
+      - 5055:5055
+    volumes:
+      - ${CONFIG_PATH}/overseer:/app/config
+    restart: unless-stopped
+    networks:
+      - mother_network        
 
   # Prowlarr - Indexer Manager (Alternative to Jackett)
   prowlarr:
