@@ -1,0 +1,572 @@
+================================================================================
+FILES WITH NO ID - NEED MANUAL LOOKUP OR ARE FAN EDITS
+================================================================================
+
+These files have NO TMDB or IMDB ID in the filename.
+They are likely:
+  - Fan edits (Despecialized, extended cuts)
+  - Concerts/live performances
+  - Custom compilations
+  - Files that need manual renaming
+
+For regular movies/shows, manually add to Radarr/Sonarr and rename.
+For fan edits, consider leaving as-is or using a custom naming scheme.
+
+
+========================================
+ALI'S FILES (7)
+========================================
+
+Title: Apollo 13 (1995)
+  File: Apollo.13.1995.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR-Scrambled.mkv
+  Path: /mnt/media/4K Movies/Apollo 13 (1995)/Apollo.13.1995.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR-Scrambled.mkv
+
+Title: Ghostbusters (1984)
+  File: Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Path: /mnt/media/4K Movies/Ghostbusters (1984)/Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+
+Title: Jungle Cruise (2021)
+  File: Jungle.Cruise.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Path: /mnt/media/4K Movies/Jungle Cruise (2021)/Jungle.Cruise.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+
+Title: Lawrence of Arabia (1962)
+  File: Lawrence.of.Arabia.1962.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/media/4K Movies/Lawrence of Arabia (1962)/Lawrence.of.Arabia.1962.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+
+Title: Life of Pi (2012)
+  File: Life.Of.Pi.2012.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/media/4K Movies/Life of Pi (2012)/Life.Of.Pi.2012.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR.mkv
+
+Title: Terminator 2 Judgment Day (1991)
+  File: Terminator 2 Judgment Day 1991 Remastered Theatrical Cut GER 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+  Path: /mnt/media/4K Movies/Terminator 2 Judgment Day (1991)/Terminator 2 Judgment Day 1991 Remastered Theatrical Cut GER 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+
+Title: The Hobbit The Desolation of Smaug (2013)
+  File: The.Hobbit.The.Desolation.of.Smaug.2013.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/media/4K Movies/The Hobbit The Desolation of Smaug (2013)/The.Hobbit.The.Desolation.of.Smaug.2013.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+
+
+========================================
+CHRIS'S FILES (130)
+========================================
+
+Title: 1917 (2019)
+  File: 1917.2019.2160p.UHD.Blu-ray.Atmos.x265 - HQMUX.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/1917 (2019)/1917.2019.2160p.UHD.Blu-ray.Atmos.x265 - HQMUX.mkv
+
+Title: 2001 A Space Odyssey (1968)
+  File: 2001.A.Space.Odyssey.1968.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/2001 A Space Odyssey (1968)/2001.A.Space.Odyssey.1968.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv
+
+Title: 300 (2006)
+  File: 300.2006.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/300 (2006)/300.2006.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+
+Title: A Beautiful Planet (2016)
+  File: A.Beautiful.Planet.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-X-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/A Beautiful Planet (2016)/A.Beautiful.Planet.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-X-EPSiLON.mkv
+
+Title: Ad Astra (2019)
+  File: Ad Astra (2019) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Ad Astra (2019)/Ad Astra (2019) Remux-2160p.mkv
+
+Title: Alien (1979)
+  File: Alien.1979.2160p.Director.Cut.UHD.HDR10+Remux.DTS-HD.MA5.1-SHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Alien (1979)/Alien.1979.2160p.Director.Cut.UHD.HDR10+Remux.DTS-HD.MA5.1-SHD.mkv
+
+Title: Alien (1979)
+  File: Alien.1979.DC.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Alien (1979)/Alien.1979.DC.2160p.UHD.BluRay.X265-IAMABLE.mkv
+
+Title: Alita Battle Angel (2019)
+  File: Alita Battle Angel 2019 REPACK 2160p UHD BluRay HDR10+ TrueHD Atmos 7.1 x265-DON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Alita Battle Angel (2019)/Alita Battle Angel 2019 REPACK 2160p UHD BluRay HDR10+ TrueHD Atmos 7.1 x265-DON.mkv
+
+Title: Apocalypse Now (1979)
+  File: Apocalypse.Now.1979.Redux.2160p.UHD.BluRay.x265-JustWatch.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Apocalypse Now (1979)/Apocalypse.Now.1979.Redux.2160p.UHD.BluRay.x265-JustWatch.mkv
+
+Title: Apollo 13 (1995)
+  File: Apollo 13 (1995) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Apollo 13 (1995)/Apollo 13 (1995) Remux-2160p.mkv
+
+Title: Army of the Dead (2021)
+  File: Army.of.the.Dead.2021.2160p.HDR.NF.WEBRip.DDP.Atmos.5.1.x265-TrollUHD-FZ.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Army of the Dead (2021)/Army.of.the.Dead.2021.2160p.HDR.NF.WEBRip.DDP.Atmos.5.1.x265-TrollUHD-FZ.mkv
+
+Title: Avatar The Way of Water (2022)
+  File: Avatar The Way of Water (2022) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Avatar The Way of Water (2022)/Avatar The Way of Water (2022) WEBDL-2160p.mkv
+
+Title: Avengers Age of Ultron (2015)
+  File: Avengers.Age.of.Ultron.2015.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Avengers Age of Ultron (2015)/Avengers.Age.of.Ultron.2015.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+
+Title: Avengers Endgame (2019)
+  File: Avengers.Endgame.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Avengers Endgame (2019)/Avengers.Endgame.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+
+Title: Avengers Infinity War (2018)
+  File: Avengers.Infinity.War.2018.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Avengers Infinity War (2018)/Avengers.Infinity.War.2018.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+
+Title: Batman Begins (2005)
+  File: Batman.Begins.2005.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Batman Begins (2005)/Batman.Begins.2005.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv
+
+Title: Black Adam (2022)
+  File: Black Adam (2022) WEBDL-2160p Proper.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Black Adam (2022)/Black Adam (2022) WEBDL-2160p Proper.mkv
+
+Title: Black Widow (2021)
+  File: Black.Widow.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Black Widow (2021)/Black.Widow.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv
+
+Title: Blade (1998)
+  File: Blade (1998) Bluray-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Blade (1998)/Blade (1998) Bluray-2160p.mkv
+
+Title: Blade Runner (1982)
+  File: Blade.Runner.1982.The.Final.Cut.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Blade Runner (1982)/Blade.Runner.1982.The.Final.Cut.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+
+Title: Bohemian Rhapsody (2018)
+  File: Bohemian Rhapsody (2018) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Bohemian Rhapsody (2018)/Bohemian Rhapsody (2018) Remux-2160p.mkv
+
+Title: Braveheart (1995)
+  File: Braveheart.1995.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Braveheart (1995)/Braveheart.1995.2160p.UHD.BluRay.X265-IAMABLE.mkv
+
+Title: Captain America Civil War (2016)
+  File: Captain America - Civil War (2016) (2160p UHD BluRay x265 DV HDR DDP 7.1 English - Weasley HONE).mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Captain America Civil War (2016)/Captain America - Civil War (2016) (2160p UHD BluRay x265 DV HDR DDP 7.1 English - Weasley HONE).mkv
+
+Title: Captain America The First Avenger (2011)
+  File: Captain.America.The.First.Avenger.2011.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Captain America The First Avenger (2011)/Captain.America.The.First.Avenger.2011.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+
+Title: Captain America The Winter Soldier (2014)
+  File: Captain.America.The.Winter.Soldier.2014.UHD.BluRay.HDR10.2160p.AC-3.TrueHD.7.1.Atmos.HEVC-d3g.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Captain America The Winter Soldier (2014)/Captain.America.The.Winter.Soldier.2014.UHD.BluRay.HDR10.2160p.AC-3.TrueHD.7.1.Atmos.HEVC-d3g.mkv
+
+Title: Captain Marvel (2019)
+  File: Captain Marvel (2019) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Captain Marvel (2019)/Captain Marvel (2019) Remux-2160p.mkv
+
+Title: Close Encounters of the Third Kind (1977)
+  File: Close.Encounters.Of.The.Third.Kind.1977.DC.2160p.BluRay.HDR10.10bit.x265.HEVC.DTS-HD.MA.5.1-PHOCiS.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Close Encounters of the Third Kind (1977)/Close.Encounters.Of.The.Third.Kind.1977.DC.2160p.BluRay.HDR10.10bit.x265.HEVC.DTS-HD.MA.5.1-PHOCiS.mkv
+
+Title: Deadpool (2016)
+  File: Deadpool (2016) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Deadpool (2016)/Deadpool (2016) Remux-2160p.mkv
+
+Title: Deadpool 2 (2018)
+  File: Deadpool 2 (2018) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Deadpool 2 (2018)/Deadpool 2 (2018) Remux-2160p.mkv
+
+Title: Doctor Strange (2016)
+  File: Doctor Strange (2016) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Doctor Strange (2016)/Doctor Strange (2016) Remux-2160p.mkv
+
+Title: Doctor Strange in the Multiverse of Madness (2022)
+  File: Doctor Strange in the Multiverse of Madness (2022) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Doctor Strange in the Multiverse of Madness (2022)/Doctor Strange in the Multiverse of Madness (2022) WEBDL-2160p.mkv
+
+Title: Dracula (1992)
+  File: Bram Stoker's Dracula 1992 2160p UHD Blu-Ray Remux HEVC Atmos - BluDragon.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Dracula (1992)/Bram Stoker's Dracula 1992 2160p UHD Blu-Ray Remux HEVC Atmos - BluDragon.mkv
+
+Title: Dune (2021)
+  File: Dune (2021) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Dune (2021)/Dune (2021) Remux-2160p.mkv
+
+Title: Dunkirk (2017)
+  File: Dunkirk 2017 2160p UHD BluRay HDR DTS x265-SadeceBluRay.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Dunkirk (2017)/Dunkirk 2017 2160p UHD BluRay HDR DTS x265-SadeceBluRay.mkv
+
+Title: E.T. the Extra-Terrestrial (1982)
+  File: E.T.the.Extra-Terrestrial.1982.2160p.UHD.BluRay.x265-DEPTH.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/E.T. the Extra-Terrestrial (1982)/E.T.the.Extra-Terrestrial.1982.2160p.UHD.BluRay.x265-DEPTH.mkv
+
+Title: Earth One Amazing Day (2017)
+  File: Earth.One.Amazing.Day.2017.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Earth One Amazing Day (2017)/Earth.One.Amazing.Day.2017.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+
+Title: Edge of Tomorrow (2014)
+  File: Edge of Tomorrow.2014.2160p.UHD.BluRay.HDR.DoVi.TrueHD 7.1.Atmos.x265-SPHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Edge of Tomorrow (2014)/Edge of Tomorrow.2014.2160p.UHD.BluRay.HDR.DoVi.TrueHD 7.1.Atmos.x265-SPHD.mkv
+
+Title: Fast & Furious 6 (2013)
+  File: Fast & Furious 6 (2013) Remux-2160p Proper.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Fast & Furious 6 (2013)/Fast & Furious 6 (2013) Remux-2160p Proper.mkv
+
+Title: Furious 7 (2015)
+  File: Furious 7 (2015) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Furious 7 (2015)/Furious 7 (2015) Remux-2160p.mkv
+
+Title: Ghostbusters (1984)
+  File: Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Ghostbusters (1984)/Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+
+Title: Ghostbusters Afterlife (2021)
+  File: Ghostbusters Afterlife (2021) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Ghostbusters Afterlife (2021)/Ghostbusters Afterlife (2021) WEBDL-2160p.mkv
+
+Title: Gladiator (2000)
+  File: Gladiator.2000.Extended.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Gladiator (2000)/Gladiator.2000.Extended.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR.mkv
+
+Title: Godzilla King of the Monsters (2019)
+  File: Godzilla.King.of.the.Monsters.2019.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Godzilla King of the Monsters (2019)/Godzilla.King.of.the.Monsters.2019.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv
+
+Title: Godzilla vs. Kong (2021)
+  File: Godzilla.vs.Kong.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Godzilla vs. Kong (2021)/Godzilla.vs.Kong.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv
+
+Title: Guardians of the Galaxy (2014)
+  File: Guardians.Of.The.Galaxy.2014.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Guardians of the Galaxy (2014)/Guardians.Of.The.Galaxy.2014.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+
+Title: Guardians of the Galaxy Vol. 2 (2017)
+  File: Guardians.of.the.Galaxy.Vol.2.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Guardians of the Galaxy Vol. 2 (2017)/Guardians.of.the.Galaxy.Vol.2.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+
+Title: Hacksaw Ridge (2016)
+  File: Hacksaw.Ridge.2016.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Hacksaw Ridge (2016)/Hacksaw.Ridge.2016.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+
+Title: Heat (1995)
+  File: Heat.1995.Directors.Definitive.Edition.2160p.HDR.WEB-DL.DTS-HD.MA.5.1.HEVC-BLUTONiUM.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Heat (1995)/Heat.1995.Directors.Definitive.Edition.2160p.HDR.WEB-DL.DTS-HD.MA.5.1.HEVC-BLUTONiUM.mkv
+
+Title: Inception (2010)
+  File: Inception.2010.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Inception (2010)/Inception.2010.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+
+Title: Independence Day (1996)
+  File: Independence Day (1996) Remux-2160p Proper.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Independence Day (1996)/Independence Day (1996) Remux-2160p Proper.mkv
+
+Title: Indiana Jones and the Kingdom of the Crystal Skull (2008)
+  File: Indiana.Jones.and.the.Kingdom.of.the.Crystal.Skull.2008.2160p.HDR.UHD.BluRay.TrueHD.7.1.Atmos.2Audio.x265-10bit-HDS.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Indiana Jones and the Kingdom of the Crystal Skull (2008)/Indiana.Jones.and.the.Kingdom.of.the.Crystal.Skull.2008.2160p.HDR.UHD.BluRay.TrueHD.7.1.Atmos.2Audio.x265-10bit-HDS.mkv
+
+Title: Indiana Jones and the Last Crusade (1989)
+  File: Indiana Jones and the Last Crusade (1989) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Indiana Jones and the Last Crusade (1989)/Indiana Jones and the Last Crusade (1989) Remux-2160p.mkv
+
+Title: Indiana Jones and the Temple of Doom (1984)
+  File: indiana.jones.and.the.temple.of.doom.1984.2160p.uhd.bluray.x265-seskapile.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Indiana Jones and the Temple of Doom (1984)/indiana.jones.and.the.temple.of.doom.1984.2160p.uhd.bluray.x265-seskapile.mkv
+
+Title: Interstellar (2014)
+  File: Interstellar.2014.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Interstellar (2014)/Interstellar.2014.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+
+Title: Iron Man (2008)
+  File: Iron.Man.2008.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Iron Man (2008)/Iron.Man.2008.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv
+
+Title: Iron Man 2 (2010)
+  File: Iron.Man.2.2010.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Iron Man 2 (2010)/Iron.Man.2.2010.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+
+Title: Iron Man 3 (2013)
+  File: Iron.Man.3.2013.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Iron Man 3 (2013)/Iron.Man.3.2013.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+
+Title: Jaws (1975)
+  File: Jaws.1975.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Jaws (1975)/Jaws.1975.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+
+Title: John Wick (2014)
+  File: John.Wick.2014.2160p.UHD.BluRay.HDR.TrueHD.Atmos.7.1.x265-Absinth.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/John Wick (2014)/John.Wick.2014.2160p.UHD.BluRay.HDR.TrueHD.Atmos.7.1.x265-Absinth.mkv
+
+Title: John Wick Chapter 2 (2017)
+  File: John.Wick.Chapter.2.2017.2160p.UHD.Bluray.Remux.HDR10.HEVC.Atmos.TrueHD.7.1-4K4U.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/John Wick Chapter 2 (2017)/John.Wick.Chapter.2.2017.2160p.UHD.Bluray.Remux.HDR10.HEVC.Atmos.TrueHD.7.1-4K4U.mkv
+
+Title: John Wick Chapter 3 Parabellum (2019)
+  File: John.Wick.Chapter.3.Parabellum.2019.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/John Wick Chapter 3 Parabellum (2019)/John.Wick.Chapter.3.Parabellum.2019.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+
+Title: Joker (2019)
+  File: Joker.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Joker (2019)/Joker.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+
+Title: Jungle Cruise (2021)
+  File: Jungle Cruise (2021) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Jungle Cruise (2021)/Jungle Cruise (2021) Remux-2160p.mkv
+
+Title: Jurassic Park (1993)
+  File: Jurassic.Park.1993.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Jurassic Park (1993)/Jurassic.Park.1993.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+
+Title: Jurassic World Dominion (2022)
+  File: Jurassic World Dominion (2022) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Jurassic World Dominion (2022)/Jurassic World Dominion (2022) WEBDL-2160p.mkv
+
+Title: Kong Skull Island (2017)
+  File: Kong.Skull Island.2017.2160p.UHD.BluRay.TrueHD7.1.Atmos.x265-HQMUX.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Kong Skull Island (2017)/Kong.Skull Island.2017.2160p.UHD.BluRay.TrueHD7.1.Atmos.x265-HQMUX.mkv
+
+Title: Logan (2017)
+  File: Logan.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Logan (2017)/Logan.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv
+
+Title: Mad Max Fury Road (2015)
+  File: Mad Max Fury Road 2015 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Mad Max Fury Road (2015)/Mad Max Fury Road 2015 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv
+
+Title: Master and Commander The Far Side of the World (2003)
+  File: Master and Commander The Far Side of the World (2003) Remux-1080p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/#recycle/Master and Commander The Far Side of the World (2003)/Master and Commander The Far Side of the World (2003) Remux-1080p.mkv
+
+Title: Oblivion (2013)
+  File: Oblivion (2013) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Oblivion (2013)/Oblivion (2013) Remux-2160p.mkv
+
+Title: Pacific Rim (2013)
+  File: Pacific.Rim.2013.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Pacific Rim (2013)/Pacific.Rim.2013.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+
+Title: Passengers (2016)
+  File: Passengers.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Passengers (2016)/Passengers.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+
+Title: Pirates of the Caribbean The Curse of the Black Pearl (2003)
+  File: Pirates of the Caribbean The Curse of the Black Pearl (2003) WEBRip-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Pirates of the Caribbean The Curse of the Black Pearl (2003)/Pirates of the Caribbean The Curse of the Black Pearl (2003) WEBRip-2160p.mkv
+
+Title: Pitch Black (2000)
+  File: Pitch.Black.2000.Directors.Cut.REPACK.2160p.UHD.BluRay.DTS-HD.MA.5.1.HDR.x265-CtrlHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Pitch Black (2000)/Pitch.Black.2000.Directors.Cut.REPACK.2160p.UHD.BluRay.DTS-HD.MA.5.1.HDR.x265-CtrlHD.mkv
+
+Title: Prey (2022)
+  File: Prey (2022) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Prey (2022)/Prey (2022) WEBDL-2160p.mkv
+
+Title: Raiders of the Lost Ark (1981)
+  File: Raiders.Of.The.Lost.Ark.1981.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Raiders of the Lost Ark (1981)/Raiders.Of.The.Lost.Ark.1981.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv
+
+Title: Ready Player One (2018)
+  File: Ready Player One.2018.2160p.UHD.BluRay.TrueHD7.1.Atmos.x265-HQMUX.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Ready Player One (2018)/Ready Player One.2018.2160p.UHD.BluRay.TrueHD7.1.Atmos.x265-HQMUX.mkv
+
+Title: Red Sparrow (2018)
+  File: Red.Sparrow.2018.2160p.UHD.BluRay.x265-WhiteRhino.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Red Sparrow (2018)/Red.Sparrow.2018.2160p.UHD.BluRay.x265-WhiteRhino.mkv
+
+Title: Resident Evil Welcome to Raccoon City (2021)
+  File: Resident Evil Welcome to Raccoon City (2021) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Resident Evil Welcome to Raccoon City (2021)/Resident Evil Welcome to Raccoon City (2021) WEBDL-2160p.mkv
+
+Title: Return of the Jedi (1983)
+  File: Return of the Jedi (1983) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Return of the Jedi (1983)/Return of the Jedi (1983) Remux-2160p.mkv
+
+Title: Rocketman (2019)
+  File: Rocketman 2019 2160p UHD Blu-ray HEVC Atmos x265 - SumVision.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Rocketman (2019)/Rocketman 2019 2160p UHD Blu-ray HEVC Atmos x265 - SumVision.mkv
+
+Title: Saving Private Ryan (1998)
+  File: Saving.Private.Ryan.1998.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Saving Private Ryan (1998)/Saving.Private.Ryan.1998.2160p.UHD.BluRay.X265-IAMABLE.mkv
+
+Title: Shazam! Fury of the Gods (2023)
+  File: Shazam! Fury of the Gods (2023) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Shazam! Fury of the Gods (2023)/Shazam! Fury of the Gods (2023) Remux-2160p.mkv
+
+Title: Spider-Man No Way Home (2021)
+  File: Spider-Man No Way Home (2021) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Spider-Man No Way Home (2021)/Spider-Man No Way Home (2021) WEBDL-2160p.mkv
+
+Title: Star Trek (2009)
+  File: Star.Trek.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Star Trek (2009)/Star.Trek.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv
+
+Title: Star Trek First Contact (1996)
+  File: Star.Trek.VIII.First.Contact.1996.2160p.WEB-DL.DDP5.1.H.265-ABBiE.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Star Trek First Contact (1996)/Star.Trek.VIII.First.Contact.1996.2160p.WEB-DL.DDP5.1.H.265-ABBiE.mkv
+
+Title: Star Trek II The Wrath of Khan (1982)
+  File: Star.Trek.II.The.Wrath.of.Khan.1982.Director's.Cut.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Star Trek II The Wrath of Khan (1982)/Star.Trek.II.The.Wrath.of.Khan.1982.Director's.Cut.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+
+Title: Star Trek III The Search for Spock (1984)
+  File: Star.Trek.III.The.Search.for.Spock.1984.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Star Trek III The Search for Spock (1984)/Star.Trek.III.The.Search.for.Spock.1984.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+
+Title: Star Trek IV The Voyage Home (1986)
+  File: Star.Trek.IV.The.Voyage.Home.1986.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Star Trek IV The Voyage Home (1986)/Star.Trek.IV.The.Voyage.Home.1986.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+
+Title: Star Trek Into Darkness (2013)
+  File: Star.Trek.Into.Darkness.2013.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Star Trek Into Darkness (2013)/Star.Trek.Into.Darkness.2013.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+
+Title: Star Trek The Motion Picture (1979)
+  File: Star Trek The Motion Picture (1979) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Star Trek The Motion Picture (1979)/Star Trek The Motion Picture (1979) Remux-2160p.mkv
+
+Title: Star Trek V The Final Frontier (1989)
+  File: Star Trek V The Final Frontier (1989) Bluray-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Star Trek V The Final Frontier (1989)/Star Trek V The Final Frontier (1989) Bluray-2160p.mkv
+
+Title: Star Trek VI The Undiscovered Country (1991)
+  File: Star Trek VI The Undiscovered Country (1991) Bluray-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Star Trek VI The Undiscovered Country (1991)/Star Trek VI The Undiscovered Country (1991) Bluray-2160p.mkv
+
+Title: Star Wars (1977)
+  File: Star Wars (1977) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Star Wars (1977)/Star Wars (1977) Remux-2160p.mkv
+
+Title: The Avengers (2012)
+  File: The.Avengers.2012.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Avengers (2012)/The.Avengers.2012.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+
+Title: The Dark Knight (2008)
+  File: The Dark Knight 2008 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Dark Knight (2008)/The Dark Knight 2008 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+
+Title: The Dark Knight Rises (2012)
+  File: The Dark Knight Rises 2012 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Dark Knight Rises (2012)/The Dark Knight Rises 2012 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+
+Title: The Empire Strikes Back (1980)
+  File: The Empire Strikes Back (1980) Bluray-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Empire Strikes Back (1980)/The Empire Strikes Back (1980) Bluray-2160p.mkv
+
+Title: The Hobbit An Unexpected Journey (2012)
+  File: The.Hobbit.An.Unexpected.Journey.2012.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Hobbit An Unexpected Journey (2012)/The.Hobbit.An.Unexpected.Journey.2012.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+
+Title: The Hobbit The Battle of the Five Armies (2014)
+  File: The.Hobbit.The.Battle.of.the.Five.Armies.2014.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Hobbit The Battle of the Five Armies (2014)/The.Hobbit.The.Battle.of.the.Five.Armies.2014.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+
+Title: The Hobbit The Desolation of Smaug (2013)
+  File: The.Hobbit.The.Desolation.of.Smaug.2013.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Hobbit The Desolation of Smaug (2013)/The.Hobbit.The.Desolation.of.Smaug.2013.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+
+Title: The Hunger Games (2012)
+  File: The Hunger Games (2012) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Hunger Games (2012)/The Hunger Games (2012) Remux-2160p.mkv
+
+Title: The Hunger Games Catching Fire (2013)
+  File: The Hunger Games Catching Fire (2013) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Hunger Games Catching Fire (2013)/The Hunger Games Catching Fire (2013) Remux-2160p.mkv
+
+Title: The Hunger Games Mockingjay - Part 1 (2014)
+  File: The Hunger Games Mockingjay - Part 1 (2014) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Hunger Games Mockingjay - Part 1 (2014)/The Hunger Games Mockingjay - Part 1 (2014) Remux-2160p.mkv
+
+Title: The Hunger Games Mockingjay - Part 2 (2015)
+  File: The Hunger Games Mockingjay - Part 2 (2015) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Hunger Games Mockingjay - Part 2 (2015)/The Hunger Games Mockingjay - Part 2 (2015) Remux-2160p.mkv
+
+Title: The Hunt for Red October (1990)
+  File: The Hunt for Red October.1990.2160p.UHD.BluRay.TrueHD5.1.x265-HQMUX.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Hunt for Red October (1990)/The Hunt for Red October.1990.2160p.UHD.BluRay.TrueHD5.1.x265-HQMUX.mkv
+
+Title: The Lord of the Rings The Fellowship of the Ring (2001)
+  File: The Lord of the Rings The Fellowship of the Ring (2001) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Lord of the Rings The Fellowship of the Ring (2001)/The Lord of the Rings The Fellowship of the Ring (2001) Remux-2160p.mkv
+
+Title: The Lord of the Rings The Return of the King (2003)
+  File: The Lord of the Rings The Return of the King (2003) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Lord of the Rings The Return of the King (2003)/The Lord of the Rings The Return of the King (2003) Remux-2160p.mkv
+
+Title: The Lord of the Rings The Two Towers (2002)
+  File: The Lord of the Rings The Two Towers (2002) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Lord of the Rings The Two Towers (2002)/The Lord of the Rings The Two Towers (2002) Remux-2160p.mkv
+
+Title: The Lost World Jurassic Park (1997)
+  File: The.Lost.World.Jurassic.Park.1997.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Lost World Jurassic Park (1997)/The.Lost.World.Jurassic.Park.1997.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+
+Title: The Martian (2015)
+  File: The.Martian.2015.EXTENDED.2160p.BluRay.x265.10bit.HDR.TrueHD.7.1.Atmos-TERMiNAL.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Martian (2015)/The.Martian.2015.EXTENDED.2160p.BluRay.x265.10bit.HDR.TrueHD.7.1.Atmos-TERMiNAL.mkv
+
+Title: The Matrix (1999)
+  File: The.Matrix.1999.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Matrix (1999)/The.Matrix.1999.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+
+Title: The Matrix Reloaded (2003)
+  File: The.Matrix.Reloaded.2003.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Matrix Reloaded (2003)/The.Matrix.Reloaded.2003.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+
+Title: The Matrix Resurrections (2021)
+  File: The Matrix Resurrections (2021) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Matrix Resurrections (2021)/The Matrix Resurrections (2021) WEBDL-2160p.mkv
+
+Title: The Matrix Revolutions (2003)
+  File: The.Matrix-Revolutions.2003.UHD.BluRay.HDR.10Bit.2160p.DD.5.1.H265-d3g.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Matrix Revolutions (2003)/The.Matrix-Revolutions.2003.UHD.BluRay.HDR.10Bit.2160p.DD.5.1.H265-d3g.mkv
+
+Title: The Outfit (2022)
+  File: The Outfit (2022) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Outfit (2022)/The Outfit (2022) WEBDL-2160p.mkv
+
+Title: The Predator (2018)
+  File: The Predator 2018 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Predator (2018)/The Predator 2018 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv
+
+Title: The Revenant (2015)
+  File: The.Revenant.2015.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR-AsRequested.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Revenant (2015)/The.Revenant.2015.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR-AsRequested.mkv
+
+Title: The Suicide Squad (2021)
+  File: The.Suicide.Squad.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Suicide Squad (2021)/The.Suicide.Squad.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+
+Title: Thor Ragnarok (2017)
+  File: Thor Ragnarok 2017 2160p UHD HDR10+ BluRay x265 TrueHD Atmos 7 1-UnKn0wn.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Thor Ragnarok (2017)/Thor Ragnarok 2017 2160p UHD HDR10+ BluRay x265 TrueHD Atmos 7 1-UnKn0wn.mkv
+
+Title: Top Gun (1986)
+  File: Top Gun 1986 2160p UHD DV HDR10 BluRay SL TrueHD Atmos7 1 H265-SHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Top Gun (1986)/Top Gun 1986 2160p UHD DV HDR10 BluRay SL TrueHD Atmos7 1 H265-SHD.mkv
+
+Title: Top Gun Maverick (2022)
+  File: Top Gun Maverick (2022) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Top Gun Maverick (2022)/Top Gun Maverick (2022) WEBDL-2160p.mkv
+
+Title: Total Recall (1990)
+  File: Total Recall (1990) Remux-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Total Recall (1990)/Total Recall (1990) Remux-2160p.mkv
+
+Title: Twister (1996)
+  File: Twister (1996) Remux-1080p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Twister (1996)/Twister (1996) Remux-1080p.mkv
+
+Title: Uncharted (2022)
+  File: Uncharted (2022) WEBDL-2160p.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Uncharted (2022)/Uncharted (2022) WEBDL-2160p.mkv
+
+Title: V for Vendetta (2005)
+  File: V.for.Vendetta.2005.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/V for Vendetta (2005)/V.for.Vendetta.2005.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+
+Title: War for the Planet of the Apes (2017)
+  File: War.for.the.Planet.of.the.Apes.2017.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/War for the Planet of the Apes (2017)/War.for.the.Planet.of.the.Apes.2017.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv
+
+Title: Wonder Woman (2017)
+  File: Wonder.Woman.2017.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Wonder Woman (2017)/Wonder.Woman.2017.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv
+
+Title: Wonder Woman 1984 (2020)
+  File: Wonder.Woman.1984.2020.2160p.HMAX.WEB-DL.DDP5.1.Atmos.HDR.HEVC-TOMMY.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Wonder Woman 1984 (2020)/Wonder.Woman.1984.2020.2160p.HMAX.WEB-DL.DDP5.1.Atmos.HDR.HEVC-TOMMY.mkv
+
+Title: Zombieland (2009)
+  File: Zombieland.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Zombieland (2009)/Zombieland.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv
+

@@ -1,0 +1,45 @@
+================================================================================
+FILES WITH IMDB BUT NO TMDB - RUN THROUGH RADARR/SONARR TO RENAME
+================================================================================
+
+These files have IMDB IDs but no TMDB IDs.
+Radarr/Sonarr can automatically add TMDB IDs when you:
+  1. Go to Movie/Series > Edit
+  2. Click 'Rename Files'
+Or use Mass Editor to rename multiple at once.
+
+
+========================================
+ALI'S FILES (0)
+========================================
+
+
+========================================
+CHRIS'S FILES (5)
+========================================
+
+Title: 40 Acres (2025)
+  IMDB: tt29634843
+  File: 40 Acres (2025) {imdb-tt29634843} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-BYNDR.mkv
+  Path: /mnt/synology/rs-tv/Bad Sisters/02/40 Acres (2025)/40 Acres (2025) {imdb-tt29634843} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-BYNDR.mkv
+
+Title: ChubbChubbs!, The (2002)
+  IMDB: tt0331218
+  File: The ChubbChubbs! (2002) {imdb-tt0331218} - [Bluray-1080p][EAC3 5.1][x264]-PERFETTO.mkv
+  Path: /mnt/synology/rs-tv/Bad Sisters/02/ChubbChubbs!, The (2002)/The ChubbChubbs! (2002) {imdb-tt0331218} - [Bluray-1080p][EAC3 5.1][x264]-PERFETTO.mkv
+
+Title: Cunk on Britain
+  IMDB: tt6326816
+  File: Cunk on Christmas (2016) {imdb-tt6326816} [WEBDL-1080p][AAC 2.0][h264]-AEK.mkv
+  Path: /mnt/synology/rs-tv/Cunk on Britain/Cunk on Christmas (2016) {imdb-tt6326816} [WEBDL-1080p][AAC 2.0][h264]-AEK.mkv
+
+Title: Cunk on Britain
+  IMDB: tt5715186
+  File: Cunk on Shakespeare (2016) {imdb-tt5715186} [WEBRip-720p][AAC 2.0][h264]-btw.mkv
+  Path: /mnt/synology/rs-tv/Cunk on Britain/Cunk on Shakespeare (2016) {imdb-tt5715186} [WEBRip-720p][AAC 2.0][h264]-btw.mkv
+
+Title: Locked (2025)
+  IMDB: tt26671996
+  File: Locked (2025) {imdb-tt26671996} - [Bluray-1080p][DTS-HD MA 5.1][h264]-RiSEHD.mkv
+  Path: /mnt/synology/rs-tv/Bad Sisters/02/Locked (2025)/Locked (2025) {imdb-tt26671996} - [Bluray-1080p][DTS-HD MA 5.1][h264]-RiSEHD.mkv
+

@@ -72,6 +72,41 @@ PATH_TRANSLATIONS = [
     # '/mnt/synology/...' stays as-is
 ]
 
+# Fan-made/custom media to exclude from comparison reports
+# These won't have TMDB IDs and shouldn't be flagged as "missing"
+EXCLUDED_TITLES = [
+    # Fan edits
+    'Despecialized Edition',
+    'Sacred Timeline Cut',
+    'Infinity Saga',
+    # Concerts/live performances
+    'Live in New York',
+    'Live at',
+    'Concert',
+    # Extended versions split into parts
+    'Extended Version.*Chapter',
+    'Extended Version.*part',
+]
+
+# Files to completely skip during comparison (by partial path match)
+EXCLUDED_PATHS = [
+    'Despecialized Edition',
+    'Sacred Timeline Cut',
+    'Infinity Saga',
+    'Adele Live in New York',
+    'Hateful Eight, The - Extended Version',
+]
+
+def is_excluded(file_path: str, title: str) -> bool:
+    """Check if a file should be excluded from comparison (fan edits, concerts, etc.)"""
+    for pattern in EXCLUDED_PATHS:
+        if pattern.lower() in file_path.lower():
+            return True
+    for pattern in EXCLUDED_TITLES:
+        if re.search(pattern, title, re.IGNORECASE):
+            return True
+    return False
+
 def translate_path_to_mother(path: str) -> str:
     """Translate inventory path to Mother's mount path for rsync"""
     for old_prefix, new_prefix in PATH_TRANSLATIONS:
@@ -893,47 +928,90 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
 
         # Copies - Ali's files go to Synology, Chris's files go to Unraid
         # All paths translated to Mother's mount points
+        # NOTE: For movies, we copy the movie folder to preserve structure
+        # For TV, we create the show/season folder structure then copy
         f.write("\n# === COPY BETTER QUALITY FILES ===\n\n")
         for result in all_results:
             if result.winner == 'ali' and result.ali_file:
                 # Ali has better version - copy from Unraid to Synology
-                src = translate_path_to_mother(result.ali_file.path)
+                src_file = translate_path_to_mother(result.ali_file.path)
                 lib_type = result.ali_file.library_type or ''
+                is_tv = 'tv' in lib_type.lower() or 'TV Shows' in src_file
 
-                if '4k' in lib_type.lower() or '4k' in src.lower():
-                    if 'tv' in lib_type.lower() or 'TV' in src:
+                if '4k' in lib_type.lower() or '4k' in src_file.lower():
+                    if is_tv:
                         dest = SYNOLOGY_PATHS['tv_4k']
                     else:
                         dest = SYNOLOGY_PATHS['movies_4k']
                 else:
-                    if 'tv' in lib_type.lower() or 'TV' in src:
+                    if is_tv:
                         dest = SYNOLOGY_PATHS['tv_1080p']
                     else:
                         dest = SYNOLOGY_PATHS['movies_1080p']
 
                 f.write(f'# Ali has better: {result.ali_file.title}\n')
                 f.write(f'# Score: Ali={result.ali_score} vs Chris={result.chris_score}\n')
-                f.write(f'run_cmd rsync -avP "{src}" "{dest}/"\n\n')
+
+                if is_tv:
+                    # TV: Create show/season folder structure, then copy file
+                    src_path = Path(src_file)
+                    # Get relative path from library root (Show/Season/file.mkv)
+                    # Find the TV library root in the path
+                    parts = src_path.parts
+                    for i, part in enumerate(parts):
+                        if 'TV' in part and 'Shows' in part or '4K TV' in part:
+                            rel_parts = parts[i+1:]  # Everything after "TV Shows" or "4K TV Shows"
+                            break
+                    else:
+                        rel_parts = parts[-3:]  # Fallback: Show/Season/file
+
+                    dest_dir = Path(dest) / '/'.join(rel_parts[:-1])  # Show/Season
+                    f.write(f'run_cmd mkdir -p "{dest_dir}"\n')
+                    f.write(f'run_cmd rsync -avP "{src_file}" "{dest_dir}/"\n\n')
+                else:
+                    # Movies: Copy the entire movie folder to preserve structure
+                    src_folder = str(Path(src_file).parent)
+                    f.write(f'run_cmd rsync -avP "{src_folder}" "{dest}/"\n\n')
 
             elif result.winner == 'chris' and result.chris_file:
                 # Chris has better version - copy from Synology to Unraid
-                src = translate_path_to_mother(result.chris_file.path)
+                src_file = translate_path_to_mother(result.chris_file.path)
                 lib_type = result.chris_file.library_type or ''
+                is_tv = 'tv' in lib_type.lower() or 'rs-tv' in src_file
 
-                if '4k' in lib_type.lower() or '4k' in src.lower():
-                    if 'tv' in lib_type.lower() or 'TV' in src:
+                if '4k' in lib_type.lower() or '4k' in src_file.lower():
+                    if is_tv:
                         dest = UNRAID_PATHS['tv_4k']
                     else:
                         dest = UNRAID_PATHS['movies_4k']
                 else:
-                    if 'tv' in lib_type.lower() or 'TV' in src:
+                    if is_tv:
                         dest = UNRAID_PATHS['tv_1080p']
                     else:
                         dest = UNRAID_PATHS['movies_1080p']
 
                 f.write(f'# Chris has better: {result.chris_file.title}\n')
                 f.write(f'# Score: Chris={result.chris_score} vs Ali={result.ali_score}\n')
-                f.write(f'run_cmd rsync -avP "{src}" "{dest}/"\n\n')
+
+                if is_tv:
+                    # TV: Create show/season folder structure, then copy file
+                    src_path = Path(src_file)
+                    # Get relative path from library root (Show/Season/file.mkv)
+                    parts = src_path.parts
+                    for i, part in enumerate(parts):
+                        if 'rs-tv' in part or '4ktv' in part.lower():
+                            rel_parts = parts[i+1:]  # Everything after library root
+                            break
+                    else:
+                        rel_parts = parts[-3:]  # Fallback: Show/Season/file
+
+                    dest_dir = Path(dest) / '/'.join(rel_parts[:-1])  # Show/Season
+                    f.write(f'run_cmd mkdir -p "{dest_dir}"\n')
+                    f.write(f'run_cmd rsync -avP "{src_file}" "{dest_dir}/"\n\n')
+                else:
+                    # Movies: Copy the entire movie folder to preserve structure
+                    src_folder = str(Path(src_file).parent)
+                    f.write(f'run_cmd rsync -avP "{src_folder}" "{dest}/"\n\n')
 
     print(f"✅ Sync script: {script_file}")
 
@@ -994,14 +1072,20 @@ def main():
     print(f"📖 Loading Ali's inventory: {args.ali_inventory}")
     with open(args.ali_inventory, 'r', encoding='utf-8') as f:
         ali_raw = json.load(f)
-    ali_files = [parse_inventory_file(entry) for entry in ali_raw]
-    print(f"   Parsed {len(ali_files)} files")
+    ali_files_all = [parse_inventory_file(entry) for entry in ali_raw]
+    # Filter out excluded fan edits, concerts, etc.
+    ali_files = [f for f in ali_files_all if not is_excluded(f.path, f.title)]
+    ali_excluded = len(ali_files_all) - len(ali_files)
+    print(f"   Parsed {len(ali_files)} files ({ali_excluded} excluded fan edits/concerts)")
 
     print(f"📖 Loading Chris's inventory: {args.chris_inventory}")
     with open(args.chris_inventory, 'r', encoding='utf-8') as f:
         chris_raw = json.load(f)
-    chris_files = [parse_inventory_file(entry) for entry in chris_raw]
-    print(f"   Parsed {len(chris_files)} files")
+    chris_files_all = [parse_inventory_file(entry) for entry in chris_raw]
+    # Filter out excluded fan edits, concerts, etc.
+    chris_files = [f for f in chris_files_all if not is_excluded(f.path, f.title)]
+    chris_excluded = len(chris_files_all) - len(chris_files)
+    print(f"   Parsed {len(chris_files)} files ({chris_excluded} excluded fan edits/concerts)")
 
     # Find misplaced files
     misplaced_files = [f for f in ali_files + chris_files if not f.is_valid_placement]

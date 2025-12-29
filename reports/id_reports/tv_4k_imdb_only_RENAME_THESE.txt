@@ -1,0 +1,20 @@
+================================================================================
+FILES WITH IMDB BUT NO TMDB - RUN THROUGH RADARR/SONARR TO RENAME
+================================================================================
+
+These files have IMDB IDs but no TMDB IDs.
+Radarr/Sonarr can automatically add TMDB IDs when you:
+  1. Go to Movie/Series > Edit
+  2. Click 'Rename Files'
+Or use Mass Editor to rename multiple at once.
+
+
+========================================
+ALI'S FILES (0)
+========================================
+
+
+========================================
+CHRIS'S FILES (0)
+========================================
+

@@ -1,0 +1,3713 @@
+====================================================================================================
+PROJECT MOTHER - MEDIA LIBRARY COMPARISON REPORT
+====================================================================================================
+
+Generated: 2025-12-29 11:06:03
+
+STATISTICS
+--------------------------------------------------
+Total comparisons: 396
+Ali only (copy to Chris): 234
+Chris only (copy to Ali): 162
+Ali better (replace Chris's): 0
+Chris better (replace Ali's): 0
+Equal quality (no action): 0
+Misplaced files (wrong library): 0
+Files missing TMDB ID: 170
+
+====================================================================================================
+⚠️  FILES MISSING TMDB ID (NEED RENAMING)
+====================================================================================================
+These files don't follow TRaSH naming format.
+Rename to: Movie (Year) {tmdb-XXXXX} - [Quality][Audio][HDR][Codec]-Group.mkv
+Use Radarr/Sonarr to rename, or FileBot with TMDB lookup.
+
+Ali's files missing TMDB ID (8):
+  - Furiosa A Mad Max Saga (2024) {imdb-tt12037194} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+    Path: /mnt/media/4K Movies/Furiosa A Mad Max Saga (2024)/Furiosa A Mad Max Saga (2024) {imdb-tt12037194} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  - Terminator 2 Judgment Day 1991 Remastered Theatrical Cut GER 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+    Path: /mnt/media/4K Movies/Terminator 2 Judgment Day (1991)/Terminator 2 Judgment Day 1991 Remastered Theatrical Cut GER 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv
+  - Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+    Path: /mnt/media/4K Movies/Ghostbusters (1984)/Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv
+  - Life.Of.Pi.2012.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR.mkv
+    Path: /mnt/media/4K Movies/Life of Pi (2012)/Life.Of.Pi.2012.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR.mkv
+  - Apollo.13.1995.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR-Scrambled.mkv
+    Path: /mnt/media/4K Movies/Apollo 13 (1995)/Apollo.13.1995.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR-Scrambled.mkv
+  - Lawrence.of.Arabia.1962.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+    Path: /mnt/media/4K Movies/Lawrence of Arabia (1962)/Lawrence.of.Arabia.1962.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv
+  - The.Hobbit.The.Desolation.of.Smaug.2013.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+    Path: /mnt/media/4K Movies/The Hobbit The Desolation of Smaug (2013)/The.Hobbit.The.Desolation.of.Smaug.2013.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv
+  - Jungle.Cruise.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+    Path: /mnt/media/4K Movies/Jungle Cruise (2021)/Jungle.Cruise.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4
+
+Chris's files missing TMDB ID (162):
+  - Ant-Man (2015) {imdb-tt0478970} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Ant-Man (2015)/Ant-Man (2015) {imdb-tt0478970} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  - Alien Romulus (2024) {imdb-tt18412256} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Alien Romulus (2024)/Alien Romulus (2024) {imdb-tt18412256} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  - John Wick Chapter 4 (2023) {imdb-tt10366206} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/John Wick Chapter 4 (2022)/John Wick Chapter 4 (2023) {imdb-tt10366206} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  - The Chronicles of Riddick (2004) {imdb-tt0296572} {edition-Director's Cut} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/The Chronicles of Riddick (2004)/The Chronicles of Riddick (2004) {imdb-tt0296572} {edition-Director's Cut} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+  - The Marvels (2023) {imdb-tt10676048} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Captain Marvel 2 (2022)/The Marvels (2023) {imdb-tt10676048} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  - Batman v Superman Dawn of Justice (2016) {imdb-tt2975590} {edition-Ultimate Edition Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Batman v Superman Dawn of Justice (2016)/Batman v Superman Dawn of Justice (2016) {imdb-tt2975590} {edition-Ultimate Edition Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  - Napoleon (2023) {imdb-tt13287846} {edition-Directors Cut} [ATVP][WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Napoleon (2023)/Napoleon (2023) {imdb-tt13287846} {edition-Directors Cut} [ATVP][WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  - Solo A Star Wars Story (2018) {imdb-tt3778644} [Bluray-2160p Proper][HDR10][TrueHD Atmos 7.1][x265]-TnP.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Solo A Star Wars Story (2018)/Solo A Star Wars Story (2018) {imdb-tt3778644} [Bluray-2160p Proper][HDR10][TrueHD Atmos 7.1][x265]-TnP.mkv
+  - Tenet (2020) {imdb-tt6723592} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Tenet (2020)/Tenet (2020) {imdb-tt6723592} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv
+  - Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Theatrical} [WEBDL-2160p][HDR10][EAC3 5.1][h265]-SMURF.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Kingdom of Heaven (2005)/Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Theatrical} [WEBDL-2160p][HDR10][EAC3 5.1][h265]-SMURF.mkv
+  - Aliens (1986) {imdb-tt0090605} {edition-Special Edition} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Aliens (1986)/Aliens (1986) {imdb-tt0090605} {edition-Special Edition} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  - Shazam! (2019) {imdb-tt0448115} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Shazam! (2019)/Shazam! (2019) {imdb-tt0448115} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  - Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Black Panther Wakanda Forever (2022)/Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv
+  - Mortal Kombat (2021) {imdb-tt0293429} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Mortal Kombat (2021)/Mortal Kombat (2021) {imdb-tt0293429} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv
+  - Avatar (2009) {imdb-tt0499549} [Remux-2160p Proper][HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Avatar (2009)/Avatar (2009) {imdb-tt0499549} [Remux-2160p Proper][HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  - The Abyss (1989) {imdb-tt0096754} {edition-Special Edition} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/The Abyss (1989)/The Abyss (1989) {imdb-tt0096754} {edition-Special Edition} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  - Highlander (1986) {imdb-tt0091203} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-W4NK3R.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Highlander (1986)/Highlander (1986) {imdb-tt0091203} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-W4NK3R.mkv
+  - Oppenheimer (2023) {imdb-tt15398776} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-MainFrame.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Oppenheimer (2023)/Oppenheimer (2023) {imdb-tt15398776} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-MainFrame.mkv
+  - Terminator Dark Fate (2019) {imdb-tt6450804} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-DON.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Terminator Dark Fate (2019)/Terminator Dark Fate (2019) {imdb-tt6450804} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-DON.mkv
+  - Bumblebee (2018) {imdb-tt4701182} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Bumblebee (2018)/Bumblebee (2018) {imdb-tt4701182} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  - Twisters (2024) {imdb-tt12584954} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Twisters (2024)/Twisters (2024) {imdb-tt12584954} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  - Ant-Man and the Wasp Quantumania (2023) {imdb-tt10954600} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Ant-Man and the Wasp Quantumania (2023)/Ant-Man and the Wasp Quantumania (2023) {imdb-tt10954600} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  - Man of Steel (2013) {imdb-tt0770828} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Man of Steel (2013)/Man of Steel (2013) {imdb-tt0770828} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  - Ant-Man and the Wasp (2018) {imdb-tt5095030} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Ant-Man and the Wasp (2018)/Ant-Man and the Wasp (2018) {imdb-tt5095030} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  - The Batman (2022) {imdb-tt1877830} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/The Batman (2022)/The Batman (2022) {imdb-tt1877830} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  - Dune Part Two (2024) {imdb-tt15239678} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Dune Part Two (2024)/Dune Part Two (2024) {imdb-tt15239678} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  - Master and Commander The Far Side of the World (2003) {imdb-tt0311113} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Master and Commander The Far Side of the World (2003)/Master and Commander The Far Side of the World (2003) {imdb-tt0311113} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv
+  - Deadpool and Wolverine (2024) {imdb-tt6263850} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Deadpool 3 (2024)/Deadpool and Wolverine (2024) {imdb-tt6263850} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  - Mission Impossible (1996) {imdb-tt0117060} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Mission Impossible (1996)/Mission Impossible (1996) {imdb-tt0117060} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv
+  - The Mummy (1999) {imdb-tt0120616} [Bluray-2160p][HDR10][DTS-X 7.1][x265]-IAMABLE.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/The Mummy (1999)/The Mummy (1999) {imdb-tt0120616} [Bluray-2160p][HDR10][DTS-X 7.1][x265]-IAMABLE.mkv
+  - Riddick (2013) {imdb-tt1411250} {edition-Director's Cut} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Riddick (2013)/Riddick (2013) {imdb-tt1411250} {edition-Director's Cut} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+  - Mission Impossible Dead Reckoning Part One (2023) {imdb-tt9603212} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Mission Impossible Dead Reckoning Part One (2023)/Mission Impossible Dead Reckoning Part One (2023) {imdb-tt9603212} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  - The Empire Strikes Back (1980) Bluray-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/The Empire Strikes Back (1980)/The Empire Strikes Back (1980) Bluray-2160p.mkv
+  - Uncharted (2022) WEBDL-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Uncharted (2022)/Uncharted (2022) WEBDL-2160p.mkv
+  - Avatar The Way of Water (2022) WEBDL-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Avatar The Way of Water (2022)/Avatar The Way of Water (2022) WEBDL-2160p.mkv
+  - Star Wars (1977) Remux-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Star Wars (1977)/Star Wars (1977) Remux-2160p.mkv
+  - Fast & Furious 6 (2013) Remux-2160p Proper.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Fast & Furious 6 (2013)/Fast & Furious 6 (2013) Remux-2160p Proper.mkv
+  - Total Recall (1990) Remux-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Total Recall (1990)/Total Recall (1990) Remux-2160p.mkv
+  - Resident Evil Welcome to Raccoon City (2021) WEBDL-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Resident Evil Welcome to Raccoon City (2021)/Resident Evil Welcome to Raccoon City (2021) WEBDL-2160p.mkv
+  - The Hunger Games Mockingjay - Part 1 (2014) Remux-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/The Hunger Games Mockingjay - Part 1 (2014)/The Hunger Games Mockingjay - Part 1 (2014) Remux-2160p.mkv
+  - The Hunger Games Mockingjay - Part 2 (2015) Remux-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/The Hunger Games Mockingjay - Part 2 (2015)/The Hunger Games Mockingjay - Part 2 (2015) Remux-2160p.mkv
+  - Prey (2022) WEBDL-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Prey (2022)/Prey (2022) WEBDL-2160p.mkv
+  - The Lord of the Rings The Two Towers (2002) Remux-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/The Lord of the Rings The Two Towers (2002)/The Lord of the Rings The Two Towers (2002) Remux-2160p.mkv
+  - Jurassic World Dominion (2022) WEBDL-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Jurassic World Dominion (2022)/Jurassic World Dominion (2022) WEBDL-2160p.mkv
+  - Shazam! Fury of the Gods (2023) Remux-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Shazam! Fury of the Gods (2023)/Shazam! Fury of the Gods (2023) Remux-2160p.mkv
+  - Master and Commander The Far Side of the World (2003) Remux-1080p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/#recycle/Master and Commander The Far Side of the World (2003)/Master and Commander The Far Side of the World (2003) Remux-1080p.mkv
+  - Independence Day (1996) Remux-2160p Proper.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Independence Day (1996)/Independence Day (1996) Remux-2160p Proper.mkv
+  - Blade (1998) Bluray-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Blade (1998)/Blade (1998) Bluray-2160p.mkv
+  - Dune (2021) Remux-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Dune (2021)/Dune (2021) Remux-2160p.mkv
+  - Pirates of the Caribbean The Curse of the Black Pearl (2003) WEBRip-2160p.mkv
+    Path: /mnt/synology/rs-4kmedia/4kmovies/Pirates of the Caribbean The Curse of the Black Pearl (2003)/Pirates of the Caribbean The Curse of the Black Pearl (2003) WEBRip-2160p.mkv
+  ... and 112 more
+
+====================================================================================================
+SYNC ACTIONS
+====================================================================================================
+
+Title: Ghostbusters (1984)
+  Match: TMDB ID (reliable)
+  Ali: Ghostbusters (1984) {tmdb-620} - [Remux-2160p Proper][TrueHD Atmos 7.1][DV HDR10][HEVC]-BLURANiUM.mkv (Score: 7700) [TMDB:620]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: John Wick Chapter 4 (2022)
+  Match: TMDB ID (reliable)
+  Ali: John Wick Chapter 4 (2023) {tmdb-603692} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:603692]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Lost World Jurassic Park (1997)
+  Match: TMDB ID (reliable)
+  Ali: The Lost World Jurassic Park (1997) {tmdb-330} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv (Score: 7200) [TMDB:330]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Avengers Age of Ultron (2015)
+  Match: TMDB ID (reliable)
+  Ali: Avengers Age of Ultron (2015) {tmdb-99861} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:99861]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek II The Wrath of Khan (1982)
+  Match: TMDB ID (reliable)
+  Ali: Star Trek II The Wrath of Khan (1982) {tmdb-154} - {edition-Theatrical Cut} [Bluray-2160p Proper][EAC3 7.1][DV HDR10][x265]-hallowed.mkv (Score: 6799) [TMDB:154]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Wicked (2024)
+  Match: TMDB ID (reliable)
+  Ali: Wicked (2024) {tmdb-402431} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:402431]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Rocketman (2019)
+  Match: TMDB ID (reliable)
+  Ali: Rocketman (2019) {tmdb-504608} - [Bluray-2160p][EAC3 7.1][DV HDR10][x265]-HONE.mkv (Score: 6803) [TMDB:504608]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Batman Begins (2005)
+  Match: TMDB ID (reliable)
+  Ali: Batman Begins (2005) {tmdb-272} - [Hybrid][Remux-2160p][DTS-HD MA 5.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7600) [TMDB:272]
+       [2160p][Remux][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Spider-Man Far From Home (2019)
+  Match: TMDB ID (reliable)
+  Ali: Spider-Man Far From Home (2019) {tmdb-429617} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7189) [TMDB:429617]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Kingdom of the Planet of the Apes (2024)
+  Match: TMDB ID (reliable)
+  Ali: Kingdom of the Planet of the Apes (2024) {tmdb-653346} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-W4NK3R.mkv (Score: 7200) [TMDB:653346]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Hobbit An Unexpected Journey (2012)
+  Match: TMDB ID (reliable)
+  Ali: The Hobbit An Unexpected Journey (2012) {tmdb-49051} - {edition-Extended Cut} [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:49051]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Captain America The First Avenger (2011)
+  Match: TMDB ID (reliable)
+  Ali: Captain America The First Avenger (2011) {tmdb-1771} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-KeYBLaDE.mkv (Score: 7200) [TMDB:1771]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Extraction 2 (2023)
+  Match: TMDB ID (reliable)
+  Ali: Extraction 2 (2023) {tmdb-697843} - [NF][WEBDL-2160p][EAC3 Atmos 5.1][DV HDR10][h265]-HONE.mkv (Score: 6670) [TMDB:697843]
+       [2160p][WEBDL][Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Willy Wonka and the Chocolate Factory (1971)
+  Match: TMDB ID (reliable)
+  Ali: Willy Wonka and the Chocolate Factory (1971) {tmdb-252} - [Bluray-2160p][DTS-HD MA 5.1][DV HDR10][x265]-MainFrame.mkv (Score: 7100) [TMDB:252]
+       [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Kingdom of Heaven (2005)
+  Match: TMDB ID (reliable)
+  Ali: Kingdom of Heaven (2005) {tmdb-1495} - {edition-Director's Cut} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:1495]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Rise of the Planet of the Apes (2011)
+  Match: TMDB ID (reliable)
+  Ali: Rise of the Planet of the Apes (2011) {tmdb-61791} - [Bluray-2160p][EAC3 5.1][DV HDR10][x265]-HONE.mkv (Score: 6830) [TMDB:61791]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Extraction (2020)
+  Match: TMDB ID (reliable)
+  Ali: Extraction (2020) {tmdb-545609} - [NF][WEBDL-2160p][EAC3 Atmos 5.1][DV HDR10][HEVC]-SiC.mkv (Score: 6630) [TMDB:545609]
+       [2160p][WEBDL][Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Zack Snyders Justice League (2021)
+  Match: TMDB ID (reliable)
+  Ali: Zack Snyders Justice League (2021) {tmdb-791373} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:791373]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: 300 (2006)
+  Match: TMDB ID (reliable)
+  Ali: 300 (2007) {tmdb-1271} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:1271]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Indiana Jones and the Dial of Destiny (2023)
+  Match: TMDB ID (reliable)
+  Ali: Indiana Jones and the Dial of Destiny (2023) {tmdb-335977} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:335977]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Avengers Infinity War (2018)
+  Match: TMDB ID (reliable)
+  Ali: Avengers Infinity War (2018) {tmdb-299536} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:299536]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Godfather Part III (1990)
+  Match: TMDB ID (reliable)
+  Ali: The Godfather Part III (1990) {tmdb-242} - {edition-Directors Cut} [Bluray-2160p][TrueHD 5.1][DV HDR10][x265]-SPHD.mkv (Score: 7150) [TMDB:242]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Avengers (2012)
+  Match: TMDB ID (reliable)
+  Ali: The Avengers (2012) {tmdb-24428} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:24428]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Apollo 13 (1995)
+  Match: TMDB ID (reliable)
+  Ali: Apollo 13 (1995) {tmdb-568} - [Remux-2160p][DTS-X 7.1][HDR10][HEVC]-Scrambled.mkv (Score: 7500) [TMDB:568]
+       [2160p][Remux][DTS:X][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Mission Impossible Dead Reckoning Part One (2023)
+  Match: TMDB ID (reliable)
+  Ali: Mission Impossible Dead Reckoning Part One (2023) {tmdb-575264} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:575264]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Blade Runner (1982)
+  Match: TMDB ID (reliable)
+  Ali: Blade Runner (1982) {tmdb-78} - {edition-Final Cut} [Remux-2160p][TrueHD Atmos 7.1][HDR10][HEVC]-FraMeSToR.mkv (Score: 7600) [TMDB:78]
+       [2160p][Remux][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Uncharted (2022)
+  Match: TMDB ID (reliable)
+  Ali: Uncharted (2022) {tmdb-335787} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:335787]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Jungle Cruise (2021)
+  Match: TMDB ID (reliable)
+  Ali: Jungle Cruise (2021) {tmdb-451048} - [Bluray-2160p][AC3 5.1][HDR10][x265]-BHDStudio.mp4 (Score: 6646) [TMDB:451048]
+       [2160p][Bluray][DD][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Dark Knight Rises (2012)
+  Match: TMDB ID (reliable)
+  Ali: The Dark Knight Rises (2012) {tmdb-49026} - [Hybrid][Remux-2160p][DTS-HD MA 5.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7600) [TMDB:49026]
+       [2160p][Remux][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: TRON Ares (2025)
+  Match: TMDB ID (reliable)
+  Ali: TRON Ares (2025) {tmdb-533533} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPx.mkv (Score: 7200) [TMDB:533533]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Raiders of the Lost Ark (1981)
+  Match: TMDB ID (reliable)
+  Ali: Raiders of the Lost Ark (1981) {tmdb-85} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:85]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Kong Skull Island (2017)
+  Match: TMDB ID (reliable)
+  Ali: Kong Skull Island (2017) {tmdb-293167} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (Score: 7100) [TMDB:293167]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Venom The Last Dance (2024)
+  Match: TMDB ID (reliable)
+  Ali: Venom The Last Dance (2024) {tmdb-912649} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-MainFrame.mkv (Score: 7200) [TMDB:912649]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Total Recall (1990)
+  Match: TMDB ID (reliable)
+  Ali: Total Recall (1990) {tmdb-861} - [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:861]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Zombieland Double Tap (2019)
+  Match: TMDB ID (reliable)
+  Ali: Zombieland Double Tap (2019) {tmdb-338967} - [Bluray-2160p][DTS-X 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7076) [TMDB:338967]
+       [2160p][Bluray][DTS:X][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Mission Impossible Fallout (2018)
+  Match: TMDB ID (reliable)
+  Ali: Mission Impossible Fallout (2018) {tmdb-353081} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:353081]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Venom (2018)
+  Match: TMDB ID (reliable)
+  Ali: Venom (2018) {tmdb-335983} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7190) [TMDB:335983]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Hunger Games Mockingjay - Part 2 (2015)
+  Match: TMDB ID (reliable)
+  Ali: The Hunger Games Mockingjay Part 2 (2015) {tmdb-131634} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:131634]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Fifth Element (1997)
+  Match: TMDB ID (reliable)
+  Ali: The Fifth Element (1997) {tmdb-18} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:18]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Godzilla vs. Kong (2021)
+  Match: TMDB ID (reliable)
+  Ali: Godzilla vs. Kong (2021) {tmdb-399566} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-W4NK3R.mkv (Score: 7200) [TMDB:399566]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: 1917 (2019)
+  Match: TMDB ID (reliable)
+  Ali: 1917 (2019) {tmdb-530915} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (Score: 7100) [TMDB:530915]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Captain America The Winter Soldier (2014)
+  Match: TMDB ID (reliable)
+  Ali: Captain America The Winter Soldier (2014) {tmdb-100402} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-W4NK3R.mkv (Score: 7100) [TMDB:100402]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Avatar The Way of Water (2022)
+  Match: TMDB ID (reliable)
+  Ali: Avatar The Way of Water (2022) {tmdb-76600} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-W4NK3R.mkv (Score: 7100) [TMDB:76600]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek V The Final Frontier (1989)
+  Match: TMDB ID (reliable)
+  Ali: Star Trek V The Final Frontier (1989) {tmdb-172} - [Bluray-2160p][EAC3 7.1][DV HDR10][x265]-hallowed.mkv (Score: 6790) [TMDB:172]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Lord of the Rings The Two Towers (2002)
+  Match: TMDB ID (reliable)
+  Ali: The Lord of the Rings The Two Towers (2002) {tmdb-121} - {edition-Extended} [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:121]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: John Wick Chapter 3 Parabellum (2019)
+  Match: TMDB ID (reliable)
+  Ali: John Wick Chapter 3 Parabellum (2019) {tmdb-458156} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-CtrlHD.mkv (Score: 7100) [TMDB:458156]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Brotherhood of the Wolf (2001)
+  Match: TMDB ID (reliable)
+  Ali: Brotherhood of the Wolf (2001) {tmdb-6312} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:6312]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Indiana Jones and the Kingdom of the Crystal Skull (2008)
+  Match: TMDB ID (reliable)
+  Ali: Indiana Jones and the Kingdom of the Crystal Skull (2008) {tmdb-217} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:217]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Heat (1995)
+  Match: TMDB ID (reliable)
+  Ali: Heat (1995) {tmdb-949} - [Remux-2160p][DTS-HD MA 5.1][HDR10][HEVC]-FraMeSToR.mkv (Score: 7500) [TMDB:949]
+       [2160p][Remux][DTS-HD MA][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Ant-Man and the Wasp Quantumania (2023)
+  Match: TMDB ID (reliable)
+  Ali: Ant-Man and the Wasp Quantumania (2023) {tmdb-640146} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:640146]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Dracula (1992)
+  Match: TMDB ID (reliable)
+  Ali: Bram Stokers Dracula (1992) {tmdb-6114} - [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:6114]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Saving Private Ryan (1998)
+  Match: TMDB ID (reliable)
+  Ali: Saving Private Ryan (1998) {tmdb-857} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (Score: 7100) [TMDB:857]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Aliens (1986)
+  Match: TMDB ID (reliable)
+  Ali: Aliens (1986) {tmdb-679} - {edition-Special Edition} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:679]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Wizard of Oz (1939)
+  Match: TMDB ID (reliable)
+  Ali: The Wizard of Oz (1939) {tmdb-630} - [Remux-2160p][DTS-HD MA 5.1][DV HDR10Plus][HEVC]-FraMeSToR.mkv (Score: 7600) [TMDB:630]
+       [2160p][Remux][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Earth One Amazing Day (2017)
+  Match: TMDB ID (reliable)
+  Ali: Earth One Amazing Day (2017) {tmdb-464593} - [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:464593]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Spider-Man No Way Home (2021)
+  Match: TMDB ID (reliable)
+  Ali: Spider-Man No Way Home (2021) {tmdb-634649} - [Bluray-2160p Proper][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:634649]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: V for Vendetta (2005)
+  Match: TMDB ID (reliable)
+  Ali: V for Vendetta (2006) {tmdb-752} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:752]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Shazam! (2019)
+  Match: TMDB ID (reliable)
+  Ali: Shazam! (2019) {tmdb-287947} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:287947]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Gladiator (2000)
+  Match: TMDB ID (reliable)
+  Ali: Gladiator (2000) {tmdb-98} - {edition-Extended Cut} [Remux-2160p][DTS-X 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7600) [TMDB:98]
+       [2160p][Remux][DTS:X][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Gladiator (2000)
+  Match: TMDB ID (reliable)
+  Ali: Gladiator (2000) {tmdb-98} - {edition-Extended} [Remux-2160p][DTS-X 7.1][HDR10][HEVC]-FraMeSToR.mkv (Score: 7500) [TMDB:98]
+       [2160p][Remux][DTS:X][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Dark Knight (2008)
+  Match: TMDB ID (reliable)
+  Ali: The Dark Knight (2008) {tmdb-155} - [Hybrid][Remux-2160p][TrueHD 5.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7650) [TMDB:155]
+       [2160p][Remux][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Deadpool 2 (2018)
+  Match: TMDB ID (reliable)
+  Ali: Deadpool 2 (2018) {tmdb-383498} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-MainFrame.mkv (Score: 7100) [TMDB:383498]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Mummy (1999)
+  Match: TMDB ID (reliable)
+  Ali: The Mummy (1999) {tmdb-564} - [Bluray-2160p][DTS-X 7.1][HDR10][x265]-IAMABLE.mkv (Score: 7000) [TMDB:564]
+       [2160p][Bluray][DTS:X][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Terminator (1984)
+  Match: TMDB ID (reliable)
+  Ali: The Terminator (1984) {tmdb-218} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:218]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Return of the Jedi (1983)
+  Match: TMDB ID (reliable)
+  Ali: Return of the Jedi (1983) {tmdb-1892} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv (Score: 7200) [TMDB:1892]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Godfather Part II (1974)
+  Match: TMDB ID (reliable)
+  Ali: The Godfather Part II (1974) {tmdb-240} - [Bluray-2160p][TrueHD 5.1][DV HDR10][x265]-SPHD.mkv (Score: 7150) [TMDB:240]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Deadpool 3 (2024)
+  Match: TMDB ID (reliable)
+  Ali: Deadpool and Wolverine (2024) {tmdb-533535} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:533535]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Zombieland (2009)
+  Match: TMDB ID (reliable)
+  Ali: Zombieland (2009) {tmdb-19908} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:19908]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Lawrence of Arabia (1962)
+  Match: TMDB ID (reliable)
+  Ali: Lawrence of Arabia (1962) {tmdb-947} - [Remux-2160p][TrueHD Atmos 7.1][HDR10][HEVC]-FraMeSToR.mkv (Score: 7600) [TMDB:947]
+       [2160p][Remux][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Logan (2017)
+  Match: TMDB ID (reliable)
+  Ali: Logan (2017) {tmdb-263115} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-CtrlHD.mkv (Score: 7095) [TMDB:263115]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Mission Impossible Ghost Protocol (2011)
+  Match: TMDB ID (reliable)
+  Ali: Mission Impossible Ghost Protocol (2011) {tmdb-56292} - [Bluray-2160p][TrueHD 7.1][HDR10][x265]-HQMUX.mkv (Score: 7050) [TMDB:56292]
+       [2160p][Bluray][TrueHD][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek Into Darkness (2013)
+  Match: TMDB ID (reliable)
+  Ali: Star Trek Into Darkness (2013) {tmdb-54138} - {edition-IMAX} [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-Flights.mkv (Score: 7700) [TMDB:54138]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Life of Pi (2012)
+  Match: TMDB ID (reliable)
+  Ali: Life of Pi (2012) {tmdb-87827} - [Remux-2160p][DTS-HD MA 7.1][HDR10][HEVC]-FraMeSToR.mkv (Score: 7500) [TMDB:87827]
+       [2160p][Remux][DTS-HD MA][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Hobbit The Battle of the Five Armies (2014)
+  Match: TMDB ID (reliable)
+  Ali: The Hobbit The Battle of the Five Armies (2014) {tmdb-122917} - {edition-Extended Cut} [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:122917]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Alita Battle Angel (2019)
+  Match: TMDB ID (reliable)
+  Ali: Alita Battle Angel (2019) {tmdb-399579} - [Bluray-2160p Proper][TrueHD Atmos 7.1][HDR10Plus][x265]-DON.mkv (Score: 7100) [TMDB:399579]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Revenant (2015)
+  Match: TMDB ID (reliable)
+  Ali: The Revenant (2015) {tmdb-281957} - {edition-Open Matte} [Remux-2160p][TrueHD Atmos 7.1][DV HDR10Plus][h265]-Benflix.mkv (Score: 7700) [TMDB:281957]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Iron Man (2008)
+  Match: TMDB ID (reliable)
+  Ali: Iron Man (2008) {tmdb-1726} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:1726]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: E.T. the Extra-Terrestrial (1982)
+  Match: TMDB ID (reliable)
+  Ali: E.T. the Extra-Terrestrial (1982) {tmdb-601} - [Bluray-2160p][DTS-X 7.1][HDR10][x265]-CtrlHD.mkv (Score: 7000) [TMDB:601]
+       [2160p][Bluray][DTS:X][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Northman (2022)
+  Match: TMDB ID (reliable)
+  Ali: The Northman (2022) {tmdb-639933} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:639933]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Mortal Kombat (2021)
+  Match: TMDB ID (reliable)
+  Ali: Mortal Kombat (2021) {tmdb-460465} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (Score: 7100) [TMDB:460465]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: A Beautiful Planet (2016)
+  Match: TMDB ID (reliable)
+  Ali: A Beautiful Planet (2016) {tmdb-365997} - [Remux-2160p][DTS-X 7.1][HDR10Plus][HEVC]-FraMeSToR.mkv (Score: 7473) [TMDB:365997]
+       [2160p][Remux][DTS:X][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Suicide Squad (2021)
+  Match: TMDB ID (reliable)
+  Ali: The Suicide Squad (2021) {tmdb-436969} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-W4NK3R.mkv (Score: 7200) [TMDB:436969]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Interstellar (2014)
+  Match: TMDB ID (reliable)
+  Ali: Interstellar (2014) {tmdb-157336} - {edition-IMAX} [Bluray-2160p][DTS-HD MA 5.1][DV HDR10][x265]-SPHD.mkv (Score: 7100) [TMDB:157336]
+       [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Avatar (2009)
+  Match: TMDB ID (reliable)
+  Ali: Avatar (2009) {tmdb-19995} - [Remux-2160p Proper][TrueHD Atmos 7.1][HDR10][HEVC]-FraMeSToR.mkv (Score: 7600) [TMDB:19995]
+       [2160p][Remux][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek VI The Undiscovered Country (1991)
+  Match: TMDB ID (reliable)
+  Ali: Star Trek VI The Undiscovered Country (1991) {tmdb-174} - {edition-Theatrical Cut} [Bluray-2160p][EAC3 7.1][DV HDR10][x265]-hallowed.mkv (Score: 6795) [TMDB:174]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Wonder Woman (2017)
+  Match: TMDB ID (reliable)
+  Ali: Wonder Woman (2017) {tmdb-297762} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:297762]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Blade II (2002)
+  Match: TMDB ID (reliable)
+  Ali: Blade II (2002) {tmdb-36586} - [WEBDL-2160p][DTS-HD MA 7.1][DV HDR10][h265]-FLUX.mkv (Score: 6600) [TMDB:36586]
+       [2160p][WEBDL][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: 2001 A Space Odyssey (1968)
+  Match: TMDB ID (reliable)
+  Ali: 2001 A Space Odyssey (1968) {tmdb-62} - [Remux-2160p Proper][DTS-HD MA 5.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7600) [TMDB:62]
+       [2160p][Remux][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Indiana Jones and the Last Crusade (1989)
+  Match: TMDB ID (reliable)
+  Ali: Indiana Jones and the Last Crusade (1989) {tmdb-89} - [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:89]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Napoleon (2023)
+  Match: TMDB ID (reliable)
+  Ali: Napoleon (2023) {tmdb-753342} - {edition-Directors Cut} [ATVP][WEBDL-2160p][EAC3 Atmos 5.1][DV HDR10Plus][h265]-FLUX.mkv (Score: 6700) [TMDB:753342]
+       [2160p][WEBDL][Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Godzilla Minus One (2023)
+  Match: TMDB ID (reliable)
+  Ali: Godzilla Minus One (2023) {tmdb-940721} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:940721]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Alien Romulus (2024)
+  Match: TMDB ID (reliable)
+  Ali: Alien Romulus (2024) {tmdb-945961} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:945961]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Indiana Jones and the Temple of Doom (1984)
+  Match: TMDB ID (reliable)
+  Ali: Indiana Jones and the Temple of Doom (1984) {tmdb-87} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:87]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Captain Marvel 2 (2022)
+  Match: TMDB ID (reliable)
+  Ali: The Marvels (2023) {tmdb-609681} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:609681]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Black Panther Wakanda Forever (2022)
+  Match: TMDB ID (reliable)
+  Ali: Black Panther Wakanda Forever (2022) {tmdb-505642} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:505642]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: TRON Legacy (2010)
+  Match: TMDB ID (reliable)
+  Ali: TRON Legacy (2010) {tmdb-20526} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:20526]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Lion King (1994)
+  Match: TMDB ID (reliable)
+  Ali: The Lion King (1994) {tmdb-8587} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7190) [TMDB:8587]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Ready Player One (2018)
+  Match: TMDB ID (reliable)
+  Ali: Ready Player One (2018) {tmdb-333339} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (Score: 7100) [TMDB:333339]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Captain Marvel (2019)
+  Match: TMDB ID (reliable)
+  Ali: Captain Marvel (2019) {tmdb-299537} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:299537]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Hunger Games Catching Fire (2013)
+  Match: TMDB ID (reliable)
+  Ali: The Hunger Games Catching Fire (2013) {tmdb-101299} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:101299]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Iron Man 2 (2010)
+  Match: TMDB ID (reliable)
+  Ali: Iron Man 2 (2010) {tmdb-10138} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:10138]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Furious 7 (2015)
+  Match: TMDB ID (reliable)
+  Ali: Furious 7 (2015) {tmdb-168259} - {edition-Extended} [Bluray-2160p][DTS-HD HRA 7.1][HDR10][x265]-CtrlHD.mkv (Score: 6950) [TMDB:168259]
+       [2160p][Bluray][DTS-HD][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Guardians of the Galaxy Vol. 3 (2023)
+  Match: TMDB ID (reliable)
+  Ali: Guardians of the Galaxy Vol. 3 (2023) {tmdb-447365} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:447365]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Pitch Black (2000)
+  Match: TMDB ID (reliable)
+  Ali: Pitch Black (2000) {tmdb-2787} - {edition-Director's Cut} [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:2787]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Forrest Gump (1994)
+  Match: TMDB ID (reliable)
+  Ali: Forrest Gump (1994) {tmdb-13} - [Bluray-2160p Proper][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:13]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Jaws (1975)
+  Match: TMDB ID (reliable)
+  Ali: Jaws (1975) {tmdb-578} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (Score: 7100) [TMDB:578]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Venom Let There Be Carnage (2021)
+  Match: TMDB ID (reliable)
+  Ali: Venom Let There Be Carnage (2021) {tmdb-580489} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:580489]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek Insurrection (1998) {imdb-tt0120844}
+  Match: TMDB ID (reliable)
+  Ali: Star Trek Insurrection (1998) {tmdb-200} - [Bluray-2160p][TrueHD 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7150) [TMDB:200]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Edge of Tomorrow (2014)
+  Match: TMDB ID (reliable)
+  Ali: Edge of Tomorrow (2014) {tmdb-137113} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:137113]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Guardians of the Galaxy Vol. 2 (2017)
+  Match: TMDB ID (reliable)
+  Ali: Guardians of the Galaxy Vol. 2 (2017) {tmdb-283995} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:283995]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Hunt for Red October (1990)
+  Match: TMDB ID (reliable)
+  Ali: The Hunt for Red October (1990) {tmdb-1669} - [Bluray-2160p][TrueHD 5.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7150) [TMDB:1669]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Blade (1998)
+  Match: TMDB ID (reliable)
+  Ali: Blade (1998) {tmdb-36647} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:36647]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Spy Who Loved Me (1977)
+  Match: TMDB ID (reliable)
+  Ali: The Spy Who Loved Me (1977) {tmdb-691} - [WEBDL-2160p][DTS-HD MA 5.1][h265]-DEFLATE.mkv (Score: 5774) [TMDB:691]
+       [2160p][WEBDL][DTS-HD MA][][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Thor Ragnarok (2017)
+  Match: TMDB ID (reliable)
+  Ali: Thor Ragnarok (2017) {tmdb-284053} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-LEGi0N.mkv (Score: 7200) [TMDB:284053]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Hacksaw Ridge (2016)
+  Match: TMDB ID (reliable)
+  Ali: Hacksaw Ridge (2016) {tmdb-324786} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:324786]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Man of Steel (2013)
+  Match: TMDB ID (reliable)
+  Ali: Man of Steel (2013) {tmdb-49521} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:49521]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Pacific Rim (2013)
+  Match: TMDB ID (reliable)
+  Ali: Pacific Rim (2013) {tmdb-68726} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7172) [TMDB:68726]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Thunderbolts- (2025)
+  Match: TMDB ID (reliable)
+  Ali: Thunderbolts- (2025) {tmdb-986056} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-D3US.mkv (Score: 7200) [TMDB:986056]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Mad Max Fury Road (2015)
+  Match: TMDB ID (reliable)
+  Ali: Mad Max Fury Road (2015) {tmdb-76341} - [Hybrid][Remux-2160p Proper][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:76341]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Highlander (1986)
+  Match: TMDB ID (reliable)
+  Ali: Highlander (1986) {tmdb-8009} - [Bluray-2160p][DTS-HD MA 5.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7100) [TMDB:8009]
+       [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Bumblebee (2018)
+  Match: TMDB ID (reliable)
+  Ali: Bumblebee (2018) {tmdb-424783} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:424783]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Solo A Star Wars Story (2018)
+  Match: TMDB ID (reliable)
+  Ali: Solo A Star Wars Story (2018) {tmdb-348350} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv (Score: 7200) [TMDB:348350]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Ant-Man (2015)
+  Match: TMDB ID (reliable)
+  Ali: Ant-Man (2015) {tmdb-102899} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7178) [TMDB:102899]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Thor (2011)
+  Match: TMDB ID (reliable)
+  Ali: Thor (2011) {tmdb-10195} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-KeYBLaDE.mkv (Score: 7200) [TMDB:10195]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Bohemian Rhapsody (2018)
+  Match: TMDB ID (reliable)
+  Ali: Bohemian Rhapsody (2018) {tmdb-424694} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10Plus][x265]-W4NK3R.mkv (Score: 7100) [TMDB:424694]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Wars (1977)
+  Match: TMDB ID (reliable)
+  Ali: Star Wars (1977) {tmdb-11} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv (Score: 7200) [TMDB:11]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Mission Impossible II (2000)
+  Match: TMDB ID (reliable)
+  Ali: Mission Impossible II (2000) {tmdb-955} - [Bluray-2160p][TrueHD 5.1][DV HDR10][x265]-SPHD.mkv (Score: 7150) [TMDB:955]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Cars 3 (2017)
+  Match: TMDB ID (reliable)
+  Ali: Cars 3 (2017) {tmdb-260514} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-CtrlHD.mkv (Score: 7100) [TMDB:260514]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Godzilla (2014)
+  Match: TMDB ID (reliable)
+  Ali: Godzilla (2014) {tmdb-124905} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (Score: 7100) [TMDB:124905]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Blade Runner 2049 (2017)
+  Match: TMDB ID (reliable)
+  Ali: Blade Runner 2049 (2017) {tmdb-335984} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][HDR10][HEVC]-FraMeSToR.mkv (Score: 7600) [TMDB:335984]
+       [2160p][Remux][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Ant-Man and the Wasp (2018)
+  Match: TMDB ID (reliable)
+  Ali: Ant-Man and the Wasp (2018) {tmdb-363088} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:363088]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Fast & Furious 6 (2013)
+  Match: TMDB ID (reliable)
+  Ali: Fast and Furious 6 (2013) {tmdb-82992} - {edition-Extended} [Bluray-2160p Proper][DTS-HD MA 5.1][HDR10][x265]-CtrlHD.mkv (Score: 7000) [TMDB:82992]
+       [2160p][Bluray][DTS-HD MA][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek IV The Voyage Home (1986)
+  Match: TMDB ID (reliable)
+  Ali: Star Trek IV The Voyage Home (1986) {tmdb-168} - [Bluray-2160p Proper][EAC3 7.1][DV HDR10][x265]-hallowed.mkv (Score: 6806) [TMDB:168]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Lord of the Rings The Return of the King (2003)
+  Match: TMDB ID (reliable)
+  Ali: The Lord of the Rings The Return of the King (2003) {tmdb-122} - {edition-Extended} [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:122]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Shazam! Fury of the Gods (2023)
+  Match: TMDB ID (reliable)
+  Ali: Shazam! Fury of the Gods (2023) {tmdb-594767} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:594767]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Dune Part Two (2024)
+  Match: TMDB ID (reliable)
+  Ali: Dune Part Two (2024) {tmdb-693134} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:693134]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Joker (2019)
+  Match: TMDB ID (reliable)
+  Ali: Joker (2019) {tmdb-475557} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-MgB.mkv (Score: 7100) [TMDB:475557]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek (2009)
+  Match: TMDB ID (reliable)
+  Ali: Star Trek (2009) {tmdb-13475} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-CtrlHD.mkv (Score: 7100) [TMDB:13475]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Eternals (2021)
+  Match: TMDB ID (reliable)
+  Ali: Eternals (2021) {tmdb-524434} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:524434]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Inception (2010)
+  Match: TMDB ID (reliable)
+  Ali: Inception (2010) {tmdb-27205} - [Bluray-2160p][DTS-HD MA 5.1][DV HDR10][x265]-MainFrame.mkv (Score: 7100) [TMDB:27205]
+       [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Lion King (2019)
+  Match: TMDB ID (reliable)
+  Ali: The Lion King (2019) {tmdb-420818} - [Bluray-2160p][EAC3 7.1][DV HDR10][x265]-BHDStudio.mp4 (Score: 6788) [TMDB:420818]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Chronicles of Riddick (2004)
+  Match: TMDB ID (reliable)
+  Ali: The Chronicles of Riddick (2004) {tmdb-2789} - {edition-Director's Cut} [Bluray-2160p][DTS-HD MA 5.1][DV HDR10][x265]-SPHD.mkv (Score: 7100) [TMDB:2789]
+       [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Batman v Superman Dawn of Justice (2016)
+  Match: TMDB ID (reliable)
+  Ali: Batman v Superman Dawn of Justice (2016) {tmdb-209112} - {edition-Ultimate Edition IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:209112]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Hunger Games Mockingjay - Part 1 (2014)
+  Match: TMDB ID (reliable)
+  Ali: The Hunger Games Mockingjay Part 1 (2014) {tmdb-131631} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:131631]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Predator (2018)
+  Match: TMDB ID (reliable)
+  Ali: The Predator (2018) {tmdb-346910} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:346910]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Constantine (2005)
+  Match: TMDB ID (reliable)
+  Ali: Constantine (2005) {tmdb-561} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:561]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Hunger Games (2012)
+  Match: TMDB ID (reliable)
+  Ali: The Hunger Games (2012) {tmdb-70160} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:70160]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Pulp Fiction (1994)
+  Match: TMDB ID (reliable)
+  Ali: Pulp Fiction (1994) {tmdb-680} - [Bluray-2160p][DTS-HD MA 5.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7100) [TMDB:680]
+       [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Master and Commander The Far Side of the World (2003)
+  Match: TMDB ID (reliable)
+  Ali: Master and Commander The Far Side of the World (2003) {tmdb-8619} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:8619]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Terminator 2 Judgment Day (1991)
+  Match: TMDB ID (reliable)
+  Ali: Terminator 2 Judgment Day (1991) {tmdb-280} - {edition-Theatrical Cut} [Remux-2160p][DTS-HD MA 5.1][PQ][HEVC]-FraMeSToR.mkv (Score: 6800) [TMDB:280]
+       [2160p][Remux][DTS-HD MA][][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek First Contact (1996)
+  Match: TMDB ID (reliable)
+  Ali: Star Trek First Contact (1996) {tmdb-199} - [Bluray-2160p][TrueHD 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7150) [TMDB:199]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Jurassic Park (1993)
+  Match: TMDB ID (reliable)
+  Ali: Jurassic Park (1993) {tmdb-329} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-HiDt.mkv (Score: 7200) [TMDB:329]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Avengers Endgame (2019)
+  Match: TMDB ID (reliable)
+  Ali: Avengers Endgame (2019) {tmdb-299534} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:299534]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Dawn of the Planet of the Apes (2014)
+  Match: TMDB ID (reliable)
+  Ali: Dawn of the Planet of the Apes (2014) {tmdb-119450} - [Bluray-2160p][EAC3 7.1][DV HDR10][x265]-hallowed.mkv (Score: 6803) [TMDB:119450]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Spider-Man Homecoming (2017)
+  Match: TMDB ID (reliable)
+  Ali: Spider-Man Homecoming (2017) {tmdb-315635} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:315635]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Tron (1982)
+  Match: TMDB ID (reliable)
+  Ali: Tron (1982) {tmdb-97} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPx.mkv (Score: 7150) [TMDB:97]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Close Encounters of the Third Kind (1977)
+  Match: TMDB ID (reliable)
+  Ali: Close Encounters of the Third Kind (1977) {tmdb-840} - {edition-Directors Cut} [Bluray-2160p][AC3 5.1][DV HDR10][x265]-BHDStudio.mp4 (Score: 6759) [TMDB:840]
+       [2160p][Bluray][DD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Alien (1979)
+  Match: TMDB ID (reliable)
+  Ali: Alien (1979) {tmdb-348} - {edition-Theatrical Cut} [Remux-2160p][DTS-HD MA 5.1][HDR10Plus][HEVC]-FraMeSToR.mkv (Score: 7500) [TMDB:348]
+       [2160p][Remux][DTS-HD MA][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Tenet (2020)
+  Match: TMDB ID (reliable)
+  Ali: Tenet (2020) {tmdb-577922} - {edition-IMAX} [Bluray-2160p][DTS-HD MA 5.1][DV HDR10][x265]-SPHD.mkv (Score: 7100) [TMDB:577922]
+       [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Dune (2021)
+  Match: TMDB ID (reliable)
+  Ali: Dune (2021) {tmdb-438631} - [Bluray-2160p Proper][TrueHD Atmos 7.1][DV HDR10Plus][x265]-W4NK3R.mkv (Score: 7200) [TMDB:438631]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Red Sparrow (2018)
+  Match: TMDB ID (reliable)
+  Ali: Red Sparrow (2018) {tmdb-401981} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:401981]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Oppenheimer (2023)
+  Match: TMDB ID (reliable)
+  Ali: Oppenheimer (2023) {tmdb-872585} - [Bluray-2160p][DTS-HD MA 5.1][DV HDR10][x265]-MainFrame.mkv (Score: 7100) [TMDB:872585]
+       [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Mission Impossible Rogue Nation (2015)
+  Match: TMDB ID (reliable)
+  Ali: Mission Impossible Rogue Nation (2015) {tmdb-177677} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (Score: 7100) [TMDB:177677]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek Beyond (2016)
+  Match: TMDB ID (reliable)
+  Ali: Star Trek Beyond (2016) {tmdb-188927} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:188927]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Passengers (2016)
+  Match: TMDB ID (reliable)
+  Ali: Passengers (2016) {tmdb-274870} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:274870]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Godfather (1972)
+  Match: TMDB ID (reliable)
+  Ali: The Godfather (1972) {tmdb-238} - [Bluray-2160p][TrueHD 5.1][DV HDR10][x265]-SPHD.mkv (Score: 7150) [TMDB:238]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Matrix Revolutions (2003)
+  Match: TMDB ID (reliable)
+  Ali: The Matrix Revolutions (2003) {tmdb-605} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:605]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Martian (2015)
+  Match: TMDB ID (reliable)
+  Ali: The Martian (2015) {tmdb-286217} - {edition-Extended Cut} [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-CtrlHD.mkv (Score: 7100) [TMDB:286217]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek III The Search for Spock (1984)
+  Match: TMDB ID (reliable)
+  Ali: Star Trek III The Search for Spock (1984) {tmdb-157} - [Bluray-2160p Proper][EAC3 7.1][DV HDR10][x265]-hallowed.mkv (Score: 6788) [TMDB:157]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Braveheart (1995)
+  Match: TMDB ID (reliable)
+  Ali: Braveheart (1995) {tmdb-197} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:197]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Gladiator II (2024)
+  Match: TMDB ID (reliable)
+  Ali: Gladiator II (2024) {tmdb-558449} - [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:558449]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Fantastic 4 First Steps (2025)
+  Match: TMDB ID (reliable)
+  Ali: The Fantastic 4 First Steps (2025) {tmdb-617126} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPx.mkv (Score: 7200) [TMDB:617126]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Matrix Resurrections (2021)
+  Match: TMDB ID (reliable)
+  Ali: The Matrix Resurrections (2021) {tmdb-624860} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:624860]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Guardians of the Galaxy (2014)
+  Match: TMDB ID (reliable)
+  Ali: Guardians of the Galaxy (2014) {tmdb-118340} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:118340]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Frankenstein (2025)
+  Match: TMDB ID (reliable)
+  Ali: Frankenstein (2025) {tmdb-1062722} - [NF][WEBDL-2160p][EAC3 Atmos 5.1][DV HDR10][h265]-Kitsune.mkv (Score: 6700) [TMDB:1062722]
+       [2160p][WEBDL][Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Iron Man 3 (2013)
+  Match: TMDB ID (reliable)
+  Ali: Iron Man 3 (2013) {tmdb-68721} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7187) [TMDB:68721]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Matrix Reloaded (2003)
+  Match: TMDB ID (reliable)
+  Ali: The Matrix Reloaded (2003) {tmdb-604} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:604]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Shawshank Redemption (1994)
+  Match: TMDB ID (reliable)
+  Ali: The Shawshank Redemption (1994) {tmdb-278} - [Bluray-2160p][EAC3 5.1][DV HDR10][x265]-hallowed.mkv (Score: 6817) [TMDB:278]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Abyss (1989)
+  Match: TMDB ID (reliable)
+  Ali: The Abyss (1989) {tmdb-2756} - {edition-Special Edition} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:2756]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Twisters (2024)
+  Match: TMDB ID (reliable)
+  Ali: Twisters (2024) {tmdb-718821} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-SPHD.mkv (Score: 7200) [TMDB:718821]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Deadpool (2016)
+  Match: TMDB ID (reliable)
+  Ali: Deadpool (2016) {tmdb-293660} - [Hybrid][Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SEV.mkv (Score: 7200) [TMDB:293660]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Superman (2025)
+  Match: TMDB ID (reliable)
+  Ali: Superman (2025) {tmdb-1061474} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-SPHD.mkv (Score: 7200) [TMDB:1061474]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Dunkirk (2017)
+  Match: TMDB ID (reliable)
+  Ali: Dunkirk (2017) {tmdb-374720} - [Bluray-2160p][DTS-HD MA 5.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7099) [TMDB:374720]
+       [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Matrix (1999)
+  Match: TMDB ID (reliable)
+  Ali: The Matrix (1999) {tmdb-603} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:603]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Mission Impossible (1996)
+  Match: TMDB ID (reliable)
+  Ali: Mission Impossible (1996) {tmdb-954} - [Bluray-2160p][TrueHD 5.1][DV HDR10][x265]-SPHD.mkv (Score: 7150) [TMDB:954]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Army of the Dead (2021)
+  Match: TMDB ID (reliable)
+  Ali: Army of the Dead (2021) {tmdb-503736} - [NF][WEBDL-2160p][EAC3 Atmos 5.1][DV HDR10][HEVC]-SiC.mkv (Score: 6660) [TMDB:503736]
+       [2160p][WEBDL][Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Phantom of the Opera (2004)
+  Match: TMDB ID (reliable)
+  Ali: The Phantom of the Opera (2004) {tmdb-9833} - [Remux-2160p][DTS-HD MA 5.1][HDR10][HEVC]-FraMeSToR.mkv (Score: 7500) [TMDB:9833]
+       [2160p][Remux][DTS-HD MA][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Coco (2017)
+  Match: TMDB ID (reliable)
+  Ali: Coco (2017) {tmdb-354912} - [Hybrid][Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:354912]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: War for the Planet of the Apes (2017)
+  Match: TMDB ID (reliable)
+  Ali: War for the Planet of the Apes (2017) {tmdb-281338} - [Hybrid][Bluray-2160p][EAC3 Atmos 8.0][DV HDR10Plus][x265]-BiTOR.mkv (Score: 7196) [TMDB:281338]
+       [2160p][Bluray][Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Top Gun Maverick (2022)
+  Match: TMDB ID (reliable)
+  Ali: Top Gun Maverick (2022) {tmdb-361743} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-MainFrame.mkv (Score: 7200) [TMDB:361743]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: John Wick (2014)
+  Match: TMDB ID (reliable)
+  Ali: John Wick (2014) {tmdb-245891} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:245891]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Civil War (2024)
+  Match: TMDB ID (reliable)
+  Ali: Civil War (2024) {tmdb-929590} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-MainFrame.mkv (Score: 7200) [TMDB:929590]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Ad Astra (2019)
+  Match: TMDB ID (reliable)
+  Ali: Ad Astra (2019) {tmdb-419704} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-KeYBLaDE.mkv (Score: 7200) [TMDB:419704]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Terminator Dark Fate (2019)
+  Match: TMDB ID (reliable)
+  Ali: Terminator Dark Fate (2019) {tmdb-290859} - [Bluray-2160p Proper][TrueHD Atmos 7.1][DV HDR10][x265]-DON.mkv (Score: 7200) [TMDB:290859]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Lord of the Rings The Fellowship of the Ring (2001)
+  Match: TMDB ID (reliable)
+  Ali: The Lord of the Rings The Fellowship of the Ring (2001) {tmdb-120} - {edition-Extended} [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:120]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Apocalypse Now (1979)
+  Match: TMDB ID (reliable)
+  Ali: Apocalypse Now (1979) {tmdb-28} - {edition-Theatrical Cut} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:28]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Ten Commandments (1956)
+  Match: TMDB ID (reliable)
+  Ali: The Ten Commandments (1956) {tmdb-6844} - [Remux-2160p][DTS-HD MA 5.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7600) [TMDB:6844]
+       [2160p][Remux][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Thor The Dark World (2013)
+  Match: TMDB ID (reliable)
+  Ali: Thor The Dark World (2013) {tmdb-76338} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (Score: 7100) [TMDB:76338]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Captain America Civil War (2016)
+  Match: TMDB ID (reliable)
+  Ali: Captain America Civil War (2016) {tmdb-271110} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-W4NK3R.mkv (Score: 7100) [TMDB:271110]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek The Motion Picture (1979)
+  Match: TMDB ID (reliable)
+  Ali: Star Trek The Motion Picture (1979) {tmdb-152} - [Bluray-2160p][TrueHD Atmos 7.1][DV][x265]-VD0N.mkv (Score: 6800) [TMDB:152]
+       [2160p][Bluray][TrueHD Atmos][DV][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Empire Strikes Back (1980)
+  Match: TMDB ID (reliable)
+  Ali: The Empire Strikes Back (1980) {tmdb-1891} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HQMUX.mkv (Score: 7100) [TMDB:1891]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Pacific Rim Uprising (2018)
+  Match: TMDB ID (reliable)
+  Ali: Pacific Rim Uprising (2018) {tmdb-268896} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:268896]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Warfare (2025)
+  Match: TMDB ID (reliable)
+  Ali: Warfare (2025) {tmdb-1241436} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-MainFrame.mkv (Score: 7200) [TMDB:1241436]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Furiosa A Mad Max Saga (2024)
+  Match: TMDB ID (reliable)
+  Ali: Furiosa A Mad Max Saga (2024) {tmdb-786892} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-MainFrame.mkv (Score: 7200) [TMDB:786892]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Wonder Woman 1984 (2020)
+  Match: TMDB ID (reliable)
+  Ali: Wonder Woman 1984 (2020) {tmdb-464052} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-W4NK3R.mkv (Score: 7200) [TMDB:464052]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Cars (2006)
+  Match: TMDB ID (reliable)
+  Ali: Cars (2006) {tmdb-920} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-CtrlHD.mkv (Score: 7100) [TMDB:920]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Batman (2022)
+  Match: TMDB ID (reliable)
+  Ali: The Batman (2022) {tmdb-414906} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-MainFrame.mkv (Score: 7200) [TMDB:414906]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Greatest Showman (2017)
+  Match: TMDB ID (reliable)
+  Ali: The Greatest Showman (2017) {tmdb-316029} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:316029]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Mummy Returns (2001)
+  Match: TMDB ID (reliable)
+  Ali: The Mummy Returns (2001) {tmdb-1734} - [Bluray-2160p][DTS-X 7.1][HDR10][x265]-CtrlHD.mkv (Score: 7000) [TMDB:1734]
+       [2160p][Bluray][DTS:X][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: What Happened to Monday (2017)
+  Match: TMDB ID (reliable)
+  Ali: What Happened to Monday (2017) {tmdb-406990} - [Bluray-2160p][TrueHD 5.1][HDR10][x265]-BEN.mkv (Score: 7050) [TMDB:406990]
+       [2160p][Bluray][TrueHD][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek Generations (1994) {imdb-tt0111280}
+  Match: TMDB ID (reliable)
+  Ali: Star Trek Generations (1994) {tmdb-193} - [Bluray-2160p][TrueHD 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7150) [TMDB:193]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Cars 2 (2011)
+  Match: TMDB ID (reliable)
+  Ali: Cars 2 (2011) {tmdb-49013} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-CtrlHD.mkv (Score: 7100) [TMDB:49013]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Hobbit The Desolation of Smaug (2013)
+  Match: TMDB ID (reliable)
+  Ali: The Hobbit The Desolation of Smaug (2013) {tmdb-57158} - {edition-Extended Cut} [Remux-2160p][TrueHD Atmos 7.1][DV HDR10][HEVC]-FraMeSToR.mkv (Score: 7700) [TMDB:57158]
+       [2160p][Remux][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Top Gun (1986)
+  Match: TMDB ID (reliable)
+  Ali: Top Gun (1986) {tmdb-744} - [Bluray-2160p][EAC3 7.1][DV HDR10][x265]-hallowed.mkv (Score: 6794) [TMDB:744]
+       [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Mission Impossible III (2006)
+  Match: TMDB ID (reliable)
+  Ali: Mission Impossible III (2006) {tmdb-956} - [Bluray-2160p][TrueHD 5.1][DV HDR10][x265]-SPHD.mkv (Score: 7150) [TMDB:956]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Twister (1996)
+  Match: TMDB ID (reliable)
+  Ali: Twister (1996) {tmdb-664} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:664]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Black Widow (2021)
+  Match: TMDB ID (reliable)
+  Ali: Black Widow (2021) {tmdb-497698} - [Bluray-2160p Proper][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:497698]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Black Adam (2022)
+  Match: TMDB ID (reliable)
+  Ali: Black Adam (2022) {tmdb-436270} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:436270]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Captain America Brave New World (2025)
+  Match: TMDB ID (reliable)
+  Ali: Captain America Brave New World (2025) {tmdb-822119} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-MainFrame.mkv (Score: 7200) [TMDB:822119]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: John Wick Chapter 2 (2017)
+  Match: TMDB ID (reliable)
+  Ali: John Wick Chapter 2 (2017) {tmdb-324552} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200) [TMDB:324552]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Godzilla King of the Monsters (2019)
+  Match: TMDB ID (reliable)
+  Ali: Godzilla King of the Monsters (2019) {tmdb-373571} - [Bluray-2160p][TrueHD Atmos 7.1][HDR10][x265]-HDChina.mkv (Score: 7100) [TMDB:373571]
+       [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Godzilla x Kong The New Empire (2024)
+  Match: TMDB ID (reliable)
+  Ali: Godzilla x Kong The New Empire (2024) {tmdb-823464} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-MainFrame.mkv (Score: 7200) [TMDB:823464]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Star Trek Nemesis (2002) {imdb-tt0253754}
+  Match: TMDB ID (reliable)
+  Ali: Star Trek Nemesis (2002) {tmdb-201} - [Bluray-2160p][TrueHD 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7150) [TMDB:201]
+       [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Riddick (2013)
+  Match: TMDB ID (reliable)
+  Ali: Riddick (2013) {tmdb-87421} - {edition-Director's Cut} [Bluray-2160p][DTS-HD MA 5.1][DV HDR10][x265]-SPHD.mkv (Score: 7100) [TMDB:87421]
+       [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Super Mario Bros. Movie (2023)
+  Match: TMDB ID (reliable)
+  Ali: The Super Mario Bros. Movie (2023) {tmdb-502356} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-W4NK3R.mkv (Score: 7200) [TMDB:502356]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Mission Impossible 8 (2025)
+  Match: TMDB ID (reliable)
+  Ali: Mission Impossible The Final Reckoning (2025) {tmdb-575265} - {edition-IMAX} [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10Plus][x265]-SPHD.mkv (Score: 7200) [TMDB:575265]
+       [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Ant-Man (2015)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Ant-Man (2015) {imdb-tt0478970} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (Score: 7178)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Furiosa A Mad Max Saga (2024)
+  Match: IMDB ID (reliable)
+  Ali: Furiosa A Mad Max Saga (2024) {imdb-tt12037194} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv (Score: 6651)
+       [2160p][WEBDL][Atmos][DV HDR10][HEVC]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Alien Romulus (2024)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Alien Romulus (2024) {imdb-tt18412256} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv (Score: 6700)
+         [2160p][WEBDL][Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: John Wick Chapter 4 (2022)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: John Wick Chapter 4 (2023) {imdb-tt10366206} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Chronicles of Riddick (2004)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: The Chronicles of Riddick (2004) {imdb-tt0296572} {edition-Director's Cut} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv (Score: 7100)
+         [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Captain Marvel 2 (2022)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: The Marvels (2023) {imdb-tt10676048} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Batman v Superman Dawn of Justice (2016)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Batman v Superman Dawn of Justice (2016) {imdb-tt2975590} {edition-Ultimate Edition Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Napoleon (2023)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Napoleon (2023) {imdb-tt13287846} {edition-Directors Cut} [ATVP][WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv (Score: 6700)
+         [2160p][WEBDL][Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Solo A Star Wars Story (2018)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Solo A Star Wars Story (2018) {imdb-tt3778644} [Bluray-2160p Proper][HDR10][TrueHD Atmos 7.1][x265]-TnP.mkv (Score: 7100)
+         [2160p][Bluray][TrueHD Atmos][HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Tenet (2020)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Tenet (2020) {imdb-tt6723592} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv (Score: 7000)
+         [2160p][Bluray][DTS-HD MA][HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Kingdom of Heaven (2005)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Theatrical} [WEBDL-2160p][HDR10][EAC3 5.1][h265]-SMURF.mkv (Score: 6215)
+         [2160p][WEBDL][DD+][HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Aliens (1986)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Aliens (1986) {imdb-tt0090605} {edition-Special Edition} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Shazam! (2019)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Shazam! (2019) {imdb-tt0448115} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Black Panther Wakanda Forever (2022)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv (Score: 6850)
+         [2160p][Bluray][DD+][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Mortal Kombat (2021)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Mortal Kombat (2021) {imdb-tt0293429} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Avatar (2009)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Avatar (2009) {imdb-tt0499549} [Remux-2160p Proper][HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv (Score: 7600)
+         [2160p][Remux][TrueHD Atmos][HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Abyss (1989)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: The Abyss (1989) {imdb-tt0096754} {edition-Special Edition} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Highlander (1986)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Highlander (1986) {imdb-tt0091203} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-W4NK3R.mkv (Score: 7100)
+         [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Oppenheimer (2023)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Oppenheimer (2023) {imdb-tt15398776} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-MainFrame.mkv (Score: 7100)
+         [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Terminator Dark Fate (2019)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Terminator Dark Fate (2019) {imdb-tt6450804} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-DON.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Bumblebee (2018)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Bumblebee (2018) {imdb-tt4701182} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Twisters (2024)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Twisters (2024) {imdb-tt12584954} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv (Score: 6700)
+         [2160p][WEBDL][Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Ant-Man and the Wasp Quantumania (2023)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Ant-Man and the Wasp Quantumania (2023) {imdb-tt10954600} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Man of Steel (2013)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Man of Steel (2013) {imdb-tt0770828} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Ant-Man and the Wasp (2018)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Ant-Man and the Wasp (2018) {imdb-tt5095030} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Batman (2022)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: The Batman (2022) {imdb-tt1877830} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Dune Part Two (2024)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Dune Part Two (2024) {imdb-tt15239678} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Master and Commander The Far Side of the World (2003)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Master and Commander The Far Side of the World (2003) {imdb-tt0311113} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Deadpool 3 (2024)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Deadpool and Wolverine (2024) {imdb-tt6263850} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv (Score: 6700)
+         [2160p][WEBDL][Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Mission Impossible (1996)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Mission Impossible (1996) {imdb-tt0117060} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv (Score: 7150)
+         [2160p][Bluray][TrueHD][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Mummy (1999)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: The Mummy (1999) {imdb-tt0120616} [Bluray-2160p][HDR10][DTS-X 7.1][x265]-IAMABLE.mkv (Score: 7000)
+         [2160p][Bluray][DTS:X][HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Riddick (2013)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Riddick (2013) {imdb-tt1411250} {edition-Director's Cut} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv (Score: 7100)
+         [2160p][Bluray][DTS-HD MA][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Mission Impossible Dead Reckoning Part One (2023)
+  Match: IMDB ID (reliable)
+  Ali: (none)
+  Chris: Mission Impossible Dead Reckoning Part One (2023) {imdb-tt9603212} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv (Score: 7200)
+         [2160p][Bluray][TrueHD Atmos][DV HDR10][HEVC]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Empire Strikes Back (1980)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: The Empire Strikes Back (1980) Bluray-2160p.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Uncharted (2022)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Uncharted (2022) WEBDL-2160p.mkv (Score: 5400)
+         [2160p][WEB-DL][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Avatar The Way of Water (2022)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Avatar The Way of Water (2022) WEBDL-2160p.mkv (Score: 5400)
+         [2160p][WEB-DL][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Star Wars (1977)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Star Wars (1977) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Fast & Furious 6 (2013)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Fast & Furious 6 (2013) Remux-2160p Proper.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Total Recall (1990)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Total Recall (1990) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Resident Evil Welcome to Raccoon City (2021)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Resident Evil Welcome to Raccoon City (2021) WEBDL-2160p.mkv (Score: 5314)
+         [2160p][WEB-DL][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Hunger Games Mockingjay - Part 1 (2014)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: The Hunger Games Mockingjay - Part 1 (2014) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Hunger Games Mockingjay - Part 2 (2015)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: The Hunger Games Mockingjay - Part 2 (2015) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Prey (2022)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Prey (2022) WEBDL-2160p.mkv (Score: 5342)
+         [2160p][WEB-DL][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Lord of the Rings The Two Towers (2002)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: The Lord of the Rings The Two Towers (2002) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Jurassic World Dominion (2022)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Jurassic World Dominion (2022) WEBDL-2160p.mkv (Score: 5800)
+         [2160p][WEB-DL][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Shazam! Fury of the Gods (2023)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Shazam! Fury of the Gods (2023) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Master and Commander The Far Side of the World (2003)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Master and Commander The Far Side of the World (2003) Remux-1080p.mkv (Score: 4300)
+         [1080p][Remux][][][H.264]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Independence Day (1996)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Independence Day (1996) Remux-2160p Proper.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Blade (1998)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Blade (1998) Bluray-2160p.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Dune (2021)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Dune (2021) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Pirates of the Caribbean The Curse of the Black Pearl (2003)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Pirates of the Caribbean The Curse of the Black Pearl (2003) WEBRip-2160p.mkv (Score: 5193)
+         [2160p][WEBRip][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Star Trek The Motion Picture (1979)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Star Trek The Motion Picture (1979) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Captain America Civil War (2016)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Captain America - Civil War (2016) (2160p UHD BluRay x265 DV HDR DDP 7.1 English - Weasley HONE).mkv (Score: 6400)
+         [2160p][BluRay][DD][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Apollo 13 (1995)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Apollo 13 (1995) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Matrix Resurrections (2021)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: The Matrix Resurrections (2021) WEBDL-2160p.mkv (Score: 5792)
+         [2160p][WEB-DL][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Lord of the Rings The Return of the King (2003)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: The Lord of the Rings The Return of the King (2003) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Return of the Jedi (1983)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Return of the Jedi (1983) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Star Trek V The Final Frontier (1989)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Star Trek V The Final Frontier (1989) Bluray-2160p.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Spider-Man No Way Home (2021)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Spider-Man No Way Home (2021) WEBDL-2160p.mkv (Score: 5400)
+         [2160p][WEB-DL][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Ghostbusters Afterlife (2021)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Ghostbusters Afterlife (2021) WEBDL-2160p.mkv (Score: 5330)
+         [2160p][WEB-DL][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Outfit (2022)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: The Outfit (2022) WEBDL-2160p.mkv (Score: 5310)
+         [2160p][WEB-DL][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Doctor Strange in the Multiverse of Madness (2022)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Doctor Strange in the Multiverse of Madness (2022) WEBDL-2160p.mkv (Score: 5800)
+         [2160p][WEB-DL][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Bohemian Rhapsody (2018)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Bohemian Rhapsody (2018) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Deadpool 2 (2018)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Deadpool 2 (2018) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Jungle Cruise (2021)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Jungle Cruise (2021) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Twister (1996)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Twister (1996) Remux-1080p.mkv (Score: 4300)
+         [1080p][Remux][][][H.264]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Captain Marvel (2019)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Captain Marvel (2019) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Hunger Games Catching Fire (2013)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: The Hunger Games Catching Fire (2013) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Deadpool (2016)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Deadpool (2016) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Indiana Jones and the Last Crusade (1989)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Indiana Jones and the Last Crusade (1989) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Black Adam (2022)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Black Adam (2022) WEBDL-2160p Proper.mkv (Score: 5800)
+         [2160p][WEB-DL][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Doctor Strange (2016)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Doctor Strange (2016) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Hunger Games (2012)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: The Hunger Games (2012) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Furious 7 (2015)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Furious 7 (2015) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Lord of the Rings The Fellowship of the Ring (2001)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: The Lord of the Rings The Fellowship of the Ring (2001) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Star Trek VI The Undiscovered Country (1991)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Star Trek VI The Undiscovered Country (1991) Bluray-2160p.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Oblivion (2013)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Oblivion (2013) Remux-2160p.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Ad Astra (2019)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Ad Astra (2019) Remux-2160p.mkv (Score: 6800)
+         [2160p][Remux][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Top Gun Maverick (2022)
+  Match: Title+Year (verify manually)
+  Ali: (none)
+  Chris: Top Gun Maverick (2022) WEBDL-2160p.mkv (Score: 5800)
+         [2160p][WEB-DL][][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Terminator 2 Judgment Day (1991)
+  Match: Unique (no match found)
+  Ali: Terminator 2 Judgment Day 1991 Remastered Theatrical Cut GER 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv (Score: 6750)
+       [2160p][Remux][DTS-HD][][H.265]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Ghostbusters (1984)
+  Match: Unique (no match found)
+  Ali: Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (Score: 7100)
+       [2160p][Remux][][HDR][H.265]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Life of Pi (2012)
+  Match: Unique (no match found)
+  Ali: Life.Of.Pi.2012.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR.mkv (Score: 6800)
+       [2160p][Remux][DTS-HD MA][][H.265]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Apollo 13 (1995)
+  Match: Unique (no match found)
+  Ali: Apollo.13.1995.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR-Scrambled.mkv (Score: 6800)
+       [2160p][Remux][DTS:X][][H.265]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Lawrence of Arabia (1962)
+  Match: Unique (no match found)
+  Ali: Lawrence.of.Arabia.1962.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv (Score: 6900)
+       [2160p][Remux][TrueHD Atmos][][H.265]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: The Hobbit The Desolation of Smaug (2013)
+  Match: Unique (no match found)
+  Ali: The.Hobbit.The.Desolation.of.Smaug.2013.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv (Score: 7300)
+       [2160p][Remux][TrueHD Atmos][DV][H.265]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: Jungle Cruise (2021)
+  Match: Unique (no match found)
+  Ali: Jungle.Cruise.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (Score: 6646)
+       [2160p][BluRay][DD][HDR][H.265]
+  Chris: (none)
+  Winner: ALI
+  Reason: Only Ali has this file
+  Action: COPY Ali → Chris
+
+Title: 300 (2006)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: 300.2006.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv (Score: 6900)
+         [2160p][Remux][TrueHD Atmos][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: 1917 (2019)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: 1917.2019.2160p.UHD.Blu-ray.Atmos.x265 - HQMUX.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: 2001 A Space Odyssey (1968)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: 2001.A.Space.Odyssey.1968.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv (Score: 7500)
+         [2160p][Remux][DTS-HD MA][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: A Beautiful Planet (2016)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: A.Beautiful.Planet.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-X-EPSiLON.mkv (Score: 7473)
+         [2160p][Remux][DTS:X][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Alien (1979)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Alien.1979.2160p.Director.Cut.UHD.HDR10+Remux.DTS-HD.MA5.1-SHD.mkv (Score: 7100)
+         [2160p][Remux][DTS-HD MA][HDR10+][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Alien (1979)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Alien.1979.DC.2160p.UHD.BluRay.X265-IAMABLE.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Alita Battle Angel (2019)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Alita Battle Angel 2019 REPACK 2160p UHD BluRay HDR10+ TrueHD Atmos 7.1 x265-DON.mkv (Score: 6650)
+         [2160p][BluRay][TrueHD][HDR10+][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Apocalypse Now (1979)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Apocalypse.Now.1979.Redux.2160p.UHD.BluRay.x265-JustWatch.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Army of the Dead (2021)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Army.of.the.Dead.2021.2160p.HDR.NF.WEBRip.DDP.Atmos.5.1.x265-TrollUHD-FZ.mkv (Score: 5983)
+         [2160p][WEBRip][DD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Avengers Age of Ultron (2015)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Avengers.Age.of.Ultron.2015.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv (Score: 6565)
+         [2160p][BluRay][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Avengers Endgame (2019)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Avengers.Endgame.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (Score: 7100)
+         [2160p][Remux][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Avengers Infinity War (2018)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Avengers.Infinity.War.2018.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (Score: 7100)
+         [2160p][Remux][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Batman Begins (2005)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Batman.Begins.2005.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1-EPSiLON.mkv (Score: 7500)
+         [2160p][Remux][DTS-HD MA][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Black Widow (2021)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Black.Widow.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv (Score: 7100)
+         [2160p][BluRay][TrueHD Atmos][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Blade Runner (1982)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Blade.Runner.1982.The.Final.Cut.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (Score: 7100)
+         [2160p][Remux][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Braveheart (1995)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Braveheart.1995.2160p.UHD.BluRay.X265-IAMABLE.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Captain America The First Avenger (2011)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Captain.America.The.First.Avenger.2011.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv (Score: 6594)
+         [2160p][BluRay][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Captain America The Winter Soldier (2014)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Captain.America.The.Winter.Soldier.2014.UHD.BluRay.HDR10.2160p.AC-3.TrueHD.7.1.Atmos.HEVC-d3g.mkv (Score: 7050)
+         [2160p][BluRay][TrueHD][HDR10][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Close Encounters of the Third Kind (1977)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Close.Encounters.Of.The.Third.Kind.1977.DC.2160p.BluRay.HDR10.10bit.x265.HEVC.DTS-HD.MA.5.1-PHOCiS.mkv (Score: 6946)
+         [2160p][BluRay][DTS-HD MA][HDR10][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Dracula (1992)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Bram Stoker's Dracula 1992 2160p UHD Blu-Ray Remux HEVC Atmos - BluDragon.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Dunkirk (2017)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Dunkirk 2017 2160p UHD BluRay HDR DTS x265-SadeceBluRay.mkv (Score: 6792)
+         [2160p][BluRay][DTS][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: E.T. the Extra-Terrestrial (1982)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: E.T.the.Extra-Terrestrial.1982.2160p.UHD.BluRay.x265-DEPTH.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Earth One Amazing Day (2017)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Earth.One.Amazing.Day.2017.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (Score: 7100)
+         [2160p][Remux][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Edge of Tomorrow (2014)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Edge of Tomorrow.2014.2160p.UHD.BluRay.HDR.DoVi.TrueHD 7.1.Atmos.x265-SPHD.mkv (Score: 6750)
+         [2160p][BluRay][TrueHD][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Ghostbusters (1984)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Ghostbusters.1984.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (Score: 7100)
+         [2160p][Remux][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Gladiator (2000)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Gladiator.2000.Extended.UHD.BluRay.2160p.DTS-X.7.1.HEVC.REMUX-FraMeSToR.mkv (Score: 6800)
+         [2160p][Remux][DTS:X][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Godzilla King of the Monsters (2019)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Godzilla.King.of.the.Monsters.2019.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv (Score: 7100)
+         [2160p][BluRay][TrueHD Atmos][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Godzilla vs. Kong (2021)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Godzilla.vs.Kong.2021.2160p.UHD.BluRay.HDR.x265.Atmos.TrueHD7.1-HDChina.mkv (Score: 7100)
+         [2160p][BluRay][TrueHD Atmos][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Guardians of the Galaxy (2014)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Guardians.Of.The.Galaxy.2014.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv (Score: 6998)
+         [2160p][BluRay][TrueHD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Guardians of the Galaxy Vol. 2 (2017)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Guardians.of.the.Galaxy.Vol.2.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv (Score: 5877)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Hacksaw Ridge (2016)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Hacksaw.Ridge.2016.2160p.UHD.BluRay.x265-TERMiNAL.mkv (Score: 5871)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Heat (1995)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Heat.1995.Directors.Definitive.Edition.2160p.HDR.WEB-DL.DTS-HD.MA.5.1.HEVC-BLUTONiUM.mkv (Score: 6500)
+         [2160p][WEB-DL][DTS-HD MA][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Inception (2010)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Inception.2010.2160p.UHD.BluRay.x265-TERMiNAL.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Indiana Jones and the Kingdom of the Crystal Skull (2008)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Indiana.Jones.and.the.Kingdom.of.the.Crystal.Skull.2008.2160p.HDR.UHD.BluRay.TrueHD.7.1.Atmos.2Audio.x265-10bit-HDS.mkv (Score: 7045)
+         [2160p][BluRay][TrueHD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Indiana Jones and the Temple of Doom (1984)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: indiana.jones.and.the.temple.of.doom.1984.2160p.uhd.bluray.x265-seskapile.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Interstellar (2014)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Interstellar.2014.2160p.UHD.BluRay.x265-TERMiNAL.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Iron Man (2008)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Iron.Man.2008.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv (Score: 7072)
+         [2160p][BluRay][TrueHD Atmos][HDR10][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Iron Man 2 (2010)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Iron.Man.2.2010.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv (Score: 6599)
+         [2160p][BluRay][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Iron Man 3 (2013)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Iron.Man.3.2013.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv (Score: 7018)
+         [2160p][BluRay][TrueHD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Jaws (1975)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Jaws.1975.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv (Score: 6900)
+         [2160p][Remux][TrueHD Atmos][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: John Wick (2014)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: John.Wick.2014.2160p.UHD.BluRay.HDR.TrueHD.Atmos.7.1.x265-Absinth.mkv (Score: 7092)
+         [2160p][BluRay][TrueHD Atmos][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: John Wick Chapter 2 (2017)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: John.Wick.Chapter.2.2017.2160p.UHD.Bluray.Remux.HDR10.HEVC.Atmos.TrueHD.7.1-4K4U.mkv (Score: 7600)
+         [2160p][Remux][TrueHD Atmos][HDR10][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: John Wick Chapter 3 Parabellum (2019)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: John.Wick.Chapter.3.Parabellum.2019.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv (Score: 7050)
+         [2160p][BluRay][TrueHD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Joker (2019)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Joker.2019.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (Score: 7100)
+         [2160p][Remux][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Kong Skull Island (2017)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Kong.Skull Island.2017.2160p.UHD.BluRay.TrueHD7.1.Atmos.x265-HQMUX.mkv (Score: 6350)
+         [2160p][BluRay][TrueHD][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Logan (2017)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Logan.2017.2160p.UHD.BluRay.x265-TERMiNAL.mkv (Score: 5848)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Mad Max Fury Road (2015)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Mad Max Fury Road 2015 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Passengers (2016)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Passengers.2016.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (Score: 7100)
+         [2160p][Remux][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Pitch Black (2000)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Pitch.Black.2000.Directors.Cut.REPACK.2160p.UHD.BluRay.DTS-HD.MA.5.1.HDR.x265-CtrlHD.mkv (Score: 7000)
+         [2160p][BluRay][DTS-HD MA][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Raiders of the Lost Ark (1981)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Raiders.Of.The.Lost.Ark.1981.2160p.UHD.Bluray.x265.HDR10.Atmos.TrueHD.7.1-4K4U.mkv (Score: 7065)
+         [2160p][BluRay][TrueHD Atmos][HDR10][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Ready Player One (2018)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Ready Player One.2018.2160p.UHD.BluRay.TrueHD7.1.Atmos.x265-HQMUX.mkv (Score: 6350)
+         [2160p][BluRay][TrueHD][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Red Sparrow (2018)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Red.Sparrow.2018.2160p.UHD.BluRay.x265-WhiteRhino.mkv (Score: 5841)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Rocketman (2019)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Rocketman 2019 2160p UHD Blu-ray HEVC Atmos x265 - SumVision.mkv (Score: 5887)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Saving Private Ryan (1998)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Saving.Private.Ryan.1998.2160p.UHD.BluRay.X265-IAMABLE.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Star Trek (2009)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Star.Trek.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv (Score: 5900)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Star Trek First Contact (1996)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Star.Trek.VIII.First.Contact.1996.2160p.WEB-DL.DDP5.1.H.265-ABBiE.mkv (Score: 5403)
+         [2160p][WEB-DL][DD][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Star Trek Into Darkness (2013)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Star.Trek.Into.Darkness.2013.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (Score: 7100)
+         [2160p][Remux][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Avengers (2012)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Avengers.2012.REPACK.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-EPSiLON.mkv (Score: 7100)
+         [2160p][Remux][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Dark Knight (2008)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The Dark Knight 2008 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv (Score: 6750)
+         [2160p][Remux][DTS-HD][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Dark Knight Rises (2012)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The Dark Knight Rises 2012 2160p UHD Blu-ray Remux HEVC DTS-HD MA 5.1 - BluDragon.mkv (Score: 6750)
+         [2160p][Remux][DTS-HD][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Hobbit An Unexpected Journey (2012)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Hobbit.An.Unexpected.Journey.2012.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv (Score: 7300)
+         [2160p][Remux][TrueHD Atmos][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Hobbit The Battle of the Five Armies (2014)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Hobbit.The.Battle.of.the.Five.Armies.2014.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv (Score: 7300)
+         [2160p][Remux][TrueHD Atmos][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Hobbit The Desolation of Smaug (2013)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Hobbit.The.Desolation.of.Smaug.2013.Extended.Cut.UHD.BluRay.2160p.TrueHD.Atmos.7.1.DV.HEVC.REMUX-FraMeSToR.mkv (Score: 7300)
+         [2160p][Remux][TrueHD Atmos][DV][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Hunt for Red October (1990)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The Hunt for Red October.1990.2160p.UHD.BluRay.TrueHD5.1.x265-HQMUX.mkv (Score: 6350)
+         [2160p][BluRay][TrueHD][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Martian (2015)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Martian.2015.EXTENDED.2160p.BluRay.x265.10bit.HDR.TrueHD.7.1.Atmos-TERMiNAL.mkv (Score: 7050)
+         [2160p][BluRay][TrueHD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Matrix (1999)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Matrix.1999.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv (Score: 6900)
+         [2160p][Remux][TrueHD Atmos][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Matrix Reloaded (2003)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Matrix.Reloaded.2003.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv (Score: 7050)
+         [2160p][BluRay][TrueHD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Matrix Revolutions (2003)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Matrix-Revolutions.2003.UHD.BluRay.HDR.10Bit.2160p.DD.5.1.H265-d3g.mkv (Score: 6700)
+         [2160p][BluRay][DD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Predator (2018)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The Predator 2018 2160p UHD Blu-ray Remux HEVC Atmos 7.1 - BluDragon.mkv (Score: 6400)
+         [2160p][Remux][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Revenant (2015)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Revenant.2015.UHD.BluRay.2160p.DTS-HD.MA.7.1.HEVC.REMUX-FraMeSToR-AsRequested.mkv (Score: 6800)
+         [2160p][Remux][DTS-HD MA][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Thor Ragnarok (2017)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Thor Ragnarok 2017 2160p UHD HDR10+ BluRay x265 TrueHD Atmos 7 1-UnKn0wn.mkv (Score: 6650)
+         [2160p][BluRay][TrueHD][HDR10+][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Top Gun (1986)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Top Gun 1986 2160p UHD DV HDR10 BluRay SL TrueHD Atmos7 1 H265-SHD.mkv (Score: 7150)
+         [2160p][BluRay][TrueHD][DV HDR10][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: V for Vendetta (2005)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: V.for.Vendetta.2005.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-FraMeSToR.mkv (Score: 6900)
+         [2160p][Remux][TrueHD Atmos][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: War for the Planet of the Apes (2017)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: War.for.the.Planet.of.the.Apes.2017.2160p.UHD.BluRay.HDR.Atmos.x265-Absinth.mkv (Score: 6600)
+         [2160p][BluRay][][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Wonder Woman (2017)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Wonder.Woman.2017.2160p.UHD.BluRay.TrueHD.7.1.HDR.x265-CtrlHD.mkv (Score: 7050)
+         [2160p][BluRay][TrueHD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Wonder Woman 1984 (2020)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Wonder.Woman.1984.2020.2160p.HMAX.WEB-DL.DDP5.1.Atmos.HDR.HEVC-TOMMY.mkv (Score: 6197)
+         [2160p][WEB-DL][DD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Zombieland (2009)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Zombieland.2009.2160p.UHD.BluRay.X265-IAMABLE.mkv (Score: 5840)
+         [2160p][BluRay][][][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Jurassic Park (1993)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Jurassic.Park.1993.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (Score: 6644)
+         [2160p][BluRay][DD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Pacific Rim (2013)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Pacific.Rim.2013.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (Score: 6651)
+         [2160p][BluRay][DD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Star Trek II The Wrath of Khan (1982)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Star.Trek.II.The.Wrath.of.Khan.1982.Director's.Cut.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (Score: 6634)
+         [2160p][BluRay][DD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Star Trek III The Search for Spock (1984)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Star.Trek.III.The.Search.for.Spock.1984.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (Score: 6621)
+         [2160p][BluRay][DD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: Star Trek IV The Voyage Home (1986)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: Star.Trek.IV.The.Voyage.Home.1986.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (Score: 6637)
+         [2160p][BluRay][DD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Lost World Jurassic Park (1997)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Lost.World.Jurassic.Park.1997.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (Score: 6648)
+         [2160p][BluRay][DD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+
+Title: The Suicide Squad (2021)
+  Match: Unique (no match found)
+  Ali: (none)
+  Chris: The.Suicide.Squad.2021.UHD.BluRay.2160p.DD.5.1.HDR.x265-BHDStudio.mp4 (Score: 6653)
+         [2160p][BluRay][DD][HDR][H.265]
+  Winner: CHRIS
+  Reason: Only Chris has this file
+  Action: COPY Chris → Ali
+

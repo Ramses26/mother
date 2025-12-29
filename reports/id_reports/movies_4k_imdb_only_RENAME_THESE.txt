@@ -1,0 +1,185 @@
+================================================================================
+FILES WITH IMDB BUT NO TMDB - RUN THROUGH RADARR/SONARR TO RENAME
+================================================================================
+
+These files have IMDB IDs but no TMDB IDs.
+Radarr/Sonarr can automatically add TMDB IDs when you:
+  1. Go to Movie/Series > Edit
+  2. Click 'Rename Files'
+Or use Mass Editor to rename multiple at once.
+
+
+========================================
+ALI'S FILES (1)
+========================================
+
+Title: Furiosa A Mad Max Saga (2024)
+  IMDB: tt12037194
+  File: Furiosa A Mad Max Saga (2024) {imdb-tt12037194} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  Path: /mnt/media/4K Movies/Furiosa A Mad Max Saga (2024)/Furiosa A Mad Max Saga (2024) {imdb-tt12037194} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+
+
+========================================
+CHRIS'S FILES (32)
+========================================
+
+Title: Alien Romulus (2024)
+  IMDB: tt18412256
+  File: Alien Romulus (2024) {imdb-tt18412256} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Alien Romulus (2024)/Alien Romulus (2024) {imdb-tt18412256} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+
+Title: Aliens (1986)
+  IMDB: tt0090605
+  File: Aliens (1986) {imdb-tt0090605} {edition-Special Edition} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Aliens (1986)/Aliens (1986) {imdb-tt0090605} {edition-Special Edition} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+
+Title: Ant-Man (2015)
+  IMDB: tt0478970
+  File: Ant-Man (2015) {imdb-tt0478970} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Ant-Man (2015)/Ant-Man (2015) {imdb-tt0478970} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+
+Title: Ant-Man and the Wasp (2018)
+  IMDB: tt5095030
+  File: Ant-Man and the Wasp (2018) {imdb-tt5095030} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Ant-Man and the Wasp (2018)/Ant-Man and the Wasp (2018) {imdb-tt5095030} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+
+Title: Ant-Man and the Wasp Quantumania (2023)
+  IMDB: tt10954600
+  File: Ant-Man and the Wasp Quantumania (2023) {imdb-tt10954600} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Ant-Man and the Wasp Quantumania (2023)/Ant-Man and the Wasp Quantumania (2023) {imdb-tt10954600} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+
+Title: Avatar (2009)
+  IMDB: tt0499549
+  File: Avatar (2009) {imdb-tt0499549} [Remux-2160p Proper][HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Avatar (2009)/Avatar (2009) {imdb-tt0499549} [Remux-2160p Proper][HDR10][TrueHD Atmos 7.1][HEVC]-FraMeSToR.mkv
+
+Title: Batman v Superman Dawn of Justice (2016)
+  IMDB: tt2975590
+  File: Batman v Superman Dawn of Justice (2016) {imdb-tt2975590} {edition-Ultimate Edition Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Batman v Superman Dawn of Justice (2016)/Batman v Superman Dawn of Justice (2016) {imdb-tt2975590} {edition-Ultimate Edition Imax} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+
+Title: Black Panther Wakanda Forever (2022)
+  IMDB: tt9114286
+  File: Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Black Panther Wakanda Forever (2022)/Black Panther Wakanda Forever (2022) {imdb-tt9114286} [Bluray-2160p][DV HDR10][EAC3 7.1][x265]-HONE.mkv
+
+Title: Bumblebee (2018)
+  IMDB: tt4701182
+  File: Bumblebee (2018) {imdb-tt4701182} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Bumblebee (2018)/Bumblebee (2018) {imdb-tt4701182} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+
+Title: Captain Marvel 2 (2022)
+  IMDB: tt10676048
+  File: The Marvels (2023) {imdb-tt10676048} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Captain Marvel 2 (2022)/The Marvels (2023) {imdb-tt10676048} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+
+Title: Deadpool 3 (2024)
+  IMDB: tt6263850
+  File: Deadpool and Wolverine (2024) {imdb-tt6263850} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Deadpool 3 (2024)/Deadpool and Wolverine (2024) {imdb-tt6263850} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+
+Title: Dune Part Two (2024)
+  IMDB: tt15239678
+  File: Dune Part Two (2024) {imdb-tt15239678} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Dune Part Two (2024)/Dune Part Two (2024) {imdb-tt15239678} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-MainFrame.mkv
+
+Title: Highlander (1986)
+  IMDB: tt0091203
+  File: Highlander (1986) {imdb-tt0091203} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-W4NK3R.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Highlander (1986)/Highlander (1986) {imdb-tt0091203} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-W4NK3R.mkv
+
+Title: John Wick Chapter 4 (2022)
+  IMDB: tt10366206
+  File: John Wick Chapter 4 (2023) {imdb-tt10366206} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/John Wick Chapter 4 (2022)/John Wick Chapter 4 (2023) {imdb-tt10366206} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+
+Title: Kingdom of Heaven (2005)
+  IMDB: tt0320661
+  File: Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Theatrical} [WEBDL-2160p][HDR10][EAC3 5.1][h265]-SMURF.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Kingdom of Heaven (2005)/Kingdom of Heaven (2005) {imdb-tt0320661} {edition-Theatrical} [WEBDL-2160p][HDR10][EAC3 5.1][h265]-SMURF.mkv
+
+Title: Man of Steel (2013)
+  IMDB: tt0770828
+  File: Man of Steel (2013) {imdb-tt0770828} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Man of Steel (2013)/Man of Steel (2013) {imdb-tt0770828} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-SPHD.mkv
+
+Title: Master and Commander The Far Side of the World (2003)
+  IMDB: tt0311113
+  File: Master and Commander The Far Side of the World (2003) {imdb-tt0311113} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Master and Commander The Far Side of the World (2003)/Master and Commander The Far Side of the World (2003) {imdb-tt0311113} - [Bluray-2160p][TrueHD Atmos 7.1][DV HDR10][x265]-SPHD.mkv
+
+Title: Mission Impossible (1996)
+  IMDB: tt0117060
+  File: Mission Impossible (1996) {imdb-tt0117060} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Mission Impossible (1996)/Mission Impossible (1996) {imdb-tt0117060} [Bluray-2160p][DV HDR10][TrueHD 5.1][x265]-SPHD.mkv
+
+Title: Mission Impossible Dead Reckoning Part One (2023)
+  IMDB: tt9603212
+  File: Mission Impossible Dead Reckoning Part One (2023) {imdb-tt9603212} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Mission Impossible Dead Reckoning Part One (2023)/Mission Impossible Dead Reckoning Part One (2023) {imdb-tt9603212} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+
+Title: Mortal Kombat (2021)
+  IMDB: tt0293429
+  File: Mortal Kombat (2021) {imdb-tt0293429} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Mortal Kombat (2021)/Mortal Kombat (2021) {imdb-tt0293429} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-LEGi0N.mkv
+
+Title: Napoleon (2023)
+  IMDB: tt13287846
+  File: Napoleon (2023) {imdb-tt13287846} {edition-Directors Cut} [ATVP][WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Napoleon (2023)/Napoleon (2023) {imdb-tt13287846} {edition-Directors Cut} [ATVP][WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+
+Title: Oppenheimer (2023)
+  IMDB: tt15398776
+  File: Oppenheimer (2023) {imdb-tt15398776} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-MainFrame.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Oppenheimer (2023)/Oppenheimer (2023) {imdb-tt15398776} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-MainFrame.mkv
+
+Title: Riddick (2013)
+  IMDB: tt1411250
+  File: Riddick (2013) {imdb-tt1411250} {edition-Director's Cut} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Riddick (2013)/Riddick (2013) {imdb-tt1411250} {edition-Director's Cut} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+
+Title: Shazam! (2019)
+  IMDB: tt0448115
+  File: Shazam! (2019) {imdb-tt0448115} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Shazam! (2019)/Shazam! (2019) {imdb-tt0448115} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+
+Title: Solo A Star Wars Story (2018)
+  IMDB: tt3778644
+  File: Solo A Star Wars Story (2018) {imdb-tt3778644} [Bluray-2160p Proper][HDR10][TrueHD Atmos 7.1][x265]-TnP.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Solo A Star Wars Story (2018)/Solo A Star Wars Story (2018) {imdb-tt3778644} [Bluray-2160p Proper][HDR10][TrueHD Atmos 7.1][x265]-TnP.mkv
+
+Title: Tenet (2020)
+  IMDB: tt6723592
+  File: Tenet (2020) {imdb-tt6723592} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Tenet (2020)/Tenet (2020) {imdb-tt6723592} [Bluray-2160p Proper][HDR10][DTS-HD MA 5.1][x265]-CtrlHD.mkv
+
+Title: Terminator Dark Fate (2019)
+  IMDB: tt6450804
+  File: Terminator Dark Fate (2019) {imdb-tt6450804} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-DON.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Terminator Dark Fate (2019)/Terminator Dark Fate (2019) {imdb-tt6450804} [Bluray-2160p Proper][DV HDR10][TrueHD Atmos 7.1][x265]-DON.mkv
+
+Title: The Abyss (1989)
+  IMDB: tt0096754
+  File: The Abyss (1989) {imdb-tt0096754} {edition-Special Edition} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Abyss (1989)/The Abyss (1989) {imdb-tt0096754} {edition-Special Edition} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+
+Title: The Batman (2022)
+  IMDB: tt1877830
+  File: The Batman (2022) {imdb-tt1877830} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Batman (2022)/The Batman (2022) {imdb-tt1877830} [Bluray-2160p][DV HDR10][TrueHD Atmos 7.1][x265]-W4NK3R.mkv
+
+Title: The Chronicles of Riddick (2004)
+  IMDB: tt0296572
+  File: The Chronicles of Riddick (2004) {imdb-tt0296572} {edition-Director's Cut} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Chronicles of Riddick (2004)/The Chronicles of Riddick (2004) {imdb-tt0296572} {edition-Director's Cut} [Bluray-2160p][DV HDR10][DTS-HD MA 5.1][x265]-SPHD.mkv
+
+Title: The Mummy (1999)
+  IMDB: tt0120616
+  File: The Mummy (1999) {imdb-tt0120616} [Bluray-2160p][HDR10][DTS-X 7.1][x265]-IAMABLE.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/The Mummy (1999)/The Mummy (1999) {imdb-tt0120616} [Bluray-2160p][HDR10][DTS-X 7.1][x265]-IAMABLE.mkv
+
+Title: Twisters (2024)
+  IMDB: tt12584954
+  File: Twisters (2024) {imdb-tt12584954} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+  Path: /mnt/synology/rs-4kmedia/4kmovies/Twisters (2024)/Twisters (2024) {imdb-tt12584954} [WEBDL-2160p][DV HDR10Plus][EAC3 Atmos 5.1][h265]-FLUX.mkv
+
