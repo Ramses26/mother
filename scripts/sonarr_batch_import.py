@@ -98,7 +98,7 @@ def lookup_series(client: SonarrClient, term: str):
 
 
 def fetch_profiles(client: SonarrClient, quality_name: str, lang_name: str | None):
-    quality_profiles = client.get("/profile")
+    quality_profiles = client.get("/qualityprofile")
     quality_map = {p["name"]: p["id"] for p in quality_profiles}
     if quality_name not in quality_map:
         raise SystemExit(
