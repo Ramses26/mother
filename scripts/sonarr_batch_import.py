@@ -188,7 +188,22 @@ def main():
                 if lookup.get(key):
                     payload[key] = lookup[key]
 
-            result = client.post("/series", json=payload)
+            try:
+                result = client.post("/series", json=payload)
+            except requests.HTTPError as exc:
+                if exc.response.status_code == 400:
+                    try:
+                        errors = exc.response.json()
+                    except ValueError:
+                        errors = []
+                    duplicate = any(
+                        err.get("errorCode") == "SeriesExistsValidator" for err in errors
+                    )
+                    if duplicate:
+                        print(f"  [SKIP] {lookup['title']} already exists in Sonarr.")
+                        continue
+                raise
+
             new_ids.append(result["id"])
             print(f"  [ADDED] {result['title']} -> {payload['path']}")
 
