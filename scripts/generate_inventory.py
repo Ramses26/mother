@@ -376,22 +376,45 @@ class MediaInventory:
         
         return metadata
 
+    # Folders to exclude from scanning
+    EXCLUDED_FOLDERS = {
+        '#recycle',      # Synology recycle bin
+        '@eaDir',        # Synology extended attributes
+        '.Trash',        # Generic trash
+        '.Trashes',      # macOS trash
+        '$RECYCLE.BIN',  # Windows recycle bin
+        'lost+found',    # Linux lost+found
+    }
+
+    def _is_excluded_path(self, file_path: Path) -> bool:
+        """Check if file is in an excluded folder (recycle bin, etc.)"""
+        path_parts = file_path.parts
+        for part in path_parts:
+            if part.lower() in {f.lower() for f in self.EXCLUDED_FOLDERS}:
+                return True
+        return False
+
     def scan(self) -> int:
         """
         Scan directory for media files and build inventory
-        
+
         Returns:
             Number of files processed
         """
         print(f"Scanning: {self.root_path}")
-        
+
         # Find all video files
         video_files = []
         for ext in self.VIDEO_EXTENSIONS:
             video_files.extend(self.root_path.rglob(f'*{ext}'))
-        
-        print(f"Found {len(video_files)} video files")
-        
+
+        # Filter out files in excluded folders (recycle bins, etc.)
+        original_count = len(video_files)
+        video_files = [f for f in video_files if not self._is_excluded_path(f)]
+        excluded_count = original_count - len(video_files)
+
+        print(f"Found {len(video_files)} video files (excluded {excluded_count} from recycle/trash)")
+
         # Process each file with progress bar
         for file_path in tqdm(video_files, desc="Processing", unit="file"):
             try:
@@ -400,7 +423,7 @@ class MediaInventory:
             except Exception as e:
                 if self.verbose:
                     print(f"Error processing {file_path}: {e}")
-        
+
         return len(self.inventory)
 
     def save_json(self) -> str:
