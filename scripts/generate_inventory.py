@@ -153,20 +153,20 @@ class MediaInventory:
         """
         Extract show/movie title from file path
         Handles both flat and season-subfolder structures
-        
+
         Examples:
             /Movies/Avatar (2009)/Avatar.mkv → "Avatar (2009)"
             /TV/Battlestar/S01E01.mkv → "Battlestar"
             /TV/IT Crowd/03/S03E02.mkv → "IT Crowd" (goes up 1 level!)
-            
+
         Args:
             file_path: Path to media file
-            
+
         Returns:
             Show or movie title
         """
         parent_name = file_path.parent.name
-        
+
         # Check if parent folder looks like a season folder
         # Patterns: "01", "02", "Season 1", "Season 01", "S01", etc.
         season_patterns = [
@@ -174,18 +174,60 @@ class MediaInventory:
             r'^Season\s*\d+$',  # "Season 1", "Season 01"
             r'^S\d{1,2}$',  # "S1", "S01"
         ]
-        
+
         is_season_folder = any(
             re.match(pattern, parent_name, re.IGNORECASE)
             for pattern in season_patterns
         )
-        
+
         if is_season_folder:
             # Go up one more level to get show name
             return file_path.parent.parent.name
         else:
             # Use immediate parent
             return parent_name
+
+    def _get_show_folder(self, file_path: Path) -> str:
+        """Get the show's root folder name (for TV shows with season subfolders)"""
+        parent_name = file_path.parent.name
+
+        season_patterns = [
+            r'^\d{1,2}$',
+            r'^Season\s*\d+$',
+            r'^S\d{1,2}$',
+        ]
+
+        is_season_folder = any(
+            re.match(pattern, parent_name, re.IGNORECASE)
+            for pattern in season_patterns
+        )
+
+        if is_season_folder:
+            return file_path.parent.parent.name
+        else:
+            return parent_name
+
+    def _extract_tvdb_id(self, folder_name: str) -> str:
+        """Extract TVDB ID from folder name like 'Show Name (2020) {tvdb-123456}'"""
+        match = re.search(r'\{tvdb-(\d+)\}', folder_name, re.IGNORECASE)
+        return match.group(1) if match else ''
+
+    def _extract_episode_info(self, filename: str) -> dict:
+        """Extract season/episode info from filename like 'Show - S01E05 - Title'"""
+        info = {'season': None, 'episode': None, 'episode_title': ''}
+
+        # Match S01E05 or S01E05E06 (multi-episode)
+        match = re.search(r'S(\d{1,2})E(\d{1,2})(?:E\d{1,2})?', filename, re.IGNORECASE)
+        if match:
+            info['season'] = int(match.group(1))
+            info['episode'] = int(match.group(2))
+
+        # Try to extract episode title (between episode number and quality tags)
+        title_match = re.search(r'S\d{1,2}E\d{1,2}(?:E\d{1,2})?\s*-\s*(.+?)(?:\s*[\[\(]|\s*\d{3,4}p|\s*$)', filename)
+        if title_match:
+            info['episode_title'] = title_match.group(1).strip()
+
+        return info
 
     def _get_mediainfo(self, file_path: Path) -> Optional[MediaInfo]:
         """
@@ -207,24 +249,27 @@ class MediaInventory:
     def _extract_metadata(self, file_path: Path) -> Dict:
         """
         Extract comprehensive metadata from media file
-        
+
         Args:
             file_path: Path to media file
-            
+
         Returns:
             Dictionary of metadata
         """
         filename = file_path.name
-        
+
         # FIXED: Use _get_show_title() to handle nested season folders
         parent_dir = self._get_show_title(file_path)
-        
+
+        # Get show folder for TVDB extraction
+        show_folder = self._get_show_folder(file_path)
+
         # Calculate relative path from root
         try:
             relative_path = file_path.relative_to(self.root_path)
         except ValueError:
             relative_path = file_path
-        
+
         # Get MediaInfo data (skip in fast mode)
         media_info = None if self.fast else self._get_mediainfo(file_path)
 
@@ -235,10 +280,27 @@ class MediaInventory:
         audio_codec_fn = self._extract_pattern(filename, self.PATTERNS['audio_codec'])
         hdr = self._extract_pattern(filename, self.PATTERNS['hdr'])
         group = self._extract_pattern(filename, self.PATTERNS['group'])
-        
+
+        # Extract TVDB ID from show folder (for TV shows)
+        tvdb_id = self._extract_tvdb_id(show_folder)
+
+        # Extract TMDB/IMDB from filename (for movies)
+        tmdb_match = re.search(r'\{tmdb-(\d+)\}', filename, re.IGNORECASE)
+        tmdb_id = tmdb_match.group(1) if tmdb_match else ''
+        imdb_match = re.search(r'\{imdb-(tt\d+)\}', filename, re.IGNORECASE)
+        imdb_id = imdb_match.group(1) if imdb_match else ''
+
+        # Extract year from folder or filename
+        year_match = re.search(r'\((\d{4})\)', show_folder) or re.search(r'\((\d{4})\)', filename)
+        year = year_match.group(1) if year_match else ''
+
+        # Extract episode info (for TV shows)
+        episode_info = self._extract_episode_info(filename)
+
         # Initialize metadata
         metadata = {
             'title': parent_dir,
+            'show_folder': show_folder,
             'filename': filename,
             'path': str(file_path),
             'relative_path': str(relative_path),
@@ -254,6 +316,15 @@ class MediaInventory:
             'group': group,
             'duration_minutes': None,
             'bitrate_mbps': None,
+            # ID fields
+            'tvdb_id': tvdb_id,
+            'tmdb_id': tmdb_id,
+            'imdb_id': imdb_id,
+            'year': year,
+            # Episode fields (for TV)
+            'season': episode_info['season'],
+            'episode': episode_info['episode'],
+            'episode_title': episode_info['episode_title'],
         }
         
         # Extract from MediaInfo if available
