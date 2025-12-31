@@ -195,7 +195,6 @@ class MediaInventory:
         """Get the show's root folder name (for TV shows with season subfolders)"""
         parent_name = file_path.parent.name
 
-<<<<<<< HEAD
         # Same patterns as _get_show_title
         season_patterns = [
             r'^\d{1,2}$',  # Just numbers: "01", "1", "15"
@@ -205,12 +204,6 @@ class MediaInventory:
             r'^Specials?$',  # "Special" or "Specials"
             r'^Featurettes?$',  # "Featurette" or "Featurettes"
             r'^Extras?$',  # "Extra" or "Extras"
-=======
-        season_patterns = [
-            r'^\d{1,2}$',
-            r'^Season\s*\d+$',
-            r'^S\d{1,2}$',
->>>>>>> cf3d0c0652e9209e32d63321c39a0b72beae05f6
         ]
 
         is_season_folder = any(
