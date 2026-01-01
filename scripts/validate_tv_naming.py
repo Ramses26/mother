@@ -30,7 +30,6 @@ class TVNamingValidator:
     )
 
     # Expected episode filename format: "Show Name (Year) - S01E05 - Episode Title..."
-<<<<<<< HEAD
     # Supports year-based seasons (S1944E15), 3-digit episodes (S01E101), multi-episode formats
     EPISODE_PATTERN = re.compile(
         r'^(.+?)\s*\((\d{4})\)\s*-\s*S(\d{1,4})E(\d{1,3})(?:[-E]\d{1,3})*\s*-\s*(.+?)(?:\s*[\[\(]|\s*\d{3,4}p)',
@@ -39,15 +38,6 @@ class TVNamingValidator:
 
     # Simpler check: just verify S##E## exists (supports 2-4 digit seasons for year-based, 1-3 digit episodes)
     EPISODE_BASIC_PATTERN = re.compile(r'S(\d{1,4})E(\d{1,3})', re.IGNORECASE)
-=======
-    EPISODE_PATTERN = re.compile(
-        r'^(.+?)\s*\((\d{4})\)\s*-\s*S(\d{2})E(\d{2})(?:E\d{2})*\s*-\s*(.+?)(?:\s*[\[\(]|\s*\d{3,4}p)',
-        re.IGNORECASE
-    )
-
-    # Simpler check: just verify S##E## exists
-    EPISODE_BASIC_PATTERN = re.compile(r'S(\d{1,2})E(\d{1,2})', re.IGNORECASE)
->>>>>>> cf3d0c0652e9209e32d63321c39a0b72beae05f6
 
     def __init__(self, inventory_path: Path):
         """Load inventory from JSON file"""
@@ -136,14 +126,9 @@ class TVNamingValidator:
             result['has_year_in_filename'] = True
 
         # Check for episode title (text between S##E## and quality tags)
-<<<<<<< HEAD
         # Supports year-based seasons (S1944E15), 3-digit episodes (S01E101), multi-episode (E05E06, E05-E06)
         title_pattern = re.search(
             r'S\d{1,4}E\d{1,3}(?:[-E]\d{1,3})*\s*-\s*(.+?)(?:\s*[\[\(]|\s*\d{3,4}p|\s*$)',
-=======
-        title_pattern = re.search(
-            r'S\d{1,2}E\d{1,2}(?:E\d{1,2})?\s*-\s*(.+?)(?:\s*[\[\(]|\s*\d{3,4}p|\s*$)',
->>>>>>> cf3d0c0652e9209e32d63321c39a0b72beae05f6
             filename
         )
         if title_pattern:

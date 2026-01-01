@@ -882,8 +882,11 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
 
     print(f"✅ Detailed report: {report_file}")
 
-    # Generate sync script
+    # Generate sync script with progress tracking and error handling
     script_file = output_dir / f'sync_actions_{timestamp}.sh'
+    progress_file = f"sync_progress_{timestamp}.log"
+    error_log = f"sync_errors_{timestamp}.log"
+
     with open(script_file, 'w', encoding='utf-8') as f:
         f.write("#!/bin/bash\n")
         f.write("#" + "="*78 + "\n")
@@ -892,24 +895,159 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
         f.write("#" + "="*78 + "\n")
         f.write(f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("#\n")
+        f.write("# Features:\n")
+        f.write("#   - Progress tracking: completed commands are logged and skipped on re-run\n")
+        f.write("#   - Error handling: failures logged with exit code, script continues\n")
+        f.write("#   - Set EXIT_ON_ERROR=true to stop on first error\n")
+        f.write("#   - Timestamps in log for monitoring with: tail -f <logfile>\n")
+        f.write("#\n")
         f.write("# This script uses Mother's mount paths:\n")
         f.write("#   Synology: /mnt/synology/rs-*\n")
         f.write("#   Unraid:   /mnt/unraid/media/*\n")
         f.write("#\n")
-        f.write("# Review carefully before executing!\n")
+        f.write("# Usage:\n")
+        f.write("#   ./sync_actions_XXXXX.sh                    # Normal run (4 parallel)\n")
+        f.write("#   PARALLEL=8 ./sync_actions_XXXXX.sh         # 8 parallel transfers\n")
+        f.write("#   PARALLEL=1 ./sync_actions_XXXXX.sh         # Sequential (safe)\n")
+        f.write("#   EXIT_ON_ERROR=true ./sync_actions_XXXXX.sh # Stop on first error\n")
+        f.write("#   DRY_RUN=true ./sync_actions_XXXXX.sh       # Preview only\n")
+        f.write("#\n")
+        f.write("# Bandwidth: 4 parallel = ~400 Mbps, 8 parallel = ~800 Mbps\n")
+        f.write("#\n")
         f.write("#" + "="*78 + "\n\n")
-        f.write("set -e\n\n")
 
-        f.write("# DRY RUN MODE - Remove 'echo' to execute\n")
-        f.write("DRY_RUN=true\n\n")
+        f.write("set -o pipefail\n\n")
 
+        f.write(f'PROGRESS_FILE="${{PROGRESS_FILE:-{progress_file}}}"\n')
+        f.write(f'ERROR_LOG="${{ERROR_LOG:-{error_log}}}"\n')
+        f.write('EXIT_ON_ERROR="${EXIT_ON_ERROR:-false}"\n')
+        f.write('DRY_RUN="${DRY_RUN:-false}"\n')
+        f.write('PARALLEL="${PARALLEL:-4}"  # Number of parallel transfers\n\n')
+
+        f.write('# Colors for output\n')
+        f.write('RED="\\033[0;31m"\n')
+        f.write('GREEN="\\033[0;32m"\n')
+        f.write('YELLOW="\\033[0;33m"\n')
+        f.write('BLUE="\\033[0;34m"\n')
+        f.write('NC="\\033[0m" # No Color\n\n')
+
+        f.write('# Statistics\n')
+        f.write('TOTAL=0\n')
+        f.write('COMPLETED=0\n')
+        f.write('SKIPPED=0\n')
+        f.write('FAILED=0\n\n')
+
+        f.write('log() {\n')
+        f.write('    echo -e "[$(date "+%Y-%m-%d %H:%M:%S")] $1"\n')
+        f.write('}\n\n')
+
+        f.write('log_error() {\n')
+        f.write('    echo -e "[$(date "+%Y-%m-%d %H:%M:%S")] ${RED}ERROR${NC}: $1" | tee -a "$ERROR_LOG"\n')
+        f.write('}\n\n')
+
+        f.write('# Check if command was already completed\n')
+        f.write('is_completed() {\n')
+        f.write('    local hash="$1"\n')
+        f.write('    grep -q "^$hash$" "$PROGRESS_FILE" 2>/dev/null\n')
+        f.write('}\n\n')
+
+        f.write('# Mark command as completed\n')
+        f.write('mark_completed() {\n')
+        f.write('    local hash="$1"\n')
+        f.write('    echo "$hash" >> "$PROGRESS_FILE"\n')
+        f.write('}\n\n')
+
+        f.write('# Semaphore for parallel execution\n')
+        f.write('wait_for_slot() {\n')
+        f.write('    while [ $(jobs -r | wc -l) -ge $PARALLEL ]; do\n')
+        f.write('        sleep 0.5\n')
+        f.write('    done\n')
+        f.write('}\n\n')
+
+        f.write('# Execute command with progress tracking\n')
         f.write('run_cmd() {\n')
-        f.write('    if [ "$DRY_RUN" = true ]; then\n')
-        f.write('        echo "[DRY RUN] $@"\n')
+        f.write('    local desc="$1"\n')
+        f.write('    shift\n')
+        f.write('    local hash\n')
+        f.write('    hash=$(echo "$@" | md5sum | cut -d" " -f1)\n')
+        f.write('    \n')
+        f.write('    ((TOTAL++))\n')
+        f.write('    \n')
+        f.write('    if is_completed "$hash"; then\n')
+        f.write('        log "${YELLOW}SKIP${NC} [already done] $desc"\n')
+        f.write('        ((SKIPPED++))\n')
+        f.write('        return 0\n')
+        f.write('    fi\n')
+        f.write('    \n')
+        f.write('    if [ "$DRY_RUN" = "true" ]; then\n')
+        f.write('        log "${BLUE}[DRY RUN]${NC} $desc"\n')
+        f.write('        log "  Command: $@"\n')
+        f.write('        ((COMPLETED++))\n')
+        f.write('        return 0\n')
+        f.write('    fi\n')
+        f.write('    \n')
+        f.write('    # Wait for a slot if running parallel\n')
+        f.write('    if [ "$PARALLEL" -gt 1 ]; then\n')
+        f.write('        wait_for_slot\n')
+        f.write('    fi\n')
+        f.write('    \n')
+        f.write('    log "RUNNING: $desc"\n')
+        f.write('    \n')
+        f.write('    # Run in background if parallel > 1\n')
+        f.write('    if [ "$PARALLEL" -gt 1 ]; then\n')
+        f.write('        (\n')
+        f.write('            if "$@" 2>&1; then\n')
+        f.write('                mark_completed "$hash"\n')
+        f.write('                log "${GREEN}OK${NC}: $desc"\n')
+        f.write('            else\n')
+        f.write('                log_error "Failed: $desc"\n')
+        f.write('            fi\n')
+        f.write('        ) &\n')
         f.write('    else\n')
-        f.write('        "$@"\n')
+        f.write('        if "$@"; then\n')
+        f.write('            mark_completed "$hash"\n')
+        f.write('            log "${GREEN}OK${NC}: $desc"\n')
+        f.write('            ((COMPLETED++))\n')
+        f.write('        else\n')
+        f.write('            local exit_code=$?\n')
+        f.write('            log_error "Failed (exit $exit_code): $desc"\n')
+        f.write('            log_error "  Command: $@"\n')
+        f.write('            ((FAILED++))\n')
+        f.write('            \n')
+        f.write('            if [ "$EXIT_ON_ERROR" = "true" ]; then\n')
+        f.write('                log "${RED}Stopping due to EXIT_ON_ERROR=true${NC}"\n')
+        f.write('                print_summary\n')
+        f.write('                exit $exit_code\n')
+        f.write('            fi\n')
+        f.write('        fi\n')
         f.write('    fi\n')
         f.write('}\n\n')
+
+        f.write('# Print summary\n')
+        f.write('print_summary() {\n')
+        f.write('    echo ""\n')
+        f.write('    echo "========================================"\n')
+        f.write('    echo "SYNC SUMMARY"\n')
+        f.write('    echo "========================================"\n')
+        f.write('    echo "Total:     $TOTAL"\n')
+        f.write('    echo -e "Completed: ${GREEN}$COMPLETED${NC}"\n')
+        f.write('    echo -e "Skipped:   ${YELLOW}$SKIPPED${NC}"\n')
+        f.write('    echo -e "Failed:    ${RED}$FAILED${NC}"\n')
+        f.write('    echo "========================================"\n')
+        f.write('    if [ $FAILED -gt 0 ]; then\n')
+        f.write('        echo "See $ERROR_LOG for failure details"\n')
+        f.write('    fi\n')
+        f.write('}\n\n')
+
+        f.write('trap print_summary EXIT\n\n')
+
+        f.write('log "Starting sync..."\n')
+        f.write('log "Progress file: $PROGRESS_FILE"\n')
+        f.write('log "Error log: $ERROR_LOG"\n')
+        f.write('if [ "$DRY_RUN" = "true" ]; then\n')
+        f.write('    log "${BLUE}DRY RUN MODE - no changes will be made${NC}"\n')
+        f.write('fi\n')
+        f.write('echo ""\n\n')
 
         # Moves to deleted folders
         f.write("# === MOVE TO DELETED FOLDERS ===\n\n")
@@ -918,13 +1056,13 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
                 if result.winner == 'ali' and result.chris_file:
                     src = translate_path_to_mother(result.chris_file.path)
                     deleted = translate_path_to_mother(result.deleted_path)
-                    f.write(f'# Move Chris\'s lower quality version\n')
-                    f.write(f'run_cmd mv "{src}" "{deleted}/"\n\n')
+                    title = result.chris_file.title.replace('"', '\\"')
+                    f.write(f'run_cmd "Move Chris lower quality: {title}" mv "{src}" "{deleted}/"\n\n')
                 elif result.winner == 'chris' and result.ali_file:
                     src = translate_path_to_mother(result.ali_file.path)
                     deleted = translate_path_to_mother(result.deleted_path)
-                    f.write(f'# Move Ali\'s lower quality version\n')
-                    f.write(f'run_cmd mv "{src}" "{deleted}/"\n\n')
+                    title = result.ali_file.title.replace('"', '\\"')
+                    f.write(f'run_cmd "Move Ali lower quality: {title}" mv "{src}" "{deleted}/"\n\n')
 
         # Copies - Ali's files go to Synology, Chris's files go to Unraid
         # All paths translated to Mother's mount points
@@ -949,8 +1087,7 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
                     else:
                         dest = SYNOLOGY_PATHS['movies_1080p']
 
-                f.write(f'# Ali has better: {result.ali_file.title}\n')
-                f.write(f'# Score: Ali={result.ali_score} vs Chris={result.chris_score}\n')
+                title = result.ali_file.title.replace('"', '\\"')
 
                 if is_tv:
                     # TV: Create show/season folder structure, then copy file
@@ -966,12 +1103,12 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
                         rel_parts = parts[-3:]  # Fallback: Show/Season/file
 
                     dest_dir = Path(dest) / '/'.join(rel_parts[:-1])  # Show/Season
-                    f.write(f'run_cmd mkdir -p "{dest_dir}"\n')
-                    f.write(f'run_cmd rsync -avP "{src_file}" "{dest_dir}/"\n\n')
+                    f.write(f'run_cmd "Create dir for: {title}" mkdir -p "{dest_dir}"\n')
+                    f.write(f'run_cmd "Copy Ali->Chris: {title}" rsync -avhP "{src_file}" "{dest_dir}/"\n\n')
                 else:
                     # Movies: Copy the entire movie folder to preserve structure
                     src_folder = str(Path(src_file).parent)
-                    f.write(f'run_cmd rsync -avP "{src_folder}" "{dest}/"\n\n')
+                    f.write(f'run_cmd "Copy Ali->Chris: {title}" rsync -avhP "{src_folder}" "{dest}/"\n\n')
 
             elif result.winner == 'chris' and result.chris_file:
                 # Chris has better version - copy from Synology to Unraid
@@ -990,8 +1127,7 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
                     else:
                         dest = UNRAID_PATHS['movies_1080p']
 
-                f.write(f'# Chris has better: {result.chris_file.title}\n')
-                f.write(f'# Score: Chris={result.chris_score} vs Ali={result.ali_score}\n')
+                title = result.chris_file.title.replace('"', '\\"')
 
                 if is_tv:
                     # TV: Create show/season folder structure, then copy file
@@ -1006,12 +1142,23 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
                         rel_parts = parts[-3:]  # Fallback: Show/Season/file
 
                     dest_dir = Path(dest) / '/'.join(rel_parts[:-1])  # Show/Season
-                    f.write(f'run_cmd mkdir -p "{dest_dir}"\n')
-                    f.write(f'run_cmd rsync -avP "{src_file}" "{dest_dir}/"\n\n')
+                    f.write(f'run_cmd "Create dir for: {title}" mkdir -p "{dest_dir}"\n')
+                    f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP "{src_file}" "{dest_dir}/"\n\n')
                 else:
                     # Movies: Copy the entire movie folder to preserve structure
                     src_folder = str(Path(src_file).parent)
-                    f.write(f'run_cmd rsync -avP "{src_folder}" "{dest}/"\n\n')
+                    f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP "{src_folder}" "{dest}/"\n\n')
+
+        # Wait for all parallel jobs to complete
+        f.write('\n# Wait for all parallel jobs to complete\n')
+        f.write('if [ "$PARALLEL" -gt 1 ]; then\n')
+        f.write('    log "Waiting for parallel transfers to complete..."\n')
+        f.write('    wait\n')
+        f.write('fi\n')
+        f.write('\nlog "Sync complete!"\n')
+
+    # Make script executable
+    script_file.chmod(0o755)
 
     print(f"✅ Sync script: {script_file}")
 

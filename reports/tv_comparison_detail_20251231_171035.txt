@@ -1,0 +1,74 @@
+================================================================================
+TV LIBRARY DETAILED COMPARISON
+================================================================================
+
+
+============================================================
+SHOWS ONLY ALI HAS (13 shows)
+============================================================
+
+Blue Planet II
+  TVDB: N/A
+  Episodes: 7
+
+Fallout (2024)
+  TVDB: N/A
+  Episodes: 11
+
+House of the Dragon (2022)
+  TVDB: N/A
+  Episodes: 18
+
+Life on Our Planet (2023)
+  TVDB: N/A
+  Episodes: 8
+
+Our Planet
+  TVDB: N/A
+  Episodes: 12
+
+Planet Earth II
+  TVDB: N/A
+  Episodes: 6
+
+Planet Earth III (2023)
+  TVDB: N/A
+  Episodes: 8
+
+Shōgun (2024)
+  TVDB: N/A
+  Episodes: 10
+
+Star Trek Discovery (2017)
+  TVDB: N/A
+  Episodes: 5
+
+Star Trek Picard
+  TVDB: N/A
+  Episodes: 10
+
+SuperNatural
+  TVDB: N/A
+  Episodes: 6
+
+The Chosen (2019)
+  TVDB: N/A
+  Episodes: 40
+
+The Mandalorian
+  TVDB: N/A
+  Episodes: 24
+
+============================================================
+SHOWS WITH MISSING EPISODES (2 shows)
+============================================================
+(These shows have episodes one person doesn't have at all)
+
+
+Star Trek Strange New Worlds
+  TVDB: N/A
+  Ali only (10): S03E01, S03E02, S03E03, S03E04, S03E05, S03E06, S03E07, S03E08, S03E09, S03E10
+
+The Lord of the Rings The Rings of Power
+  TVDB: N/A
+  Ali only (8): S02E01, S02E02, S02E03, S02E04, S02E05, S02E06, S02E07, S02E08

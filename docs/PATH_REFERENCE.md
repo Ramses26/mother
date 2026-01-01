@@ -86,13 +86,36 @@ Copy Ali's inventories to Mother, then run comparison:
 # On Mother
 scp alig@terminus:~/mother/inventories/ali_*.json /opt/mother/inventories/
 
-# Run comparisons
+# Run MOVIE comparisons (uses TMDB ID from filename)
 cd /opt/mother
 python3 scripts/compare_libraries.py inventories/ali_movies_1080p.json inventories/chris_movies_1080p.json -o reports
 python3 scripts/compare_libraries.py inventories/ali_movies_4k.json inventories/chris_movies_4k.json -o reports
-python3 scripts/compare_libraries.py inventories/ali_tv_1080p.json inventories/chris_tv_1080p.json -o reports
-python3 scripts/compare_libraries.py inventories/ali_tv_4k.json inventories/chris_tv_4k.json -o reports
+
+# Run TV comparisons (uses TVDB ID from folder + Season/Episode)
+python3 scripts/compare_tv_libraries.py inventories/ali_tv_1080p.json inventories/chris_tv_1080p.json -o reports
+python3 scripts/compare_tv_libraries.py inventories/ali_tv_4k.json inventories/chris_tv_4k.json -o reports
 ```
+
+## Running Sync Scripts
+
+The sync scripts have built-in progress tracking and error handling:
+
+```bash
+# Normal run - continues on errors, logs failures
+./sync_actions_XXXXX.sh
+
+# Stop on first error
+EXIT_ON_ERROR=true ./sync_actions_XXXXX.sh
+
+# Monitor progress in another terminal
+tail -f sync_progress_XXXXX.log
+```
+
+Features:
+- Commands are hashed and recorded in progress file when successful
+- Re-running skips already-completed commands automatically
+- Failures logged with exit code; script continues unless EXIT_ON_ERROR=true
+- Timestamps for monitoring with tail
 
 ---
 
