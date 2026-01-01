@@ -1,17 +1,17 @@
 # Recyclarr Profile Quick Reference
 
-**Last Updated:** 2024-12-26
+**Last Updated:** 2026-01-01
 
 ---
 
-## 🎬 **MOVIES (Radarr)**
+## MOVIES (Radarr)
 
-### **1080p Movies (Radarr-HD - Port 7878)**
+### 1080p Movies (Radarr-HD - Port 7878)
 
 | Profile | When to Use | Max Quality | File Size |
 |---------|-------------|-------------|-----------|
-| **HD-Bluray + WEB** | 95% of your movies | Bluray-1080p | 6-20 GB |
-| **HD-Remux ONLY** | Your top 20 favorites | Remux-1080p | 20-60 GB |
+| **HD Bluray + WEB** | 95% of your movies | Bluray-1080p | 6-20 GB |
+| **Remux + WEB 1080p** | Your top 20 favorites | Remux-1080p | 20-60 GB |
 
 **Use HD-Bluray + WEB for:**
 - Action movies, comedies, dramas
@@ -25,12 +25,12 @@
 
 ---
 
-### **4K Movies (Radarr-4K - Port 7879)**
+### 4K Movies (Radarr-4K - Port 7878)
 
 | Profile | When to Use | Max Quality | File Size |
 |---------|-------------|-------------|-----------|
-| **UHD-Bluray + WEB** | 95% of 4K movies | Bluray-2160p | 20-60 GB |
-| **UHD-Remux ONLY** | Top 10 4K favorites | Remux-2160p | 50-100+ GB |
+| **UHD Bluray + WEB** | 95% of 4K movies | Bluray-2160p | 20-60 GB |
+| **Remux + WEB 2160p** | Top 10 4K favorites | Remux-2160p | 50-100+ GB |
 
 **Use UHD-Bluray + WEB for:**
 - Any movie you want in 4K
@@ -204,23 +204,26 @@ Breaking Bad (2008) - S01E01 - Pilot [WEBDL-1080p][DDP5.1]-NTb.mkv
 
 ---
 
-## ⚡ **Quick Commands**
+## Quick Commands
 
 ```bash
-# Recommended nightly cron (add with `crontab -e`)
-0 3 * * * docker exec recyclarr recyclarr sync >> /opt/mother/logs/recyclarr.log 2>&1
-
-# Sync all profiles
+# Force sync (pick up new config)
+recyclarr sync
+# Or with Docker:
 docker exec recyclarr recyclarr sync
 
-# Preview changes
-docker exec recyclarr recyclarr sync --preview
+# Preview changes without applying
+recyclarr sync --preview
 
-# Sync one service
-docker exec recyclarr recyclarr sync radarr-hd
+# Sync specific instance only
+recyclarr sync radarr-hd
+recyclarr sync sonarr-4k
 
-# Check logs
-docker logs recyclarr --tail 50
+# Check for errors in logs
+grep -i "do not exist\|error\|warn" ~/.config/recyclarr/logs/*.log
+
+# Recommended nightly cron (add with `crontab -e`)
+0 3 * * * docker exec recyclarr recyclarr sync >> /var/log/recyclarr.log 2>&1
 ```
 
 ---

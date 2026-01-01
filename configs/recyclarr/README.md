@@ -1,239 +1,232 @@
-# ✅ COMPLETE RECYCLARR CONFIG - USING TRASH TEMPLATES!
+# Project Mother - Recyclarr Configuration
 
-**Created:** 2024-12-26  
-**Status:** 🎉 **COMPLETE - ALL FORMATS INCLUDED!**
+## Overview
 
----
+This configuration manages custom formats and quality profiles for Radarr and Sonarr using TRaSH Guides templates with minimal custom overrides.
 
-## 🎯 **What Changed**
-
-**OLD APPROACH:**
-- ❌ Manually listed every custom format
-- ❌ Missing 40+ formats
-- ❌ Had to maintain everything ourselves
-- ❌ No auto-updates
-
-**NEW APPROACH:**
-- ✅ Uses TRaSH templates as base (gets EVERYTHING!)
-- ✅ ALL 100+ custom formats included automatically
-- ✅ Auto-updates with TRaSH guide changes
-- ✅ Only customize what we need
-- ✅ Much cleaner config (400 lines vs 1500+ lines!)
+**Last Updated:** 2026-01-01
 
 ---
 
-## 📦 **What's Included Now**
+## Quick Start
 
-### **From TRaSH Templates (Automatic!):**
-
-#### **Radarr HD/4K Gets:**
-- ✅ All HDR formats (HDR10, DV HDR10, HDR, DV, HDR10+, HLG, DV HLG, DV SDR)
-- ✅ All Audio formats (TrueHD Atmos, DTS:X, DD+ Atmos, TrueHD, DTS-HD MA, FLAC, PCM, DTS-ES, DTS, AAC, DD)
-- ✅ All Unwanted (BR-DISK, LQ, LQ Release Title, x265 HD, 3D, Upscaled, Extras)
-- ✅ HD Bluray Tier 01, 02, 03 release groups
-- ✅ UHD Bluray Tier 01, 02, 03 release groups
-- ✅ WEB Tier 01, 02, 03 release groups
-- ✅ Repack/Proper (v1, v2, v3)
-- ✅ Streaming Services (HMAX, DSNP, NF, AMZN, ATVP, PMTP, MA, and more!)
-- ✅ Quality definitions from TRaSH
-- ✅ Proper scoring for everything
-
-#### **Sonarr HD/4K Gets:**
-- ✅ All Unwanted (BR-DISK, LQ, LQ Release Title, x265 HD, Bad Dual Groups, No-RlsGroup, Obfuscated, Retags, Scene, Extras)
-- ✅ WEB Tier 01, 02, 03 release groups
-- ✅ HD Bluray Tier release groups
-- ✅ Streaming Services (AMZN, ATVP, DSNP, HBO, HMAX, MAX, NF, PCOK, PMTP, SHO)
-- ✅ Repack/Proper (v1, v2, v3)
-- ✅ HDR formats
-- ✅ Quality definitions from TRaSH
-
-### **Our Custom Additions:**
-
-#### **Added Optional Unwanted Formats:**
-- ✅ Bad Dual Groups (-10000)
-- ✅ No-RlsGroup (-10000)
-- ✅ Obfuscated (-10000)
-- ✅ Retags (-10000)
-- ✅ Scene (-10000)
-
-#### **Added Movie Versions:**
-- ✅ Hybrid
-- ✅ Remaster
-- ✅ 4K Remaster
-- ✅ Criterion Collection
-- ✅ Masters of Cinema
-- ✅ Vinegar Syndrome
-
-#### **Customized Scores:**
-- ✅ HDR10: 400 points (HD), 500 points (4K) - **1080p+HDR > 1080p SDR!**
-- ✅ DV HDR10: 350 points (HD), 450 points (4K)
-- ✅ TrueHD Atmos / DTS:X: **450** points (HD), **900** points (4K) so Atmos > HDR when both are present
-- ✅ DD+ Atmos: 425 points (HD), 800 points (4K)
-
----
-
-## 🎬 **Quality Profiles Created**
-
-### **Radarr-HD (1080p):**
-1. **HD-Bluray + WEB** - From TRaSH template (most movies)
-2. **HD-Remux ONLY** - We created (special movies)
-
-### **Radarr-4K (4K):**
-3. **UHD-Bluray + WEB** - From TRaSH template (most 4K)
-4. **UHD-Remux ONLY** - We created (special 4K)
-
-### **Sonarr-HD (1080p TV):**
-5. **WEB-1080p** - From TRaSH template (default for TV)
-6. **Bluray-1080p** - Custom profile with the full TRaSH WEB CF stack applied
-7. **Remux-1080p** - Custom profile with the same TRaSH CFs + Bluray tiers
-
-### **Sonarr-4K (4K TV):**
-8. **WEB-2160p** - From TRaSH template (default 4K TV)
-9. **Bluray-2160p** - Custom profile with the TRaSH WEB-2160p CF stack applied
-10. **Remux-2160p** - Custom profile with the same TRaSH CFs + UHD Bluray tiers
-
----
-
-## 🔥 **Key Features**
-
-### **1. Complete Coverage**
-- **100+ custom formats** included automatically
-- ALL recommended formats from TRaSH guides
-- Nothing missed!
-
-### **2. Auto-Updates**
-- TRaSH templates update automatically
-- New formats added by TRaSH = automatically included
-- Always current with best practices
-
-### **3. 1080p+HDR Priority** (Your Request!)
-```
-Scoring example:
-- WEB-DL 1080p (base) + HDR10 (400) = 1000+ total
-- Bluray 1080p SDR (base) = ~800 total
-Result: WEB-DL + HDR10 WINS! ✨
-```
-
-### **4. TRaSH Naming**
-**Movies:**
-```
-Avatar (2009) {imdb-tt0499549} [Bluray-2160p][HDR10][TrueHD Atmos 7.1]-FGT.mkv
-```
-
-**TV Shows:**
-```
-Breaking Bad (2008) - S01E01 - Pilot [WEBDL-1080p][DDP5.1]-NTb.mkv
-```
-
-### **5. All Unwanted Formats Blocked**
-- BR-DISK
-- LQ groups
-- LQ release titles
-- x265 (HD)
-- Bad Dual Groups
-- No-RlsGroup
-- Obfuscated
-- Retags
-- Scene
-- 3D
-- Upscaled
-- Extras
-
----
-
-## 📊 **Complete Format Count**
-
-| Category | Count | Status |
-|----------|-------|--------|
-| HDR Formats | 8 | ✅ All included |
-| Audio Formats | 14 | ✅ All included |
-| Unwanted Formats | 10+ | ✅ All included |
-| Release Group Tiers | 12+ | ✅ All included |
-| Movie Versions | 6 | ✅ All included |
-| Streaming Services | 15+ | ✅ All included |
-| Repack/Proper | 3 | ✅ All included |
-| **TOTAL** | **100+** | ✅ **COMPLETE!** |
-
----
-
-## 🚀 **Next Steps**
-
-1. **Commit to Git**
 ```bash
-cd ~/projects/mother
-git add config/recyclarr/recyclarr.yml
-git add config/recyclarr/MISSING_FORMATS_ANALYSIS.md
-git commit -m "COMPLETE recyclarr config using TRaSH templates
+# Copy config to recyclarr location
+cp recyclarr.yml ~/.config/recyclarr/recyclarr.yml
 
-- Uses TRaSH templates for 100+ formats automatically
-- Added all optional unwanted formats
-- Customized HDR scores (1080p+HDR > 1080p SDR!)
-- TRaSH naming enabled
-- 10 quality profiles (4 Radarr + 6 Sonarr)"
-git push origin main
-```
+# Or for Docker
+docker cp recyclarr.yml recyclarr:/config/recyclarr.yml
 
-2. **Deploy to Mother**
-```bash
-ssh mother
-cd /opt/mother
-git pull origin main
-cp config/recyclarr/recyclarr.yml /opt/mother/config/recyclarr/
-```
+# Run sync
+recyclarr sync
 
-3. **Add API Keys to .env**
-```bash
-nano /opt/mother/.env
-# Add your 4 API keys
-```
-
-4. **Test Sync**
-```bash
-docker exec recyclarr recyclarr sync --preview
-```
-
-5. **Real Sync**
-```bash
+# Or for Docker
 docker exec recyclarr recyclarr sync
 ```
 
-6. **Setup Cron**
+---
+
+## Instances & Profiles
+
+### Radarr (Movies)
+
+| Instance | Container | Profiles |
+|----------|-----------|----------|
+| **Radarr-HD** | `radarr-hd:7878` | HD Bluray + WEB, Remux + WEB 1080p |
+| **Radarr-4K** | `radarr-4k:7878` | UHD Bluray + WEB, Remux + WEB 2160p |
+
+### Sonarr (TV Shows)
+
+| Instance | Container | Profiles |
+|----------|-----------|----------|
+| **Sonarr-HD** | `sonarr-hd:8989` | WEB-1080p, Bluray-1080p, Remux-1080p |
+| **Sonarr-4K** | `sonarr-4k:8989` | WEB-2160p, Bluray-2160p, Remux-2160p |
+
+---
+
+## Profile Use Cases
+
+| Profile | Use Case | Quality Priority |
+|---------|----------|------------------|
+| **HD/UHD Bluray + WEB** | Most movies | Bluray encode > WEB |
+| **Remux + WEB 1080p/2160p** | Favorite movies | Remux > Bluray > WEB |
+| **WEB-1080p/2160p** | Most TV shows | WEB-DL preferred |
+| **Bluray-1080p/2160p** | Special TV shows | Bluray > WEB |
+| **Remux-1080p/2160p** | Premium TV shows | Remux > Bluray > WEB |
+
+---
+
+## Key Customizations
+
+### 1. x265 (no HDR/DV) Blocking
+
+**Purpose:** Block low-quality x265 re-encodes while allowing high-quality HDR x265 releases.
+
+| Scenario | Result |
+|----------|--------|
+| x265 **with** HDR/DV | ALLOWED (quality downscale from 4K) |
+| x265 **without** HDR/DV | BLOCKED (-10000 score) |
+
+**Trash IDs:**
+- Radarr: `839bea857ed2c0a8e084f3cbdbd65ecb`
+- Sonarr: `9b64dff695c2115facf1b6ea59c9bd07`
+
+### 2. Unwanted Release Blockers
+
+All profiles block these release types with -10000 score:
+
+| Format | Radarr ID | Sonarr ID |
+|--------|-----------|-----------|
+| Bad Dual Groups | `b6832f586342ef70d9c128d40c07b872` | `32b367365729d530ca1c124a0b180c64` |
+| EVO (no WEBDL) | `90cedc1fea7ea5d11298bebd3d1d3223` | N/A |
+| No-RlsGroup | `ae9b7c9ebde1f3bd336a8cbd1ec4c5e5` | `82d40da2bc6923f41e14394075dd4b03` |
+| Obfuscated | `7357cf5161efbf8c4d5d0c30b4815ee2` | `e1a997ddb54e3ecbfe06341ad323c458` |
+| Retags | `5c44f52a8714fdd79bb4d98e2673be1f` | `06d66ab109d4d2eddb2794d21526d140` |
+| Scene | `f537cf427b64c38c8e36298f657e4828` | `1b3994c551cbb92a2c781af061f4ab44` |
+
+---
+
+## Environment Variables
+
+Set these in your `.env` file or environment:
+
 ```bash
-crontab -e
-# Add: 0 3 * * * docker exec recyclarr recyclarr sync >> /opt/mother/logs/recyclarr.log 2>&1
+RADARR_HD_API_KEY=your_api_key_here
+RADARR_4K_API_KEY=your_api_key_here
+SONARR_HD_API_KEY=your_api_key_here
+SONARR_4K_API_KEY=your_api_key_here
 ```
 
 ---
 
-## ✅ **Comparison: Before vs After**
+## TRaSH Guide Templates Used
 
-| Feature | OLD Config | NEW Config |
-|---------|-----------|------------|
-| Total Formats | ~30 | **100+** ✅ |
-| Auto-updates | ❌ No | ✅ **Yes** |
-| Release Groups | WEB only | **All tiers** ✅ |
-| Unwanted Blocked | 4 formats | **10+ formats** ✅ |
-| Config Lines | 1500+ | **~400** ✅ |
-| Maintenance | Manual | **Auto** ✅ |
-| TRaSH Compliant | Partial | **100%** ✅ |
-| Missing Formats | 40+ | **0** ✅ |
+### Radarr
+| Template | Purpose |
+|----------|---------|
+| `radarr-quality-definition-movie` | Quality size limits |
+| `radarr-quality-profile-hd-bluray-web` | HD Bluray + WEB profile |
+| `radarr-custom-formats-hd-bluray-web` | Custom formats for HD |
+| `radarr-quality-profile-uhd-bluray-web` | UHD Bluray + WEB profile |
+| `radarr-custom-formats-uhd-bluray-web` | Custom formats for UHD |
+| `radarr-quality-profile-remux-web-1080p` | Remux 1080p profile |
+| `radarr-custom-formats-remux-web-1080p` | Custom formats for Remux 1080p |
+| `radarr-quality-profile-remux-web-2160p` | Remux 2160p profile |
+| `radarr-custom-formats-remux-web-2160p` | Custom formats for Remux 2160p |
 
----
-
-## 🎉 **RESULT: COMPLETE!**
-
-You now have:
-- ✅ **100+ custom formats** from TRaSH guides
-- ✅ **ALL optional formats** enabled
-- ✅ **ALL unwanted formats** blocked
-- ✅ **ALL release group tiers** scored
-- ✅ **1080p+HDR prioritization** working
-- ✅ **TRaSH naming** enabled
-- ✅ **Auto-updates** from TRaSH
-- ✅ **10 quality profiles** ready to use
-
-**This is the COMPLETE, BEST-PRACTICE setup!** 🚀
+### Sonarr
+| Template | Purpose |
+|----------|---------|
+| `sonarr-quality-definition-series` | Quality size limits |
+| `sonarr-v4-quality-profile-web-1080p` | WEB-1080p profile |
+| `sonarr-v4-custom-formats-web-1080p` | Custom formats for WEB 1080p |
+| `sonarr-v4-quality-profile-web-2160p` | WEB-2160p profile |
+| `sonarr-v4-custom-formats-web-2160p` | Custom formats for WEB 2160p |
 
 ---
 
-See `SETUP_GUIDE.md` and `QUICK_REFERENCE.md` for usage instructions!
+## What Templates Provide Automatically
+
+The TRaSH templates handle all of this (no manual configuration needed):
+
+- **HDR Scoring:** DV HDR10, HDR10+, HDR10, DV, HLG, DV HLG, DV SDR
+- **Audio Scoring:** TrueHD Atmos, DTS-HD MA, DTS:X, DD+ Atmos, TrueHD, FLAC, PCM
+- **Release Group Tiers:** Tier 01/02/03 for HD Bluray, UHD Bluray, and WEB groups
+- **Streaming Boosts:** AMZN, ATVP, NF, DSNP, HBO, HMAX, MAX, PMTP, etc.
+- **Quality Definitions:** Proper size limits per quality level
+- **Repack/Proper:** v1, v2, v3 handling
+- **Unwanted Defaults:** BR-DISK, LQ, x265 (HD), 3D, Extras
+
+---
+
+## Troubleshooting
+
+### Check for Invalid Trash IDs
+
+```bash
+# Look for warnings in recyclarr logs
+grep -i "do not exist" ~/.config/recyclarr/logs/*.log
+
+# Or for Docker
+docker exec recyclarr cat /config/logs/recyclarr.log | grep -i "do not exist"
+```
+
+### Force Full Sync
+
+```bash
+recyclarr sync
+```
+
+The config has `delete_old_custom_formats: true` which removes orphaned formats automatically.
+
+### Verify API Keys
+
+```bash
+# Test Radarr connection
+curl -s "http://radarr-hd:7878/api/v3/system/status?apikey=YOUR_KEY"
+
+# Test Sonarr connection
+curl -s "http://sonarr-hd:8989/api/v3/system/status?apikey=YOUR_KEY"
+```
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| "Custom Formats do not exist" | Trash ID is invalid/outdated - check TRaSH guides |
+| "Profile not found" | Profile name doesn't match exactly - check Radarr/Sonarr |
+| "API key invalid" | Check `.env` file and environment variables |
+| Formats not applying | Run `recyclarr sync` again after profile changes |
+
+---
+
+## Maintenance
+
+### Daily Sync (Recommended)
+
+Add to crontab:
+```bash
+crontab -e
+# Add this line:
+0 3 * * * docker exec recyclarr recyclarr sync >> /var/log/recyclarr.log 2>&1
+```
+
+### Updating TRaSH Guide Templates
+
+Templates update automatically when you run `recyclarr sync`. To force update:
+
+```bash
+# Clear cache and sync
+recyclarr sync --force-update
+```
+
+---
+
+## File Structure
+
+```
+configs/recyclarr/
+├── recyclarr.yml              # Main configuration file
+├── README.md                  # This documentation
+├── QUICK_REFERENCE.md         # Quick command reference
+└── HDR & Audio Format Preferences.md  # Scoring details
+```
+
+---
+
+## References
+
+- [TRaSH Guides](https://trash-guides.info/)
+- [Recyclarr Documentation](https://recyclarr.dev/wiki/)
+- [Radarr Custom Formats](https://trash-guides.info/Radarr/Radarr-collection-of-custom-formats/)
+- [Sonarr Custom Formats](https://trash-guides.info/Sonarr/sonarr-collection-of-custom-formats/)
+
+---
+
+## Changelog
+
+| Date | Change |
+|------|--------|
+| 2026-01-01 | Cleaned up config - removed invalid trash IDs, simplified to use templates |
+| 2024-12-28 | Added custom HDR/Audio scoring overrides |
+| 2024-12-26 | Initial setup with TRaSH templates |
