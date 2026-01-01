@@ -228,7 +228,19 @@ def radarr_webhook():
         folder_path = movie.get('folderPath', '')
         file_path = movie_file.get('path', '')
         file_size = movie_file.get('size', 0)
-        quality = movie_file.get('quality', {}).get('quality', {}).get('name', 'Unknown')
+
+        # Safely extract quality - handle various payload formats
+        quality_data = movie_file.get('quality', {})
+        if isinstance(quality_data, dict):
+            inner_quality = quality_data.get('quality', {})
+            if isinstance(inner_quality, dict):
+                quality = inner_quality.get('name', 'Unknown')
+            elif isinstance(inner_quality, str):
+                quality = inner_quality
+            else:
+                quality = str(quality_data.get('name', 'Unknown'))
+        else:
+            quality = str(quality_data) if quality_data else 'Unknown'
 
         logger.info(f"Processing: {title} ({year}) - {quality}")
         logger.info(f"File path: {file_path}")
@@ -322,7 +334,19 @@ def sonarr_webhook():
         series_path = series.get('path', '')
         file_path = episode_file.get('path', '')
         file_size = episode_file.get('size', 0)
-        quality = episode_file.get('quality', {}).get('quality', {}).get('name', 'Unknown')
+
+        # Safely extract quality - handle various payload formats
+        quality_data = episode_file.get('quality', {})
+        if isinstance(quality_data, dict):
+            inner_quality = quality_data.get('quality', {})
+            if isinstance(inner_quality, dict):
+                quality = inner_quality.get('name', 'Unknown')
+            elif isinstance(inner_quality, str):
+                quality = inner_quality
+            else:
+                quality = str(quality_data.get('name', 'Unknown'))
+        else:
+            quality = str(quality_data) if quality_data else 'Unknown'
 
         # Build episode string (e.g., S01E05 or S01E05-E06)
         ep_codes = []
