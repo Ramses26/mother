@@ -34,7 +34,8 @@ services:
     restart: unless-stopped
     networks:
       - mother_network
-
+      
+  
   # Radarr HD - 1080p Movie Management
   radarr-hd:
     image: lscr.io/linuxserver/radarr:latest
@@ -160,17 +161,17 @@ services:
 
   # FlareSolverr - CAPTCHA Solver (needed for Jackett)
   # Uncomment if using Jackett
-  # flaresolverr:
-  #   image: ghcr.io/flaresolverr/flaresolverr:latest
-  #   container_name: flaresolverr
-  #   environment:
-  #     - LOG_LEVEL=info
-  #     - TZ=${TZ}
-  #   ports:
-  #     - "${FLARESOLVERR_PORT}:8191"
-  #   restart: unless-stopped
-  #   networks:
-  #     - mother_network
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ}
+    ports:
+     - "${FLARESOLVERR_PORT}:8191"
+    restart: unless-stopped
+    networks:
+      - mother_network
 
   # Recyclarr - TRASHGuides Profile Manager
   recyclarr:
