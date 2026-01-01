@@ -1,0 +1,10 @@
+# Apprise Configuration for Mother Project
+# https://github.com/caronc/apprise/wiki/config_yaml
+
+version: 1
+
+urls:
+  # Telegram - Primary notification channel
+  # Format: tgram://bot_token/chat_id/
+  - tgram://${TELEGRAM_BOT_TOKEN}/${TELEGRAM_CHAT_ID}/:
+      - tag: telegram, all, sync, error, success

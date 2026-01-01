@@ -12,9 +12,10 @@ configs/*/*.db
 configs/*/*.db-shm
 configs/*/*.db-wal
 
-# Ignore all configs EXCEPT recyclarr
+# Ignore all configs EXCEPT recyclarr & apprice
 configs/*
 !configs/recyclarr/
+!configs/apprise/
 
 # Logs
 *.log
