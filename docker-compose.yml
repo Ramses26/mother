@@ -295,6 +295,37 @@ services:
     networks:
       - mother_network      
 
+  # Sync Webhook - Real-time sync triggered by Radarr/Sonarr
+  sync-webhook:
+    build:
+      context: ./services/sync-webhook
+      dockerfile: Dockerfile
+    container_name: sync-webhook
+    environment:
+      - TZ=${TZ}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - SYNC_DRY_RUN=${SYNC_DRY_RUN:-false}
+      - SYNC_LOG_LEVEL=${SYNC_LOG_LEVEL:-INFO}
+    volumes:
+      # Synology NFS mounts (source)
+      - /mnt/synology/rs-movies:/mnt/synology/rs-movies:ro
+      - /mnt/synology/rs-tv:/mnt/synology/rs-tv:ro
+      - /mnt/synology/rs-4kmedia:/mnt/synology/rs-4kmedia:ro
+      # Unraid NFS mounts (destination)
+      - /mnt/unraid/media:/mnt/unraid/media
+    ports:
+      - "${SYNC_WEBHOOK_PORT:-5001}:5000"
+    restart: unless-stopped
+    networks:
+      - mother_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 networks:
   mother_network:
     driver: bridge
