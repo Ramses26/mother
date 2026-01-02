@@ -17,15 +17,22 @@ import subprocess
 import logging
 import json
 import threading
-from datetime import datetime
+import sqlite3
+import atexit
+from datetime import datetime, timedelta
+from pathlib import Path
+from logging.handlers import RotatingFileHandler
 from flask import Flask, request, jsonify
 import apprise
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Configuration from environment
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
 DRY_RUN = os.environ.get('SYNC_DRY_RUN', 'false').lower() == 'true'
 LOG_LEVEL = os.environ.get('SYNC_LOG_LEVEL', 'INFO')
+LOG_PATH = os.environ.get('SYNC_LOG_PATH', '/logs')
+DB_PATH = os.environ.get('SYNC_DB_PATH', '/data/sync_jobs.db')
 
 # Path mappings: Container path -> (Source NFS, Destination NFS)
 PATH_MAPPINGS = {
@@ -51,15 +58,141 @@ PATH_MAPPINGS = {
     ),
 }
 
-# Setup logging
+# Setup logging - console + file
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL),
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
+# Add file handler for persistent logs
+try:
+    log_dir = Path(LOG_PATH)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    file_handler = RotatingFileHandler(
+        log_dir / 'sync_webhook.log',
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=5
+    )
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(file_handler)
+
+    # Separate sync history log (human-readable)
+    history_handler = RotatingFileHandler(
+        log_dir / 'sync_history.log',
+        maxBytes=10*1024*1024,
+        backupCount=10
+    )
+    history_handler.setFormatter(logging.Formatter('%(message)s'))
+    history_logger = logging.getLogger('sync_history')
+    history_logger.addHandler(history_handler)
+    history_logger.setLevel(logging.INFO)
+except Exception as e:
+    logger.warning(f"Could not setup file logging: {e}")
+    history_logger = logger  # Fallback to main logger
+
 # Setup Flask
 app = Flask(__name__)
+
+# Statistics tracking (in-memory, reset on restart)
+stats = {
+    'movies_synced': 0,
+    'episodes_synced': 0,
+    'failures': 0,
+    'bytes_transferred': 0,
+    'start_time': datetime.now().isoformat()
+}
+stats_lock = threading.Lock()
+
+
+def init_database():
+    """Initialize SQLite database for job tracking"""
+    try:
+        db_dir = Path(DB_PATH).parent
+        db_dir.mkdir(parents=True, exist_ok=True)
+
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sync_jobs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_type TEXT NOT NULL,
+                source_path TEXT NOT NULL,
+                dest_path TEXT NOT NULL,
+                title TEXT,
+                quality TEXT,
+                file_size INTEGER,
+                status TEXT DEFAULT 'pending',
+                error_message TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                completed_at TIMESTAMP,
+                duration_seconds REAL
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_status ON sync_jobs(status)
+        ''')
+
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_created ON sync_jobs(created_at)
+        ''')
+
+        conn.commit()
+        conn.close()
+        logger.info(f"Database initialized at {DB_PATH}")
+    except Exception as e:
+        logger.error(f"Could not initialize database: {e}")
+
+
+def log_sync_job(job_type, source, dest, title, status, duration=None, error=None, file_size=0):
+    """Log sync job to database and history file"""
+    try:
+        # Log to history file
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        duration_str = f"{duration:.1f}s" if duration else "N/A"
+        history_logger.info(f"{timestamp} | {status.upper():8} | {job_type:8} | {title} | {duration_str}")
+
+        # Log to database
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO sync_jobs (job_type, source_path, dest_path, title, status, duration_seconds, error_message, file_size, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (job_type, source, dest, title, status, duration, error, file_size, datetime.now().isoformat() if status != 'pending' else None))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Could not log sync job: {e}")
+
+
+def update_stats(job_type, success, file_size=0):
+    """Update in-memory statistics"""
+    with stats_lock:
+        if success:
+            if job_type == 'movie':
+                stats['movies_synced'] += 1
+            else:
+                stats['episodes_synced'] += 1
+            stats['bytes_transferred'] += file_size
+        else:
+            stats['failures'] += 1
+
+
+def check_nfs_health():
+    """Check if NFS mounts are accessible"""
+    issues = []
+    for container_path, (source, dest) in PATH_MAPPINGS.items():
+        if not os.path.exists(source):
+            issues.append(f"Source mount missing: {source}")
+        if not os.path.exists(dest):
+            issues.append(f"Destination mount missing: {dest}")
+    return issues
+
+
+# Initialize database on startup
+init_database()
 
 # Setup Apprise
 apobj = apprise.Apprise()
@@ -173,11 +306,33 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
     Run rsync in background thread and send notification when complete.
     This allows the webhook to return immediately.
     """
+    job_type = 'movie' if media_type == 'Movie' else 'episode'
+
     def do_sync():
         logger.info(f"Background sync started: {title}")
+
+        # Check NFS health before sync
+        nfs_issues = check_nfs_health()
+        if nfs_issues:
+            error_msg = "NFS mount issues: " + "; ".join(nfs_issues)
+            logger.error(error_msg)
+            log_sync_job(job_type, source, dest, title, 'failed', error=error_msg, file_size=file_size)
+            update_stats(job_type, success=False)
+            send_notification(
+                title=f"Sync Failed - NFS Error",
+                body=f"*{title}*\n\n{error_msg}",
+                notify_type=apprise.NotifyType.FAILURE
+            )
+            return
+
+        # Run the rsync
         success, output, duration = run_rsync(source, dest, is_file=False)
 
         if success:
+            # Log success to database and history
+            log_sync_job(job_type, source, dest, title, 'success', duration=duration, file_size=file_size)
+            update_stats(job_type, success=True, file_size=file_size)
+
             msg = (
                 f"*{title}*\n"
                 f"Quality: {quality}\n"
@@ -194,6 +349,10 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
             )
             logger.info(f"Background sync completed: {title} in {duration:.1f}s")
         else:
+            # Log failure to database and history
+            log_sync_job(job_type, source, dest, title, 'failed', duration=duration, error=output[:500], file_size=file_size)
+            update_stats(job_type, success=False)
+
             send_notification(
                 title=f"Sync Failed - {media_type}",
                 body=f"*{title}*\n\nError: {output[:500]}",
@@ -206,15 +365,270 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
     logger.info(f"Background sync thread started for: {title}")
 
 
+def get_job_counts():
+    """Get counts of jobs by status from database"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT status, COUNT(*) FROM sync_jobs
+            WHERE created_at > datetime('now', '-24 hours')
+            GROUP BY status
+        ''')
+        counts = dict(cursor.fetchall())
+        conn.close()
+        return counts
+    except Exception:
+        return {}
+
+
+def send_daily_summary():
+    """Send daily summary of sync activity to Telegram"""
+    logger.info("Generating daily summary...")
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Get yesterday's stats
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+
+        cursor.execute('''
+            SELECT
+                SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as successful,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN job_type = 'movie' AND status = 'success' THEN 1 ELSE 0 END) as movies,
+                SUM(CASE WHEN job_type = 'episode' AND status = 'success' THEN 1 ELSE 0 END) as episodes,
+                SUM(CASE WHEN status = 'success' THEN file_size ELSE 0 END) as total_bytes,
+                SUM(CASE WHEN status = 'success' THEN duration_seconds ELSE 0 END) as total_duration
+            FROM sync_jobs
+            WHERE date(created_at) = ?
+        ''', (yesterday,))
+
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            successful, failed, movies, episodes, total_bytes, total_duration = row
+            total_bytes = total_bytes or 0
+            total_duration = total_duration or 0
+
+            # Format the summary
+            msg = f"""📊 *Daily Sync Summary - {yesterday}*
+
+✅ Successful: {successful or 0}
+❌ Failed: {failed or 0}
+
+🎬 Movies: {movies or 0}
+📺 Episodes: {episodes or 0}
+
+💾 Data Synced: {format_size(total_bytes)}
+⏱️ Total Duration: {total_duration/60:.1f} minutes"""
+
+            if failed and failed > 0:
+                msg += f"\n\n⚠️ {failed} failed syncs - check /jobs?status=failed"
+
+            send_notification(
+                title="Daily Sync Summary",
+                body=msg,
+                notify_type=apprise.NotifyType.INFO
+            )
+            logger.info(f"Daily summary sent: {successful} success, {failed} failed")
+        else:
+            send_notification(
+                title="Daily Sync Summary",
+                body=f"📊 *Daily Summary - {yesterday}*\n\nNo sync activity recorded.",
+                notify_type=apprise.NotifyType.INFO
+            )
+            logger.info("Daily summary sent: no activity")
+
+    except Exception as e:
+        logger.error(f"Error generating daily summary: {e}")
+
+
+# Initialize scheduler for daily summary and auto-retry
+scheduler = BackgroundScheduler()
+scheduler.add_job(
+    func=send_daily_summary,
+    trigger='cron',
+    hour=0,
+    minute=5,  # Run at 00:05 each day
+    id='daily_summary',
+    name='Daily sync summary',
+    replace_existing=True
+)
+
+
+def auto_retry_failed():
+    """Automatically retry failed jobs every 15 minutes"""
+    logger.info("Auto-retry: checking for failed jobs...")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Get failed jobs from the last 6 hours that haven't been retried recently
+        cursor.execute('''
+            SELECT * FROM sync_jobs
+            WHERE status = 'failed'
+            AND created_at > datetime('now', '-6 hours')
+            AND title NOT LIKE '[RETRY]%'
+            ORDER BY created_at DESC
+            LIMIT 10
+        ''')
+        failed_jobs = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+
+        if failed_jobs:
+            logger.info(f"Auto-retry: found {len(failed_jobs)} failed jobs to retry")
+            for job in failed_jobs:
+                source = job['source_path']
+                dest = job['dest_path']
+                title = job['title'] or 'Unknown'
+                job_type = job['job_type']
+                file_size = job['file_size'] or 0
+
+                media_type = "Movie" if job_type == 'movie' else "Episode"
+                background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type)
+                logger.info(f"Auto-retry: queued {title}")
+        else:
+            logger.debug("Auto-retry: no failed jobs to retry")
+
+    except Exception as e:
+        logger.error(f"Auto-retry error: {e}")
+
+
+# Add auto-retry job (every 15 minutes)
+scheduler.add_job(
+    func=auto_retry_failed,
+    trigger='interval',
+    minutes=15,
+    id='auto_retry',
+    name='Auto retry failed syncs',
+    replace_existing=True
+)
+
+scheduler.start()
+logger.info("Scheduler started - daily summary at 00:05, auto-retry every 15 min")
+
+# Shut down scheduler on exit
+atexit.register(lambda: scheduler.shutdown())
+
+
 @app.route('/health', methods=['GET'])
 def health():
-    """Health check endpoint"""
+    """Health check endpoint with comprehensive status"""
+    nfs_issues = check_nfs_health()
+    job_counts = get_job_counts()
+
+    status = 'healthy'
+    if nfs_issues:
+        status = 'degraded'
+
     return jsonify({
-        'status': 'healthy',
+        'status': status,
         'timestamp': datetime.now().isoformat(),
         'dry_run': DRY_RUN,
-        'notifications': len(apobj) > 0
+        'notifications': len(apobj) > 0,
+        'nfs_status': 'ok' if not nfs_issues else 'error',
+        'nfs_issues': nfs_issues,
+        'jobs_24h': job_counts,
+        'uptime_since': stats['start_time']
     })
+
+
+@app.route('/stats', methods=['GET'])
+def get_stats():
+    """Get sync statistics"""
+    with stats_lock:
+        current_stats = dict(stats)
+
+    # Add formatted bytes transferred
+    current_stats['bytes_transferred_human'] = format_size(current_stats['bytes_transferred'])
+
+    # Get database stats
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Total counts
+        cursor.execute('SELECT COUNT(*) FROM sync_jobs WHERE status = "success"')
+        current_stats['total_successful'] = cursor.fetchone()[0]
+
+        cursor.execute('SELECT COUNT(*) FROM sync_jobs WHERE status = "failed"')
+        current_stats['total_failed'] = cursor.fetchone()[0]
+
+        # Today's counts
+        cursor.execute('''
+            SELECT COUNT(*) FROM sync_jobs
+            WHERE status = "success" AND date(created_at) = date('now')
+        ''')
+        current_stats['today_successful'] = cursor.fetchone()[0]
+
+        cursor.execute('''
+            SELECT COUNT(*) FROM sync_jobs
+            WHERE status = "failed" AND date(created_at) = date('now')
+        ''')
+        current_stats['today_failed'] = cursor.fetchone()[0]
+
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error getting database stats: {e}")
+
+    return jsonify(current_stats)
+
+
+@app.route('/jobs', methods=['GET'])
+def list_jobs():
+    """List recent sync jobs"""
+    limit = request.args.get('limit', 50, type=int)
+    status_filter = request.args.get('status', None)
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        if status_filter:
+            cursor.execute('''
+                SELECT * FROM sync_jobs
+                WHERE status = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+            ''', (status_filter, limit))
+        else:
+            cursor.execute('''
+                SELECT * FROM sync_jobs
+                ORDER BY created_at DESC
+                LIMIT ?
+            ''', (limit,))
+
+        jobs = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+
+        return jsonify({'jobs': jobs, 'count': len(jobs)})
+    except Exception as e:
+        logger.error(f"Error listing jobs: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/jobs/<int:job_id>', methods=['GET'])
+def get_job(job_id):
+    """Get details for a specific job"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM sync_jobs WHERE id = ?', (job_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return jsonify(dict(row))
+        else:
+            return jsonify({'error': 'Job not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/test', methods=['POST', 'GET'])
@@ -226,6 +640,18 @@ def test_notification():
         notify_type=apprise.NotifyType.SUCCESS
     )
     return jsonify({'status': 'notification sent'})
+
+
+@app.route('/summary/send', methods=['POST', 'GET'])
+def trigger_summary():
+    """Manually trigger daily summary (for testing)"""
+    try:
+        # Run in background to return immediately
+        thread = threading.Thread(target=send_daily_summary, daemon=True)
+        thread.start()
+        return jsonify({'status': 'summary triggered'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/sync/radarr', methods=['POST'])
@@ -440,6 +866,85 @@ def sonarr_webhook():
             body=f"Exception: {str(e)[:500]}",
             notify_type=apprise.NotifyType.FAILURE
         )
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/jobs/<int:job_id>/retry', methods=['POST'])
+def retry_job(job_id):
+    """Retry a specific failed job"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM sync_jobs WHERE id = ?', (job_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            conn.close()
+            return jsonify({'error': 'Job not found'}), 404
+
+        job = dict(row)
+        if job['status'] not in ['failed']:
+            conn.close()
+            return jsonify({'error': f'Job status is {job["status"]}, not failed'}), 400
+
+        # Queue the retry
+        source = job['source_path']
+        dest = job['dest_path']
+        title = job['title'] or 'Unknown'
+        job_type = job['job_type']
+        file_size = job['file_size'] or 0
+
+        logger.info(f"Retrying job {job_id}: {title}")
+
+        # Run in background
+        media_type = "Movie" if job_type == 'movie' else "Episode"
+        background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type)
+
+        conn.close()
+        return jsonify({'status': 'retry_started', 'job_id': job_id})
+
+    except Exception as e:
+        logger.error(f"Error retrying job {job_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/queue/retry-failed', methods=['POST'])
+def retry_all_failed():
+    """Retry all failed jobs from the last 24 hours"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT * FROM sync_jobs
+            WHERE status = 'failed'
+            AND created_at > datetime('now', '-24 hours')
+            ORDER BY created_at DESC
+        ''')
+        failed_jobs = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+
+        if not failed_jobs:
+            return jsonify({'status': 'no_failed_jobs', 'count': 0})
+
+        retried = 0
+        for job in failed_jobs:
+            source = job['source_path']
+            dest = job['dest_path']
+            title = job['title'] or 'Unknown'
+            job_type = job['job_type']
+            file_size = job['file_size'] or 0
+
+            media_type = "Movie" if job_type == 'movie' else "Episode"
+            background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type)
+            retried += 1
+            logger.info(f"Queued retry for: {title}")
+
+        return jsonify({'status': 'retries_started', 'count': retried})
+
+    except Exception as e:
+        logger.error(f"Error retrying failed jobs: {e}")
         return jsonify({'error': str(e)}), 500
 
 

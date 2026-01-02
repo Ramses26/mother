@@ -1,15 +1,19 @@
-# Sync Webhook Service
+# Sync Webhook Service (V2)
 
-A lightweight Python Flask service that receives webhooks from Radarr/Sonarr and triggers immediate rsync to sync new content to a remote destination.
+A Python Flask service that receives webhooks from Radarr/Sonarr, triggers immediate rsync to sync new content, with job tracking, auto-retry, and daily summaries.
 
 ## Overview
 
 When Radarr or Sonarr imports a new file (download complete), they send a webhook to this service. The service:
 
 1. Parses the webhook payload to extract file/folder paths
-2. Translates container paths to NFS mount paths
-3. Runs rsync to copy the content to the destination
-4. Sends a Telegram notification on success or failure
+2. Checks NFS mount health before proceeding
+3. Translates container paths to NFS mount paths
+4. Logs the job to SQLite database
+5. Runs rsync in background thread (webhook returns immediately)
+6. Sends a Telegram notification on success or failure
+7. Auto-retries failed jobs every 15 minutes
+8. Sends daily summary report at midnight
 
 ## Files
 
@@ -17,16 +21,22 @@ When Radarr or Sonarr imports a new file (download complete), they send a webhoo
 services/sync-webhook/
 ├── README.md           # This file
 ├── Dockerfile          # Python 3.11-slim + rsync
-├── requirements.txt    # Flask, gunicorn, apprise, requests
-└── app.py              # Main application (all logic in one file)
+├── requirements.txt    # Flask, gunicorn, apprise, apscheduler
+└── app.py              # Main application
 ```
 
 ## API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/health` | GET | Health check - returns status, timestamp, config info |
+| `/health` | GET | Health check with NFS status, job counts, uptime |
+| `/stats` | GET | Sync statistics (session + database totals) |
+| `/jobs` | GET | List recent jobs (?limit=N&status=failed) |
+| `/jobs/<id>` | GET | Get specific job details |
+| `/jobs/<id>/retry` | POST | Retry a specific failed job |
+| `/queue/retry-failed` | POST | Retry all failed jobs from last 24h |
 | `/test` | GET/POST | Send a test notification to Telegram |
+| `/summary/send` | GET/POST | Manually trigger daily summary |
 | `/sync/radarr` | POST | Receive Radarr webhook, sync movie |
 | `/sync/sonarr` | POST | Receive Sonarr webhook, sync episode |
 | `/sync/manual` | POST | Manually trigger sync for a path |
@@ -37,7 +47,26 @@ services/sync-webhook/
   "status": "healthy",
   "timestamp": "2026-01-01T12:00:00",
   "dry_run": false,
-  "notifications": true
+  "notifications": true,
+  "nfs_status": "ok",
+  "nfs_issues": [],
+  "jobs_24h": {"success": 15, "failed": 2},
+  "uptime_since": "2026-01-01T00:00:00"
+}
+```
+
+### Stats Response
+```json
+{
+  "movies_synced": 10,
+  "episodes_synced": 25,
+  "failures": 2,
+  "bytes_transferred": 150000000000,
+  "bytes_transferred_human": "139.7 GB",
+  "total_successful": 100,
+  "total_failed": 5,
+  "today_successful": 10,
+  "today_failed": 1
 }
 ```
 
@@ -56,7 +85,34 @@ curl -X POST http://localhost:5001/sync/manual \
 | `TELEGRAM_CHAT_ID` | (required) | Telegram chat ID for notifications |
 | `SYNC_DRY_RUN` | `false` | If `true`, rsync runs with `--dry-run` |
 | `SYNC_LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
+| `SYNC_LOG_PATH` | `/logs` | Directory for persistent log files |
+| `SYNC_DB_PATH` | `/data/sync_jobs.db` | SQLite database path |
 | `TZ` | `UTC` | Timezone for timestamps |
+
+## Persistent Storage
+
+The container stores logs and job database in mounted volumes:
+
+```yaml
+volumes:
+  - ${CONFIG_PATH}/sync-webhook/logs:/logs    # Log files
+  - ${CONFIG_PATH}/sync-webhook/data:/data    # SQLite database
+```
+
+**Log files created:**
+- `sync_webhook.log` - Full application logs (10MB rotation, 5 backups)
+- `sync_history.log` - Human-readable sync history (10MB rotation, 10 backups)
+
+## Scheduled Tasks (Built-in)
+
+The service includes APScheduler for automatic background tasks:
+
+| Task | Schedule | Description |
+|------|----------|-------------|
+| Daily Summary | 00:05 | Sends Telegram summary of previous day's syncs |
+| Auto-Retry | Every 15 min | Retries failed jobs from last 6 hours |
+
+**These run automatically when the container starts - no cron setup needed.**
 
 ## Path Mappings
 
@@ -292,6 +348,7 @@ curl -X POST http://localhost:5000/sync/radarr \
 | Date | Change |
 |------|--------|
 | 2026-01-01 | Initial version |
+| 2026-01-02 | V2: SQLite job tracking, auto-retry, daily summary, NFS health checks |
 
 ## Related Documentation
 

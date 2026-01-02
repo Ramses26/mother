@@ -348,6 +348,8 @@ services:
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
       - SYNC_DRY_RUN=${SYNC_DRY_RUN:-false}
       - SYNC_LOG_LEVEL=${SYNC_LOG_LEVEL:-INFO}
+      - SYNC_LOG_PATH=/logs
+      - SYNC_DB_PATH=/data/sync_jobs.db
     volumes:
       # Synology NFS mounts (source)
       - /mnt/synology/rs-movies:/mnt/synology/rs-movies:ro
@@ -355,6 +357,9 @@ services:
       - /mnt/synology/rs-4kmedia:/mnt/synology/rs-4kmedia:ro
       # Unraid NFS mounts (destination)
       - /mnt/unraid/media:/mnt/unraid/media
+      # Persistent logs and database
+      - ${CONFIG_PATH}/sync-webhook/logs:/logs
+      - ${CONFIG_PATH}/sync-webhook/data:/data
     ports:
       - "${SYNC_WEBHOOK_PORT:-5001}:5000"
     restart: unless-stopped
