@@ -226,7 +226,10 @@ def translate_path(container_path: str) -> tuple:
 
     Returns: (source_path, dest_path) or (None, None) if no mapping found
     """
-    for container_base, (src_base, dst_base) in PATH_MAPPINGS.items():
+    # Sort by path length (longest first) to match /movies-4k before /movies
+    sorted_mappings = sorted(PATH_MAPPINGS.items(), key=lambda x: len(x[0]), reverse=True)
+
+    for container_base, (src_base, dst_base) in sorted_mappings:
         if container_path.startswith(container_base):
             # Get the relative path after the container base
             relative = container_path[len(container_base):].lstrip('/')
