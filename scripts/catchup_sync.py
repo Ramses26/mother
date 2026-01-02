@@ -20,16 +20,38 @@ import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 
-# Configuration - can override with environment variables
+
+def load_env_file(env_path=None):
+    """Load environment variables from .env file"""
+    if env_path is None:
+        # Try to find .env file - check parent directory (project root)
+        script_dir = Path(__file__).parent
+        env_path = script_dir.parent / '.env'
+
+    env_vars = {}
+    if env_path.exists():
+        with open(env_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    env_vars[key.strip()] = value.strip()
+    return env_vars
+
+
+# Load from .env file first, then allow environment variable overrides
+ENV = load_env_file()
+
+# Configuration - reads from .env file, can override with environment variables
 CONFIG = {
-    'RADARR_HD_URL': os.environ.get('RADARR_HD_URL', 'http://localhost:7878'),
-    'RADARR_HD_API_KEY': os.environ.get('RADARR_HD_API_KEY', ''),
-    'RADARR_4K_URL': os.environ.get('RADARR_4K_URL', 'http://localhost:7879'),
-    'RADARR_4K_API_KEY': os.environ.get('RADARR_4K_API_KEY', ''),
-    'SONARR_HD_URL': os.environ.get('SONARR_HD_URL', 'http://localhost:8989'),
-    'SONARR_HD_API_KEY': os.environ.get('SONARR_HD_API_KEY', ''),
-    'SONARR_4K_URL': os.environ.get('SONARR_4K_URL', 'http://localhost:8990'),
-    'SONARR_4K_API_KEY': os.environ.get('SONARR_4K_API_KEY', ''),
+    'RADARR_HD_URL': os.environ.get('RADARR_HD_URL', f"http://localhost:{ENV.get('RADARR_HD_PORT', '7878')}"),
+    'RADARR_HD_API_KEY': os.environ.get('RADARR_HD_API_KEY', ENV.get('RADARR_HD_API_KEY', '')),
+    'RADARR_4K_URL': os.environ.get('RADARR_4K_URL', f"http://localhost:{ENV.get('RADARR_4K_PORT', '7879')}"),
+    'RADARR_4K_API_KEY': os.environ.get('RADARR_4K_API_KEY', ENV.get('RADARR_4K_API_KEY', '')),
+    'SONARR_HD_URL': os.environ.get('SONARR_HD_URL', f"http://localhost:{ENV.get('SONARR_HD_PORT', '8989')}"),
+    'SONARR_HD_API_KEY': os.environ.get('SONARR_HD_API_KEY', ENV.get('SONARR_HD_API_KEY', '')),
+    'SONARR_4K_URL': os.environ.get('SONARR_4K_URL', f"http://localhost:{ENV.get('SONARR_4K_PORT', '8990')}"),
+    'SONARR_4K_API_KEY': os.environ.get('SONARR_4K_API_KEY', ENV.get('SONARR_4K_API_KEY', '')),
 }
 
 # Path mappings - same as sync-webhook

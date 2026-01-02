@@ -308,6 +308,18 @@ services:
     networks:
       - mother_network
 
+  # Uptime Kuma - Health Monitoring & Alerts
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    volumes:
+      - ${CONFIG_PATH}/uptime-kuma:/app/data
+    ports:
+      - "${UPTIME_KUMA_PORT:-3001}:3001"
+    restart: unless-stopped
+    networks:
+      - mother_network
+
   # Portainer - Docker Management Interface
   portainer:
     image: portainer/portainer-ce:latest
