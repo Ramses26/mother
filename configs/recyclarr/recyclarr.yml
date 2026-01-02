@@ -77,10 +77,15 @@ radarr:
           - 839bea857ed2c0a8e084f3cbdbd65ecb # x265 (no HDR/DV)
         assign_scores_to:
           - name: HD Bluray + WEB
-            score: 1000
           - name: Remux + WEB 1080p
-            score: 1000
-            
+
+      #Not all Devices support DV, therefore adding DV w/o HDR fallback 
+      - trash_ids:
+          - 923b6abef9b17f937fab56cfcf89e1f1 #DV (w/o HDR fallback)
+          - 493b6d1dbec3c3364c59d7607f7e3405 #HDR Formats
+        assign_scores_to:
+          - name: HD Bluray + WEB
+          - name: Remux + WEB 1080p
 
 
 

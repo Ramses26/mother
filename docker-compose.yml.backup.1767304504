@@ -1,0 +1,305 @@
+services:
+  # qBittorrent - Download Client
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WEBUI_PORT=${QBITTORRENT_PORT}
+    volumes:
+      - ${CONFIG_PATH}/qbittorrent:/config
+      - ${DOWNLOADS_PATH}:/downloads
+    ports:
+      - "${QBITTORRENT_PORT}:${QBITTORRENT_PORT}"
+      - "${QBITTORRENT_CONNECTION_PORT}:${QBITTORRENT_CONNECTION_PORT}"
+      - "${QBITTORRENT_CONNECTION_PORT}:${QBITTORRENT_CONNECTION_PORT}/udp"
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Cross-seed - Automated Cross-Seeding
+  cross-seed:
+    image: ghcr.io/cross-seed/cross-seed:latest
+    container_name: cross-seed
+    user: ${PUID}:${PGID}
+    volumes:
+      - ${CONFIG_PATH}/cross-seed:/config
+      - ${DOWNLOADS_PATH}:/downloads:ro
+      - ${CONFIG_PATH}/qbittorrent/qBittorrent/BT_backup:/torrents:ro
+    ports:
+      - "${CROSS_SEED_PORT}:2468"
+    command: daemon
+    restart: unless-stopped
+    networks:
+      - mother_network
+      
+  
+  # Radarr HD - 1080p Movie Management
+  radarr-hd:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr-hd
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_PATH}/radarr-hd:/config
+      - ${MOVIES_PATH}:/movies
+      - ${DOWNLOADS_PATH}:/downloads
+    ports:
+      - "${RADARR_HD_PORT}:7878"
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Radarr 4K - 4K Movie Management
+  radarr-4k:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr-4k
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_PATH}/radarr-4k:/config
+      - ${MOVIES_4K_PATH}:/movies-4k
+      - ${DOWNLOADS_PATH}:/downloads
+    ports:
+      - "${RADARR_4K_PORT}:7878"
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Sonarr HD - 1080p TV Show Management
+  sonarr-hd:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr-hd
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_PATH}/sonarr-hd:/config
+      - ${TV_PATH}:/tv
+      - ${DOWNLOADS_PATH}:/downloads
+    ports:
+      - "${SONARR_HD_PORT}:8989"
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Sonarr 4K - 4K TV Show Management
+  sonarr-4k:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr-4k
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_PATH}/sonarr-4k:/config
+      - ${TV_4K_PATH}:/tv-4k
+      - ${DOWNLOADS_PATH}:/downloads
+    ports:
+      - "${SONARR_4K_PORT}:8989"
+    restart: unless-stopped
+    networks:
+      - mother_network
+      
+  #Media Requesting Docker
+  overseerr:
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=${TZ}  
+      - PORT=5055 #optional
+    ports:
+      - 5055:5055
+    volumes:
+      - ${CONFIG_PATH}/overseer:/app/config
+    restart: unless-stopped
+    networks:
+      - mother_network        
+
+  # Prowlarr - Indexer Manager (Alternative to Jackett)
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_PATH}/prowlarr:/config
+    ports:
+      - "${PROWLARR_PORT}:9696"
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Jackett - Indexer Manager (Alternative to Prowlarr)
+  # Uncomment if using Jackett instead of Prowlarr
+  # jackett:
+  #   image: lscr.io/linuxserver/jackett:latest
+  #   container_name: jackett
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TZ=${TZ}
+  #     - AUTO_UPDATE=true
+  #   volumes:
+  #     - ${CONFIG_PATH}/jackett:/config
+  #     - ${DOWNLOADS_PATH}:/downloads
+  #   ports:
+  #     - "${JACKETT_PORT}:9117"
+  #   restart: unless-stopped
+  #   networks:
+  #     - mother_network
+
+  # FlareSolverr - CAPTCHA Solver (needed for Jackett)
+  # Uncomment if using Jackett
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ}
+    ports:
+     - "${FLARESOLVERR_PORT}:8191"
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Recyclarr - TRASHGuides Profile Manager
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:latest
+    container_name: recyclarr
+    user: ${PUID}:${PGID}
+    environment:
+      - TZ=${TZ}
+      - RADARR_HD_API_KEY=${RADARR_HD_API_KEY}
+      - RADARR_4K_API_KEY=${RADARR_4K_API_KEY}
+      - SONARR_HD_API_KEY=${SONARR_HD_API_KEY}
+      - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}      
+    volumes:
+      - ${CONFIG_PATH}/recyclarr:/config
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Seerr - Chris's Instance
+  # Note: Ali runs his own Seerr instance on Terminus
+  #seerr-chris:
+  #  image: ghcr.io/seerr-team/seerr:latest
+  #  container_name: seerr-chris
+  #  environment:
+  #    - LOG_LEVEL=info
+  #    - TZ=${TZ}
+  #    - PORT=5056
+  #  volumes:
+  #    - ${CONFIG_PATH}/seerr-chris:/app/config
+  #  ports:
+  #    - "${SEERR_CHRIS_PORT}:5056"
+  # restart: unless-stopped
+  #  networks:
+  #    - mother_network
+
+  # Nginx Proxy Manager - Reverse Proxy & SSL
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    ports:
+      - "${NGINX_HTTP_PORT}:80"
+      - "${NGINX_HTTPS_PORT}:443"
+      - "${NGINX_ADMIN_PORT}:81"
+    volumes:
+      - ${CONFIG_PATH}/nginx/data:/data
+      - ${CONFIG_PATH}/nginx/letsencrypt:/etc/letsencrypt
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Authelia - Authentication & 2FA
+  # Uncomment if choosing Authelia over Authentik
+  # authelia:
+  #   image: authelia/authelia:latest
+  #   container_name: authelia
+  #   environment:
+  #     - TZ=${TZ}
+  #   volumes:
+  #     - ${CONFIG_PATH}/authelia:/config
+  #   ports:
+  #     - "${AUTHELIA_PORT}:9091"
+  #   restart: unless-stopped
+  #   networks:
+  #     - mother_network
+
+  # Authentik - Alternative to Authelia
+  # Requires PostgreSQL and Redis - more complex setup
+  # See Authentik documentation for full configuration
+
+  # Tautulli - Plex Monitoring & Statistics
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:latest
+    container_name: tautulli
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_PATH}/tautulli:/config
+      # Optional: Mount Plex logs for real-time log parsing
+      # Requires NFS/SMB mount from Plex server (10.0.0.250)
+      # - /mnt/plex/logs:/plex_logs:ro
+    ports:
+      - "${TAUTULLI_PORT}:8181"
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Dozzle - Docker Log Viewer
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "${DOZZLE_PORT}:8080"
+    environment:
+      - DOZZLE_LEVEL=info
+      - DOZZLE_TAILSIZE=300
+      - DOZZLE_FILTER=status=running
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Portainer - Docker Management Interface
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${CONFIG_PATH}/portainer:/data
+    ports:
+      - "${PORTAINER_PORT}:9000"
+      - "${PORTAINER_HTTPS_PORT}:9443"
+    restart: unless-stopped
+    networks:
+      - mother_network      
+
+networks:
+  mother_network:
+    driver: bridge
+
+# Optional: Define named volumes for databases
+# volumes:
+#   postgres_data:
+#   redis_data:
