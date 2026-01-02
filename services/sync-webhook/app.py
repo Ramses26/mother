@@ -34,6 +34,17 @@ LOG_LEVEL = os.environ.get('SYNC_LOG_LEVEL', 'INFO')
 LOG_PATH = os.environ.get('SYNC_LOG_PATH', '/logs')
 DB_PATH = os.environ.get('SYNC_DB_PATH', '/data/sync_jobs.db')
 
+# Plex configuration
+PLEX_URL = os.environ.get('PLEX_URL', '')  # e.g., http://10.0.0.50:32400
+PLEX_TOKEN = os.environ.get('PLEX_TOKEN', '')
+# Map destination paths to Plex library section IDs
+PLEX_SECTIONS = {
+    '/mnt/unraid/media/Movies': os.environ.get('PLEX_SECTION_MOVIES', ''),
+    '/mnt/unraid/media/4K Movies': os.environ.get('PLEX_SECTION_MOVIES_4K', ''),
+    '/mnt/unraid/media/TV Shows': os.environ.get('PLEX_SECTION_TV', ''),
+    '/mnt/unraid/media/4K TV Shows': os.environ.get('PLEX_SECTION_TV_4K', ''),
+}
+
 # Path mappings: Container path -> (Source NFS, Destination NFS)
 PATH_MAPPINGS = {
     # Radarr-HD: /movies -> Synology rs-movies -> Unraid Movies
@@ -220,6 +231,52 @@ def send_notification(title: str, body: str, notify_type=apprise.NotifyType.INFO
         logger.error(f"Failed to send notification: {e}")
 
 
+def trigger_plex_scan(dest_path: str, specific_path: str = None):
+    """
+    Trigger Plex library scan for the appropriate section.
+
+    Args:
+        dest_path: The destination base path (e.g., /mnt/unraid/media/Movies)
+        specific_path: Optional specific folder path to scan (faster than full library)
+    """
+    if not PLEX_URL or not PLEX_TOKEN:
+        logger.debug("Plex not configured, skipping library scan")
+        return False
+
+    # Find the section ID for this destination
+    section_id = PLEX_SECTIONS.get(dest_path, '')
+    if not section_id:
+        logger.warning(f"No Plex section configured for: {dest_path}")
+        return False
+
+    try:
+        # Build the scan URL
+        url = f"{PLEX_URL}/library/sections/{section_id}/refresh"
+        params = {'X-Plex-Token': PLEX_TOKEN}
+
+        # If specific path provided, do a targeted scan (much faster)
+        if specific_path:
+            # Plex needs the path as it sees it (on the Plex server)
+            # The path we have is the NFS mount path on Mother, which should match Plex's view
+            params['path'] = specific_path
+            logger.info(f"Triggering Plex scan for: {specific_path}")
+        else:
+            logger.info(f"Triggering Plex full library scan for section {section_id}")
+
+        response = requests.get(url, params=params, timeout=30)
+
+        if response.status_code == 200:
+            logger.info(f"Plex scan triggered successfully for section {section_id}")
+            return True
+        else:
+            logger.error(f"Plex scan failed: HTTP {response.status_code}")
+            return False
+
+    except Exception as e:
+        logger.error(f"Failed to trigger Plex scan: {e}")
+        return False
+
+
 def translate_path(container_path: str) -> tuple:
     """
     Translate container path to source/destination NFS paths.
@@ -350,6 +407,13 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                 body=msg,
                 notify_type=apprise.NotifyType.SUCCESS
             )
+
+            # Trigger Plex library scan for the synced content
+            if not DRY_RUN:
+                # Build the specific path for targeted scan (folder that was synced)
+                specific_folder = os.path.join(dest, os.path.basename(source))
+                trigger_plex_scan(dest, specific_folder)
+
             logger.info(f"Background sync completed: {title} in {duration:.1f}s")
         else:
             # Log failure to database and history

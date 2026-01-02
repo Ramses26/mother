@@ -350,6 +350,13 @@ services:
       - SYNC_LOG_LEVEL=${SYNC_LOG_LEVEL:-INFO}
       - SYNC_LOG_PATH=/logs
       - SYNC_DB_PATH=/data/sync_jobs.db
+      # Plex integration - triggers library scan after sync
+      - PLEX_URL=${PLEX_URL:-}
+      - PLEX_TOKEN=${PLEX_TOKEN:-}
+      - PLEX_SECTION_MOVIES=${PLEX_SECTION_MOVIES:-}
+      - PLEX_SECTION_MOVIES_4K=${PLEX_SECTION_MOVIES_4K:-}
+      - PLEX_SECTION_TV=${PLEX_SECTION_TV:-}
+      - PLEX_SECTION_TV_4K=${PLEX_SECTION_TV_4K:-}
     volumes:
       # Synology NFS mounts (source)
       - /mnt/synology/rs-movies:/mnt/synology/rs-movies:ro

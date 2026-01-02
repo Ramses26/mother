@@ -89,6 +89,35 @@ curl -X POST http://localhost:5001/sync/manual \
 | `SYNC_DB_PATH` | `/data/sync_jobs.db` | SQLite database path |
 | `TZ` | `UTC` | Timezone for timestamps |
 
+### Plex Integration (Optional)
+
+| Variable | Description |
+|----------|-------------|
+| `PLEX_URL` | Plex server URL (e.g., `http://10.0.0.50:32400`) |
+| `PLEX_TOKEN` | Plex authentication token |
+| `PLEX_SECTION_MOVIES` | Library section ID for Movies |
+| `PLEX_SECTION_MOVIES_4K` | Library section ID for 4K Movies |
+| `PLEX_SECTION_TV` | Library section ID for TV Shows |
+| `PLEX_SECTION_TV_4K` | Library section ID for 4K TV Shows |
+
+When configured, the service triggers a targeted Plex library scan after each successful sync.
+
+### Finding Plex Section IDs
+
+```bash
+# Get all library sections
+curl "http://PLEX_IP:32400/library/sections?X-Plex-Token=YOUR_TOKEN"
+```
+
+Look for `<Directory>` entries with `key="1"`, `key="2"`, etc. The `key` is the section ID.
+
+### Getting Plex Token
+
+1. Sign in to Plex Web App
+2. Open any media item
+3. Click "Get Info" → "View XML"
+4. Look for `X-Plex-Token=` in the URL
+
 ## Persistent Storage
 
 The container stores logs and job database in mounted volumes:

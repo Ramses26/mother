@@ -1,7 +1,14 @@
 # Syncthing Setup Plan - Project Mother
 
-**Status:** Future Implementation (after initial sync completes)
-**Purpose:** Replace webhook-based sync with Syncthing for 1:1 mirror
+**Status:** On Hold - sync-webhook recommended instead
+**Purpose:** Alternative to webhook-based sync for 1:1 mirror
+
+> **Note:** After evaluation, sync-webhook is recommended over Syncthing because:
+> 1. **Plex Integration** - sync-webhook can trigger targeted Plex library scans after each sync
+> 2. **Notification Quality** - sync-webhook sends rich notifications with movie/show details
+> 3. **Already Working** - sync-webhook is deployed and functional
+>
+> This plan is kept for reference if we want to evaluate Syncthing in the future.
 
 ---
 
