@@ -16,6 +16,7 @@ import os
 import subprocess
 import logging
 import json
+import threading
 from datetime import datetime
 from flask import Flask, request, jsonify
 import apprise
@@ -167,6 +168,44 @@ def format_size(size_bytes: int) -> str:
     return f"{size_bytes:.1f} PB"
 
 
+def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str):
+    """
+    Run rsync in background thread and send notification when complete.
+    This allows the webhook to return immediately.
+    """
+    def do_sync():
+        logger.info(f"Background sync started: {title}")
+        success, output, duration = run_rsync(source, dest, is_file=False)
+
+        if success:
+            msg = (
+                f"*{title}*\n"
+                f"Quality: {quality}\n"
+                f"Size: {format_size(file_size)}\n"
+                f"Duration: {duration:.1f}s"
+            )
+            if DRY_RUN:
+                msg += "\n_(DRY RUN - no files copied)_"
+
+            send_notification(
+                title=f"{media_type} Synced",
+                body=msg,
+                notify_type=apprise.NotifyType.SUCCESS
+            )
+            logger.info(f"Background sync completed: {title} in {duration:.1f}s")
+        else:
+            send_notification(
+                title=f"Sync Failed - {media_type}",
+                body=f"*{title}*\n\nError: {output[:500]}",
+                notify_type=apprise.NotifyType.FAILURE
+            )
+            logger.error(f"Background sync failed: {title} - {output[:200]}")
+
+    thread = threading.Thread(target=do_sync, daemon=True)
+    thread.start()
+    logger.info(f"Background sync thread started for: {title}")
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
@@ -257,33 +296,25 @@ def radarr_webhook():
             )
             return jsonify({'error': error_msg}), 400
 
-        # Run rsync for the movie folder
+        # Run rsync in background thread - returns immediately
         logger.info(f"Syncing: {source} -> {dest}")
-        success, output, duration = run_rsync(source, dest, is_file=False)
+        display_title = f"{title} ({year})" if year else title
+        background_sync(
+            source=source,
+            dest=dest,
+            title=display_title,
+            quality=quality,
+            file_size=file_size,
+            media_type="Movie"
+        )
 
-        if success:
-            msg = (
-                f"*{title}* ({year})\n"
-                f"Quality: {quality}\n"
-                f"Size: {format_size(file_size)}\n"
-                f"Duration: {duration:.1f}s"
-            )
-            if DRY_RUN:
-                msg += "\n_(DRY RUN - no files copied)_"
-
-            send_notification(
-                title="Movie Synced",
-                body=msg,
-                notify_type=apprise.NotifyType.SUCCESS
-            )
-            return jsonify({'status': 'success', 'duration': duration})
-        else:
-            send_notification(
-                title="Sync Failed - Movie",
-                body=f"*{title}* ({year})\n\nError: {output[:500]}",
-                notify_type=apprise.NotifyType.FAILURE
-            )
-            return jsonify({'status': 'failed', 'error': output}), 500
+        # Return immediately - sync happens in background
+        return jsonify({
+            'status': 'accepted',
+            'message': f'Sync started for {display_title}',
+            'source': source,
+            'dest': dest
+        })
 
     except Exception as e:
         logger.exception("Error processing Radarr webhook")
@@ -379,34 +410,28 @@ def sonarr_webhook():
                 )
                 return jsonify({'error': error_msg}), 400
 
-        # For TV, sync the episode file specifically
+        # For TV, sync in background thread - returns immediately
         logger.info(f"Syncing: {source} -> {dest}")
-        success, output, duration = run_rsync(source, dest, is_file=True)
+        display_title = f"{series_title} - {ep_string}"
+        if ep_title:
+            display_title += f": {ep_title}"
 
-        if success:
-            msg = (
-                f"*{series_title}*\n"
-                f"{ep_string}: {ep_title}\n"
-                f"Quality: {quality}\n"
-                f"Size: {format_size(file_size)}\n"
-                f"Duration: {duration:.1f}s"
-            )
-            if DRY_RUN:
-                msg += "\n_(DRY RUN - no files copied)_"
+        background_sync(
+            source=source,
+            dest=dest,
+            title=display_title,
+            quality=quality,
+            file_size=file_size,
+            media_type="Episode"
+        )
 
-            send_notification(
-                title="Episode Synced",
-                body=msg,
-                notify_type=apprise.NotifyType.SUCCESS
-            )
-            return jsonify({'status': 'success', 'duration': duration})
-        else:
-            send_notification(
-                title="Sync Failed - Episode",
-                body=f"*{series_title}* - {ep_string}\n\nError: {output[:500]}",
-                notify_type=apprise.NotifyType.FAILURE
-            )
-            return jsonify({'status': 'failed', 'error': output}), 500
+        # Return immediately - sync happens in background
+        return jsonify({
+            'status': 'accepted',
+            'message': f'Sync started for {display_title}',
+            'source': source,
+            'dest': dest
+        })
 
     except Exception as e:
         logger.exception("Error processing Sonarr webhook")
