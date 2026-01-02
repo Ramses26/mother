@@ -21,9 +21,9 @@ commands:
 qbt:
   # qBittorrent parameters
   # Pass environment variables to the config via !ENV tag
-  host: !ENV ${QBITMANAGE_QBT_HOST}
-  user: !ENV ${QBITMANAGE_QBT_USER}
-  pass: !ENV ${QBITMANAGE_QBT_PASS}
+  host: !ENV QBITMANAGE_QBT_HOST
+  user: !ENV QBITMANAGE_QBT_USER
+  pass: !ENV QBITMANAGE_QBT_PASS
 
 settings:
   force_auto_tmm: false # Will force qBittorrent to enable Automatic Torrent Management for each torrent.
