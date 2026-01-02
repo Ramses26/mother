@@ -16,6 +16,7 @@ configs/*/*.db-wal
 configs/*
 !configs/recyclarr/
 !configs/apprise/
+!configs/qbitmanage/
 
 # Logs
 *.log

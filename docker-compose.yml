@@ -19,22 +19,51 @@ services:
     networks:
       - mother_network
 
-  # Cross-seed - Automated Cross-Seeding
-  cross-seed:
-    image: ghcr.io/cross-seed/cross-seed:latest
-    container_name: cross-seed
-    user: ${PUID}:${PGID}
+  # Cross-seed - Automated Cross-Seeding (disabled for now)
+  # cross-seed:
+  #   image: ghcr.io/cross-seed/cross-seed:latest
+  #   container_name: cross-seed
+  #   user: ${PUID}:${PGID}
+  #   volumes:
+  #     - ${CONFIG_PATH}/cross-seed:/config
+  #     - ${DOWNLOADS_PATH}:/downloads:ro
+  #     - ${CONFIG_PATH}/qbittorrent/qBittorrent/BT_backup:/torrents:ro
+  #   ports:
+  #     - "${CROSS_SEED_PORT}:2468"
+  #   command: daemon
+  #   restart: unless-stopped
+  #   networks:
+  #     - mother_network
+  
+  # qbit_manage - qBittorrent automation/cleanup
+  qbitmanage:
+    image: ghcr.io/stuffanthings/qbit_manage:latest
+    container_name: qbitmanage
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - QBT_CONFIG_DIR=/config
+      - QBT_LOGFILE=/config/logs/qbit_manage.log
+      - QBT_SCHEDULE=30         # run every 30 minutes
+      - QBT_STARTUP_DELAY=60    # wait for qBittorrent to come up
+      - QBT_RUN=false           # use internal scheduler
+      - QBT_WEB_SERVER=false
+      - QBT_SHARE_LIMITS=true
+      - QBT_TAG_NOHARDLINKS=true
+      - QBT_REM_UNREGISTERED=true
+      - QBT_REM_ORPHANED=true
+      - QBT_TAG_TRACKER_ERROR=true
+      - QBITMANAGE_QBT_HOST=${QBITMANAGE_QBT_HOST:-http://qbittorrent:8080}
+      - QBITMANAGE_QBT_USER=${QBITMANAGE_QBT_USER}
+      - QBITMANAGE_QBT_PASS=${QBITMANAGE_QBT_PASS}
     volumes:
-      - ${CONFIG_PATH}/cross-seed:/config
-      - ${DOWNLOADS_PATH}:/downloads:ro
-      - ${CONFIG_PATH}/qbittorrent/qBittorrent/BT_backup:/torrents:ro
-    ports:
-      - "${CROSS_SEED_PORT}:2468"
-    command: daemon
+      - ${CONFIG_PATH}/qbitmanage:/config
+      - ${DOWNLOADS_PATH}:/downloads
+      - ${CONFIG_PATH}/qbittorrent/qBittorrent/BT_backup:/bt_backup:ro
     restart: unless-stopped
     networks:
       - mother_network
-      
   
   # Radarr HD - 1080p Movie Management
   radarr-hd:
