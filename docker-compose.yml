@@ -320,6 +320,22 @@ services:
     networks:
       - mother_network
 
+  # Apprise - Centralized Notification Service
+  # All containers can send notifications via: http://apprise:8000/notify/{key}
+  apprise:
+    image: caronc/apprise:latest
+    container_name: apprise
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    volumes:
+      - ${CONFIG_PATH}/apprise:/config
+    ports:
+      - "${APPRISE_PORT:-8000}:8000"
+    restart: unless-stopped
+    networks:
+      - mother_network
+
   # Portainer - Docker Management Interface
   portainer:
     image: portainer/portainer-ce:latest
