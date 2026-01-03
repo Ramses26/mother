@@ -16,8 +16,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application
 COPY app.py .
 
-# Create non-root user
-RUN useradd -m -u 1000 syncuser
+# Create non-root user and required directories
+RUN useradd -m -u 1000 syncuser && \
+    mkdir -p /data /logs && \
+    chown -R syncuser:syncuser /data /logs
+
 USER syncuser
 
 # Expose port
@@ -28,5 +31,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')" || exit 1
 
 # Run with gunicorn for production
+# Using 1 worker to avoid multiple schedulers (rsync runs in background threads anyway)
 # Timeout set to 3600 (1 hour) to handle large file syncs
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "3600", "--worker-class", "sync", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "3600", "app:app"]

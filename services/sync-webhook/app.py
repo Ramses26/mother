@@ -122,6 +122,15 @@ def init_database():
         db_dir = Path(DB_PATH).parent
         db_dir.mkdir(parents=True, exist_ok=True)
 
+        # Test write permissions
+        test_file = db_dir / '.write_test'
+        try:
+            test_file.touch()
+            test_file.unlink()
+        except PermissionError:
+            logger.error(f"No write permission to {db_dir}")
+            return False
+
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
@@ -526,8 +535,22 @@ scheduler.add_job(
 )
 
 
+def send_error_alert(error_type: str, error_msg: str):
+    """Send alert notification for system errors"""
+    send_notification(
+        title=f"⚠️ Sync Webhook Error",
+        body=f"*{error_type}*\n\n{error_msg}",
+        notify_type=apprise.NotifyType.FAILURE
+    )
+
+
+# Track if we've already alerted about persistent errors (avoid spam)
+_error_alert_sent = {}
+
+
 def auto_retry_failed():
     """Automatically retry failed jobs every 15 minutes"""
+    global _error_alert_sent
     logger.info("Auto-retry: checking for failed jobs...")
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -546,6 +569,9 @@ def auto_retry_failed():
         failed_jobs = [dict(row) for row in cursor.fetchall()]
         conn.close()
 
+        # Clear error state on success
+        _error_alert_sent.pop('database', None)
+
         if failed_jobs:
             logger.info(f"Auto-retry: found {len(failed_jobs)} failed jobs to retry")
             for job in failed_jobs:
@@ -563,6 +589,10 @@ def auto_retry_failed():
 
     except Exception as e:
         logger.error(f"Auto-retry error: {e}")
+        # Send alert only once per error type (avoid spam)
+        if 'database' not in _error_alert_sent:
+            send_error_alert("Database Error", str(e))
+            _error_alert_sent['database'] = True
 
 
 # Add auto-retry job (every 15 minutes)
