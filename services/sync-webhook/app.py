@@ -24,6 +24,7 @@ from pathlib import Path
 from logging.handlers import RotatingFileHandler
 from flask import Flask, request, jsonify
 import apprise
+import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Configuration from environment
