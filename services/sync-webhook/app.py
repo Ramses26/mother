@@ -148,9 +148,16 @@ def init_database():
                 error_message TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 completed_at TIMESTAMP,
-                duration_seconds REAL
+                duration_seconds REAL,
+                retry_count INTEGER DEFAULT 0
             )
         ''')
+
+        # Add retry_count column if it doesn't exist (for existing databases)
+        cursor.execute("PRAGMA table_info(sync_jobs)")
+        columns = [col[1] for col in cursor.fetchall()]
+        if 'retry_count' not in columns:
+            cursor.execute('ALTER TABLE sync_jobs ADD COLUMN retry_count INTEGER DEFAULT 0')
 
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_status ON sync_jobs(status)
@@ -186,6 +193,108 @@ def log_sync_job(job_type, source, dest, title, status, duration=None, error=Non
         conn.close()
     except Exception as e:
         logger.error(f"Could not log sync job: {e}")
+
+
+def start_sync_job(job_type, source, dest, title, quality, file_size, retry_count=0):
+    """Create an in_progress job entry and return the job_id"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO sync_jobs (job_type, source_path, dest_path, title, quality, file_size, status, retry_count)
+            VALUES (?, ?, ?, ?, ?, ?, 'in_progress', ?)
+        ''', (job_type, source, dest, title, quality, file_size, retry_count))
+        job_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        logger.debug(f"Started job {job_id}: {title}")
+        return job_id
+    except Exception as e:
+        logger.error(f"Could not start sync job: {e}")
+        return None
+
+
+def complete_sync_job(job_id, status, duration=None, error=None):
+    """Update a job to success or failed status"""
+    try:
+        # Log to history file
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Get job details for history log
+        cursor.execute('SELECT job_type, title FROM sync_jobs WHERE id = ?', (job_id,))
+        job = cursor.fetchone()
+
+        if job:
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            duration_str = f"{duration:.1f}s" if duration else "N/A"
+            history_logger.info(f"{timestamp} | {status.upper():8} | {job['job_type']:8} | {job['title']} | {duration_str}")
+
+        # Update the job
+        cursor.execute('''
+            UPDATE sync_jobs
+            SET status = ?, completed_at = ?, duration_seconds = ?, error_message = ?
+            WHERE id = ?
+        ''', (status, datetime.now().isoformat(), duration, error, job_id))
+        conn.commit()
+        conn.close()
+        logger.debug(f"Completed job {job_id}: {status}")
+    except Exception as e:
+        logger.error(f"Could not complete sync job: {e}")
+
+
+def recover_interrupted_jobs():
+    """On startup, find in_progress jobs that were interrupted and retry them"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Find jobs that were in_progress (interrupted by restart)
+        cursor.execute('''
+            SELECT * FROM sync_jobs
+            WHERE status = 'in_progress'
+            ORDER BY created_at DESC
+        ''')
+        interrupted_jobs = [dict(row) for row in cursor.fetchall()]
+
+        if interrupted_jobs:
+            logger.warning(f"Found {len(interrupted_jobs)} interrupted jobs from previous run")
+
+            for job in interrupted_jobs:
+                # Mark as failed first
+                cursor.execute('''
+                    UPDATE sync_jobs
+                    SET status = 'failed', error_message = 'Interrupted by restart', completed_at = ?
+                    WHERE id = ?
+                ''', (datetime.now().isoformat(), job['id']))
+
+            conn.commit()
+
+            # Queue them for retry
+            for job in interrupted_jobs:
+                retry_count = (job.get('retry_count') or 0) + 1
+                if retry_count <= 3:
+                    logger.info(f"Queueing interrupted job for retry: {job['title']} (attempt {retry_count}/3)")
+                    # Import here to avoid circular dependency
+                    background_sync_with_retry(
+                        job['source_path'],
+                        job['dest_path'],
+                        job['title'],
+                        job.get('quality', 'Unknown'),
+                        job.get('file_size', 0),
+                        "Movie" if job['job_type'] == 'movie' else "Episode",
+                        retry_count
+                    )
+                else:
+                    logger.warning(f"Job exceeded max retries, not retrying: {job['title']}")
+
+        conn.close()
+        return len(interrupted_jobs)
+    except Exception as e:
+        logger.error(f"Error recovering interrupted jobs: {e}")
+        return 0
 
 
 def update_stats(job_type, success, file_size=0):
@@ -372,22 +481,30 @@ def format_size(size_bytes: int) -> str:
     return f"{size_bytes:.1f} PB"
 
 
-def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str):
+def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, retry_count: int = 0):
     """
     Run rsync in background thread and send notification when complete.
     This allows the webhook to return immediately.
+
+    Args:
+        retry_count: Current retry attempt (0 = first try, 1 = first retry, etc.)
     """
     job_type = 'movie' if media_type == 'Movie' else 'episode'
 
     def do_sync():
-        logger.info(f"Background sync started: {title}")
+        # Create in_progress job entry for tracking
+        job_id = start_sync_job(job_type, source, dest, title, quality, file_size, retry_count)
+
+        retry_info = f" (retry {retry_count}/3)" if retry_count > 0 else ""
+        logger.info(f"Background sync started: {title}{retry_info}")
 
         # Check NFS health before sync
         nfs_issues = check_nfs_health()
         if nfs_issues:
             error_msg = "NFS mount issues: " + "; ".join(nfs_issues)
             logger.error(error_msg)
-            log_sync_job(job_type, source, dest, title, 'failed', error=error_msg, file_size=file_size)
+            if job_id:
+                complete_sync_job(job_id, 'failed', error=error_msg)
             update_stats(job_type, success=False)
             send_notification(
                 title=f"Sync Failed - NFS Error",
@@ -400,8 +517,9 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
         success, output, duration = run_rsync(source, dest, is_file=False)
 
         if success:
-            # Log success to database and history
-            log_sync_job(job_type, source, dest, title, 'success', duration=duration, file_size=file_size)
+            # Update job to success
+            if job_id:
+                complete_sync_job(job_id, 'success', duration=duration)
             update_stats(job_type, success=True, file_size=file_size)
 
             msg = (
@@ -427,13 +545,14 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
 
             logger.info(f"Background sync completed: {title} in {duration:.1f}s")
         else:
-            # Log failure to database and history
-            log_sync_job(job_type, source, dest, title, 'failed', duration=duration, error=output[:500], file_size=file_size)
+            # Update job to failed
+            if job_id:
+                complete_sync_job(job_id, 'failed', duration=duration, error=output[:500])
             update_stats(job_type, success=False)
 
             send_notification(
                 title=f"Sync Failed - {media_type}",
-                body=f"*{title}*\n\nError: {output[:500]}",
+                body=f"*{title}*{retry_info}\n\nError: {output[:500]}",
                 notify_type=apprise.NotifyType.FAILURE
             )
             logger.error(f"Background sync failed: {title} - {output[:200]}")
@@ -441,6 +560,13 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
     thread = threading.Thread(target=do_sync, daemon=True)
     thread.start()
     logger.info(f"Background sync thread started for: {title}")
+
+
+def background_sync_with_retry(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, retry_count: int = 0):
+    """Wrapper for background_sync that handles retry count"""
+    # Clean up title if it has retry prefix
+    clean_title = title.replace('[RETRY] ', '').replace('[RETRY]', '')
+    background_sync(source, dest, clean_title, quality, file_size, media_type, retry_count)
 
 
 def get_job_counts():
@@ -484,6 +610,32 @@ def send_daily_summary():
         ''', (yesterday,))
 
         row = cursor.fetchone()
+
+        # Get list of failed job titles (exclude retries to avoid duplicates)
+        cursor.execute('''
+            SELECT title, error_message FROM sync_jobs
+            WHERE date(created_at) = ? AND status = 'failed'
+            AND title NOT LIKE '[RETRY%'
+            ORDER BY created_at DESC
+            LIMIT 10
+        ''', (yesterday,))
+        failed_jobs = cursor.fetchall()
+
+        # Also get any jobs still needing attention (failed in last 24h, not yet resolved)
+        cursor.execute('''
+            SELECT DISTINCT title FROM sync_jobs
+            WHERE status = 'failed'
+            AND created_at > datetime('now', '-24 hours')
+            AND title NOT LIKE '[RETRY%'
+            AND title NOT IN (
+                SELECT title FROM sync_jobs
+                WHERE status = 'success'
+                AND created_at > datetime('now', '-24 hours')
+            )
+            LIMIT 10
+        ''')
+        unresolved_jobs = cursor.fetchall()
+
         conn.close()
 
         if row:
@@ -503,8 +655,24 @@ def send_daily_summary():
 💾 Data Synced: {format_size(total_bytes)}
 ⏱️ Total Duration: {total_duration/60:.1f} minutes"""
 
-            if failed and failed > 0:
-                msg += f"\n\n⚠️ {failed} failed syncs - check /jobs?status=failed"
+            # List failed jobs with titles
+            if failed_jobs:
+                msg += f"\n\n⚠️ *Failed Syncs:*"
+                for title, error in failed_jobs[:5]:  # Limit to 5 to avoid huge messages
+                    clean_title = title.replace('[RETRY] ', '') if title else 'Unknown'
+                    short_error = (error[:50] + '...') if error and len(error) > 50 else (error or 'Unknown error')
+                    msg += f"\n• {clean_title}"
+                if len(failed_jobs) > 5:
+                    msg += f"\n  _...and {len(failed_jobs) - 5} more_"
+
+            # List unresolved jobs that need attention
+            if unresolved_jobs:
+                msg += f"\n\n🔴 *Needs Attention ({len(unresolved_jobs)}):*"
+                for (title,) in unresolved_jobs[:5]:
+                    clean_title = title.replace('[RETRY] ', '') if title else 'Unknown'
+                    msg += f"\n• {clean_title}"
+                if len(unresolved_jobs) > 5:
+                    msg += f"\n  _...and {len(unresolved_jobs) - 5} more_"
 
             send_notification(
                 title="Daily Sync Summary",
@@ -551,7 +719,7 @@ _error_alert_sent = {}
 
 
 def auto_retry_failed():
-    """Automatically retry failed jobs every 15 minutes"""
+    """Automatically retry failed jobs every 15 minutes (up to 3 retries per job)"""
     global _error_alert_sent
     logger.info("Auto-retry: checking for failed jobs...")
     try:
@@ -559,12 +727,18 @@ def auto_retry_failed():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Get failed jobs from the last 6 hours that haven't been retried recently
+        # Get failed jobs from the last 6 hours that have fewer than 3 retries
+        # Group by title to avoid retrying the same job multiple times
         cursor.execute('''
             SELECT * FROM sync_jobs
             WHERE status = 'failed'
             AND created_at > datetime('now', '-6 hours')
-            AND title NOT LIKE '[RETRY]%'
+            AND (retry_count IS NULL OR retry_count < 3)
+            AND title NOT IN (
+                SELECT title FROM sync_jobs
+                WHERE status = 'success'
+                AND created_at > datetime('now', '-6 hours')
+            )
             ORDER BY created_at DESC
             LIMIT 10
         ''')
@@ -575,17 +749,31 @@ def auto_retry_failed():
         _error_alert_sent.pop('database', None)
 
         if failed_jobs:
-            logger.info(f"Auto-retry: found {len(failed_jobs)} failed jobs to retry")
+            # Deduplicate by title (only retry each unique title once per cycle)
+            seen_titles = set()
+            unique_jobs = []
             for job in failed_jobs:
+                title = job['title'] or 'Unknown'
+                if title not in seen_titles:
+                    seen_titles.add(title)
+                    unique_jobs.append(job)
+
+            logger.info(f"Auto-retry: found {len(unique_jobs)} failed jobs to retry")
+            for job in unique_jobs:
                 source = job['source_path']
                 dest = job['dest_path']
                 title = job['title'] or 'Unknown'
                 job_type = job['job_type']
                 file_size = job['file_size'] or 0
+                quality = job.get('quality') or 'Retry'
+                retry_count = (job.get('retry_count') or 0) + 1
 
-                media_type = "Movie" if job_type == 'movie' else "Episode"
-                background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type)
-                logger.info(f"Auto-retry: queued {title}")
+                if retry_count <= 3:
+                    media_type = "Movie" if job_type == 'movie' else "Episode"
+                    background_sync(source, dest, title, quality, file_size, media_type, retry_count)
+                    logger.info(f"Auto-retry: queued {title} (attempt {retry_count}/3)")
+                else:
+                    logger.warning(f"Auto-retry: {title} exceeded max retries (3), skipping")
         else:
             logger.debug("Auto-retry: no failed jobs to retry")
 
@@ -609,6 +797,11 @@ scheduler.add_job(
 
 scheduler.start()
 logger.info("Scheduler started - daily summary at 00:05, auto-retry every 15 min")
+
+# Recover any jobs that were interrupted by a restart
+interrupted_count = recover_interrupted_jobs()
+if interrupted_count > 0:
+    logger.info(f"Recovered {interrupted_count} interrupted jobs from previous run")
 
 # Shut down scheduler on exit
 atexit.register(lambda: scheduler.shutdown())
