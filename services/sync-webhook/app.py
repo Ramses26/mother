@@ -266,10 +266,11 @@ def trigger_plex_scan(dest_path: str, specific_path: str = None):
 
         # If specific path provided, do a targeted scan (much faster)
         if specific_path:
-            # Plex needs the path as it sees it (on the Plex server)
-            # The path we have is the NFS mount path on Mother, which should match Plex's view
-            params['path'] = specific_path
-            logger.info(f"Triggering Plex scan for: {specific_path}")
+            # Translate path from sync-webhook's view to Plex's view
+            # sync-webhook: /mnt/unraid/media/...  ->  Plex: /mnt/media/...
+            plex_path = specific_path.replace('/mnt/unraid/media/', '/mnt/media/')
+            params['path'] = plex_path
+            logger.info(f"Triggering Plex scan for: {plex_path}")
         else:
             logger.info(f"Triggering Plex full library scan for section {section_id}")
 
@@ -344,7 +345,7 @@ def run_rsync(source: str, dest_dir: str, is_file: bool = True) -> tuple:
             cmd,
             capture_output=True,
             text=True,
-            timeout=3600  # 1 hour timeout
+            timeout=14400  # 4 hour timeout for large files over NFS
         )
 
         duration = (datetime.now() - start_time).total_seconds()
@@ -356,7 +357,7 @@ def run_rsync(source: str, dest_dir: str, is_file: bool = True) -> tuple:
 
     except subprocess.TimeoutExpired:
         duration = (datetime.now() - start_time).total_seconds()
-        return False, "Rsync timed out after 1 hour", duration
+        return False, "Rsync timed out after 4 hours", duration
     except Exception as e:
         duration = (datetime.now() - start_time).total_seconds()
         return False, str(e), duration
