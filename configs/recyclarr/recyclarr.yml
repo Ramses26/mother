@@ -317,6 +317,86 @@ sonarr:
           - name: Bluray-1080p
           - name: Remux-1080p
 
+      # Premium audio formats
+      - trash_ids:
+          - 0d7824bb924701997f874e7ff7d4844a # TrueHD Atmos
+        assign_scores_to:
+          - name: WEB-1080p
+          - name: Bluray-1080p
+          - name: Remux-1080p
+      - trash_ids:
+          - 9d00418ba386a083fbf4d58235fc37ef # DTS X
+        assign_scores_to:
+          - name: WEB-1080p
+          - name: Bluray-1080p
+          - name: Remux-1080p
+      - trash_ids:
+          - b6fbafa7942952a13e17e2b1152b539a # ATMOS (undefined)
+        assign_scores_to:
+          - name: WEB-1080p
+          - name: Bluray-1080p
+          - name: Remux-1080p
+      - trash_ids:
+          - 4232a509ce60c4e208d13825b7c06264 # DD+ Atmos
+        assign_scores_to:
+          - name: WEB-1080p
+          - name: Bluray-1080p
+          - name: Remux-1080p
+      - trash_ids:
+          - 1808e4b9cee74e064dfae3f1db99dbfe # TrueHD
+        assign_scores_to:
+          - name: WEB-1080p
+          - name: Bluray-1080p
+          - name: Remux-1080p
+      - trash_ids:
+          - c429417a57ea8c41d57e6990a8b0033f # DTS-HD MA
+        assign_scores_to:
+          - name: WEB-1080p
+          - name: Bluray-1080p
+          - name: Remux-1080p
+      - trash_ids:
+          - cfa5fbd8f02a86fc55d8d223d06a5e1f # DTS-HD HRA
+        assign_scores_to:
+          - name: WEB-1080p
+          - name: Bluray-1080p
+          - name: Remux-1080p
+      - trash_ids:
+          - 851bd64e04c9374c51102be3dd9ae4cc # FLAC
+          - 30f70576671ca933adbdcfc736a69718 # PCM
+        assign_scores_to:
+          - name: WEB-1080p
+          - name: Bluray-1080p
+          - name: Remux-1080p
+
+      # Surround channel preference
+      - trash_ids:
+          - 3fbafa924f361e66fbc6187af82dfa85 # 5.1 Surround
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 100
+          - name: Bluray-1080p
+            score: 100
+          - name: Remux-1080p
+            score: 100
+      - trash_ids:
+          - 9fb6d778592c293467437593ef394bf1 # 6.1 Surround
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 150
+          - name: Bluray-1080p
+            score: 150
+          - name: Remux-1080p
+            score: 150
+      - trash_ids:
+          - 204c8c3e7315bb0ea81332774fa888d6 # 7.1 Surround
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 200
+          - name: Bluray-1080p
+            score: 200
+          - name: Remux-1080p
+            score: 200
+
 
     media_naming:
       series: default
@@ -372,6 +452,86 @@ sonarr:
           - name: WEB-2160p
           - name: Bluray-2160p
           - name: Remux-2160p
+
+      # Premium audio formats
+      - trash_ids:
+          - 0d7824bb924701997f874e7ff7d4844a # TrueHD Atmos
+        assign_scores_to:
+          - name: WEB-2160p
+          - name: Bluray-2160p
+          - name: Remux-2160p
+      - trash_ids:
+          - 9d00418ba386a083fbf4d58235fc37ef # DTS X
+        assign_scores_to:
+          - name: WEB-2160p
+          - name: Bluray-2160p
+          - name: Remux-2160p
+      - trash_ids:
+          - b6fbafa7942952a13e17e2b1152b539a # ATMOS (undefined)
+        assign_scores_to:
+          - name: WEB-2160p
+          - name: Bluray-2160p
+          - name: Remux-2160p
+      - trash_ids:
+          - 4232a509ce60c4e208d13825b7c06264 # DD+ Atmos
+        assign_scores_to:
+          - name: WEB-2160p
+          - name: Bluray-2160p
+          - name: Remux-2160p
+      - trash_ids:
+          - 1808e4b9cee74e064dfae3f1db99dbfe # TrueHD
+        assign_scores_to:
+          - name: WEB-2160p
+          - name: Bluray-2160p
+          - name: Remux-2160p
+      - trash_ids:
+          - c429417a57ea8c41d57e6990a8b0033f # DTS-HD MA
+        assign_scores_to:
+          - name: WEB-2160p
+          - name: Bluray-2160p
+          - name: Remux-2160p
+      - trash_ids:
+          - cfa5fbd8f02a86fc55d8d223d06a5e1f # DTS-HD HRA
+        assign_scores_to:
+          - name: WEB-2160p
+          - name: Bluray-2160p
+          - name: Remux-2160p
+      - trash_ids:
+          - 851bd64e04c9374c51102be3dd9ae4cc # FLAC
+          - 30f70576671ca933adbdcfc736a69718 # PCM
+        assign_scores_to:
+          - name: WEB-2160p
+          - name: Bluray-2160p
+          - name: Remux-2160p
+
+      # Surround channel preference
+      - trash_ids:
+          - 3fbafa924f361e66fbc6187af82dfa85 # 5.1 Surround
+        assign_scores_to:
+          - name: WEB-2160p
+            score: 100
+          - name: Bluray-2160p
+            score: 100
+          - name: Remux-2160p
+            score: 100
+      - trash_ids:
+          - 9fb6d778592c293467437593ef394bf1 # 6.1 Surround
+        assign_scores_to:
+          - name: WEB-2160p
+            score: 150
+          - name: Bluray-2160p
+            score: 150
+          - name: Remux-2160p
+            score: 150
+      - trash_ids:
+          - 204c8c3e7315bb0ea81332774fa888d6 # 7.1 Surround
+        assign_scores_to:
+          - name: WEB-2160p
+            score: 200
+          - name: Bluray-2160p
+            score: 200
+          - name: Remux-2160p
+            score: 200
 
 
     # Custom Bluray and Remux profiles for 4K Sonarr
