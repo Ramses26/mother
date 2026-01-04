@@ -138,10 +138,34 @@ The service includes APScheduler for automatic background tasks:
 
 | Task | Schedule | Description |
 |------|----------|-------------|
-| Daily Summary | 00:05 | Sends Telegram summary of previous day's syncs |
-| Auto-Retry | Every 15 min | Retries failed jobs from last 6 hours |
+| Daily Summary | 00:05 | Sends Telegram summary with failed titles and items needing attention |
+| Auto-Retry | Every 15 min | Retries failed jobs (up to 3 attempts per job) |
+| Startup Recovery | On start | Recovers in-progress jobs interrupted by restart |
 
 **These run automatically when the container starts - no cron setup needed.**
+
+## Reliability Features
+
+### In-Progress Tracking
+Jobs are marked as `in_progress` in the database when they start. If the container restarts mid-sync:
+1. On startup, finds all `in_progress` jobs (interrupted)
+2. Marks them as failed with "Interrupted by restart"
+3. Automatically queues them for retry
+
+### Retry Logic (Up to 3 Attempts)
+- Failed jobs automatically retry every 15 minutes
+- Each job tracks its `retry_count` in the database
+- Jobs retry up to 3 times before giving up
+- Successfully synced jobs are excluded from retry
+- Logs show attempt number: `(retry 1/3)`, `(retry 2/3)`, etc.
+
+### Daily Summary Report
+The 00:05 daily summary includes:
+- Success/failure counts
+- Movies and episodes synced
+- Total data transferred
+- **List of failed sync titles** (up to 5)
+- **"Needs Attention" section** for unresolved failures
 
 ## Path Mappings
 
@@ -188,8 +212,9 @@ rsync -avh --ignore-existing --exclude='#recycle' --exclude='@eaDir' --exclude='
 - Base: `python:3.11-slim`
 - Installs: rsync
 - Runs as: non-root user (uid 1000)
-- Server: gunicorn with 2 workers
+- Server: gunicorn with 1 worker + 4 threads (prevents multiple schedulers)
 - Health check: Built-in
+- Rsync timeout: 4 hours (for large files over NFS)
 
 ### Required Volume Mounts
 
@@ -378,6 +403,10 @@ curl -X POST http://localhost:5000/sync/radarr \
 |------|--------|
 | 2026-01-01 | Initial version |
 | 2026-01-02 | V2: SQLite job tracking, auto-retry, daily summary, NFS health checks |
+| 2026-01-02 | Added Plex library scan after sync (with path translation) |
+| 2026-01-03 | V2.1: In-progress tracking, startup recovery, up to 3 retries |
+| 2026-01-03 | Daily summary now lists failed titles and unresolved items |
+| 2026-01-03 | Increased rsync timeout to 4 hours, fixed gunicorn to 1 worker |
 
 ## Related Documentation
 

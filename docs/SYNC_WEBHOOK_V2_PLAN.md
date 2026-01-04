@@ -102,6 +102,7 @@ The current sync-webhook has several failure points:
 - [x] Add retry logic
   - Failed jobs auto-retry every 15 minutes
   - Manual retry via `/jobs/<id>/retry` or `/queue/retry-failed`
+  - **Up to 3 retries per job** (tracks retry_count in database)
 - [x] Add persistent logging
   - RotatingFileHandler with 10MB rotation
   - sync_history.log for human-readable audit trail
@@ -110,6 +111,14 @@ The current sync-webhook has several failure points:
   - Check mount accessibility before sync
   - Alert immediately on mount failure
   - Jobs fail gracefully with clear error messages
+- [x] **In-progress tracking** (V2.1)
+  - Jobs marked `in_progress` when starting
+  - Updated to `success`/`failed` on completion
+  - Enables restart recovery
+- [x] **Startup recovery** (V2.1)
+  - On container start, finds interrupted `in_progress` jobs
+  - Automatically queues them for retry
+  - Logs: "Found X interrupted jobs from previous run"
 
 ### Phase 3: Webhook Hardening
 - [ ] Add authentication
@@ -128,7 +137,13 @@ The current sync-webhook has several failure points:
 - [x] Add daily summary
   - Scheduler runs at 00:05 daily
   - Summary of syncs, failures, retries
+  - **Lists actual failed sync titles** (up to 5)
+  - **Shows "Needs Attention" section** for unresolved failures
   - Endpoint: `/summary/send` for manual trigger
+- [x] Add Plex library scan integration
+  - Triggers targeted scan after successful sync
+  - Path translation: `/mnt/unraid/media/...` → `/mnt/media/...`
+  - Configurable via PLEX_SECTION_* environment variables
 - [ ] Add Discord as backup notification (optional)
   - Primary: Telegram
   - Critical failures: Both
@@ -148,7 +163,7 @@ The current sync-webhook has several failure points:
 ## Database Schema
 
 ```sql
--- jobs.db
+-- sync_jobs.db
 
 CREATE TABLE sync_jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -158,29 +173,22 @@ CREATE TABLE sync_jobs (
     title TEXT,
     quality TEXT,
     file_size INTEGER,
-    status TEXT DEFAULT 'pending',    -- pending, running, success, failed, failed_permanent
-    retry_count INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'pending',    -- pending, in_progress, success, failed
+    retry_count INTEGER DEFAULT 0,    -- Tracks retry attempts (max 3)
     error_message TEXT,
-    webhook_payload TEXT,             -- Store full payload for replay
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    started_at TIMESTAMP,
     completed_at TIMESTAMP,
-    duration_seconds REAL,
-    bytes_transferred INTEGER
+    duration_seconds REAL
 );
 
 CREATE INDEX idx_status ON sync_jobs(status);
 CREATE INDEX idx_created ON sync_jobs(created_at);
 
-CREATE TABLE sync_stats (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TEXT NOT NULL,
-    movies_synced INTEGER DEFAULT 0,
-    episodes_synced INTEGER DEFAULT 0,
-    bytes_transferred INTEGER DEFAULT 0,
-    failures INTEGER DEFAULT 0,
-    retries INTEGER DEFAULT 0
-);
+-- Status flow:
+-- 1. Job created as 'in_progress' when sync starts
+-- 2. Updated to 'success' or 'failed' on completion
+-- 3. On restart, 'in_progress' jobs are marked 'failed' and re-queued
+-- 4. retry_count incremented on each retry (max 3 attempts)
 ```
 
 ---
@@ -307,3 +315,8 @@ curl "http://sonarr-hd:8989/api/v3/history?eventType=downloadFolderImported&page
 | 2026-01-01 | Phase 4 complete - Uptime Kuma, daily summary |
 | 2026-01-01 | Phase 5 complete - nightly_reconcile.py |
 | 2026-01-01 | All API endpoints implemented |
+| 2026-01-02 | Added Plex library scan integration |
+| 2026-01-03 | **V2.1**: In-progress tracking, startup recovery |
+| 2026-01-03 | **V2.1**: Up to 3 retries per job (retry_count tracking) |
+| 2026-01-03 | **V2.1**: Daily summary now lists failed titles |
+| 2026-01-03 | Fixed: Plex path translation, rsync timeout (4hr), gunicorn 1 worker |

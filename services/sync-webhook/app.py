@@ -70,6 +70,23 @@ PATH_MAPPINGS = {
     ),
 }
 
+
+def get_dest_base_from_path(dest_path: str) -> str:
+    """
+    Extract the base destination path for Plex section lookup.
+
+    For example:
+        /mnt/unraid/media/TV Shows/Show Name/Season 01 -> /mnt/unraid/media/TV Shows
+        /mnt/unraid/media/Movies -> /mnt/unraid/media/Movies
+
+    Returns the matching base path or the original path if no match found.
+    """
+    # Check against PLEX_SECTIONS keys (sorted by length, longest first)
+    for base_path in sorted(PLEX_SECTIONS.keys(), key=len, reverse=True):
+        if dest_path.startswith(base_path):
+            return base_path
+    return dest_path
+
 # Setup logging - console + file
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL),
@@ -401,7 +418,25 @@ def translate_path(container_path: str) -> tuple:
     """
     Translate container path to source/destination NFS paths.
 
-    Returns: (source_path, dest_path) or (None, None) if no mapping found
+    Preserves the folder structure in the destination path for FILES.
+    For FOLDERS, the destination is just the base (rsync will create the folder).
+
+    Examples:
+        FILE (TV episode):
+            /tv/Show Name/Season 01/episode.mkv ->
+                source:    /mnt/synology/rs-tv/Show Name/Season 01/episode.mkv
+                dest:      /mnt/unraid/media/TV Shows/Show Name/Season 01
+                dest_base: /mnt/unraid/media/TV Shows
+            Result: /mnt/unraid/media/TV Shows/Show Name/Season 01/episode.mkv ✓
+
+        FOLDER (Movie):
+            /movies/Movie Title (2024) ->
+                source:    /mnt/synology/rs-movies/Movie Title (2024)
+                dest:      /mnt/unraid/media/Movies
+                dest_base: /mnt/unraid/media/Movies
+            Result: /mnt/unraid/media/Movies/Movie Title (2024)/movie.mkv ✓
+
+    Returns: (source_path, dest_path, dest_base) or (None, None, None) if no mapping found
     """
     # Sort by path length (longest first) to match /movies-4k before /movies
     sorted_mappings = sorted(PATH_MAPPINGS.items(), key=lambda x: len(x[0]), reverse=True)
@@ -411,9 +446,27 @@ def translate_path(container_path: str) -> tuple:
             # Get the relative path after the container base
             relative = container_path[len(container_base):].lstrip('/')
             source = os.path.join(src_base, relative)
-            dest_dir = dst_base
-            return source, dest_dir
-    return None, None
+
+            # Determine if source is a file or directory
+            # Check if the relative path looks like a file (has extension in last component)
+            # Common video extensions: .mkv, .mp4, .avi, .mov, .wmv, .m4v, .ts
+            basename = os.path.basename(relative)
+            is_likely_file = '.' in basename and not basename.startswith('.')
+
+            if is_likely_file:
+                # It's a file - include the parent directory structure in destination
+                # e.g., "Show Name/Season 01/episode.mkv" -> dest includes "Show Name/Season 01"
+                relative_dir = os.path.dirname(relative)
+                dest_dir = os.path.join(dst_base, relative_dir) if relative_dir else dst_base
+            else:
+                # It's a directory - destination is just the base
+                # rsync will copy the folder INTO the destination
+                # e.g., source "/Movies/Title (2024)" + dest "/media/Movies"
+                #       -> creates "/media/Movies/Title (2024)/..."
+                dest_dir = dst_base
+
+            return source, dest_dir, dst_base
+    return None, None, None
 
 
 def run_rsync(source: str, dest_dir: str, is_file: bool = True) -> tuple:
@@ -424,12 +477,21 @@ def run_rsync(source: str, dest_dir: str, is_file: bool = True) -> tuple:
     """
     start_time = datetime.now()
 
+    # Ensure destination directory exists
+    # This is important for TV shows where we create nested paths like
+    # /media/TV Shows/Show Name/Season 01/
+    try:
+        os.makedirs(dest_dir, exist_ok=True)
+        logger.debug(f"Ensured destination directory exists: {dest_dir}")
+    except OSError as e:
+        logger.error(f"Failed to create destination directory {dest_dir}: {e}")
+        return False, f"Failed to create destination directory: {e}", 0
+
     # Build rsync command
     # -a: archive mode
     # -v: verbose
     # -h: human readable
     # --ignore-existing: don't overwrite existing files
-    # -R: use relative paths (preserves directory structure)
     cmd = [
         'rsync',
         '-avh',
@@ -481,15 +543,24 @@ def format_size(size_bytes: int) -> str:
     return f"{size_bytes:.1f} PB"
 
 
-def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, retry_count: int = 0):
+def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, dest_base: str = None, retry_count: int = 0):
     """
     Run rsync in background thread and send notification when complete.
     This allows the webhook to return immediately.
 
     Args:
+        source: Source path (file or folder)
+        dest: Full destination path (may include nested folders for TV shows)
+        title: Display title for notifications
+        quality: Quality string
+        file_size: File size in bytes
+        media_type: "Movie" or "Episode"
+        dest_base: Base destination path for Plex section lookup (e.g., /mnt/unraid/media/TV Shows)
         retry_count: Current retry attempt (0 = first try, 1 = first retry, etc.)
     """
     job_type = 'movie' if media_type == 'Movie' else 'episode'
+    # Fall back to extracting dest_base from dest if not provided (for retries from database)
+    plex_base = dest_base or get_dest_base_from_path(dest)
 
     def do_sync():
         # Create in_progress job entry for tracking
@@ -539,9 +610,18 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
 
             # Trigger Plex library scan for the synced content
             if not DRY_RUN:
-                # Build the specific path for targeted scan (folder that was synced)
-                specific_folder = os.path.join(dest, os.path.basename(source))
-                trigger_plex_scan(dest, specific_folder)
+                # Build the specific path for targeted scan
+                # For folders (movies): specific_folder = dest + folder name
+                # For files (TV episodes): specific_folder = dest (already includes full path)
+                basename = os.path.basename(source)
+                is_file = '.' in basename and not basename.startswith('.')
+                if is_file:
+                    # Source is a file - dest already has the full folder path
+                    specific_folder = dest
+                else:
+                    # Source is a folder - add folder name to dest
+                    specific_folder = os.path.join(dest, basename)
+                trigger_plex_scan(plex_base, specific_folder)
 
             logger.info(f"Background sync completed: {title} in {duration:.1f}s")
         else:
@@ -1003,7 +1083,7 @@ def radarr_webhook():
         logger.info(f"File path: {file_path}")
 
         # Translate path
-        source, dest = translate_path(folder_path)
+        source, dest, dest_base = translate_path(folder_path)
         if not source:
             error_msg = f"No path mapping for: {folder_path}"
             logger.error(error_msg)
@@ -1023,7 +1103,8 @@ def radarr_webhook():
             title=display_title,
             quality=quality,
             file_size=file_size,
-            media_type="Movie"
+            media_type="Movie",
+            dest_base=dest_base
         )
 
         # Return immediately - sync happens in background
@@ -1114,10 +1195,10 @@ def sonarr_webhook():
         logger.info(f"File path: {file_path}")
 
         # Translate path - sync the specific episode file
-        source, dest = translate_path(file_path)
+        source, dest, dest_base = translate_path(file_path)
         if not source:
             # Try series folder path
-            source, dest = translate_path(series_path)
+            source, dest, dest_base = translate_path(series_path)
             if not source:
                 error_msg = f"No path mapping for: {file_path} or {series_path}"
                 logger.error(error_msg)
@@ -1138,6 +1219,7 @@ def sonarr_webhook():
             source=source,
             dest=dest,
             title=display_title,
+            dest_base=dest_base,
             quality=quality,
             file_size=file_size,
             media_type="Episode"
@@ -1257,7 +1339,7 @@ def manual_sync():
         path = data['path']
         sync_type = data.get('type', 'unknown')
 
-        source, dest = translate_path(path)
+        source, dest, dest_base = translate_path(path)
         if not source:
             return jsonify({'error': f'No path mapping for: {path}'}), 400
 
