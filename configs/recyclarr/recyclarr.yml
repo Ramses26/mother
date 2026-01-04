@@ -96,6 +96,72 @@ radarr:
           - name: HD Bluray + WEB
           - name: Remux + WEB 1080p
 
+      # Premium audio formats (Radarr HD)
+      - trash_ids:
+          - 496f355514737f7d83bf7aa4d24f8169 # TrueHD Atmos
+        assign_scores_to:
+          - name: HD Bluray + WEB
+          - name: Remux + WEB 1080p
+      - trash_ids:
+          - 2f22d89048b01681dde8afe203bf2e95 # DTS X
+        assign_scores_to:
+          - name: HD Bluray + WEB
+          - name: Remux + WEB 1080p
+      - trash_ids:
+          - 417804f7f2c4308c1f4c5d380d4c4475 # ATMOS (undefined)
+        assign_scores_to:
+          - name: HD Bluray + WEB
+          - name: Remux + WEB 1080p
+      - trash_ids:
+          - 1af239278386be2919e1bcee0bde047e # DD+ Atmos
+        assign_scores_to:
+          - name: HD Bluray + WEB
+          - name: Remux + WEB 1080p
+      - trash_ids:
+          - 3cafb66171b47f226146a0770576870f # TrueHD
+        assign_scores_to:
+          - name: HD Bluray + WEB
+          - name: Remux + WEB 1080p
+      - trash_ids:
+          - dcf3ec6938fa32445f590a4da84256cd # DTS-HD MA
+        assign_scores_to:
+          - name: HD Bluray + WEB
+          - name: Remux + WEB 1080p
+      - trash_ids:
+          - 8e109e50e0a0b83a5098b056e13bf6db # DTS-HD HRA
+        assign_scores_to:
+          - name: HD Bluray + WEB
+          - name: Remux + WEB 1080p
+      - trash_ids:
+          - a570d4a0e56a2874b64e5bfa55202a1b # FLAC
+          - e7c2fcae07cbada050a0af3357491d7b # PCM
+        assign_scores_to:
+          - name: HD Bluray + WEB
+          - name: Remux + WEB 1080p
+
+      # Surround channel preference (Radarr HD)
+      - trash_ids:
+          - 77ff61788dfe1097194fd8743d7b4524 # 5.1 Surround
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 100
+          - name: Remux + WEB 1080p
+            score: 100
+      - trash_ids:
+          - 6fd7b090c3f7317502ab3b63cc7f51e3 # 6.1 Surround
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 150
+          - name: Remux + WEB 1080p
+            score: 150
+      - trash_ids:
+          - e77382bcfeba57cb83744c9c5449b401 # 7.1 Surround
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: 200
+          - name: Remux + WEB 1080p
+            score: 200
+
 
 
 
@@ -506,7 +572,7 @@ sonarr:
 
       # Surround channel preference
       - trash_ids:
-          - 3fbafa924f361e66fbc6187af82dfa85 # 5.1 Surround
+          - 77ff61788dfe1097194fd8743d7b4524 # 5.1 Surround
         assign_scores_to:
           - name: WEB-2160p
             score: 100
@@ -515,7 +581,7 @@ sonarr:
           - name: Remux-2160p
             score: 100
       - trash_ids:
-          - 9fb6d778592c293467437593ef394bf1 # 6.1 Surround
+          - 6fd7b090c3f7317502ab3b63cc7f51e3 # 6.1 Surround
         assign_scores_to:
           - name: WEB-2160p
             score: 150
@@ -524,7 +590,7 @@ sonarr:
           - name: Remux-2160p
             score: 150
       - trash_ids:
-          - 204c8c3e7315bb0ea81332774fa888d6 # 7.1 Surround
+          - e77382bcfeba57cb83744c9c5449b401 # 7.1 Surround
         assign_scores_to:
           - name: WEB-2160p
             score: 200
