@@ -492,10 +492,12 @@ def run_rsync(source: str, dest_dir: str, is_file: bool = True) -> tuple:
     # -v: verbose
     # -h: human readable
     # --ignore-existing: don't overwrite existing files
+    # --chmod: set permissions on destination (Unraid needs 777 for full write access)
     cmd = [
         'rsync',
         '-avh',
         '--ignore-existing',
+        '--chmod=D777,F777',
         '--exclude', '#recycle',
         '--exclude', '@eaDir',
         '--exclude', '.DS_Store',
