@@ -161,13 +161,13 @@ nohardlinks:
   # Tag Movies/Series that are not hard linked outside the root directory
   # Mandatory to fill out directory parameter above to use this function (root_dir/remote_dir)
   # This variable should be set to your category name of your completed movies/completed series in qbit. Acceptable variable can be any category you would like to tag if there are no hardlinks found
-  movies:
+  radarr-hd:
     ignore_root_dir: true      # only count links *outside* downloads (default)
-  movies4k:
+  radarr-4k:
     ignore_root_dir: true
-  tvshows:
+  sonarr-hd:
     ignore_root_dir: true
-  tvshows4k:
+  sonarr-4k:
     ignore_root_dir: true
   #movies-completed-4k:
   #series-completed-4k:
