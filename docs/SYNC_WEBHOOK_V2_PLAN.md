@@ -129,6 +129,23 @@ The current sync-webhook has several failure points:
 - [ ] Add payload validation
   - Verify required fields exist
 
+### Phase 6: Upgrade & Deletion Handling ✅ COMPLETE
+- [x] Handle `deletedFiles` in upgrade events
+  - When Radarr/Sonarr upgrades a file, it includes old file paths in `deletedFiles` array
+  - Service now deletes old files from destination before syncing new file
+  - Prevents duplicate files (old + new) on destination
+- [x] Add `MovieFileDelete` event handler for Radarr
+  - Handles manual deletions from Radarr UI
+  - Deletes corresponding file from Unraid destination
+- [x] Add `EpisodeFileDelete` event handler for Sonarr
+  - Handles manual deletions from Sonarr UI
+  - Deletes corresponding file from Unraid destination
+- [x] Clean up empty parent directories after file deletion
+- [x] New helper functions:
+  - `translate_path_to_destination()` - Direct container→destination path translation
+  - `delete_from_destination()` - Safe file/directory deletion with logging
+  - `process_deleted_files()` - Batch process deletedFiles array from webhook
+
 ### Phase 4: Monitoring & Alerting ✅ COMPLETE
 - [x] Deploy Uptime Kuma
   - Monitor /health endpoint
@@ -320,3 +337,7 @@ curl "http://sonarr-hd:8989/api/v3/history?eventType=downloadFolderImported&page
 | 2026-01-03 | **V2.1**: Up to 3 retries per job (retry_count tracking) |
 | 2026-01-03 | **V2.1**: Daily summary now lists failed titles |
 | 2026-01-03 | Fixed: Plex path translation, rsync timeout (4hr), gunicorn 1 worker |
+| 2026-01-12 | **V2.2**: Phase 6 complete - Upgrade & deletion handling |
+| 2026-01-12 | Process `deletedFiles` during upgrades to prevent duplicates |
+| 2026-01-12 | Added `MovieFileDelete` and `EpisodeFileDelete` event handlers |
+| 2026-01-12 | New functions: translate_path_to_destination, delete_from_destination, process_deleted_files |

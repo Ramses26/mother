@@ -9,11 +9,14 @@ When Radarr or Sonarr imports a new file (download complete), they send a webhoo
 1. Parses the webhook payload to extract file/folder paths
 2. Checks NFS mount health before proceeding
 3. Translates container paths to NFS mount paths
-4. Logs the job to SQLite database
-5. Runs rsync in background thread (webhook returns immediately)
-6. Sends a Telegram notification on success or failure
-7. Auto-retries failed jobs every 15 minutes
-8. Sends daily summary report at midnight
+4. **For upgrades: Deletes old file(s) from destination before syncing new file**
+5. Logs the job to SQLite database
+6. Runs rsync in background thread (webhook returns immediately)
+7. Sends a Telegram notification on success or failure
+8. Auto-retries failed jobs every 15 minutes
+9. Sends daily summary report at midnight
+
+The service also handles file deletion events to keep the destination in sync when files are manually removed from Radarr/Sonarr.
 
 ## Files
 
@@ -235,16 +238,26 @@ volumes:
 ### Radarr Settings
 1. Settings → Connect → Add → Webhook
 2. Name: `Sync to Unraid`
-3. Triggers: ✅ On Import, ✅ On Upgrade
+3. Triggers:
+   - ✅ On Import
+   - ✅ On Upgrade
+   - ✅ On Movie File Delete (for manual deletions)
 4. URL: `http://sync-webhook:5000/sync/radarr`
 5. Method: POST
+
+**Note:** Do NOT enable "On Movie File Delete for Upgrade" - upgrade deletions are already handled via the `deletedFiles` array in the Import/Upgrade event payload.
 
 ### Sonarr Settings
 1. Settings → Connect → Add → Webhook
 2. Name: `Sync to Unraid`
-3. Triggers: ✅ On Import, ✅ On Upgrade
+3. Triggers:
+   - ✅ On Import
+   - ✅ On Upgrade
+   - ✅ On Episode File Delete (for manual deletions)
 4. URL: `http://sync-webhook:5000/sync/sonarr`
 5. Method: POST
+
+**Note:** Do NOT enable "On Episode File Delete for Upgrade" - upgrade deletions are already handled via the `deletedFiles` array in the Import/Upgrade event payload.
 
 ## Webhook Payload Examples
 
@@ -283,6 +296,70 @@ volumes:
     "size": 4000000000,
     "quality": {"quality": {"name": "WEBDL-1080p"}}
   }
+}
+```
+
+### Radarr (On Upgrade with deletedFiles)
+```json
+{
+  "eventType": "Download",
+  "isUpgrade": true,
+  "movie": {
+    "id": 1,
+    "title": "Movie Title",
+    "year": 2024,
+    "folderPath": "/movies/Movie Title (2024)"
+  },
+  "movieFile": {
+    "path": "/movies/Movie Title (2024)/Movie.Title.2024.2160p.BluRay.mkv",
+    "size": 45000000000,
+    "quality": {"quality": {"name": "Bluray-2160p"}}
+  },
+  "deletedFiles": [
+    {
+      "path": "/movies/Movie Title (2024)/Movie.Title.2024.1080p.WEB-DL.mkv",
+      "size": 8000000000,
+      "quality": {"quality": {"name": "WEBDL-1080p"}}
+    }
+  ]
+}
+```
+
+### Radarr (On Movie File Delete)
+```json
+{
+  "eventType": "MovieFileDelete",
+  "movie": {
+    "id": 1,
+    "title": "Movie Title",
+    "year": 2024,
+    "folderPath": "/movies/Movie Title (2024)"
+  },
+  "movieFile": {
+    "path": "/movies/Movie Title (2024)/Movie.Title.2024.1080p.BluRay.mkv",
+    "size": 15000000000
+  },
+  "deleteReason": "Manual"
+}
+```
+
+### Sonarr (On Episode File Delete)
+```json
+{
+  "eventType": "EpisodeFileDelete",
+  "series": {
+    "id": 1,
+    "title": "Series Title",
+    "path": "/tv/Series Title (2020)"
+  },
+  "episodes": [
+    {"seasonNumber": 1, "episodeNumber": 5, "title": "Episode Title"}
+  ],
+  "episodeFile": {
+    "path": "/tv/Series Title (2020)/Season 01/Series.Title.S01E05.mkv",
+    "size": 4000000000
+  },
+  "deleteReason": "Manual"
 }
 ```
 
@@ -407,6 +484,10 @@ curl -X POST http://localhost:5000/sync/radarr \
 | 2026-01-03 | V2.1: In-progress tracking, startup recovery, up to 3 retries |
 | 2026-01-03 | Daily summary now lists failed titles and unresolved items |
 | 2026-01-03 | Increased rsync timeout to 4 hours, fixed gunicorn to 1 worker |
+| 2026-01-12 | **V2.2: Upgrade & deletion handling** - Process `deletedFiles` during upgrades to remove old files from destination before syncing new ones |
+| 2026-01-12 | Added `MovieFileDelete` event handler for Radarr manual deletions |
+| 2026-01-12 | Added `EpisodeFileDelete` event handler for Sonarr manual deletions |
+| 2026-01-12 | Empty parent directories are cleaned up after file deletions |
 
 ## Related Documentation
 
