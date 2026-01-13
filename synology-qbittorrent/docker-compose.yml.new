@@ -52,9 +52,9 @@ services:
     depends_on:
       - qbittorrent
 
-  # qbit_manage - qBittorrent Automation & Cleanup
-  # Manages tags, categories, share limits, removes unregistered torrents
-  # MUST run on same system as qBittorrent for hardlink detection to work
+  # qbit_manage - qBittorrent automation/cleanup  
+  # CRITICAL: Must run on same system as qBittorrent for hardlink detection to work
+  # Running this over NFS (like on terminus) breaks hardlink detection
   qbitmanage:
     image: ghcr.io/stuffanthings/qbit_manage:latest
     container_name: qbitmanage
@@ -64,19 +64,23 @@ services:
       - TZ=America/New_York
       - QBT_CONFIG_DIR=/config
       - QBT_LOGFILE=/config/logs/qbit_manage.log
-      - QBT_SCHEDULE=30           # run every 30 minutes
-      - QBT_STARTUP_DELAY=60      # wait for qBittorrent to come up
-      - QBT_RUN=false             # use internal scheduler
+      - QBT_SCHEDULE=30         # run every 30 minutes
+      - QBT_STARTUP_DELAY=60    # wait for qBittorrent to come up
+      - QBT_RUN=false           # use internal scheduler
       - QBT_WEB_SERVER=false
       - QBT_SHARE_LIMITS=true
       - QBT_TAG_NOHARDLINKS=true
       - QBT_REM_UNREGISTERED=true
-      - QBT_REM_ORPHANED=true     # can now access BT_backup locally
+      - QBT_REM_ORPHANED=false  # disabled - requires BT_backup access
       - QBT_TAG_TRACKER_ERROR=true
+      - QBITMANAGE_QBT_HOST=http://localhost:8080
+      - QBITMANAGE_QBT_USER=muthur
+      - QBITMANAGE_QBT_PASS=Md4DQbghf@5ptf&K
     volumes:
       - /volume1/docker/qbitmanage:/config
       - /volume1/Downloads:/downloads
-      - /volume1/docker/qbittorrent/qBittorrent/BT_backup:/bt_backup:ro
+      # Optional: BT_backup for orphaned torrent detection
+      # - /volume1/docker/qbittorrent/qBittorrent/BT_backup:/bt_backup:ro
     restart: unless-stopped
     depends_on:
       - qbittorrent

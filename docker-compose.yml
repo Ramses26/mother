@@ -36,37 +36,38 @@ services:
   #   networks:
   #     - mother_network
   
-  # qbit_manage - qBittorrent automation/cleanup
-  # Connects to qBittorrent on Synology (10.0.1.203:8080)
-  qbitmanage:
-    image: ghcr.io/stuffanthings/qbit_manage:latest
-    container_name: qbitmanage
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - QBT_CONFIG_DIR=/config
-      - QBT_LOGFILE=/config/logs/qbit_manage.log
-      - QBT_SCHEDULE=30         # run every 30 minutes
-      - QBT_STARTUP_DELAY=60    # wait for qBittorrent to come up
-      - QBT_RUN=false           # use internal scheduler
-      - QBT_WEB_SERVER=false
-      - QBT_SHARE_LIMITS=true
-      - QBT_TAG_NOHARDLINKS=true
-      - QBT_REM_UNREGISTERED=true
-      - QBT_REM_ORPHANED=false  # disabled - requires BT_backup access
-      - QBT_TAG_TRACKER_ERROR=true
-      - QBITMANAGE_QBT_HOST=${QBITMANAGE_QBT_HOST:-http://10.0.1.203:8080}
-      - QBITMANAGE_QBT_USER=${QBITMANAGE_QBT_USER}
-      - QBITMANAGE_QBT_PASS=${QBITMANAGE_QBT_PASS}
-    volumes:
-      - ${CONFIG_PATH}/qbitmanage:/config
-      - ${DOWNLOADS_PATH}:/downloads
-    restart: unless-stopped
-    networks:
-      - mother_network
-      
-  #dockhand - Docker Management 
+  # qbit_manage - MIGRATED TO SYNOLOGY RS2821RP+ (10.0.1.203)
+  # Moved to run locally with qBittorrent for proper hardlink detection
+  # See: synology-qbittorrent/docker-compose.yml
+  # qbitmanage:
+  #   image: ghcr.io/stuffanthings/qbit_manage:latest
+  #   container_name: qbitmanage
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TZ=${TZ}
+  #     - QBT_CONFIG_DIR=/config
+  #     - QBT_LOGFILE=/config/logs/qbit_manage.log
+  #     - QBT_SCHEDULE=30         # run every 30 minutes
+  #     - QBT_STARTUP_DELAY=60    # wait for qBittorrent to come up
+  #     - QBT_RUN=false           # use internal scheduler
+  #     - QBT_WEB_SERVER=false
+  #     - QBT_SHARE_LIMITS=true
+  #     - QBT_TAG_NOHARDLINKS=true
+  #     - QBT_REM_UNREGISTERED=true
+  #     - QBT_REM_ORPHANED=false  # disabled - requires BT_backup access
+  #     - QBT_TAG_TRACKER_ERROR=true
+  #     - QBITMANAGE_QBT_HOST=${QBITMANAGE_QBT_HOST:-http://10.0.1.203:8080}
+  #     - QBITMANAGE_QBT_USER=${QBITMANAGE_QBT_USER}
+  #     - QBITMANAGE_QBT_PASS=${QBITMANAGE_QBT_PASS}
+  #   volumes:
+  #     - ${CONFIG_PATH}/qbitmanage:/config
+  #     - ${DOWNLOADS_PATH}:/downloads
+  #   restart: unless-stopped
+  #   networks:
+  #     - mother_network
+
+  # Dockhand - Docker Management 
   dockhand:
     image: fnsys/dockhand:latest
     container_name: dockhand
