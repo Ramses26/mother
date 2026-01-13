@@ -64,7 +64,28 @@ services:
     restart: unless-stopped
     networks:
       - mother_network
-  
+      
+  #dockhand - Docker Management 
+  dockhand:
+    image: fnsys/dockhand:latest
+    container_name: dockhand
+    environment:
+      - PUID=${PUID}
+      - PGID=${DOCKER_GID}
+      - TZ=${TZ}
+      
+    group_add:
+      - "${DOCKER_GID}"       
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CONFIG_PATH}/dockhand:/app/data
+    networks:
+      - mother_network      
+      
+
   # Radarr HD - 1080p Movie Management
   radarr-hd:
     image: lscr.io/linuxserver/radarr:latest
