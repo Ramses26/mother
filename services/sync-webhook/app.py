@@ -469,6 +469,144 @@ def translate_path(container_path: str) -> tuple:
     return None, None, None
 
 
+def translate_path_to_destination(container_path: str) -> str:
+    """
+    Translate a container path directly to a full destination path.
+
+    Unlike translate_path(), this returns the FULL destination file path,
+    useful for deletion operations where we need the exact file location.
+
+    Args:
+        container_path: Path as seen by Sonarr/Radarr container (e.g., /movies/Title/file.mkv)
+
+    Returns:
+        Full destination path on Unraid, or None if no mapping found
+
+    Example:
+        /movies/Movie Title (2024)/movie.mkv -> /mnt/unraid/media/Movies/Movie Title (2024)/movie.mkv
+        /tv/Show/Season 01/ep.mkv -> /mnt/unraid/media/TV Shows/Show/Season 01/ep.mkv
+    """
+    sorted_mappings = sorted(PATH_MAPPINGS.items(), key=lambda x: len(x[0]), reverse=True)
+
+    for container_base, (src_base, dst_base) in sorted_mappings:
+        if container_path.startswith(container_base):
+            relative = container_path[len(container_base):].lstrip('/')
+            return os.path.join(dst_base, relative)
+    return None
+
+
+def delete_from_destination(container_path: str, title: str = "Unknown") -> tuple:
+    """
+    Delete a file from the destination (Unraid) based on its container path.
+
+    Used when Sonarr/Radarr reports deleted files during upgrades or manual deletions.
+
+    Args:
+        container_path: Path as reported by Sonarr/Radarr (e.g., /movies/Title/old.mkv)
+        title: Display title for logging
+
+    Returns:
+        (success: bool, message: str)
+    """
+    dest_path = translate_path_to_destination(container_path)
+
+    if not dest_path:
+        msg = f"No path mapping for deletion: {container_path}"
+        logger.warning(msg)
+        return False, msg
+
+    logger.info(f"Attempting to delete from destination: {dest_path}")
+
+    try:
+        if os.path.exists(dest_path):
+            if os.path.isfile(dest_path):
+                os.remove(dest_path)
+                msg = f"Deleted file: {dest_path}"
+                logger.info(msg)
+
+                # Also try to clean up empty parent directories
+                parent_dir = os.path.dirname(dest_path)
+                try:
+                    # Only remove if empty and not a base destination path
+                    base_paths = [dst for _, (_, dst) in PATH_MAPPINGS.items()]
+                    while parent_dir and parent_dir not in base_paths:
+                        if os.path.isdir(parent_dir) and not os.listdir(parent_dir):
+                            os.rmdir(parent_dir)
+                            logger.info(f"Removed empty directory: {parent_dir}")
+                            parent_dir = os.path.dirname(parent_dir)
+                        else:
+                            break
+                except OSError as e:
+                    logger.debug(f"Could not remove parent directory: {e}")
+
+                return True, msg
+            elif os.path.isdir(dest_path):
+                # For directories (e.g., movie folders), use shutil.rmtree
+                import shutil
+                shutil.rmtree(dest_path)
+                msg = f"Deleted directory: {dest_path}"
+                logger.info(msg)
+                return True, msg
+        else:
+            msg = f"File not found on destination (already deleted?): {dest_path}"
+            logger.info(msg)
+            return True, msg  # Not an error - file might have been manually deleted
+
+    except PermissionError as e:
+        msg = f"Permission denied deleting {dest_path}: {e}"
+        logger.error(msg)
+        return False, msg
+    except Exception as e:
+        msg = f"Error deleting {dest_path}: {e}"
+        logger.error(msg)
+        return False, msg
+
+
+def process_deleted_files(deleted_files: list, media_type: str, title: str = "Unknown") -> dict:
+    """
+    Process a list of deleted files from Sonarr/Radarr webhook payload.
+
+    Args:
+        deleted_files: List of file objects from deletedFiles in webhook payload
+        media_type: "Movie" or "Episode" for logging
+        title: Display title for notifications
+
+    Returns:
+        dict with 'success_count', 'fail_count', 'messages'
+    """
+    results = {
+        'success_count': 0,
+        'fail_count': 0,
+        'messages': []
+    }
+
+    if not deleted_files:
+        return results
+
+    logger.info(f"Processing {len(deleted_files)} deleted file(s) for {title}")
+
+    for deleted_file in deleted_files:
+        # Radarr uses 'path', Sonarr uses 'path' as well
+        file_path = deleted_file.get('path') or deleted_file.get('relativePath')
+
+        if not file_path:
+            logger.warning(f"No path found in deleted file entry: {deleted_file}")
+            continue
+
+        # If we got a relative path, we need the full path
+        # The webhook should provide the full container path in 'path'
+        success, message = delete_from_destination(file_path, title)
+
+        if success:
+            results['success_count'] += 1
+        else:
+            results['fail_count'] += 1
+        results['messages'].append(message)
+
+    logger.info(f"Deletion results for {title}: {results['success_count']} succeeded, {results['fail_count']} failed")
+    return results
+
+
 def run_rsync(source: str, dest_dir: str, is_file: bool = True) -> tuple:
     """
     Run rsync for a specific file or folder.
@@ -1033,7 +1171,7 @@ def radarr_webhook():
     """
     Handle Radarr webhook.
 
-    Expected events: Download, Upgrade
+    Expected events: Download, Upgrade, MovieFileDelete
     """
     try:
         data = request.json
@@ -1044,8 +1182,8 @@ def radarr_webhook():
         logger.info(f"Radarr webhook received: {event_type}")
         logger.debug(f"Payload: {json.dumps(data, indent=2)}")
 
-        # Only process Download and Upgrade events
-        if event_type not in ['Download', 'Upgrade', 'Test']:
+        # Handle supported event types
+        if event_type not in ['Download', 'Upgrade', 'Test', 'MovieFileDelete']:
             logger.info(f"Ignoring event type: {event_type}")
             return jsonify({'status': 'ignored', 'reason': f'Event type {event_type} not handled'})
 
@@ -1060,13 +1198,52 @@ def radarr_webhook():
 
         # Extract movie info
         movie = data.get('movie', {})
-        movie_file = data.get('movieFile', {})
-
         title = movie.get('title', 'Unknown Movie')
         year = movie.get('year', '')
+        display_title = f"{title} ({year})" if year else title
+
+        # Handle MovieFileDelete event (manual deletion or cleanup)
+        if event_type == 'MovieFileDelete':
+            movie_file = data.get('movieFile', {})
+            file_path = movie_file.get('path', '')
+            delete_reason = data.get('deleteReason', 'unknown')
+
+            logger.info(f"Processing movie file deletion: {display_title} - Reason: {delete_reason}")
+
+            if file_path:
+                success, message = delete_from_destination(file_path, display_title)
+
+                if success:
+                    logger.info(f"Successfully processed deletion for {display_title}")
+                    return jsonify({
+                        'status': 'success',
+                        'message': f'Deleted {display_title} from destination',
+                        'details': message
+                    })
+                else:
+                    logger.warning(f"Deletion issue for {display_title}: {message}")
+                    return jsonify({
+                        'status': 'warning',
+                        'message': message
+                    })
+            else:
+                return jsonify({'status': 'ignored', 'reason': 'No file path in payload'})
+
+        # Handle Download/Upgrade events
+        movie_file = data.get('movieFile', {})
         folder_path = movie.get('folderPath', '')
         file_path = movie_file.get('path', '')
         file_size = movie_file.get('size', 0)
+        is_upgrade = data.get('isUpgrade', False)
+
+        # Process deleted files if this is an upgrade
+        deleted_files = data.get('deletedFiles', [])
+        if deleted_files:
+            logger.info(f"Upgrade detected for {display_title} - processing {len(deleted_files)} deleted file(s)")
+            deletion_results = process_deleted_files(deleted_files, "Movie", display_title)
+
+            if deletion_results['fail_count'] > 0:
+                logger.warning(f"Some deletions failed for {display_title}: {deletion_results['messages']}")
 
         # Safely extract quality - handle various payload formats
         quality_data = movie_file.get('quality', {})
@@ -1081,7 +1258,8 @@ def radarr_webhook():
         else:
             quality = str(quality_data) if quality_data else 'Unknown'
 
-        logger.info(f"Processing: {title} ({year}) - {quality}")
+        upgrade_note = " [UPGRADE]" if is_upgrade else ""
+        logger.info(f"Processing: {display_title} - {quality}{upgrade_note}")
         logger.info(f"File path: {file_path}")
 
         # Translate path
@@ -1091,14 +1269,13 @@ def radarr_webhook():
             logger.error(error_msg)
             send_notification(
                 title="Sync Error - Path Mapping",
-                body=f"Movie: {title} ({year})\nPath: {folder_path}\n\nNo path mapping configured!",
+                body=f"Movie: {display_title}\nPath: {folder_path}\n\nNo path mapping configured!",
                 notify_type=apprise.NotifyType.FAILURE
             )
             return jsonify({'error': error_msg}), 400
 
         # Run rsync in background thread - returns immediately
         logger.info(f"Syncing: {source} -> {dest}")
-        display_title = f"{title} ({year})" if year else title
         background_sync(
             source=source,
             dest=dest,
@@ -1110,12 +1287,18 @@ def radarr_webhook():
         )
 
         # Return immediately - sync happens in background
-        return jsonify({
+        response_data = {
             'status': 'accepted',
             'message': f'Sync started for {display_title}',
             'source': source,
-            'dest': dest
-        })
+            'dest': dest,
+            'is_upgrade': is_upgrade
+        }
+
+        if deleted_files:
+            response_data['deleted_files_processed'] = len(deleted_files)
+
+        return jsonify(response_data)
 
     except Exception as e:
         logger.exception("Error processing Radarr webhook")
@@ -1132,7 +1315,7 @@ def sonarr_webhook():
     """
     Handle Sonarr webhook.
 
-    Expected events: Download, Upgrade
+    Expected events: Download, Upgrade, EpisodeFileDelete
     """
     try:
         data = request.json
@@ -1143,8 +1326,8 @@ def sonarr_webhook():
         logger.info(f"Sonarr webhook received: {event_type}")
         logger.debug(f"Payload: {json.dumps(data, indent=2)}")
 
-        # Only process Download and Upgrade events
-        if event_type not in ['Download', 'Upgrade', 'Test']:
+        # Handle supported event types
+        if event_type not in ['Download', 'Upgrade', 'Test', 'EpisodeFileDelete']:
             logger.info(f"Ignoring event type: {event_type}")
             return jsonify({'status': 'ignored', 'reason': f'Event type {event_type} not handled'})
 
@@ -1159,13 +1342,61 @@ def sonarr_webhook():
 
         # Extract series info
         series = data.get('series', {})
-        episodes = data.get('episodes', [{}])
-        episode_file = data.get('episodeFile', {})
-
         series_title = series.get('title', 'Unknown Series')
         series_path = series.get('path', '')
+
+        # Handle EpisodeFileDelete event (manual deletion or cleanup)
+        if event_type == 'EpisodeFileDelete':
+            episode_file = data.get('episodeFile', {})
+            file_path = episode_file.get('path', '')
+            delete_reason = data.get('deleteReason', 'unknown')
+
+            # Build episode info for logging
+            episodes = data.get('episodes', [{}])
+            ep_codes = []
+            for ep in episodes:
+                season = ep.get('seasonNumber', 0)
+                episode_num = ep.get('episodeNumber', 0)
+                ep_codes.append(f"S{season:02d}E{episode_num:02d}")
+            ep_string = '-'.join(ep_codes) if ep_codes else 'Unknown'
+            display_title = f"{series_title} - {ep_string}"
+
+            logger.info(f"Processing episode file deletion: {display_title} - Reason: {delete_reason}")
+
+            if file_path:
+                success, message = delete_from_destination(file_path, display_title)
+
+                if success:
+                    logger.info(f"Successfully processed deletion for {display_title}")
+                    return jsonify({
+                        'status': 'success',
+                        'message': f'Deleted {display_title} from destination',
+                        'details': message
+                    })
+                else:
+                    logger.warning(f"Deletion issue for {display_title}: {message}")
+                    return jsonify({
+                        'status': 'warning',
+                        'message': message
+                    })
+            else:
+                return jsonify({'status': 'ignored', 'reason': 'No file path in payload'})
+
+        # Handle Download/Upgrade events
+        episodes = data.get('episodes', [{}])
+        episode_file = data.get('episodeFile', {})
         file_path = episode_file.get('path', '')
         file_size = episode_file.get('size', 0)
+        is_upgrade = data.get('isUpgrade', False)
+
+        # Process deleted files if this is an upgrade
+        deleted_files = data.get('deletedFiles', [])
+        if deleted_files:
+            logger.info(f"Upgrade detected for {series_title} - processing {len(deleted_files)} deleted file(s)")
+            deletion_results = process_deleted_files(deleted_files, "Episode", series_title)
+
+            if deletion_results['fail_count'] > 0:
+                logger.warning(f"Some deletions failed for {series_title}: {deletion_results['messages']}")
 
         # Safely extract quality - handle various payload formats
         quality_data = episode_file.get('quality', {})
@@ -1184,8 +1415,8 @@ def sonarr_webhook():
         ep_codes = []
         for ep in episodes:
             season = ep.get('seasonNumber', 0)
-            episode = ep.get('episodeNumber', 0)
-            ep_codes.append(f"S{season:02d}E{episode:02d}")
+            episode_num = ep.get('episodeNumber', 0)
+            ep_codes.append(f"S{season:02d}E{episode_num:02d}")
         ep_string = '-'.join(ep_codes) if ep_codes else 'Unknown'
 
         ep_titles = [ep.get('title', '') for ep in episodes if ep.get('title')]
@@ -1193,7 +1424,8 @@ def sonarr_webhook():
         if len(ep_titles) > 2:
             ep_title += f" (+{len(ep_titles)-2} more)"
 
-        logger.info(f"Processing: {series_title} - {ep_string}")
+        upgrade_note = " [UPGRADE]" if is_upgrade else ""
+        logger.info(f"Processing: {series_title} - {ep_string}{upgrade_note}")
         logger.info(f"File path: {file_path}")
 
         # Translate path - sync the specific episode file
@@ -1228,12 +1460,18 @@ def sonarr_webhook():
         )
 
         # Return immediately - sync happens in background
-        return jsonify({
+        response_data = {
             'status': 'accepted',
             'message': f'Sync started for {display_title}',
             'source': source,
-            'dest': dest
-        })
+            'dest': dest,
+            'is_upgrade': is_upgrade
+        }
+
+        if deleted_files:
+            response_data['deleted_files_processed'] = len(deleted_files)
+
+        return jsonify(response_data)
 
     except Exception as e:
         logger.exception("Error processing Sonarr webhook")
