@@ -1,17 +1,27 @@
 services:
   # qBittorrent - Download Client
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest
+    image: ghcr.io/linuxserver/qbittorrent
     container_name: qbittorrent
-    network_mode: host
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: curl -f http://localhost:8080/ || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
     environment:
       - PUID=1028
       - PGID=100
       - TZ=America/New_York
       - WEBUI_PORT=8080
+    ports:
+      - "8080:8080"
     volumes:
       - /volume1/docker/qbittorrent:/config
       - /volume1/Downloads:/downloads
+    networks:
+      - media_net
     restart: unless-stopped
 
   # QUI - Modern qBittorrent Web Interface
@@ -20,17 +30,25 @@ services:
   qui:
     image: ghcr.io/autobrr/qui:latest
     container_name: qui
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 7476 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
     user: "1028:100"
     volumes:
-      - /volume1/docker/qui:/config
+      - /volume1/docker/qui:/config:rw
     ports:
       - "7476:7476"
+    networks:
+      - media_net
     restart: unless-stopped
 
   # Cross-seed - Automated Cross-Seeding with Hardlink Support
   # Finds matching torrents across trackers and injects with hardlinks
   cross-seed:
-    image: ghcr.io/cross-seed/cross-seed:6
+    image: ghcr.io/cross-seed/cross-seed:latest
     container_name: cross-seed
     user: "1028:100"
     environment:
@@ -48,6 +66,8 @@ services:
     ports:
       - "2468:2468"
     command: daemon
+    networks:
+      - media_net
     restart: unless-stopped
     depends_on:
       - qbittorrent
@@ -73,10 +93,20 @@ services:
       - QBT_REM_UNREGISTERED=true
       - QBT_REM_ORPHANED=true     # can now access BT_backup locally
       - QBT_TAG_TRACKER_ERROR=true
+      # qBittorrent connection - localhost since on same host
+      - QBITMANAGE_QBT_HOST=http://qbittorrent:8080
+      - QBITMANAGE_QBT_USER=${QBITMANAGE_QBT_USER:-}
+      - QBITMANAGE_QBT_PASS=${QBITMANAGE_QBT_PASS:-}
     volumes:
       - /volume1/docker/qbitmanage:/config
       - /volume1/Downloads:/downloads
       - /volume1/docker/qbittorrent/qBittorrent/BT_backup:/bt_backup:ro
+    networks:
+      - media_net
     restart: unless-stopped
     depends_on:
       - qbittorrent
+
+networks:
+  media_net:
+    external: true
