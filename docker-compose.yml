@@ -1,23 +1,24 @@
 services:
-  # qBittorrent - Download Client
-  qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest
-    container_name: qbittorrent
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - WEBUI_PORT=${QBITTORRENT_PORT}
-    volumes:
-      - ${CONFIG_PATH}/qbittorrent:/config
-      - ${DOWNLOADS_PATH}:/downloads
-    ports:
-      - "${QBITTORRENT_PORT}:${QBITTORRENT_PORT}"
-      - "${QBITTORRENT_CONNECTION_PORT}:${QBITTORRENT_CONNECTION_PORT}"
-      - "${QBITTORRENT_CONNECTION_PORT}:${QBITTORRENT_CONNECTION_PORT}/udp"
-    restart: unless-stopped
-    networks:
-      - mother_network
+  # qBittorrent - MIGRATED TO SYNOLOGY RS2821RP+ (10.0.1.203:8080)
+  # Moved for better performance - eliminates NFS write overhead
+  # qbittorrent:
+  #   image: lscr.io/linuxserver/qbittorrent:latest
+  #   container_name: qbittorrent
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TZ=${TZ}
+  #     - WEBUI_PORT=${QBITTORRENT_PORT}
+  #   volumes:
+  #     - ${CONFIG_PATH}/qbittorrent:/config
+  #     - ${DOWNLOADS_PATH}:/downloads
+  #   ports:
+  #     - "${QBITTORRENT_PORT}:${QBITTORRENT_PORT}"
+  #     - "${QBITTORRENT_CONNECTION_PORT}:${QBITTORRENT_CONNECTION_PORT}"
+  #     - "${QBITTORRENT_CONNECTION_PORT}:${QBITTORRENT_CONNECTION_PORT}/udp"
+  #   restart: unless-stopped
+  #   networks:
+  #     - mother_network
 
   # Cross-seed - Automated Cross-Seeding (disabled for now)
   # cross-seed:
@@ -36,6 +37,7 @@ services:
   #     - mother_network
   
   # qbit_manage - qBittorrent automation/cleanup
+  # Connects to qBittorrent on Synology (10.0.1.203:8080)
   qbitmanage:
     image: ghcr.io/stuffanthings/qbit_manage:latest
     container_name: qbitmanage
@@ -52,15 +54,14 @@ services:
       - QBT_SHARE_LIMITS=true
       - QBT_TAG_NOHARDLINKS=true
       - QBT_REM_UNREGISTERED=true
-      - QBT_REM_ORPHANED=true
+      - QBT_REM_ORPHANED=false  # disabled - requires BT_backup access
       - QBT_TAG_TRACKER_ERROR=true
-      - QBITMANAGE_QBT_HOST=${QBITMANAGE_QBT_HOST:-http://qbittorrent:8080}
+      - QBITMANAGE_QBT_HOST=${QBITMANAGE_QBT_HOST:-http://10.0.1.203:8080}
       - QBITMANAGE_QBT_USER=${QBITMANAGE_QBT_USER}
       - QBITMANAGE_QBT_PASS=${QBITMANAGE_QBT_PASS}
     volumes:
       - ${CONFIG_PATH}/qbitmanage:/config
       - ${DOWNLOADS_PATH}:/downloads
-      - ${CONFIG_PATH}/qbittorrent/qBittorrent/BT_backup:/bt_backup:ro
     restart: unless-stopped
     networks:
       - mother_network

@@ -1,4 +1,5 @@
 services:
+  # qBittorrent - Download Client
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
@@ -12,3 +13,41 @@ services:
       - /volume1/docker/qbittorrent:/config
       - /volume1/Downloads:/downloads
     restart: unless-stopped
+
+  # QUI - Modern qBittorrent Web Interface
+  # Provides multi-instance management, cross-seeding UI, rule-based automation
+  # Access at http://10.0.1.203:7476
+  qui:
+    image: ghcr.io/autobrr/qui:latest
+    container_name: qui
+    user: "1028:100"
+    volumes:
+      - /volume1/docker/qui:/config
+    ports:
+      - "7476:7476"
+    restart: unless-stopped
+
+  # Cross-seed - Automated Cross-Seeding with Hardlink Support
+  # Finds matching torrents across trackers and injects with hardlinks
+  cross-seed:
+    image: ghcr.io/cross-seed/cross-seed:6
+    container_name: cross-seed
+    user: "1028:100"
+    environment:
+      - TZ=America/New_York
+    volumes:
+      # Config directory
+      - /volume1/docker/cross-seed:/config
+      # Downloads - MUST be same volume as linkDirs for hardlinks to work
+      - /volume1/Downloads:/downloads
+      # BT_backup for torrent-based matching (more robust than data-based)
+      - /volume1/docker/qbittorrent/qBittorrent/BT_backup:/torrents:ro
+      # Media libraries for data-based matching (optional, read-only)
+      - /volume1/4KMovies:/media/4kmovies:ro
+      - /volume1/4KTV:/media/4ktv:ro
+    ports:
+      - "2468:2468"
+    command: daemon
+    restart: unless-stopped
+    depends_on:
+      - qbittorrent
