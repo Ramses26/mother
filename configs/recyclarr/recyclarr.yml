@@ -465,7 +465,7 @@ sonarr:
 
 
     media_naming:
-      series: default
+      series: plex-tvdb
       season: default
       episodes:
         rename: true
@@ -636,7 +636,7 @@ sonarr:
               - WEBRip-2160p
 
     media_naming:
-      series: default
+      series: plex-tvdb
       season: default
       episodes:
         rename: true
