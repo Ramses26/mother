@@ -125,21 +125,63 @@ def count_completed(progress_path: Path) -> int:
 def is_script_running(script_name: str) -> bool:
     """Check if sync script is currently running"""
     try:
+        # Try exact script name first
         result = subprocess.run(
             ['pgrep', '-f', script_name],
             capture_output=True, text=True, timeout=10
         )
-        return result.returncode == 0
+        if result.returncode == 0:
+            return True
+
+        # Also check for the base pattern (e.g., any tv_sync_actions running)
+        if 'tv_sync' in script_name:
+            result = subprocess.run(
+                ['pgrep', '-f', 'tv_sync_actions.*\\.sh'],
+                capture_output=True, text=True, timeout=10
+            )
+            return result.returncode == 0
+        elif 'sync_actions' in script_name:
+            # Check for movie sync scripts (but not tv_sync)
+            result = subprocess.run(
+                ['pgrep', '-af', 'sync_actions'],
+                capture_output=True, text=True, timeout=10
+            )
+            if result.returncode == 0:
+                # Make sure it's not a tv_sync
+                for line in result.stdout.split('\n'):
+                    if 'sync_actions' in line and 'tv_sync' not in line:
+                        return True
+        return False
     except Exception:
         return False
 
 
-def find_latest_script(directory: Path, pattern: str) -> Path:
-    """Find the most recent script matching pattern"""
+def find_script_with_progress(directory: Path, pattern: str) -> Path:
+    """
+    Find a script that has a matching progress file.
+    Prefers scripts with existing progress files (actually being used).
+    Falls back to most recent script if no progress files exist.
+    """
     scripts = list(directory.glob(pattern))
     if not scripts:
         return None
-    # Sort by modification time, newest first
+
+    # Check each script for a matching progress file
+    scripts_with_progress = []
+    for script in scripts:
+        progress_file = get_progress_file(script)
+        if progress_file and progress_file.exists():
+            # Get the number of entries in progress file
+            with open(progress_file) as f:
+                count = sum(1 for line in f if line.strip())
+            scripts_with_progress.append((script, progress_file, count))
+
+    # If we found scripts with progress files, use the one with most progress
+    if scripts_with_progress:
+        scripts_with_progress.sort(key=lambda x: x[2], reverse=True)
+        return scripts_with_progress[0][0]
+
+    # Fall back to most recent script
     scripts.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     return scripts[0]
 
@@ -213,6 +255,11 @@ def main():
         action='store_true',
         help='Print message but do not send to Telegram'
     )
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='Show which scripts and progress files are being used'
+    )
 
     args = parser.parse_args()
 
@@ -230,9 +277,9 @@ def main():
         ]
         for d in search_dirs:
             if d.exists():
-                found = find_latest_script(d, 'sync_actions_*bw*.sh')
+                found = find_script_with_progress(d, 'sync_actions_*bw*.sh')
                 if not found:
-                    found = find_latest_script(d, 'sync_actions_*.sh')
+                    found = find_script_with_progress(d, 'sync_actions_*.sh')
                 if found:
                     movie_script = found
                     break
@@ -240,10 +287,27 @@ def main():
     if not tv_script:
         for d in search_dirs:
             if d.exists():
-                found = find_latest_script(d, 'tv_sync_actions_*.sh')
+                found = find_script_with_progress(d, 'tv_sync_actions_*.sh')
                 if found:
                     tv_script = found
                     break
+
+    # Verbose output
+    if args.verbose:
+        print("Scripts detected:")
+        if movie_script:
+            progress = get_progress_file(movie_script)
+            print(f"  Movie: {movie_script}")
+            print(f"         Progress: {progress}")
+        else:
+            print("  Movie: Not found")
+        if tv_script:
+            progress = get_progress_file(tv_script)
+            print(f"  TV:    {tv_script}")
+            print(f"         Progress: {progress}")
+        else:
+            print("  TV:    Not found")
+        print()
 
     # Get status for each
     movie_status = get_status(movie_script, 'movie') if movie_script else None
