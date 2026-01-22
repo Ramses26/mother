@@ -1,391 +1,369 @@
 # Running Inventory Generation - Quick Guide
 
-**Last Updated:** 2024-12-23
+**Last Updated:** 2026-01-22
 
 ---
 
-## 🎯 Where to Run
+## Quick Summary
 
-### Option 1: Split Approach (RECOMMENDED - FASTEST)
+**The fastest way to run inventory scans:**
+
+```bash
+# SSH to terminus
+ssh terminus
+
+# Run the scan script (uses --fast mode by default)
+cd ~/projects/mother/scripts
+./scan_local.sh
+
+# Check progress
+./scan_local.sh --status
+```
+
+---
+
+## Where to Run
+
+### Recommended: Split Approach (FASTEST)
 
 **Run Ali's inventories on Terminus** (local to Unraid):
-- ✅ LOCAL access to Unraid (super fast)
-- ✅ No VPN overhead
-- ✅ Estimated time: 4-6 hours for all 4 libraries
+- LOCAL access to Unraid (super fast)
+- No VPN overhead
+- Estimated time: 1-2 hours with `--fast` mode
 
 **Run Chris's inventories on Mother** (local to Synology):
-- ✅ LOCAL access to Synology (super fast)
-- ✅ No VPN overhead
-- ✅ Estimated time: 4-6 hours for all 4 libraries
+- LOCAL access to Synology (super fast)
+- No VPN overhead
+- Estimated time: 1-2 hours with `--fast` mode
 
 **Then copy Ali's results to Mother for comparison.**
 
-### Option 2: All on Mother (Slower)
-
-**Run everything on Mother server**:
-- ✅ Direct access to Chris's Synology (fast)
-- ⚠️ VPN access to your Unraid (slower)
-- ⏱️ Estimated time: 1-2 days for all 8 libraries
-
-**Recommended:** Use Option 1 for much faster results!
-
 ---
 
-## ⏱️ Expected Time
+## Using scan_local.sh (RECOMMENDED)
 
-### Without Hashing (Recommended):
-- **Per library**: 6-12 hours
-- **All 8 libraries**: 1-2 days total
-- **Why so long?**: 159 TB, tens of thousands of files, mediainfo extraction
+The `scan_local.sh` script auto-detects which server you're on and scans the appropriate libraries.
 
-### With Hashing (NOT Recommended):
-- **Per library**: Could be WEEKS
-- **Total**: Could be MONTHS
-- **Why avoid**: MD5 hashing 159 TB is extremely slow and unnecessary
-
-### The scripts have hashing DISABLED by default for this reason!
-
----
-
-## 📋 Prerequisites on Mother
+### On Terminus (Ali's Unraid)
 
 ```bash
-# 1. Install Python dependencies
-pip3 install tqdm
-
-# 2. Install mediainfo (HIGHLY RECOMMENDED)
-sudo apt install mediainfo
-
-# 3. Make scripts executable
-chmod +x /opt/mother/scripts/*.sh
-chmod +x /opt/mother/scripts/*.py
-
-# 4. Verify storage mounts
-df -h | grep -E "(unraid|synology)"
-
-# You should see:
-# /mnt/unraid             (Ali's Unraid via NFS/SMB)
-# /mnt/synology/rs-movies (Chris's Movies)
-# /mnt/synology/rs-tv     (Chris's TV)
-# /mnt/synology/rs-4kmedia (Chris's 4K content)
-```
-
----
-
-## 🚀 Running the Inventories
-
-### Method 1: Split Approach (FASTEST - Recommended)
-
-**On Terminus (Ali's libraries):**
-
-```bash
-# SSH to Terminus
+# SSH to terminus
 ssh terminus
 
-# Copy the script from Mother project
-scp mother:/opt/mother/scripts/generate_inventory.py ~/
+# Navigate to scripts
+cd ~/projects/mother/scripts
 
-# Install dependencies if needed
-pip3 install tqdm
-sudo apt install mediainfo
+# Scan all 4 libraries (default: --fast mode)
+./scan_local.sh
 
-# Create output directory
-mkdir -p ~/inventories
+# OR scan specific libraries:
+./scan_local.sh --movies           # Movies only (1080p + 4K)
+./scan_local.sh --tv               # TV only (1080p + 4K)
+./scan_local.sh --movies --1080p   # 1080p Movies only
+./scan_local.sh --tv --4k          # 4K TV only
 
-# Use screen
-screen -S inventory
+# Check progress
+./scan_local.sh --status
 
-# Run for Ali's 4 libraries
-python3 ~/generate_inventory.py \
-  /mnt/user/Media/Movies \
-  -o ~/inventories/ali_movies
-
-python3 ~/generate_inventory.py \
-  "/mnt/user/Media/4K Movies" \
-  -o ~/inventories/ali_4kmovies
-
-python3 ~/generate_inventory.py \
-  "/mnt/user/Media/TV Shows" \
-  -o ~/inventories/ali_tv
-
-python3 ~/generate_inventory.py \
-  "/mnt/user/Media/4K TV Shows" \
-  -o ~/inventories/ali_4ktv
-
-# Detach: Ctrl+A, D
+# Attach to a running scan
+screen -r scan_ali_movies_1080p
+# Detach: Ctrl+A, then D
 ```
 
-**On Mother (Chris's libraries):**
+### On Mother (Chris's Synology)
 
 ```bash
-# SSH to Mother
+# SSH to mother
 ssh mother
 
-# Use screen
-screen -S inventory
+# Navigate to scripts
+cd /opt/mother/scripts
 
-# Run for Chris's 4 libraries
+# Scan all 4 libraries
+./scan_local.sh
+
+# Check progress
+./scan_local.sh --status
+```
+
+### Paths Used by scan_local.sh
+
+| Server   | Library      | Path                           |
+|----------|--------------|--------------------------------|
+| Terminus | Movies 1080p | `/mnt/media/Movies`            |
+| Terminus | Movies 4K    | `/mnt/media/4K Movies`         |
+| Terminus | TV 1080p     | `/mnt/media/TV Shows`          |
+| Terminus | TV 4K        | `/mnt/media/4K TV Shows`       |
+| Mother   | Movies 1080p | `/mnt/synology/rs-movies`      |
+| Mother   | Movies 4K    | `/mnt/synology/rs-4kmedia/4kmovies` |
+| Mother   | TV 1080p     | `/mnt/synology/rs-tv`          |
+| Mother   | TV 4K        | `/mnt/synology/rs-4kmedia/4ktv`|
+
+---
+
+## Using generate_inventory.py Directly
+
+If you need more control, use the Python script directly.
+
+### Script Location
+
+The script is at: `~/projects/mother/scripts/generate_inventory.py` (on terminus)
+Or: `/opt/mother/scripts/generate_inventory.py` (on mother)
+
+### Syntax
+
+```bash
+python3 generate_inventory.py <path> -o <output_base> [OPTIONS]
+
+Options:
+  -o, --output OUTPUT  Output file base (without extension) - REQUIRED
+  -v, --verbose        Enable verbose error output
+  --fast               Fast mode: skip MediaInfo (RECOMMENDED for NFS)
+```
+
+### Examples
+
+```bash
+# On Terminus - with --fast mode (RECOMMENDED)
+cd ~/projects/mother/scripts
+
+python3 generate_inventory.py "/mnt/media/Movies" \
+  -o ../inventories/ali_movies_1080p --fast
+
+python3 generate_inventory.py "/mnt/media/4K Movies" \
+  -o ../inventories/ali_movies_4k --fast
+
+python3 generate_inventory.py "/mnt/media/TV Shows" \
+  -o ../inventories/ali_tv_1080p --fast
+
+python3 generate_inventory.py "/mnt/media/4K TV Shows" \
+  -o ../inventories/ali_tv_4k --fast
+
+# On Mother - with --fast mode
+cd /opt/mother/scripts
+
+python3 generate_inventory.py /mnt/synology/rs-movies \
+  -o ../inventories/chris_movies_1080p --fast
+
+python3 generate_inventory.py /mnt/synology/rs-4kmedia/4kmovies \
+  -o ../inventories/chris_movies_4k --fast
+
+python3 generate_inventory.py /mnt/synology/rs-tv \
+  -o ../inventories/chris_tv_1080p --fast
+
+python3 generate_inventory.py /mnt/synology/rs-4kmedia/4ktv \
+  -o ../inventories/chris_tv_4k --fast
+```
+
+---
+
+## The --fast Flag
+
+### What --fast Does
+
+- **Skips MediaInfo**: No video codec/bitrate/duration extraction from file headers
+- **Uses filename parsing only**: Extracts quality info from TRaSH-style filenames
+- **Much faster**: 1-2 hours vs 6-12 hours per library
+
+### Why Use --fast
+
+1. **compare_libraries.py doesn't use MediaInfo data** - it only needs filename metadata
+2. **Network speed**: MediaInfo is extremely slow over NFS/VPN
+3. **Same quality comparison results**: Filenames contain all needed quality indicators
+
+### When to Skip --fast
+
+- If you need exact video dimensions, bitrate, or duration
+- For detailed analysis beyond quality comparison
+- For local drives with fast I/O
+
+**Recommendation: Always use `--fast` for inventory generation before compare_libraries.py**
+
+---
+
+## After Inventories Complete
+
+### Copy Ali's Inventories to Mother
+
+```bash
+# From terminus
+scp ~/projects/mother/inventories/ali_*.json mother:/opt/mother/inventories/
+```
+
+### Run Compare Libraries
+
+There are two comparison scripts:
+- **`compare_libraries.py`** - For Movies (matches by TMDB ID)
+- **`compare_tv_libraries.py`** - For TV Shows (matches by TVDB ID + Season + Episode)
+
+```bash
+# On mother
 cd /opt/mother
 
-python3 scripts/generate_inventory.py \
-  /mnt/synology/rs-movies/movies \
-  -o /opt/mother/inventories/chris_movies
-
-python3 scripts/generate_inventory.py \
-  /mnt/synology/rs-4kmedia/4kmovies \
-  -o /opt/mother/inventories/chris_4kmovies
-
-python3 scripts/generate_inventory.py \
-  /mnt/synology/rs-tv/tv \
-  -o /opt/mother/inventories/chris_tv
-
-python3 scripts/generate_inventory.py \
-  /mnt/synology/rs-4kmedia/4ktv \
-  -o /opt/mother/inventories/chris_4ktv
-
-# Detach: Ctrl+A, D
-```
-
-**Copy Ali's results to Mother:**
-
-```bash
-# From Terminus, copy to Mother
-scp ~/inventories/ali_*.{json,csv} mother:/opt/mother/inventories/
-```
-
-### Method 2: All on Mother (Automated)
-
-```bash
-# Use screen to run in background
-screen -S inventory
-
-# Run the comprehensive inventory script
-cd /opt/mother
-./scripts/run_all_inventories.sh
-
-# This will generate all 8 inventories (takes longer due to VPN):
-# - ali_movies.json/csv
-# - ali_4kmovies.json/csv
-# - ali_tv.json/csv
-# - ali_4ktv.json/csv
-# - chris_movies.json/csv
-# - chris_4kmovies.json/csv
-# - chris_tv.json/csv
-# - chris_4ktv.json/csv
-
-# Detach from screen: Ctrl+A, then D
-# Reattach later: screen -r inventory
-```
-
-### Method 3: Manual (One at a Time)
-
-```bash
-# Ali's HD Movies
-python3 scripts/generate_inventory.py \
-  /mnt/unraid/media/Movies \
-  -o /opt/mother/inventories/ali_movies
-
-# Ali's 4K Movies
-python3 scripts/generate_inventory.py \
-  "/mnt/unraid/media/4K Movies" \
-  -o /opt/mother/inventories/ali_4kmovies
-
-# Ali's HD TV
-python3 scripts/generate_inventory.py \
-  "/mnt/unraid/media/TV Shows" \
-  -o /opt/mother/inventories/ali_tv
-
-# Ali's 4K TV
-python3 scripts/generate_inventory.py \
-  "/mnt/unraid/media/4K TV Shows" \
-  -o /opt/mother/inventories/ali_4ktv
-
-# Chris's HD Movies
-python3 scripts/generate_inventory.py \
-  /mnt/synology/rs-movies/movies \
-  -o /opt/mother/inventories/chris_movies
-
-# Chris's 4K Movies
-python3 scripts/generate_inventory.py \
-  /mnt/synology/rs-4kmedia/4kmovies \
-  -o /opt/mother/inventories/chris_4kmovies
-
-# Chris's HD TV
-python3 scripts/generate_inventory.py \
-  /mnt/synology/rs-tv/tv \
-  -o /opt/mother/inventories/chris_tv
-
-# Chris's 4K TV
-python3 scripts/generate_inventory.py \
-  /mnt/synology/rs-4kmedia/4ktv \
-  -o /opt/mother/inventories/chris_4ktv
-```
-
----
-
-## 📊 Monitoring Progress
-
-```bash
-# Reattach to screen session
-screen -r inventory
-
-# Or tail the log file
-tail -f /opt/mother/logs/inventory_generation.log
-
-# Check what's been created
-ls -lh /opt/mother/inventories/
-
-# If using manual method, watch progress in real-time
-# (script shows progress bars with tqdm)
-```
-
----
-
-## 🔍 What Gets Captured
-
-For each file, the inventory includes:
-
-**File Information:**
-- Full file path
-- File size (bytes and GB)
-- Created/modified dates
-- File extension
-
-**Quality from Filename:**
-- Resolution (2160p, 1080p, 720p, etc.)
-- Source (BluRay, Remux, WEB-DL, WEBRip, etc.)
-- HDR format (HDR10, HDR, DV, HDR10+, HLG)
-- Audio format (Atmos, TrueHD, DTS-HD, etc.)
-- Video codec (HEVC, AVC, AV1)
-
-**Mediainfo Data (if installed):**
-- Actual video codec
-- Video bitrate
-- Exact resolution
-- Detected HDR format
-- Audio codec details
-- Channel layout
-- Runtime
-
-**NO MD5 Hashes:**
-- Hashing is disabled by default (too slow)
-- Not needed for quality comparison
-- Can be enabled with `--hash` flag if you really want it
-
----
-
-## 🔄 After Inventories Complete
-
-### Compare Libraries
-
-```bash
-# Compare HD Movies
+# Compare Movies (use compare_libraries.py)
 python3 scripts/compare_libraries.py \
-  /opt/mother/inventories/ali_movies.json \
-  /opt/mother/inventories/chris_movies.json \
-  -o /opt/mother/inventories/reports/movies
+  inventories/ali_movies_1080p.json \
+  inventories/chris_movies_1080p.json \
+  -o reports
 
-# Compare 4K Movies
 python3 scripts/compare_libraries.py \
-  /opt/mother/inventories/ali_4kmovies.json \
-  /opt/mother/inventories/chris_4kmovies.json \
-  -o /opt/mother/inventories/reports/4kmovies
+  inventories/ali_movies_4k.json \
+  inventories/chris_movies_4k.json \
+  -o reports
 
-# Compare HD TV
-python3 scripts/compare_libraries.py \
-  /opt/mother/inventories/ali_tv.json \
-  /opt/mother/inventories/chris_tv.json \
-  -o /opt/mother/inventories/reports/tv
+# Compare TV Shows (use compare_tv_libraries.py)
+python3 scripts/compare_tv_libraries.py \
+  inventories/ali_tv_1080p.json \
+  inventories/chris_tv_1080p.json \
+  -o reports
 
-# Compare 4K TV
-python3 scripts/compare_libraries.py \
-  /opt/mother/inventories/ali_4ktv.json \
-  /opt/mother/inventories/chris_4ktv.json \
-  -o /opt/mother/inventories/reports/4ktv
+python3 scripts/compare_tv_libraries.py \
+  inventories/ali_tv_4k.json \
+  inventories/chris_tv_4k.json \
+  -o reports
 ```
 
 ### Review Reports
 
+Each comparison generates:
+- `detailed_comparison_[timestamp].txt` - Human readable report
+- `sync_plan_[timestamp].csv` - Spreadsheet format
+- `sync_actions_[timestamp].sh` - Executable sync script
+
+---
+
+## What Gets Captured
+
+For each file, the inventory includes:
+
+**File Information:**
+- Full file path (relative and absolute)
+- File size (bytes and GB)
+- File extension
+
+**Quality from Filename (TRaSH format):**
+- Resolution (2160p, 1080p, 720p, etc.)
+- Source (BluRay, Remux, WEB-DL, WEBRip, etc.)
+- HDR format (HDR10, HDR, DV, HDR10+, HLG)
+- Audio format (Atmos, TrueHD, DTS-HD MA, etc.)
+- Video codec (HEVC, AVC, AV1)
+- Release group
+
+**Database IDs (from folder/filename):**
+- TVDB ID: `{tvdb-123456}`
+- TMDB ID: `{tmdb-530915}`
+- IMDB ID: `{imdb-tt1234567}`
+- Year: `(2019)`
+
+**MediaInfo Data (only without --fast):**
+- Actual video codec and bitrate
+- Exact resolution (width x height)
+- Duration in minutes
+- Detected HDR format from video tracks
+
+---
+
+## Prerequisites
+
+### On Terminus
+
 ```bash
-# Each comparison creates:
-# - comparison_summary_[timestamp].txt (human readable)
-# - sync_plan_[timestamp].csv (for sync script)
+# Usually already installed, but verify:
+pip3 install tqdm
 
-# Read the summaries
-cat /opt/mother/inventories/reports/*/comparison_summary_*.txt | less
+# Optional (only needed for full mode):
+sudo apt install mediainfo
+```
 
-# The reports will tell you:
-# - What files only Ali has
-# - What files only Chris has  
-# - When you both have a file, which version is better
-# - Total items to sync in each direction
+### On Mother
+
+```bash
+pip3 install tqdm
+sudo apt install mediainfo  # Optional
 ```
 
 ---
 
-## 💡 Tips
+## Troubleshooting
 
-### Use Screen or Tmux
+### "Unknown hostname" Error
+
+The `scan_local.sh` script only works on `terminus` or `mother`. If running elsewhere:
+
 ```bash
-# Screen commands:
-screen -S inventory          # Create new session
-Ctrl+A, then D              # Detach
-screen -r inventory         # Reattach
-screen -list                # List sessions
-
-# Tmux commands:
-tmux new -s inventory       # Create new session
-Ctrl+B, then D              # Detach
-tmux attach -t inventory    # Reattach
-tmux ls                     # List sessions
+# Override with environment variables
+OWNER=ali \
+MOVIES_1080P="/path/to/movies" \
+MOVIES_4K="/path/to/4kmovies" \
+TV_1080P="/path/to/tv" \
+TV_4K="/path/to/4ktv" \
+./scan_local.sh
 ```
 
-### Check Disk Space
+### Script Not Found
+
 ```bash
-# Inventory files are small (few MB), but check anyway
-df -h /opt/mother
+# Wrong: Don't use ~/generate_inventory.py
+python3 ~/generate_inventory.py ...  # WRONG!
+
+# Right: Use the project script
+cd ~/projects/mother/scripts
+python3 generate_inventory.py ...    # CORRECT!
 ```
 
-### If Something Fails
-```bash
-# Check the log
-tail -100 /opt/mother/logs/inventory_generation.log
+### Path Not Found
 
-# Common issues:
-# - Mount not accessible: Check NFS/SMB mounts
-# - Permission denied: Check PUID/PGID match
-# - Python error: Install missing dependencies
+Verify mounts are accessible:
+```bash
+ls -la "/mnt/media/Movies" 2>/dev/null && echo "OK" || echo "Not mounted"
+```
+
+### Check Running Scans
+
+```bash
+# List screen sessions
+screen -ls
+
+# Attach to a scan
+screen -r scan_ali_movies_1080p
+
+# Detach without stopping
+# Press Ctrl+A, then D
 ```
 
 ---
 
-## 🎬 Your Updated HDR Preferences
+## Tips
 
-The comparison script now uses:
+### Use Screen (Already Built Into scan_local.sh)
 
-1. **HDR10** - 300 points (HIGHEST - standard HDR)
-2. **HDR** - 250 points (generic HDR)
-3. **DV** - 150 points (Dolby Vision)
-4. **HDR10+** - 100 points (Samsung proprietary, LOWER)
-5. **HLG** - 100 points (Hybrid Log-Gamma)
+The `scan_local.sh` script automatically uses screen sessions, so you can:
+- Disconnect SSH and scans continue running
+- Check progress later with `./scan_local.sh --status`
+- Attach to watch progress: `screen -r <session_name>`
 
-This matches your preference for standard HDR10 over Samsung's HDR10+.
+### Running Manually with Screen
 
-See [docs/TRASHGUIDES_REFERENCE.md](../docs/TRASHGUIDES_REFERENCE.md) for complete scoring details.
+```bash
+# Create named session
+screen -S inventory
 
----
+# Run your commands...
+python3 generate_inventory.py ...
 
-## 📞 Next Steps
-
-1. **Deploy Mother** following QUICK_START.md
-2. **Configure storage mounts** (NFS/SMB)
-3. **Run this inventory generation** (start it and let it run for 1-2 days)
-4. **Compare libraries** using the compare script
-5. **Review sync plans** to see what needs to be copied where
-6. **Execute initial sync** when ready
-
-The inventory generation can run while you continue setting up other parts of Mother!
+# Detach: Ctrl+A, then D
+# Reattach later: screen -r inventory
+```
 
 ---
 
-**Remember**: This is a ONE-TIME process. After initial sync, ongoing changes will be handled by Radarr/Sonarr and the real-time sync script.
+## Complete Workflow Summary
+
+1. **SSH to terminus**: `ssh terminus`
+2. **Run scans**: `cd ~/projects/mother/scripts && ./scan_local.sh`
+3. **Wait** (check with `./scan_local.sh --status`)
+4. **Copy to mother**: `scp ../inventories/ali_*.json mother:/opt/mother/inventories/`
+5. **SSH to mother**: `ssh mother`
+6. **Run comparisons**: `python3 scripts/compare_libraries.py ...`
+7. **Review reports** in `/opt/mother/reports/`
+8. **Execute sync** using generated scripts

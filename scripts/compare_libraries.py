@@ -1049,16 +1049,14 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
         f.write('fi\n')
         f.write('echo ""\n\n')
 
-        # Moves to deleted folders
-        f.write("# === MOVE TO DELETED FOLDERS ===\n\n")
+        # Moves to deleted folders - ONLY for Ali's Unraid (hardlinks make moves instant)
+        # Chris's Synology deletions go to a separate script (moves are slow on Synology)
+        f.write("# === MOVE ALI'S LOWER QUALITY TO DELETED (Unraid only) ===\n")
+        f.write("# Note: Chris's files are NOT moved here - see chris_pending_deletions script\n\n")
         for result in all_results:
             if result.deleted_path and result.winner != 'tie':
-                if result.winner == 'ali' and result.chris_file:
-                    src = translate_path_to_mother(result.chris_file.path)
-                    deleted = translate_path_to_mother(result.deleted_path)
-                    title = result.chris_file.title.replace('"', '\\"')
-                    f.write(f'run_cmd "Move Chris lower quality: {title}" mv "{src}" "{deleted}/"\n\n')
-                elif result.winner == 'chris' and result.ali_file:
+                # Only include moves for Ali's files (Unraid) - hardlinks make this instant
+                if result.winner == 'chris' and result.ali_file:
                     src = translate_path_to_mother(result.ali_file.path)
                     deleted = translate_path_to_mother(result.deleted_path)
                     title = result.ali_file.title.replace('"', '\\"')
@@ -1161,6 +1159,156 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
     script_file.chmod(0o755)
 
     print(f"✅ Sync script: {script_file}")
+
+    # Generate Chris's pending deletions script (separate from main sync)
+    # These are files on Synology that should be deleted AFTER sync completes
+    chris_deletions = []
+    for result in all_results:
+        if result.deleted_path and result.winner == 'ali' and result.chris_file:
+            chris_deletions.append(result)
+
+    if chris_deletions:
+        deletion_script_file = output_dir / f'chris_pending_deletions_{timestamp}.sh'
+        deletion_progress_file = f"chris_deletions_progress_{timestamp}.log"
+        deletion_error_log = f"chris_deletions_errors_{timestamp}.log"
+
+        with open(deletion_script_file, 'w', encoding='utf-8') as f:
+            f.write("#!/bin/bash\n")
+            f.write("#" + "="*78 + "\n")
+            f.write("# Chris's Synology - Pending Deletions Script\n")
+            f.write("# RUN THIS AFTER sync_actions script completes!\n")
+            f.write("#" + "="*78 + "\n")
+            f.write(f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"# Total files to delete: {len(chris_deletions)}\n")
+            f.write("#\n")
+            f.write("# These files on Chris's Synology have been replaced with better quality\n")
+            f.write("# versions from Ali's Unraid. Run this script to clean up the old files.\n")
+            f.write("#\n")
+            f.write("# Features:\n")
+            f.write("#   - Progress tracking: completed deletions are logged and skipped on re-run\n")
+            f.write("#   - Error handling: failures logged with details\n")
+            f.write("#   - DRY_RUN mode to preview deletions first\n")
+            f.write("#\n")
+            f.write("# Usage:\n")
+            f.write("#   DRY_RUN=true ./chris_pending_deletions_XXXXX.sh   # Preview only\n")
+            f.write("#   ./chris_pending_deletions_XXXXX.sh                # Actually delete\n")
+            f.write("#\n")
+            f.write("#" + "="*78 + "\n\n")
+
+            f.write("set -o pipefail\n\n")
+
+            f.write(f'PROGRESS_FILE="${{PROGRESS_FILE:-{deletion_progress_file}}}"\n')
+            f.write(f'ERROR_LOG="${{ERROR_LOG:-{deletion_error_log}}}"\n')
+            f.write('DRY_RUN="${DRY_RUN:-false}"\n\n')
+
+            f.write('# Colors for output\n')
+            f.write('RED="\\033[0;31m"\n')
+            f.write('GREEN="\\033[0;32m"\n')
+            f.write('YELLOW="\\033[0;33m"\n')
+            f.write('BLUE="\\033[0;34m"\n')
+            f.write('NC="\\033[0m" # No Color\n\n')
+
+            f.write('# Statistics\n')
+            f.write('TOTAL=0\n')
+            f.write('DELETED=0\n')
+            f.write('SKIPPED=0\n')
+            f.write('FAILED=0\n\n')
+
+            f.write('log() {\n')
+            f.write('    echo -e "[$(date "+%Y-%m-%d %H:%M:%S")] $1"\n')
+            f.write('}\n\n')
+
+            f.write('log_error() {\n')
+            f.write('    echo -e "[$(date "+%Y-%m-%d %H:%M:%S")] ${RED}ERROR${NC}: $1" | tee -a "$ERROR_LOG"\n')
+            f.write('}\n\n')
+
+            f.write('is_completed() {\n')
+            f.write('    local hash="$1"\n')
+            f.write('    grep -q "^$hash$" "$PROGRESS_FILE" 2>/dev/null\n')
+            f.write('}\n\n')
+
+            f.write('mark_completed() {\n')
+            f.write('    local hash="$1"\n')
+            f.write('    echo "$hash" >> "$PROGRESS_FILE"\n')
+            f.write('}\n\n')
+
+            f.write('do_delete() {\n')
+            f.write('    local desc="$1"\n')
+            f.write('    local file="$2"\n')
+            f.write('    local hash\n')
+            f.write('    hash=$(echo "$file" | md5sum | cut -d" " -f1)\n')
+            f.write('    \n')
+            f.write('    ((TOTAL++))\n')
+            f.write('    \n')
+            f.write('    if is_completed "$hash"; then\n')
+            f.write('        log "${YELLOW}SKIP${NC} [already done] $desc"\n')
+            f.write('        ((SKIPPED++))\n')
+            f.write('        return 0\n')
+            f.write('    fi\n')
+            f.write('    \n')
+            f.write('    if [ ! -e "$file" ]; then\n')
+            f.write('        log "${YELLOW}SKIP${NC} [not found] $desc"\n')
+            f.write('        mark_completed "$hash"\n')
+            f.write('        ((SKIPPED++))\n')
+            f.write('        return 0\n')
+            f.write('    fi\n')
+            f.write('    \n')
+            f.write('    if [ "$DRY_RUN" = "true" ]; then\n')
+            f.write('        log "${BLUE}[DRY RUN]${NC} Would delete: $desc"\n')
+            f.write('        log "  File: $file"\n')
+            f.write('        ((DELETED++))\n')
+            f.write('        return 0\n')
+            f.write('    fi\n')
+            f.write('    \n')
+            f.write('    log "DELETING: $desc"\n')
+            f.write('    \n')
+            f.write('    if rm -f "$file"; then\n')
+            f.write('        mark_completed "$hash"\n')
+            f.write('        log "${GREEN}DELETED${NC}: $desc"\n')
+            f.write('        ((DELETED++))\n')
+            f.write('    else\n')
+            f.write('        log_error "Failed to delete: $desc"\n')
+            f.write('        log_error "  File: $file"\n')
+            f.write('        ((FAILED++))\n')
+            f.write('    fi\n')
+            f.write('}\n\n')
+
+            f.write('print_summary() {\n')
+            f.write('    echo ""\n')
+            f.write('    echo "========================================"\n')
+            f.write('    echo "DELETION SUMMARY"\n')
+            f.write('    echo "========================================"\n')
+            f.write('    echo "Total:   $TOTAL"\n')
+            f.write('    echo -e "Deleted: ${GREEN}$DELETED${NC}"\n')
+            f.write('    echo -e "Skipped: ${YELLOW}$SKIPPED${NC}"\n')
+            f.write('    echo -e "Failed:  ${RED}$FAILED${NC}"\n')
+            f.write('    echo "========================================"\n')
+            f.write('    if [ $FAILED -gt 0 ]; then\n')
+            f.write('        echo "See $ERROR_LOG for failure details"\n')
+            f.write('    fi\n')
+            f.write('}\n\n')
+
+            f.write('trap print_summary EXIT\n\n')
+
+            f.write('log "Starting Chris Synology cleanup..."\n')
+            f.write('log "Progress file: $PROGRESS_FILE"\n')
+            f.write('log "Error log: $ERROR_LOG"\n')
+            f.write('if [ "$DRY_RUN" = "true" ]; then\n')
+            f.write('    log "${BLUE}DRY RUN MODE - no files will be deleted${NC}"\n')
+            f.write('fi\n')
+            f.write('echo ""\n\n')
+
+            f.write("# === FILES TO DELETE ON CHRIS'S SYNOLOGY ===\n\n")
+            for result in chris_deletions:
+                src = translate_path_to_mother(result.chris_file.path)
+                title = result.chris_file.title.replace('"', '\\"')
+                f.write(f'do_delete "Chris lower quality: {title}" "{src}"\n\n')
+
+            f.write('\nlog "Deletion script complete!"\n')
+
+        deletion_script_file.chmod(0o755)
+        print(f"✅ Chris deletions script: {deletion_script_file}")
+        print(f"   ({len(chris_deletions)} files to delete after sync completes)")
 
     # Generate CSV
     csv_file = output_dir / f'sync_plan_{timestamp}.csv'

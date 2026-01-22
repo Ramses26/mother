@@ -33,6 +33,8 @@ SYNOLOGY_PATHS = {
 UNRAID_PATHS = {
     'tv_1080p': '/mnt/unraid/media/TV Shows',
     'tv_4k': '/mnt/unraid/media/4K TV Shows',
+    'deleted_tv': '/mnt/unraid/media/Deleted TV Shows',
+    'deleted_4k_tv': '/mnt/unraid/media/Deleted 4K TV Shows',
 }
 
 # Shows to exclude from comparison (fan edits, custom content)
@@ -643,6 +645,47 @@ def generate_sync_script(shows: Dict[str, ShowComparison], output_dir: Path, tim
         f.write('    fi\n')
         f.write('}\n\n')
 
+        f.write('# Execute move with error handling (for Ali/Unraid deleted folder)\n')
+        f.write('do_move() {\n')
+        f.write('    local src="$1"\n')
+        f.write('    local dst="$2"\n')
+        f.write('    local desc="$3"\n')
+        f.write('    local hash\n')
+        f.write('    hash=$(echo "mv|$src|$dst" | md5sum | cut -d" " -f1)\n')
+        f.write('    \n')
+        f.write('    ((TOTAL++))\n')
+        f.write('    \n')
+        f.write('    if is_completed "$hash"; then\n')
+        f.write('        log "${YELLOW}SKIP${NC} [already done] $desc"\n')
+        f.write('        ((SKIPPED++))\n')
+        f.write('        return 0\n')
+        f.write('    fi\n')
+        f.write('    \n')
+        f.write('    if [ ! -e "$src" ]; then\n')
+        f.write('        log "${YELLOW}SKIP${NC} [not found] $desc"\n')
+        f.write('        mark_completed "$hash"\n')
+        f.write('        ((SKIPPED++))\n')
+        f.write('        return 0\n')
+        f.write('    fi\n')
+        f.write('    \n')
+        f.write('    log "MOVE: $desc"\n')
+        f.write('    \n')
+        f.write('    # Create destination directory if needed\n')
+        f.write('    mkdir -p "$dst" 2>/dev/null\n')
+        f.write('    \n')
+        f.write('    if mv "$src" "$dst"; then\n')
+        f.write('        mark_completed "$hash"\n')
+        f.write('        log "${GREEN}MOVED${NC}: $desc"\n')
+        f.write('        ((COMPLETED++))\n')
+        f.write('    else\n')
+        f.write('        local exit_code=$?\n')
+        f.write('        log_error "Failed to move (exit $exit_code): $desc"\n')
+        f.write('        log_error "  Source: $src"\n')
+        f.write('        log_error "  Dest: $dst"\n')
+        f.write('        ((FAILED++))\n')
+        f.write('    fi\n')
+        f.write('}\n\n')
+
         f.write('# Print summary\n')
         f.write('print_summary() {\n')
         f.write('    echo ""\n')
@@ -671,6 +714,8 @@ def generate_sync_script(shows: Dict[str, ShowComparison], output_dir: Path, tim
         chris_to_ali_unique = []  # Episodes only Chris has
         ali_to_chris_upgrade = []  # Ali has better quality
         chris_to_ali_upgrade = []  # Chris has better quality
+        ali_moves_to_deleted = []  # Ali's lower quality files to move to Deleted (Unraid hardlinks)
+        chris_pending_deletions = []  # Chris's lower quality files to delete later (Synology slow)
 
         for show in shows.values():
             for result in show.episode_results:
@@ -690,24 +735,47 @@ def generate_sync_script(shows: Dict[str, ShowComparison], output_dir: Path, tim
                     dst = f"{dst_base}/{ep.relative_path}"
                     chris_to_ali_unique.append((src, dst, f"[UNIQUE] {show.show_name} {result.ep_key}"))
 
-                elif result.winner == 'ali' and result.ali_ep:
+                elif result.winner == 'ali' and result.ali_ep and result.chris_ep:
                     # Ali has better quality - upgrade Chris
                     ep = result.ali_ep
                     src = translate_path_for_rsync(ep.path, 'ali')
                     dst_base = SYNOLOGY_PATHS['tv_1080p']
                     dst = f"{dst_base}/{ep.relative_path}"
                     ali_to_chris_upgrade.append((src, dst, f"[UPGRADE] {show.show_name} {result.ep_key} ({ep.resolution}/{ep.source})"))
+                    # Track Chris's old file for later deletion (Synology moves are slow)
+                    chris_pending_deletions.append((
+                        result.chris_ep.path,
+                        f"{show.show_name} {result.ep_key}",
+                        f"{result.chris_ep.resolution}/{result.chris_ep.source}"
+                    ))
 
-                elif result.winner == 'chris' and result.chris_ep:
+                elif result.winner == 'chris' and result.chris_ep and result.ali_ep:
                     # Chris has better quality - upgrade Ali
                     ep = result.chris_ep
                     src = ep.path
                     dst_base = UNRAID_PATHS['tv_1080p']
                     dst = f"{dst_base}/{ep.relative_path}"
                     chris_to_ali_upgrade.append((src, dst, f"[UPGRADE] {show.show_name} {result.ep_key} ({ep.resolution}/{ep.source})"))
+                    # Track Ali's old file for move to Deleted (Unraid hardlinks make this instant)
+                    deleted_base = UNRAID_PATHS['deleted_tv']
+                    ali_moves_to_deleted.append((
+                        translate_path_for_rsync(result.ali_ep.path, 'ali'),
+                        deleted_base,
+                        f"{show.show_name} {result.ep_key}",
+                        f"{result.ali_ep.resolution}/{result.ali_ep.source}"
+                    ))
 
         # Write sync commands
+
+        # FIRST: Move Ali's lower quality files to Deleted (Unraid hardlinks make this instant)
         f.write("#" + "=" * 78 + "\n")
+        f.write(f"# MOVE ALI'S LOWER QUALITY TO DELETED ({len(ali_moves_to_deleted)})\n")
+        f.write("# Unraid hardlinks make moves instant - do this before copying replacements\n")
+        f.write("#" + "=" * 78 + "\n\n")
+        for src, deleted_base, show_ep, quality in ali_moves_to_deleted:
+            f.write(f'do_move "{src}" "{deleted_base}/" "[MOVE TO DELETED] {show_ep} ({quality})"\n')
+
+        f.write("\n#" + "=" * 78 + "\n")
         f.write(f"# COPY ALI -> CHRIS: UNIQUE EPISODES ({len(ali_to_chris_unique)})\n")
         f.write("#" + "=" * 78 + "\n\n")
         for src, dst, desc in ali_to_chris_unique:
@@ -715,6 +783,7 @@ def generate_sync_script(shows: Dict[str, ShowComparison], output_dir: Path, tim
 
         f.write("\n#" + "=" * 78 + "\n")
         f.write(f"# COPY ALI -> CHRIS: QUALITY UPGRADES ({len(ali_to_chris_upgrade)})\n")
+        f.write("# Note: Chris's old files tracked in chris_pending_deletions script\n")
         f.write("#" + "=" * 78 + "\n\n")
         for src, dst, desc in ali_to_chris_upgrade:
             f.write(f'do_rsync "{src}" "{dst}" "{desc}"\n')
@@ -742,6 +811,151 @@ def generate_sync_script(shows: Dict[str, ShowComparison], output_dir: Path, tim
     script_file.chmod(0o755)
 
     print(f"Sync script: {script_file}")
+
+    # Generate Chris's pending deletions script (separate from main sync)
+    # These are files on Synology that should be deleted AFTER sync completes
+    if chris_pending_deletions:
+        deletion_script_file = output_dir / f'chris_tv_pending_deletions_{timestamp}.sh'
+        deletion_progress_file = f"chris_tv_deletions_progress_{timestamp}.log"
+        deletion_error_log = f"chris_tv_deletions_errors_{timestamp}.log"
+
+        with open(deletion_script_file, 'w', encoding='utf-8') as f:
+            f.write("#!/bin/bash\n")
+            f.write("#" + "="*78 + "\n")
+            f.write("# Chris's Synology - TV Pending Deletions Script\n")
+            f.write("# RUN THIS AFTER tv_sync_actions script completes!\n")
+            f.write("#" + "="*78 + "\n")
+            f.write(f"# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"# Total files to delete: {len(chris_pending_deletions)}\n")
+            f.write("#\n")
+            f.write("# These TV episodes on Chris's Synology have been replaced with better quality\n")
+            f.write("# versions from Ali's Unraid. Run this script to clean up the old files.\n")
+            f.write("#\n")
+            f.write("# Features:\n")
+            f.write("#   - Progress tracking: completed deletions logged and skipped on re-run\n")
+            f.write("#   - Error handling: failures logged with details\n")
+            f.write("#   - DRY_RUN mode to preview deletions first\n")
+            f.write("#\n")
+            f.write("# Usage:\n")
+            f.write("#   DRY_RUN=true ./chris_tv_pending_deletions_XXXXX.sh   # Preview only\n")
+            f.write("#   ./chris_tv_pending_deletions_XXXXX.sh                # Actually delete\n")
+            f.write("#\n")
+            f.write("#" + "="*78 + "\n\n")
+
+            f.write("set -o pipefail\n\n")
+
+            f.write(f'PROGRESS_FILE="${{PROGRESS_FILE:-{deletion_progress_file}}}"\n')
+            f.write(f'ERROR_LOG="${{ERROR_LOG:-{deletion_error_log}}}"\n')
+            f.write('DRY_RUN="${DRY_RUN:-false}"\n\n')
+
+            f.write('# Colors for output\n')
+            f.write('RED="\\033[0;31m"\n')
+            f.write('GREEN="\\033[0;32m"\n')
+            f.write('YELLOW="\\033[0;33m"\n')
+            f.write('BLUE="\\033[0;34m"\n')
+            f.write('NC="\\033[0m" # No Color\n\n')
+
+            f.write('# Statistics\n')
+            f.write('TOTAL=0\n')
+            f.write('DELETED=0\n')
+            f.write('SKIPPED=0\n')
+            f.write('FAILED=0\n\n')
+
+            f.write('log() {\n')
+            f.write('    echo -e "[$(date "+%Y-%m-%d %H:%M:%S")] $1"\n')
+            f.write('}\n\n')
+
+            f.write('log_error() {\n')
+            f.write('    echo -e "[$(date "+%Y-%m-%d %H:%M:%S")] ${RED}ERROR${NC}: $1" | tee -a "$ERROR_LOG"\n')
+            f.write('}\n\n')
+
+            f.write('is_completed() {\n')
+            f.write('    local hash="$1"\n')
+            f.write('    grep -q "^$hash$" "$PROGRESS_FILE" 2>/dev/null\n')
+            f.write('}\n\n')
+
+            f.write('mark_completed() {\n')
+            f.write('    local hash="$1"\n')
+            f.write('    echo "$hash" >> "$PROGRESS_FILE"\n')
+            f.write('}\n\n')
+
+            f.write('do_delete() {\n')
+            f.write('    local desc="$1"\n')
+            f.write('    local file="$2"\n')
+            f.write('    local hash\n')
+            f.write('    hash=$(echo "$file" | md5sum | cut -d" " -f1)\n')
+            f.write('    \n')
+            f.write('    ((TOTAL++))\n')
+            f.write('    \n')
+            f.write('    if is_completed "$hash"; then\n')
+            f.write('        log "${YELLOW}SKIP${NC} [already done] $desc"\n')
+            f.write('        ((SKIPPED++))\n')
+            f.write('        return 0\n')
+            f.write('    fi\n')
+            f.write('    \n')
+            f.write('    if [ ! -e "$file" ]; then\n')
+            f.write('        log "${YELLOW}SKIP${NC} [not found] $desc"\n')
+            f.write('        mark_completed "$hash"\n')
+            f.write('        ((SKIPPED++))\n')
+            f.write('        return 0\n')
+            f.write('    fi\n')
+            f.write('    \n')
+            f.write('    if [ "$DRY_RUN" = "true" ]; then\n')
+            f.write('        log "${BLUE}[DRY RUN]${NC} Would delete: $desc"\n')
+            f.write('        log "  File: $file"\n')
+            f.write('        ((DELETED++))\n')
+            f.write('        return 0\n')
+            f.write('    fi\n')
+            f.write('    \n')
+            f.write('    log "DELETING: $desc"\n')
+            f.write('    \n')
+            f.write('    if rm -f "$file"; then\n')
+            f.write('        mark_completed "$hash"\n')
+            f.write('        log "${GREEN}DELETED${NC}: $desc"\n')
+            f.write('        ((DELETED++))\n')
+            f.write('    else\n')
+            f.write('        log_error "Failed to delete: $desc"\n')
+            f.write('        log_error "  File: $file"\n')
+            f.write('        ((FAILED++))\n')
+            f.write('    fi\n')
+            f.write('}\n\n')
+
+            f.write('print_summary() {\n')
+            f.write('    echo ""\n')
+            f.write('    echo "========================================"\n')
+            f.write('    echo "TV DELETION SUMMARY"\n')
+            f.write('    echo "========================================"\n')
+            f.write('    echo "Total:   $TOTAL"\n')
+            f.write('    echo -e "Deleted: ${GREEN}$DELETED${NC}"\n')
+            f.write('    echo -e "Skipped: ${YELLOW}$SKIPPED${NC}"\n')
+            f.write('    echo -e "Failed:  ${RED}$FAILED${NC}"\n')
+            f.write('    echo "========================================"\n')
+            f.write('    if [ $FAILED -gt 0 ]; then\n')
+            f.write('        echo "See $ERROR_LOG for failure details"\n')
+            f.write('    fi\n')
+            f.write('}\n\n')
+
+            f.write('trap print_summary EXIT\n\n')
+
+            f.write('log "Starting Chris Synology TV cleanup..."\n')
+            f.write('log "Progress file: $PROGRESS_FILE"\n')
+            f.write('log "Error log: $ERROR_LOG"\n')
+            f.write('if [ "$DRY_RUN" = "true" ]; then\n')
+            f.write('    log "${BLUE}DRY RUN MODE - no files will be deleted${NC}"\n')
+            f.write('fi\n')
+            f.write('echo ""\n\n')
+
+            f.write("# === TV EPISODES TO DELETE ON CHRIS'S SYNOLOGY ===\n\n")
+            for file_path, show_ep, quality in chris_pending_deletions:
+                desc = f"Chris lower quality: {show_ep} ({quality})"
+                f.write(f'do_delete "{desc}" "{file_path}"\n\n')
+
+            f.write('\nlog "TV deletion script complete!"\n')
+
+        deletion_script_file.chmod(0o755)
+        print(f"Chris TV deletions script: {deletion_script_file}")
+        print(f"   ({len(chris_pending_deletions)} files to delete after sync completes)")
+
     return script_file
 
 
