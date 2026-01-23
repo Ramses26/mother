@@ -54,7 +54,12 @@ services/sync-webhook/
   "nfs_status": "ok",
   "nfs_issues": [],
   "jobs_24h": {"success": 15, "failed": 2},
-  "uptime_since": "2026-01-01T00:00:00"
+  "uptime_since": "2026-01-01T00:00:00",
+  "sync_queue": {
+    "max_concurrent": 2,
+    "active_syncs": 1,
+    "available_slots": 1
+  }
 }
 ```
 
@@ -90,6 +95,7 @@ curl -X POST http://localhost:5001/sync/manual \
 | `SYNC_LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `SYNC_LOG_PATH` | `/logs` | Directory for persistent log files |
 | `SYNC_DB_PATH` | `/data/sync_jobs.db` | SQLite database path |
+| `SYNC_MAX_CONCURRENT` | `2` | Max concurrent rsync operations (prevents NFS overload) |
 | `TZ` | `UTC` | Timezone for timestamps |
 
 ### Plex Integration (Optional)

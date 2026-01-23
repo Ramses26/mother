@@ -1049,19 +1049,6 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
         f.write('fi\n')
         f.write('echo ""\n\n')
 
-        # Moves to deleted folders - ONLY for Ali's Unraid (hardlinks make moves instant)
-        # Chris's Synology deletions go to a separate script (moves are slow on Synology)
-        f.write("# === MOVE ALI'S LOWER QUALITY TO DELETED (Unraid only) ===\n")
-        f.write("# Note: Chris's files are NOT moved here - see chris_pending_deletions script\n\n")
-        for result in all_results:
-            if result.deleted_path and result.winner != 'tie':
-                # Only include moves for Ali's files (Unraid) - hardlinks make this instant
-                if result.winner == 'chris' and result.ali_file:
-                    src = translate_path_to_mother(result.ali_file.path)
-                    deleted = translate_path_to_mother(result.deleted_path)
-                    title = result.ali_file.title.replace('"', '\\"')
-                    f.write(f'run_cmd "Move Ali lower quality: {title}" mv "{src}" "{deleted}/"\n\n')
-
         # Copies - Ali's files go to Synology, Chris's files go to Unraid
         # All paths translated to Mother's mount points
         # NOTE: For movies, we copy the movie folder to preserve structure
@@ -1146,6 +1133,21 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
                     # Movies: Copy the entire movie folder to preserve structure
                     src_folder = str(Path(src_file).parent)
                     f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP "{src_folder}" "{dest}/"\n\n')
+
+        # AFTER copies complete, move Ali's old files to Deleted folder
+        # This ensures we have the new file before removing the old one
+        # Only for Ali's Unraid (hardlinks make moves instant)
+        # Chris's Synology deletions go to a separate script (moves are slow)
+        f.write("\n# === MOVE ALI'S LOWER QUALITY TO DELETED (after copy completes) ===\n")
+        f.write("# Note: Chris's files are NOT moved here - see chris_pending_deletions script\n\n")
+        for result in all_results:
+            if result.deleted_path and result.winner != 'tie':
+                # Only include moves for Ali's files (Unraid) - hardlinks make this instant
+                if result.winner == 'chris' and result.ali_file:
+                    src = translate_path_to_mother(result.ali_file.path)
+                    deleted = translate_path_to_mother(result.deleted_path)
+                    title = result.ali_file.title.replace('"', '\\"')
+                    f.write(f'run_cmd "Move Ali lower quality: {title}" mv "{src}" "{deleted}/"\n\n')
 
         # Wait for all parallel jobs to complete
         f.write('\n# Wait for all parallel jobs to complete\n')

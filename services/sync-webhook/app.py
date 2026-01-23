@@ -34,6 +34,7 @@ DRY_RUN = os.environ.get('SYNC_DRY_RUN', 'false').lower() == 'true'
 LOG_LEVEL = os.environ.get('SYNC_LOG_LEVEL', 'INFO')
 LOG_PATH = os.environ.get('SYNC_LOG_PATH', '/logs')
 DB_PATH = os.environ.get('SYNC_DB_PATH', '/data/sync_jobs.db')
+MAX_CONCURRENT_SYNCS = int(os.environ.get('SYNC_MAX_CONCURRENT', '2'))
 
 # Plex configuration
 PLEX_URL = os.environ.get('PLEX_URL', '')  # e.g., http://10.0.0.50:32400
@@ -132,6 +133,10 @@ stats = {
     'start_time': datetime.now().isoformat()
 }
 stats_lock = threading.Lock()
+
+# Concurrency limit for rsync operations to prevent overwhelming NFS mounts
+sync_semaphore = threading.Semaphore(MAX_CONCURRENT_SYNCS)
+logger.info(f"Max concurrent syncs: {MAX_CONCURRENT_SYNCS}")
 
 
 def init_database():
@@ -703,79 +708,89 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
     plex_base = dest_base or get_dest_base_from_path(dest)
 
     def do_sync():
-        # Create in_progress job entry for tracking
-        job_id = start_sync_job(job_type, source, dest, title, quality, file_size, retry_count)
-
+        # Acquire semaphore to limit concurrent syncs (prevents overwhelming NFS)
         retry_info = f" (retry {retry_count}/3)" if retry_count > 0 else ""
-        logger.info(f"Background sync started: {title}{retry_info}")
+        logger.info(f"Waiting for sync slot: {title}{retry_info}")
+        sync_semaphore.acquire()
+        logger.info(f"Acquired sync slot: {title}{retry_info}")
 
-        # Check NFS health before sync
-        nfs_issues = check_nfs_health()
-        if nfs_issues:
-            error_msg = "NFS mount issues: " + "; ".join(nfs_issues)
-            logger.error(error_msg)
-            if job_id:
-                complete_sync_job(job_id, 'failed', error=error_msg)
-            update_stats(job_type, success=False)
-            send_notification(
-                title=f"Sync Failed - NFS Error",
-                body=f"*{title}*\n\n{error_msg}",
-                notify_type=apprise.NotifyType.FAILURE
-            )
-            return
+        try:
+            # Create in_progress job entry for tracking
+            job_id = start_sync_job(job_type, source, dest, title, quality, file_size, retry_count)
 
-        # Run the rsync
-        success, output, duration = run_rsync(source, dest, is_file=False)
+            logger.info(f"Background sync started: {title}{retry_info}")
 
-        if success:
-            # Update job to success
-            if job_id:
-                complete_sync_job(job_id, 'success', duration=duration)
-            update_stats(job_type, success=True, file_size=file_size)
+            # Check NFS health before sync
+            nfs_issues = check_nfs_health()
+            if nfs_issues:
+                error_msg = "NFS mount issues: " + "; ".join(nfs_issues)
+                logger.error(error_msg)
+                if job_id:
+                    complete_sync_job(job_id, 'failed', error=error_msg)
+                update_stats(job_type, success=False)
+                send_notification(
+                    title=f"Sync Failed - NFS Error",
+                    body=f"*{title}*\n\n{error_msg}",
+                    notify_type=apprise.NotifyType.FAILURE
+                )
+                return
 
-            msg = (
-                f"*{title}*\n"
-                f"Quality: {quality}\n"
-                f"Size: {format_size(file_size)}\n"
-                f"Duration: {duration:.1f}s"
-            )
-            if DRY_RUN:
-                msg += "\n_(DRY RUN - no files copied)_"
+            # Run the rsync
+            success, output, duration = run_rsync(source, dest, is_file=False)
 
-            send_notification(
-                title=f"{media_type} Synced",
-                body=msg,
-                notify_type=apprise.NotifyType.SUCCESS
-            )
+            if success:
+                # Update job to success
+                if job_id:
+                    complete_sync_job(job_id, 'success', duration=duration)
+                update_stats(job_type, success=True, file_size=file_size)
 
-            # Trigger Plex library scan for the synced content
-            if not DRY_RUN:
-                # Build the specific path for targeted scan
-                # For folders (movies): specific_folder = dest + folder name
-                # For files (TV episodes): specific_folder = dest (already includes full path)
-                basename = os.path.basename(source)
-                is_file = '.' in basename and not basename.startswith('.')
-                if is_file:
-                    # Source is a file - dest already has the full folder path
-                    specific_folder = dest
-                else:
-                    # Source is a folder - add folder name to dest
-                    specific_folder = os.path.join(dest, basename)
-                trigger_plex_scan(plex_base, specific_folder)
+                msg = (
+                    f"*{title}*\n"
+                    f"Quality: {quality}\n"
+                    f"Size: {format_size(file_size)}\n"
+                    f"Duration: {duration:.1f}s"
+                )
+                if DRY_RUN:
+                    msg += "\n_(DRY RUN - no files copied)_"
 
-            logger.info(f"Background sync completed: {title} in {duration:.1f}s")
-        else:
-            # Update job to failed
-            if job_id:
-                complete_sync_job(job_id, 'failed', duration=duration, error=output[:500])
-            update_stats(job_type, success=False)
+                send_notification(
+                    title=f"{media_type} Synced",
+                    body=msg,
+                    notify_type=apprise.NotifyType.SUCCESS
+                )
 
-            send_notification(
-                title=f"Sync Failed - {media_type}",
-                body=f"*{title}*{retry_info}\n\nError: {output[:500]}",
-                notify_type=apprise.NotifyType.FAILURE
-            )
-            logger.error(f"Background sync failed: {title} - {output[:200]}")
+                # Trigger Plex library scan for the synced content
+                if not DRY_RUN:
+                    # Build the specific path for targeted scan
+                    # For folders (movies): specific_folder = dest + folder name
+                    # For files (TV episodes): specific_folder = dest (already includes full path)
+                    basename = os.path.basename(source)
+                    is_file = '.' in basename and not basename.startswith('.')
+                    if is_file:
+                        # Source is a file - dest already has the full folder path
+                        specific_folder = dest
+                    else:
+                        # Source is a folder - add folder name to dest
+                        specific_folder = os.path.join(dest, basename)
+                    trigger_plex_scan(plex_base, specific_folder)
+
+                logger.info(f"Background sync completed: {title} in {duration:.1f}s")
+            else:
+                # Update job to failed
+                if job_id:
+                    complete_sync_job(job_id, 'failed', duration=duration, error=output[:500])
+                update_stats(job_type, success=False)
+
+                send_notification(
+                    title=f"Sync Failed - {media_type}",
+                    body=f"*{title}*{retry_info}\n\nError: {output[:500]}",
+                    notify_type=apprise.NotifyType.FAILURE
+                )
+                logger.error(f"Background sync failed: {title} - {output[:200]}")
+        finally:
+            # Always release semaphore, even if exception occurs
+            sync_semaphore.release()
+            logger.debug(f"Released sync slot: {title}")
 
     thread = threading.Thread(target=do_sync, daemon=True)
     thread.start()
@@ -1037,6 +1052,11 @@ def health():
     if nfs_issues:
         status = 'degraded'
 
+    # Calculate active syncs (semaphore slots in use)
+    # _value gives available slots, so active = max - available
+    available_slots = sync_semaphore._value
+    active_syncs = MAX_CONCURRENT_SYNCS - available_slots
+
     return jsonify({
         'status': status,
         'timestamp': datetime.now().isoformat(),
@@ -1045,7 +1065,12 @@ def health():
         'nfs_status': 'ok' if not nfs_issues else 'error',
         'nfs_issues': nfs_issues,
         'jobs_24h': job_counts,
-        'uptime_since': stats['start_time']
+        'uptime_since': stats['start_time'],
+        'sync_queue': {
+            'max_concurrent': MAX_CONCURRENT_SYNCS,
+            'active_syncs': active_syncs,
+            'available_slots': available_slots
+        }
     })
 
 
@@ -1604,6 +1629,7 @@ def manual_sync():
 if __name__ == '__main__':
     logger.info("Starting Sync Webhook Server")
     logger.info(f"DRY_RUN: {DRY_RUN}")
+    logger.info(f"MAX_CONCURRENT_SYNCS: {MAX_CONCURRENT_SYNCS}")
     logger.info(f"Notifications configured: {len(apobj) > 0}")
 
     # Log path mappings

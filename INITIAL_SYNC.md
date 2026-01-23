@@ -50,20 +50,29 @@ scp ../inventories/ali_*.json mother:/opt/mother/inventories/
 ssh mother
 cd /opt/mother
 
-# Movies use compare_libraries.py
+# Movies
 python3 scripts/compare_libraries.py \
   inventories/ali_movies_1080p.json \
   inventories/chris_movies_1080p.json \
   -o reports
 
-# TV Shows use compare_tv_libraries.py
+# TV Shows
 python3 scripts/compare_tv_libraries.py \
   inventories/ali_tv_1080p.json \
   inventories/chris_tv_1080p.json \
   -o reports
 
-# 5. Review reports and execute sync
+# 5. Review reports
 cat reports/detailed_comparison_*.txt
+
+# 6. Run sync scripts
+cd reports
+./sync_actions_*.sh          # Movie sync
+./tv_sync_actions_*.sh       # TV sync
+
+# 7. After sync completes, delete Chris's old files
+./chris_pending_deletions_*.sh
+./chris_tv_pending_deletions_*.sh
 ```
 
 ---
@@ -170,23 +179,27 @@ python3 scripts/compare_tv_libraries.py \
 
 ### Step 5: Review Reports
 
-Each comparison generates 3 files:
+Each comparison generates these files:
 
 | File | Description |
 |------|-------------|
 | `detailed_comparison_[timestamp].txt` | Human-readable report with statistics |
 | `sync_plan_[timestamp].csv` | Spreadsheet format for review |
-| `sync_actions_[timestamp].sh` | Executable bash script with rsync commands |
+| `sync_actions_[timestamp].sh` | Main sync script (copies + Ali's moves to Deleted) |
+| `chris_pending_deletions_[timestamp].sh` | Chris's old files to delete after sync (Movies) |
+| `chris_tv_pending_deletions_[timestamp].sh` | Chris's old files to delete after sync (TV) |
+
+**Note on deletion scripts:** Chris's Synology files are deleted separately because moves are slow on Synology. Ali's Unraid files are moved to Deleted during sync because hardlinks make this instant.
 
 ```bash
 # View summary
-cat reports/movies_1080p/detailed_comparison_*.txt | less
+cat reports/detailed_comparison_*.txt | less
 
 # Review sync plan in spreadsheet
 # Copy CSV to your machine and open in Excel/Sheets
 
 # Check action count
-wc -l reports/movies_1080p/sync_actions_*.sh
+wc -l reports/sync_actions_*.sh
 ```
 
 ---
@@ -205,18 +218,13 @@ wc -l reports/movies_1080p/sync_actions_*.sh
 ### Step 6: Test Sync (Dry Run)
 
 ```bash
-# Option 1: Use the generated sync script with dry-run
-cd /opt/mother/reports/movies_1080p
+cd /opt/mother/reports
+
+# Test movie sync
 DRY_RUN=true ./sync_actions_*.sh
 
-# Option 2: Use sync_with_deleted.py with --dry-run
-python3 /opt/mother/scripts/sync_with_deleted.py \
-  -s sync_plan_*.csv \
-  -si /opt/mother/inventories/ali_movies_1080p.json \
-  -di /opt/mother/inventories/chris_movies_1080p.json \
-  -t movies \
-  -d "Ali→Chris" \
-  --dry-run --max-files 10
+# Test TV sync
+DRY_RUN=true ./tv_sync_actions_*.sh
 ```
 
 ### Step 7: Execute Sync
@@ -225,13 +233,36 @@ python3 /opt/mother/scripts/sync_with_deleted.py \
 # Run in screen session
 screen -S sync
 
-# Execute sync script
-cd /opt/mother/reports/movies_1080p
+# Execute movie sync
+cd /opt/mother/reports
 ./sync_actions_*.sh
+
+# Execute TV sync
+./tv_sync_actions_*.sh
 
 # Detach: Ctrl+A, D
 # Reattach: screen -r sync
 ```
+
+### Step 8: Run Deletion Scripts (After Sync Completes)
+
+After the main sync finishes, run the deletion scripts to clean up Chris's old files:
+
+```bash
+cd /opt/mother/reports
+
+# Preview deletions first (recommended)
+DRY_RUN=true ./chris_pending_deletions_*.sh
+DRY_RUN=true ./chris_tv_pending_deletions_*.sh
+
+# Review the output, then run for real
+./chris_pending_deletions_*.sh
+./chris_tv_pending_deletions_*.sh
+```
+
+**Why separate deletion scripts?**
+- **Ali's Unraid**: Files moved to Deleted folder during sync (hardlinks = instant)
+- **Chris's Synology**: Files deleted after sync (moves are slow on Synology)
 
 ### Monitoring Progress
 
@@ -350,10 +381,19 @@ df -h /mnt/synology/rs-movies /mnt/unraid/media/Movies
 | `generate_inventory.py` | Scan library and create JSON/CSV inventory |
 | `compare_libraries.py` | Compare movie inventories (uses TMDB ID) |
 | `compare_tv_libraries.py` | Compare TV inventories (uses TVDB ID + Season/Episode) |
-| `sync_with_deleted.py` | Execute sync with Deleted folder protection |
+| `scan_local.sh` | Auto-detect server and scan all libraries |
 | `sync_status.py` | Check batch sync progress |
 | `verify_sync.py` | Verify transfers completed correctly |
-| `scan_local.sh` | Auto-detect server and scan all libraries |
+| `batch_sync_report.py` | Nightly Telegram status reports |
+
+### Generated Scripts (from compare_libraries.py)
+
+| Script | Purpose |
+|--------|---------|
+| `sync_actions_[ts].sh` | Main movie sync (copies + Ali's moves to Deleted) |
+| `tv_sync_actions_[ts].sh` | Main TV sync (copies + Ali's moves to Deleted) |
+| `chris_pending_deletions_[ts].sh` | Delete Chris's old movie files after sync |
+| `chris_tv_pending_deletions_[ts].sh` | Delete Chris's old TV files after sync |
 
 ---
 

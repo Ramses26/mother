@@ -765,17 +765,9 @@ def generate_sync_script(shows: Dict[str, ShowComparison], output_dir: Path, tim
                         f"{result.ali_ep.resolution}/{result.ali_ep.source}"
                     ))
 
-        # Write sync commands
+        # Write sync commands - COPIES FIRST, then moves to Deleted
 
-        # FIRST: Move Ali's lower quality files to Deleted (Unraid hardlinks make this instant)
         f.write("#" + "=" * 78 + "\n")
-        f.write(f"# MOVE ALI'S LOWER QUALITY TO DELETED ({len(ali_moves_to_deleted)})\n")
-        f.write("# Unraid hardlinks make moves instant - do this before copying replacements\n")
-        f.write("#" + "=" * 78 + "\n\n")
-        for src, deleted_base, show_ep, quality in ali_moves_to_deleted:
-            f.write(f'do_move "{src}" "{deleted_base}/" "[MOVE TO DELETED] {show_ep} ({quality})"\n')
-
-        f.write("\n#" + "=" * 78 + "\n")
         f.write(f"# COPY ALI -> CHRIS: UNIQUE EPISODES ({len(ali_to_chris_unique)})\n")
         f.write("#" + "=" * 78 + "\n\n")
         for src, dst, desc in ali_to_chris_unique:
@@ -799,6 +791,15 @@ def generate_sync_script(shows: Dict[str, ShowComparison], output_dir: Path, tim
         f.write("#" + "=" * 78 + "\n\n")
         for src, dst, desc in chris_to_ali_upgrade:
             f.write(f'do_rsync "{src}" "{dst}" "{desc}"\n')
+
+        # AFTER copies complete, move Ali's old files to Deleted folder
+        # This ensures we have the new file before removing the old one
+        f.write("\n#" + "=" * 78 + "\n")
+        f.write(f"# MOVE ALI'S LOWER QUALITY TO DELETED ({len(ali_moves_to_deleted)})\n")
+        f.write("# Done AFTER copies so we keep original if copy fails\n")
+        f.write("#" + "=" * 78 + "\n\n")
+        for src, deleted_base, show_ep, quality in ali_moves_to_deleted:
+            f.write(f'do_move "{src}" "{deleted_base}/" "[MOVE TO DELETED] {show_ep} ({quality})"\n')
 
         f.write('\n# Wait for all parallel jobs to complete\n')
         f.write('if [ "$PARALLEL" -gt 1 ]; then\n')

@@ -226,9 +226,41 @@ python3 scripts/compare_tv_libraries.py \
 ### Review Reports
 
 Each comparison generates:
-- `detailed_comparison_[timestamp].txt` - Human readable report
-- `sync_plan_[timestamp].csv` - Spreadsheet format
-- `sync_actions_[timestamp].sh` - Executable sync script
+
+| File | Purpose |
+|------|---------|
+| `detailed_comparison_[timestamp].txt` | Human readable report |
+| `sync_plan_[timestamp].csv` | Spreadsheet format for review |
+| `sync_actions_[timestamp].sh` | Main sync script (copies + Ali moves) |
+| `chris_pending_deletions_[timestamp].sh` | Chris's old movie files to delete later |
+| `chris_tv_pending_deletions_[timestamp].sh` | Chris's old TV files to delete later |
+
+### Run Sync Scripts
+
+```bash
+cd /opt/mother/reports
+
+# Run the main sync (copies files, moves Ali's old files to Deleted)
+./sync_actions_[timestamp].sh
+
+# For TV shows
+./tv_sync_actions_[timestamp].sh
+```
+
+### After Sync: Run Deletion Scripts
+
+Chris's Synology deletions are in separate scripts (because Synology moves are slow).
+Run these **after** the main sync completes:
+
+```bash
+# Preview first (recommended)
+DRY_RUN=true ./chris_pending_deletions_[timestamp].sh
+DRY_RUN=true ./chris_tv_pending_deletions_[timestamp].sh
+
+# Then actually delete
+./chris_pending_deletions_[timestamp].sh
+./chris_tv_pending_deletions_[timestamp].sh
+```
 
 ---
 
