@@ -801,7 +801,8 @@ def background_sync_with_retry(source: str, dest: str, title: str, quality: str,
     """Wrapper for background_sync that handles retry count"""
     # Clean up title if it has retry prefix
     clean_title = title.replace('[RETRY] ', '').replace('[RETRY]', '')
-    background_sync(source, dest, clean_title, quality, file_size, media_type, retry_count)
+    background_sync(source, dest, clean_title, quality, file_size, media_type,
+                   dest_base=None, retry_count=retry_count)
 
 
 def get_job_counts():
@@ -963,18 +964,19 @@ def auto_retry_failed():
         cursor = conn.cursor()
 
         # Get failed jobs from the last 6 hours that have fewer than 3 retries
-        # Group by title to avoid retrying the same job multiple times
+        # Exclude titles that have a successful sync AFTER the failed one
         cursor.execute('''
-            SELECT * FROM sync_jobs
-            WHERE status = 'failed'
-            AND created_at > datetime('now', '-6 hours')
-            AND (retry_count IS NULL OR retry_count < 3)
-            AND title NOT IN (
-                SELECT title FROM sync_jobs
-                WHERE status = 'success'
-                AND created_at > datetime('now', '-6 hours')
+            SELECT f.* FROM sync_jobs f
+            WHERE f.status = 'failed'
+            AND f.created_at > datetime('now', '-6 hours')
+            AND (f.retry_count IS NULL OR f.retry_count < 3)
+            AND NOT EXISTS (
+                SELECT 1 FROM sync_jobs s
+                WHERE s.title = f.title
+                AND s.status = 'success'
+                AND s.created_at > f.created_at
             )
-            ORDER BY created_at DESC
+            ORDER BY f.created_at DESC
             LIMIT 10
         ''')
         failed_jobs = [dict(row) for row in cursor.fetchall()]
@@ -1005,7 +1007,8 @@ def auto_retry_failed():
 
                 if retry_count <= 3:
                     media_type = "Movie" if job_type == 'movie' else "Episode"
-                    background_sync(source, dest, title, quality, file_size, media_type, retry_count)
+                    background_sync(source, dest, title, quality, file_size, media_type,
+                                   dest_base=None, retry_count=retry_count)
                     logger.info(f"Auto-retry: queued {title} (attempt {retry_count}/3)")
                 else:
                     logger.warning(f"Auto-retry: {title} exceeded max retries (3), skipping")
@@ -1538,7 +1541,8 @@ def retry_job(job_id):
 
         # Run in background
         media_type = "Movie" if job_type == 'movie' else "Episode"
-        background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type)
+        background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type,
+                       dest_base=None, retry_count=1)
 
         conn.close()
         return jsonify({'status': 'retry_started', 'job_id': job_id})
@@ -1576,7 +1580,8 @@ def retry_all_failed():
             file_size = job['file_size'] or 0
 
             media_type = "Movie" if job_type == 'movie' else "Episode"
-            background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type)
+            background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type,
+                           dest_base=None, retry_count=1)
             retried += 1
             logger.info(f"Queued retry for: {title}")
 
