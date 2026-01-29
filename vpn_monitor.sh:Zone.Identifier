@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://claude.ai/chat/bc4f11aa-9260-4039-ba01-b10f8e26bf95
+HostUrl=https://claude.ai/api/organizations/e50168a8-409e-470a-bc2f-428ac4b711dd/conversations/bc4f11aa-9260-4039-ba01-b10f8e26bf95/wiggle/download-file?path=%2Fmnt%2Fuser-data%2Foutputs%2Fvpn_monitor.sh
