@@ -1,5 +1,7 @@
 # Batch Sync Status Tools
 
+> **Note:** The nightly Telegram report has been consolidated into `daily_report.py` which runs at 8 AM and includes both sync status and VPN traffic. See [DAILY_REPORT.md](DAILY_REPORT.md) for details.
+
 Tools for monitoring and managing the initial batch sync between Ali and Chris libraries.
 
 ## Overview
@@ -83,63 +85,31 @@ Source missing:   0
 ⚠️  12 operations need to be re-synced!
 ```
 
-### 3. batch_sync_report.py - Nightly Telegram Report
+### 3. batch_sync_report.py - Sync Status Report (Legacy)
+
+> **Deprecated:** This script has been replaced by `daily_report.py` which combines sync status with VPN traffic monitoring. Keep this script for manual checks only.
 
 Sends a combined status report for both Movies and TV sync to Telegram.
 
 ```bash
-# Run manually
-./scripts/batch_sync_report.py --scripts-dir /opt/mother
+# Run manually (for quick status check)
+./reports/batch_sync_report.py --scripts-dir /opt/mother
 
 # Dry run (print without sending)
-./scripts/batch_sync_report.py --dry-run
-
-# Specify scripts manually
-./scripts/batch_sync_report.py \
-  --movie-script /opt/mother/sync_actions_20251231_171646_bw600.sh \
-  --tv-script /opt/mother/tv_sync_actions_20251231_171035.sh
+./reports/batch_sync_report.py --dry-run
 ```
 
-**Example Telegram Message:**
-```
-📊 DR Sync Nightly Status
+**For automated daily reports, use `daily_report.py` instead.** See [DAILY_REPORT.md](DAILY_REPORT.md).
 
-🎬 Movies 🔴
-[████████░░░░░░░] 53.2%
-✅ 2,750 / 5,166
-⏳ 2,416 remaining
+## Daily Reports
 
-📺 TV Shows 🟢
-[████████████░░░] 81.0%
-✅ 149 / 184
-⏳ 35 remaining
+Daily reports are now handled by `daily_report.py` which runs at 8 AM and includes:
+- Movies and TV sync progress
+- VPN traffic statistics
+- Error counts
+- Last activity timestamps
 
-Overall: 2,899/5,350 (54.2%)
-2026-01-21 21:00:00
-```
-
-## Setting Up Nightly Telegram Reports
-
-### 1. Configure Environment Variables
-
-On Mother server, add to `/opt/mother/.env`:
-
-```bash
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-TELEGRAM_CHAT_ID=1264005957
-```
-
-Or export in your shell profile.
-
-### 2. Add Cron Job
-
-```bash
-# Edit crontab
-crontab -e
-
-# Add nightly report at 9 PM
-0 21 * * * /opt/mother/scripts/batch_sync_report.py --scripts-dir /opt/mother 2>&1 | logger -t batch_sync
-```
+See [DAILY_REPORT.md](DAILY_REPORT.md) for setup instructions.
 
 ## Troubleshooting
 
