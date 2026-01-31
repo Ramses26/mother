@@ -63,7 +63,6 @@ radarr:
       # Optional
       - trash_ids:
           - b6832f586342ef70d9c128d40c07b872 # Bad Dual Groups
-          - 90cedc1fea7ea5d11298bebd3d1d3223 # EVO (no WEBDL)
           - e204b80c87be9497a8a6eaff48f72905 # LQ (Release Title)
           - cc444569854e9de0b084ab2b8b1532b2 # Black and White Editions
           - ae9b7c9ebde1f3bd336a8cbd1ec4c5e5 # No-RlsGroup
@@ -225,7 +224,6 @@ radarr:
       # Optional unwanted release filters
       - trash_ids:
           - b6832f586342ef70d9c128d40c07b872  # Bad Dual Groups
-          - 90cedc1fea7ea5d11298bebd3d1d3223  # EVO (no WEBDL)
           - e204b80c87be9497a8a6eaff48f72905  # LQ (Release Title)
           - ae9b7c9ebde1f3bd336a8cbd1ec4c5e5  # No-RlsGroup
           - 7357cf5161efbf8c4d5d0c30b4815ee2  # Obfuscated
@@ -290,8 +288,21 @@ sonarr:
     # Disable upgrades - Huntarr will manage upgrades later
     quality_profiles:
       - name: WEB-1080P
+        reset_unmatched_scores:
+          enabled: true
         upgrade:
           allowed: false
+          until_quality: WEB 1080p
+          until_score: 10000
+        min_format_score: 0
+        quality_sort: top
+        qualities:
+          - name: WEB 1080p
+            qualities:
+              - WEBDL-1080p
+              - WEBRip-1080p
+          - name: Bluray-1080p
+          
     # Custom Bluray and Remux profiles for Sonarr
     # (TRaSH doesn't have official templates for these)
 
@@ -371,8 +382,7 @@ sonarr:
           - 82d40da2bc6923f41e14394075dd4b03  # No-RlsGroup
           - e1a997ddb54e3ecbfe06341ad323c458  # Obfuscated
           - 06d66ab109d4d2eddb2794d21526d140  # Retags
-          - 1b3994c551cbb92a2c781af061f4ab44  # Scene
-          - 85c61753df5da1fb2aab6f2a47426b09  #BR-Disk 
+          - 85c61753df5da1fb2aab6f2a47426b09  # BR-Disk 
           - 32b367365729d530ca1c124a0b180c64  # Bad Dual Groups
           - 15a05bc7c1a36e2b57fd628f8977e2fc  # AV1
           - fbcb31d8dabd2a319072b84fc0b7249c  # Extras
@@ -382,6 +392,18 @@ sonarr:
           - name: WEB-1080p
           - name: Bluray-1080p
           - name: Remux-1080p
+
+        #Adding scene as 100 so if there aren't any other better quality, download scene
+      - trash_ids:
+          - 1b3994c551cbb92a2c781af061f4ab44  # Scene
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 100
+          - name: Bluray-1080p
+            score: 100
+          - name: Remux-1080p
+            score: 100
+
 
       # Premium audio formats
       - trash_ids:
@@ -572,7 +594,7 @@ sonarr:
 
       # Surround channel preference
       - trash_ids:
-          - 77ff61788dfe1097194fd8743d7b4524 # 5.1 Surround
+          - 3fbafa924f361e66fbc6187af82dfa85 # 5.1 Surround
         assign_scores_to:
           - name: WEB-2160p
             score: 100
@@ -581,7 +603,7 @@ sonarr:
           - name: Remux-2160p
             score: 100
       - trash_ids:
-          - 6fd7b090c3f7317502ab3b63cc7f51e3 # 6.1 Surround
+          - 9fb6d778592c293467437593ef394bf1 # 6.1 Surround
         assign_scores_to:
           - name: WEB-2160p
             score: 150
@@ -590,7 +612,7 @@ sonarr:
           - name: Remux-2160p
             score: 150
       - trash_ids:
-          - e77382bcfeba57cb83744c9c5449b401 # 7.1 Surround
+          - 204c8c3e7315bb0ea81332774fa888d6 # 7.1 Surround
         assign_scores_to:
           - name: WEB-2160p
             score: 200

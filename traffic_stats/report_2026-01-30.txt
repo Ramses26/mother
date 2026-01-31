@@ -1,0 +1,11 @@
+📅 Date: 2026-01-30
+
+📤 To Unraid: 189.69 GB
+📥 From Unraid: 6.96 GB
+📦 Total Today: 196.66 GB
+
+⚡ Avg Speed: 52.1 Mbps
+📈 Utilization: 11.7%
+🎯 Max Capacity: ~1.79 TB/day (166 Mbps)
+
+ℹ️ Low utilization. Current IPsec setup is sufficient.

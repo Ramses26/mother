@@ -195,7 +195,7 @@ report() {
     local cumulative_total=$((total_to + total_from))
     
     # Average speed calculation
-    local hours_elapsed=$(date +%H)
+    local hours_elapsed=$((10#$(date +%H)))
     [[ $hours_elapsed -eq 0 ]] && hours_elapsed=24
     local seconds_elapsed=$((hours_elapsed * 3600))
     local avg_speed_bps=0
