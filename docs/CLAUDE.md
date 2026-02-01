@@ -1,0 +1,109 @@
+# Claude Code Context - Project Mother
+
+## Development Environment
+
+**IMPORTANT**: This repository is being developed on WSL (Windows Subsystem for Linux). The Mother server is a remote machine that must be accessed via SSH.
+
+### Local Development Machine
+- **Platform**: WSL2 on Windows
+- **Working Directory**: `/home/alig/projects/mother` (WSL path)
+- **Windows Path**: `\\wsl.localhost\Ubuntu\home\alig\projects\mother`
+
+### Mother Server (Remote)
+- **IP Address**: 10.0.0.162
+- **Hostname**: mother
+- **OS**: Ubuntu 24.04 LTS
+- **Location**: Chris's network (10.0.0.0/23)
+- **Access**: SSH only - use `ssh mother` or `ssh alig@10.0.0.162`
+
+### Key Points for AI Assistants
+
+1. **Always use SSH to access Mother**: Commands that need to run on Mother must use SSH or the MCP terminus tools (remote-ssh, ssh-read-lines, etc.)
+
+2. **Local files vs Remote files**:
+   - This repository (`/home/alig/projects/mother`) is LOCAL on WSL
+   - Production files on Mother are at `/opt/mother/` (REMOTE)
+   - Cron jobs, services, and scripts run on MOTHER, not locally
+
+3. **Log files**: Logs on Mother are typically at:
+   - `/var/log/mother_*.log`
+   - `/opt/mother/logs/`
+
+4. **To check cron jobs on Mother**:
+   ```bash
+   ssh mother 'crontab -l'
+   ```
+
+5. **To check services on Mother**:
+   ```bash
+   ssh mother 'systemctl status <service>'
+   ```
+
+## Network Topology
+
+```
+Your Location (192.168.1.0/24)          Chris's Location (10.0.0.0/23)
+├── Unraid: 192.168.1.10                ├── Mother: 10.0.0.162  <-- Main server
+├── Terminus: 192.168.1.14              ├── RS-4KMedia: 10.0.1.203
+└── WSL (development)                   ├── RS-TV: 10.0.0.88
+                                        └── RS-Movies: 10.0.0.160
+        <------- IPsec VPN Tunnel ------->
+```
+
+## SSH Configuration
+
+The local `~/.ssh/config` should have:
+```
+Host mother
+    HostName 10.0.0.162
+    User alig
+    IdentityFile ~/.ssh/id_ed25519
+```
+
+## Common Tasks
+
+### Running scripts on Mother
+```bash
+ssh mother '/opt/mother/reports/daily_report.py --dry-run'
+```
+
+### Checking logs on Mother
+```bash
+ssh mother 'tail -50 /var/log/mother_daily_report.log'
+```
+
+### Deploying changes to Mother
+```bash
+# From local WSL
+rsync -avz --exclude '.git' /home/alig/projects/mother/ mother:/opt/mother/
+```
+
+## Active Sync Systems
+
+### 1. Batch Sync (Initial Transfer)
+- **Purpose**: Bulk transfer of 160TB existing content
+- **Runs in**: Screen sessions (`movie`, `tvsync`)
+- **Parallelism**: `PARALLEL=8` (8 concurrent rsyncs)
+- **Scripts**: `sync_actions_*.sh`, `tv_sync_actions_*.sh`
+- **Monitoring**: `check-sync-health.sh` (cron every 10 min)
+
+### 2. Webhook Sync (Ongoing)
+- **Purpose**: Real-time sync of new downloads
+- **Runs in**: Docker container `sync-webhook`
+- **Parallelism**: `SYNC_MAX_CONCURRENT=2` (increase after bulk sync)
+- **Triggered by**: Radarr/Sonarr webhooks
+
+## Key Operations Files
+
+| File | Purpose |
+|------|---------|
+| `docs/OPERATIONS.md` | Full operations guide |
+| `docs/SYNC_AUTOSTART.md` | Boot and health monitoring setup |
+| `services/sync-webhook/README.md` | Webhook sync documentation |
+
+## Cron Jobs on Mother
+
+```
+0 8 * * *    /opt/mother/reports/daily_report.py   # Daily Telegram report
+*/10 * * * * /opt/mother/scripts/check-sync-health.sh  # Health monitor
+```

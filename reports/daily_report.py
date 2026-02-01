@@ -16,7 +16,7 @@ Usage:
     ./daily_report.py --verbose          # Show debug info
 
 Cron (8 AM daily):
-    0 8 * * * /opt/mother/reports/daily_report.py >> /var/log/mother_daily_report.log 2>&1
+    0 8 * * * /opt/mother/reports/daily_report.py >> /opt/mother/logs/daily_report.log 2>&1
 
 Author: Project Mother
 Last Updated: 2026-01-30
