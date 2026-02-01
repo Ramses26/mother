@@ -14,7 +14,7 @@ Internet
     │    └─── UniFi UCG: 74.215.149.185 (WAN)
     │
     └─── Chris's Location (10.0.0.0/23)
-         ├─── Mother: TBD (10.0.x.x)
+         ├─── Mother: 10.0.0.162
          ├─── RS-4KMedia: 10.0.1.203
          ├─── RS-TV: 10.0.0.88
          ├─── RS-Movies: 10.0.0.160
@@ -77,8 +77,7 @@ iperf3 -c <remote_ip>  # On other side
 ## Mother Server Network Configuration
 
 ### IP Address Assignment
-**Recommended**: Static IP in 10.0.0.0/23 range
-- **Suggested IP**: 10.0.1.10 (easy to remember)
+- **IP Address**: 10.0.0.162
 - **Hostname**: mother
 - **FQDN**: mother.stuttler.net (optional)
 
@@ -247,7 +246,7 @@ ssh-copy-id -i ~/.ssh/id_ed25519.pub root@192.168.1.10
 ```
 # Mother Server
 Host mother
-    HostName 10.0.1.10
+    HostName 10.0.0.162
     User <username>
     IdentityFile ~/.ssh/mother_ed25519
     ForwardAgent yes

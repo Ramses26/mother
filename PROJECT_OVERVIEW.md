@@ -43,7 +43,7 @@ Consolidate media management between two locations (You & Chris Stuttler) into a
   - `\\10.0.0.160\movies`
   - Current Data: 73.7 TB
 
-- **Mother Server** (Ubuntu on ESXi)
+- **Mother Server**: 10.0.0.162 (Ubuntu on ESXi)
   - Host: Proliant DL380 Gen 8
   - Resources: 64 Logical Processors, 191 GB RAM
   - Storage: Local ESXi datastore

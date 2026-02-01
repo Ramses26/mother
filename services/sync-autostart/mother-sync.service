@@ -1,0 +1,24 @@
+[Unit]
+Description=Mother Project Sync Scripts (Movie and TV)
+After=network-online.target remote-fs.target nfs-client.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+User=alig
+Group=mother
+WorkingDirectory=/opt/mother/reports
+
+# Start both screen sessions
+ExecStart=/opt/mother/scripts/start-sync-screens.sh
+ExecStop=/opt/mother/scripts/stop-sync-screens.sh
+
+# Restart if the screens die
+Restart=on-failure
+RestartSec=60
+
+# Environment
+Environment=PARALLEL=8
+
+[Install]
+WantedBy=multi-user.target

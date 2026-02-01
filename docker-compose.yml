@@ -389,6 +389,9 @@ services:
       - SYNC_LOG_LEVEL=${SYNC_LOG_LEVEL:-INFO}
       - SYNC_LOG_PATH=/logs
       - SYNC_DB_PATH=/data/sync_jobs.db
+      # Concurrency: max simultaneous rsync operations (default: 2)
+      # Can increase to 4-8 after bulk sync completes for faster ongoing sync
+      - SYNC_MAX_CONCURRENT=${SYNC_MAX_CONCURRENT:-2}
       # Plex integration - triggers library scan after sync
       - PLEX_URL=${PLEX_URL:-}
       - PLEX_TOKEN=${PLEX_TOKEN:-}
