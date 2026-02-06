@@ -35,6 +35,8 @@ LOG_LEVEL = os.environ.get('SYNC_LOG_LEVEL', 'INFO')
 LOG_PATH = os.environ.get('SYNC_LOG_PATH', '/logs')
 DB_PATH = os.environ.get('SYNC_DB_PATH', '/data/sync_jobs.db')
 MAX_CONCURRENT_SYNCS = int(os.environ.get('SYNC_MAX_CONCURRENT', '2'))
+MAX_RETRIES = int(os.environ.get('SYNC_MAX_RETRIES', '20'))
+RETRY_LOOKBACK_DAYS = int(os.environ.get('SYNC_RETRY_LOOKBACK_DAYS', '7'))
 
 # Plex configuration
 PLEX_URL = os.environ.get('PLEX_URL', '')  # e.g., http://10.0.0.50:32400
@@ -267,7 +269,7 @@ def complete_sync_job(job_id, status, duration=None, error=None):
 
 
 def recover_interrupted_jobs():
-    """On startup, find in_progress jobs that were interrupted and retry them"""
+    """On startup, recover interrupted jobs and retry unresolved failures"""
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
@@ -297,9 +299,8 @@ def recover_interrupted_jobs():
             # Queue them for retry
             for job in interrupted_jobs:
                 retry_count = (job.get('retry_count') or 0) + 1
-                if retry_count <= 3:
-                    logger.info(f"Queueing interrupted job for retry: {job['title']} (attempt {retry_count}/3)")
-                    # Import here to avoid circular dependency
+                if retry_count <= MAX_RETRIES:
+                    logger.info(f"Queueing interrupted job for retry: {job['title']} (attempt {retry_count}/{MAX_RETRIES})")
                     background_sync_with_retry(
                         job['source_path'],
                         job['dest_path'],
@@ -312,8 +313,51 @@ def recover_interrupted_jobs():
                 else:
                     logger.warning(f"Job exceeded max retries, not retrying: {job['title']}")
 
+        # Also find unresolved failed jobs that should be retried after restart
+        lookback = f'-{RETRY_LOOKBACK_DAYS} days'
+        cursor.execute('''
+            SELECT f.* FROM sync_jobs f
+            WHERE f.status = 'failed'
+            AND f.created_at > datetime('now', ?)
+            AND (f.retry_count IS NULL OR f.retry_count < ?)
+            AND NOT EXISTS (
+                SELECT 1 FROM sync_jobs s
+                WHERE s.title = f.title
+                AND s.status = 'success'
+                AND s.created_at > f.created_at
+            )
+            ORDER BY f.created_at DESC
+            LIMIT 50
+        ''', (lookback, MAX_RETRIES))
+        unresolved_jobs = [dict(row) for row in cursor.fetchall()]
         conn.close()
-        return len(interrupted_jobs)
+
+        if unresolved_jobs:
+            # Deduplicate by title
+            seen_titles = set()
+            unique_unresolved = []
+            for job in unresolved_jobs:
+                title = job['title'] or 'Unknown'
+                if title not in seen_titles:
+                    seen_titles.add(title)
+                    unique_unresolved.append(job)
+
+            logger.info(f"Found {len(unique_unresolved)} unresolved failed jobs to retry on startup")
+            for job in unique_unresolved:
+                retry_count = (job.get('retry_count') or 0) + 1
+                if retry_count <= MAX_RETRIES:
+                    logger.info(f"Queueing unresolved job for retry: {job['title']} (attempt {retry_count}/{MAX_RETRIES})")
+                    background_sync_with_retry(
+                        job['source_path'],
+                        job['dest_path'],
+                        job['title'],
+                        job.get('quality', 'Unknown'),
+                        job.get('file_size', 0),
+                        "Movie" if job['job_type'] == 'movie' else "Episode",
+                        retry_count
+                    )
+
+        return len(interrupted_jobs) + len(unresolved_jobs) if unresolved_jobs else len(interrupted_jobs)
     except Exception as e:
         logger.error(f"Error recovering interrupted jobs: {e}")
         return 0
@@ -709,7 +753,7 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
 
     def do_sync():
         # Acquire semaphore to limit concurrent syncs (prevents overwhelming NFS)
-        retry_info = f" (retry {retry_count}/3)" if retry_count > 0 else ""
+        retry_info = f" (retry {retry_count}/{MAX_RETRIES})" if retry_count > 0 else ""
         logger.info(f"Waiting for sync slot: {title}{retry_info}")
         sync_semaphore.acquire()
         logger.info(f"Acquired sync slot: {title}{retry_info}")
@@ -857,19 +901,20 @@ def send_daily_summary():
         ''', (yesterday,))
         failed_jobs = cursor.fetchall()
 
-        # Also get any jobs still needing attention (failed in last 24h, not yet resolved)
+        # Also get any jobs still needing attention (failed within lookback, not yet resolved)
+        lookback = f'-{RETRY_LOOKBACK_DAYS} days'
         cursor.execute('''
             SELECT DISTINCT title FROM sync_jobs
             WHERE status = 'failed'
-            AND created_at > datetime('now', '-24 hours')
+            AND created_at > datetime('now', ?)
             AND title NOT LIKE '[RETRY%'
             AND title NOT IN (
                 SELECT title FROM sync_jobs
                 WHERE status = 'success'
-                AND created_at > datetime('now', '-24 hours')
+                AND created_at > datetime('now', ?)
             )
             LIMIT 10
-        ''')
+        ''', (lookback, lookback))
         unresolved_jobs = cursor.fetchall()
 
         conn.close()
@@ -954,8 +999,20 @@ def send_error_alert(error_type: str, error_msg: str):
 _error_alert_sent = {}
 
 
+def get_retry_wait_minutes(retry_count):
+    """Get minimum wait time in minutes based on retry count (exponential backoff)"""
+    if retry_count < 3:
+        return 15       # Retries 1-3: every 15 minutes
+    elif retry_count < 6:
+        return 60       # Retries 4-6: every 1 hour
+    elif retry_count < 12:
+        return 240      # Retries 7-12: every 4 hours
+    else:
+        return 720      # Retries 13+: every 12 hours
+
+
 def auto_retry_failed():
-    """Automatically retry failed jobs every 15 minutes (up to 3 retries per job)"""
+    """Automatically retry failed jobs with exponential backoff"""
     global _error_alert_sent
     logger.info("Auto-retry: checking for failed jobs...")
     try:
@@ -963,13 +1020,14 @@ def auto_retry_failed():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Get failed jobs from the last 6 hours that have fewer than 3 retries
+        # Get failed jobs within lookback window that haven't exceeded max retries
         # Exclude titles that have a successful sync AFTER the failed one
+        lookback = f'-{RETRY_LOOKBACK_DAYS} days'
         cursor.execute('''
             SELECT f.* FROM sync_jobs f
             WHERE f.status = 'failed'
-            AND f.created_at > datetime('now', '-6 hours')
-            AND (f.retry_count IS NULL OR f.retry_count < 3)
+            AND f.created_at > datetime('now', ?)
+            AND (f.retry_count IS NULL OR f.retry_count < ?)
             AND NOT EXISTS (
                 SELECT 1 FROM sync_jobs s
                 WHERE s.title = f.title
@@ -977,8 +1035,8 @@ def auto_retry_failed():
                 AND s.created_at > f.created_at
             )
             ORDER BY f.created_at DESC
-            LIMIT 10
-        ''')
+            LIMIT 50
+        ''', (lookback, MAX_RETRIES))
         failed_jobs = [dict(row) for row in cursor.fetchall()]
         conn.close()
 
@@ -995,23 +1053,43 @@ def auto_retry_failed():
                     seen_titles.add(title)
                     unique_jobs.append(job)
 
-            logger.info(f"Auto-retry: found {len(unique_jobs)} failed jobs to retry")
+            now = datetime.now()
+            queued = 0
             for job in unique_jobs:
-                source = job['source_path']
-                dest = job['dest_path']
-                title = job['title'] or 'Unknown'
-                job_type = job['job_type']
-                file_size = job['file_size'] or 0
-                quality = job.get('quality') or 'Retry'
                 retry_count = (job.get('retry_count') or 0) + 1
+                wait_minutes = get_retry_wait_minutes(retry_count)
 
-                if retry_count <= 3:
+                # Check if enough time has passed since last failure (backoff)
+                completed_at = job.get('completed_at')
+                if completed_at:
+                    try:
+                        last_failed = datetime.fromisoformat(completed_at)
+                        elapsed = (now - last_failed).total_seconds() / 60
+                        if elapsed < wait_minutes:
+                            continue  # Not ready for retry yet
+                    except (ValueError, TypeError):
+                        pass  # If we can't parse, allow retry
+
+                if retry_count <= MAX_RETRIES:
+                    source = job['source_path']
+                    dest = job['dest_path']
+                    title = job['title'] or 'Unknown'
+                    job_type = job['job_type']
+                    file_size = job['file_size'] or 0
+                    quality = job.get('quality') or 'Retry'
+
                     media_type = "Movie" if job_type == 'movie' else "Episode"
                     background_sync(source, dest, title, quality, file_size, media_type,
                                    dest_base=None, retry_count=retry_count)
-                    logger.info(f"Auto-retry: queued {title} (attempt {retry_count}/3)")
+                    queued += 1
+                    logger.info(f"Auto-retry: queued {title} (attempt {retry_count}/{MAX_RETRIES})")
                 else:
-                    logger.warning(f"Auto-retry: {title} exceeded max retries (3), skipping")
+                    logger.warning(f"Auto-retry: {title} exceeded max retries ({MAX_RETRIES}), skipping")
+
+            if queued > 0:
+                logger.info(f"Auto-retry: queued {queued} of {len(unique_jobs)} failed jobs")
+            else:
+                logger.debug("Auto-retry: all failed jobs waiting for backoff window")
         else:
             logger.debug("Auto-retry: no failed jobs to retry")
 
@@ -1554,34 +1632,51 @@ def retry_job(job_id):
 
 @app.route('/queue/retry-failed', methods=['POST'])
 def retry_all_failed():
-    """Retry all failed jobs from the last 24 hours"""
+    """Retry all unresolved failed jobs within the lookback window"""
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
+        lookback = f'-{RETRY_LOOKBACK_DAYS} days'
         cursor.execute('''
-            SELECT * FROM sync_jobs
-            WHERE status = 'failed'
-            AND created_at > datetime('now', '-24 hours')
-            ORDER BY created_at DESC
-        ''')
+            SELECT f.* FROM sync_jobs f
+            WHERE f.status = 'failed'
+            AND f.created_at > datetime('now', ?)
+            AND NOT EXISTS (
+                SELECT 1 FROM sync_jobs s
+                WHERE s.title = f.title
+                AND s.status = 'success'
+                AND s.created_at > f.created_at
+            )
+            ORDER BY f.created_at DESC
+        ''', (lookback,))
         failed_jobs = [dict(row) for row in cursor.fetchall()]
         conn.close()
 
         if not failed_jobs:
             return jsonify({'status': 'no_failed_jobs', 'count': 0})
 
-        retried = 0
+        # Deduplicate by title
+        seen_titles = set()
+        unique_jobs = []
         for job in failed_jobs:
+            title = job['title'] or 'Unknown'
+            if title not in seen_titles:
+                seen_titles.add(title)
+                unique_jobs.append(job)
+
+        retried = 0
+        for job in unique_jobs:
             source = job['source_path']
             dest = job['dest_path']
             title = job['title'] or 'Unknown'
             job_type = job['job_type']
             file_size = job['file_size'] or 0
+            retry_count = (job.get('retry_count') or 0) + 1
 
             media_type = "Movie" if job_type == 'movie' else "Episode"
-            background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type,
-                           dest_base=None, retry_count=1)
+            background_sync(source, dest, title, "Retry", file_size, media_type,
+                           dest_base=None, retry_count=retry_count)
             retried += 1
             logger.info(f"Queued retry for: {title}")
 

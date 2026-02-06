@@ -115,15 +115,20 @@ def translate_path_to_mother(path: str) -> str:
     return path  # Already a Mother path (Synology)
 
 ###############################################################################
-# Quality Scoring (From HDR & Audio Format Preferences.md)
+# Quality Scoring (Aligned with Recyclarr/TRaSH Guides)
+#
+# Key changes from original:
+# - 720p scores 0 (Huntarr will upgrade these, don't waste time syncing)
+# - x265 without HDR/DV is penalized at 1080p (recyclarr blocks these)
+# - x265 WITH DV HDR10 remains preferred
 ###############################################################################
 
-# Resolution scores
+# Resolution scores - 720p scores 0 since Huntarr will upgrade
 RESOLUTION_SCORES = {
     '2160p': 4000,
     '1080p': 2000,
-    '720p': 1000,
-    '480p': 100,
+    '720p': 0,      # Changed: was 1000, now 0 - Huntarr will upgrade
+    '480p': -500,   # Changed: was 100, now negative - definitely upgrade
     'Unknown': 0,
 }
 
@@ -191,15 +196,18 @@ AUDIO_SCORES = {
     '': 0,
 }
 
-# Codec scores
+# Codec scores - BASE scores only, x265 penalty applied in calculate_quality_score()
+# Per recyclarr: x265 (no HDR/DV) is blocked at 1080p, so we penalize it
 CODEC_SCORES = {
     'AV1': 250,
-    'HEVC': 200,
-    'H.265': 200,
-    'x265': 200,
-    'AVC': 100,
-    'H.264': 100,
-    'x264': 100,
+    'HEVC': 100,    # Changed: was 200, now 100 - penalty applied separately for no-HDR
+    'H.265': 100,   # Changed: was 200, now 100
+    'x265': 100,    # Changed: was 200, now 100
+    'AVC': 150,     # Changed: was 100, now 150 - preferred over x265 at 1080p (no HDR)
+    'H.264': 150,   # Changed: was 100, now 150
+    'x264': 150,    # Changed: was 100, now 150
+    'VC1': 100,     # Added: for Remux compatibility
+    'VC-1': 100,    # Added: alternate naming
     'Unknown': 0,
     '': 0,
 }
@@ -405,11 +413,21 @@ class ComparisonResult:
 ###############################################################################
 
 def calculate_quality_score(media_file: MediaFile) -> int:
-    """Calculate overall quality score for a file"""
+    """
+    Calculate overall quality score for a file.
+
+    Aligned with Recyclarr/TRaSH Guides scoring:
+    - 720p content scores 0 (will be upgraded by Huntarr)
+    - x265 without HDR/DV is penalized at 1080p (recyclarr blocks these)
+    - x265 WITH DV/HDR10 is preferred (compression efficiency + HDR benefit)
+    """
     score = 0
     is_4k = media_file.library_type in ['4k_movies', '4k_tv']
+    is_x265 = media_file.codec in ['HEVC', 'H.265', 'x265']
+    has_hdr = media_file.hdr and media_file.hdr not in ['', 'None', 'SDR']
+    has_dv = media_file.hdr and 'DV' in media_file.hdr
 
-    # Resolution (1080p trumps everything in 1080p library)
+    # Resolution (720p scores 0 - Huntarr will upgrade)
     score += RESOLUTION_SCORES.get(media_file.resolution, 0)
 
     # Source
@@ -424,8 +442,22 @@ def calculate_quality_score(media_file: MediaFile) -> int:
     # Audio (most important at 1080p - trumps HDR!)
     score += AUDIO_SCORES.get(media_file.audio, 0)
 
-    # Codec
+    # Codec with x265 penalty logic (aligned with recyclarr)
     score += CODEC_SCORES.get(media_file.codec, 0)
+
+    # Apply x265 bonus/penalty based on HDR status (recyclarr alignment)
+    if is_x265 and not is_4k:
+        if has_dv:
+            # x265 with Dolby Vision at 1080p = good (recyclarr allows)
+            score += 200  # Bonus for DV + x265 efficiency
+        elif has_hdr:
+            # x265 with HDR10 only (no DV) at 1080p = neutral
+            # recyclarr doesn't block this but doesn't prefer it either
+            score += 0
+        else:
+            # x265 without any HDR at 1080p = BAD (recyclarr blocks this)
+            # trash_id: 839bea857ed2c0a8e084f3cbdbd65ecb (x265 no HDR/DV)
+            score -= 300  # Significant penalty
 
     # File size bonus (larger is generally better for same quality)
     score += min(int(media_file.size_gb * 10), 200)
@@ -1089,11 +1121,11 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
 
                     dest_dir = Path(dest) / '/'.join(rel_parts[:-1])  # Show/Season
                     f.write(f'run_cmd "Create dir for: {title}" mkdir -p "{dest_dir}"\n')
-                    f.write(f'run_cmd "Copy Ali->Chris: {title}" rsync -avhP "{src_file}" "{dest_dir}/"\n\n')
+                    f.write(f'run_cmd "Copy Ali->Chris: {title}" rsync -avhP --no-group --no-owner "{src_file}" "{dest_dir}/"\n\n')
                 else:
                     # Movies: Copy the entire movie folder to preserve structure
                     src_folder = str(Path(src_file).parent)
-                    f.write(f'run_cmd "Copy Ali->Chris: {title}" rsync -avhP "{src_folder}" "{dest}/"\n\n')
+                    f.write(f'run_cmd "Copy Ali->Chris: {title}" rsync -avhP --no-group --no-owner "{src_folder}" "{dest}/"\n\n')
 
             elif result.winner == 'chris' and result.chris_file:
                 # Chris has better version - copy from Synology to Unraid
@@ -1128,11 +1160,11 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
 
                     dest_dir = Path(dest) / '/'.join(rel_parts[:-1])  # Show/Season
                     f.write(f'run_cmd "Create dir for: {title}" mkdir -p "{dest_dir}"\n')
-                    f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP "{src_file}" "{dest_dir}/"\n\n')
+                    f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP --no-group --no-owner "{src_file}" "{dest_dir}/"\n\n')
                 else:
                     # Movies: Copy the entire movie folder to preserve structure
                     src_folder = str(Path(src_file).parent)
-                    f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP "{src_folder}" "{dest}/"\n\n')
+                    f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP --no-group --no-owner "{src_folder}" "{dest}/"\n\n')
 
         # AFTER copies complete, move Ali's old files to Deleted folder
         # This ensures we have the new file before removing the old one
@@ -1344,7 +1376,7 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Compare media libraries - Project Mother (Updated 2024-12-28)'
+        description='Compare media libraries - Project Mother (Updated 2026-02-05, recyclarr-aligned scoring)'
     )
     parser.add_argument(
         'ali_inventory',
@@ -1361,6 +1393,22 @@ def main():
         type=Path,
         default=Path('.'),
         help='Output directory for reports'
+    )
+    parser.add_argument(
+        '--skip-720p',
+        action='store_true',
+        help='Skip 720p files entirely (Huntarr will upgrade these)'
+    )
+    parser.add_argument(
+        '--skip-upgrade-candidates',
+        action='store_true',
+        default=True,
+        help='Skip files that will likely be upgraded by Huntarr (720p, x265 no HDR at 1080p). DEFAULT: enabled'
+    )
+    parser.add_argument(
+        '--include-upgrade-candidates',
+        action='store_true',
+        help='Include 720p and x265-no-HDR files (override default skip behavior)'
     )
 
     args = parser.parse_args()
@@ -1383,6 +1431,34 @@ def main():
     chris_files = [f for f in chris_files_all if not is_excluded(f.path, f.title)]
     chris_excluded = len(chris_files_all) - len(chris_files)
     print(f"   Parsed {len(chris_files)} files ({chris_excluded} excluded fan edits/concerts)")
+
+    # Determine if we should skip upgrade candidates
+    # Default is to skip (--skip-upgrade-candidates=True), but --include-upgrade-candidates overrides
+    skip_upgrades = args.skip_upgrade_candidates and not getattr(args, 'include_upgrade_candidates', False)
+
+    # Filter out 720p files if requested (Huntarr will upgrade these)
+    if args.skip_720p or skip_upgrades:
+        ali_720p = len([f for f in ali_files if f.resolution == '720p'])
+        chris_720p = len([f for f in chris_files if f.resolution == '720p'])
+        ali_files = [f for f in ali_files if f.resolution != '720p']
+        chris_files = [f for f in chris_files if f.resolution != '720p']
+        print(f"   Skipped 720p: Ali={ali_720p}, Chris={chris_720p} (Huntarr will upgrade)")
+
+    # Filter out x265 no-HDR at 1080p if requested (recyclarr blocks these, Huntarr will upgrade)
+    if skip_upgrades:
+        def is_upgrade_candidate(f: MediaFile) -> bool:
+            """Check if file will likely be upgraded by Huntarr"""
+            is_x265 = f.codec in ['HEVC', 'H.265', 'x265']
+            has_hdr = f.hdr and f.hdr not in ['', 'None', 'SDR']
+            is_1080p = f.library_type in ['1080p_movies', '1080p_tv']
+            # x265 without HDR at 1080p = recyclarr blocks, Huntarr will upgrade
+            return is_x265 and not has_hdr and is_1080p
+
+        ali_x265_no_hdr = len([f for f in ali_files if is_upgrade_candidate(f)])
+        chris_x265_no_hdr = len([f for f in chris_files if is_upgrade_candidate(f)])
+        ali_files = [f for f in ali_files if not is_upgrade_candidate(f)]
+        chris_files = [f for f in chris_files if not is_upgrade_candidate(f)]
+        print(f"   Skipped x265 (no HDR) at 1080p: Ali={ali_x265_no_hdr}, Chris={chris_x265_no_hdr} (recyclarr blocks)")
 
     # Find misplaced files
     misplaced_files = [f for f in ali_files + chris_files if not f.is_valid_placement]

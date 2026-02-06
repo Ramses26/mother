@@ -159,7 +159,53 @@ services:
     restart: unless-stopped
     networks:
       - mother_network
-      
+
+  # Huntarr - Automated Quality Upgrade Hunter
+  # Triggers searches for content below quality cutoff in *arr apps
+  # Conservative settings to avoid overwhelming indexers
+  huntarr:
+    image: ghcr.io/plexguide/huntarr:latest
+    container_name: huntarr
+    environment:
+      - TZ=${TZ}
+      # Radarr HD (1080p movies)
+      - RADARR_URL=http://radarr-hd:7878
+      - RADARR_API_KEY=${RADARR_HD_API_KEY}
+      # Radarr 4K
+      - RADARR_4K_URL=http://radarr-4k:7878
+      - RADARR_4K_API_KEY=${RADARR_4K_API_KEY}
+      # Sonarr HD (1080p TV)
+      - SONARR_URL=http://sonarr-hd:8989
+      - SONARR_API_KEY=${SONARR_HD_API_KEY}
+      # Sonarr 4K
+      - SONARR_4K_URL=http://sonarr-4k:8989
+      - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}
+      # VERY Conservative settings - minimal batches, long intervals
+      # Movies: 1 per cycle, 90 min interval (max ~16/day)
+      - RADARR_HUNT_MISSING_MOVIES=1
+      - RADARR_HUNT_UPGRADE_MOVIES=1
+      - RADARR_SLEEP_DURATION=90
+      # TV: 1 series per cycle, 90 min interval (max ~16/day)
+      - SONARR_HUNT_MISSING_SHOWS=1
+      - SONARR_HUNT_UPGRADE_SHOWS=1
+      - SONARR_SLEEP_DURATION=90
+      # Queue management - pause if queue gets too large
+      - MAXIMUM_QUEUE_SIZE=10
+      # API rate limiting
+      - API_TIMEOUT=120
+    volumes:
+      - ${CONFIG_PATH}/huntarr:/config
+    ports:
+      - "${HUNTARR_PORT:-9705}:9705"
+    restart: unless-stopped
+    depends_on:
+      - radarr-hd
+      - radarr-4k
+      - sonarr-hd
+      - sonarr-4k
+    networks:
+      - mother_network
+
   #Media Requesting Docker
   overseerr:
     image: sctx/overseerr:latest

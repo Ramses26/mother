@@ -86,6 +86,7 @@ rsync -avz --exclude '.git' /home/alig/projects/mother/ mother:/opt/mother/
 - **Parallelism**: `PARALLEL=8` (8 concurrent rsyncs)
 - **Scripts**: `sync_actions_*.sh`, `tv_sync_actions_*.sh`
 - **Monitoring**: `check-sync-health.sh` (cron every 10 min)
+- **Optimized**: Skips 720p and x265-no-HDR files (Huntarr upgrades these)
 
 ### 2. Webhook Sync (Ongoing)
 - **Purpose**: Real-time sync of new downloads
@@ -93,17 +94,34 @@ rsync -avz --exclude '.git' /home/alig/projects/mother/ mother:/opt/mother/
 - **Parallelism**: `SYNC_MAX_CONCURRENT=2` (increase after bulk sync)
 - **Triggered by**: Radarr/Sonarr webhooks
 
+### 3. Huntarr (Quality Upgrades)
+- **Purpose**: Automatically search for quality upgrades
+- **URL**: http://10.0.0.162:9705
+- **Mode**: Upgrades only (missing searches disabled during initial sync)
+- **Rate**: 2 upgrades per 90 minutes (~32/day)
+- **Instances**: Radarr HD/4K, Sonarr HD/4K
+
+## Sync Optimization (2026-02-05)
+
+Files skipped from batch sync (Huntarr will upgrade):
+- **720p files**: ~19,345 skipped
+- **x265 (no HDR) at 1080p**: ~6,561 skipped
+- **Total reduction**: 47,578 → 23,463 (**51% fewer files**)
+
 ## Key Operations Files
 
 | File | Purpose |
 |------|---------|
 | `docs/OPERATIONS.md` | Full operations guide |
+| `docs/HUNTARR_SYNC_SETUP.md` | Huntarr & sync optimization details |
 | `docs/SYNC_AUTOSTART.md` | Boot and health monitoring setup |
 | `services/sync-webhook/README.md` | Webhook sync documentation |
 
 ## Cron Jobs on Mother
 
 ```
-0 8 * * *    /opt/mother/reports/daily_report.py   # Daily Telegram report
 */10 * * * * /opt/mother/scripts/check-sync-health.sh  # Health monitor
+0 0,2,4,6,8,10,12,14,16,18,20,22 * * * /opt/mother/reports/daily_report.py
+*/2 * * * *  /opt/mother/vpn_ping_monitor.sh           # VPN health
+30 * * * *   /opt/mother/sync_stall_check.sh           # Stall detection
 ```

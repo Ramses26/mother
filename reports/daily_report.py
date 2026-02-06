@@ -148,8 +148,10 @@ def count_operations_tv(script_path: Path) -> int:
     """Count sync operations in TV sync script"""
     with open(script_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    matches = re.findall(r'do_rsync "[^"]+"', content)
-    return len(matches)
+    # Support both old format (do_rsync) and new format (run_cmd ... rsync)
+    matches_old = re.findall(r'do_rsync "[^"]+"', content)
+    matches_new = re.findall(r'run_cmd "[^"]+" rsync', content)
+    return len(matches_old) + len(matches_new)
 
 
 def count_completed(progress_path: Path) -> int:
