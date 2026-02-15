@@ -445,6 +445,20 @@ services:
       - PLEX_SECTION_MOVIES_4K=${PLEX_SECTION_MOVIES_4K:-}
       - PLEX_SECTION_TV=${PLEX_SECTION_TV:-}
       - PLEX_SECTION_TV_4K=${PLEX_SECTION_TV_4K:-}
+      # Radarr/Sonarr API for history scanning (catches missed webhooks)
+      - RADARR_HD_URL=http://radarr-hd:7878
+      - RADARR_HD_API_KEY=${RADARR_HD_API_KEY}
+      - RADARR_4K_URL=http://radarr-4k:7878
+      - RADARR_4K_API_KEY=${RADARR_4K_API_KEY}
+      - SONARR_HD_URL=http://sonarr-hd:8989
+      - SONARR_HD_API_KEY=${SONARR_HD_API_KEY}
+      - SONARR_4K_URL=http://sonarr-4k:8989
+      - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}
+      # History scanner settings
+      - SYNC_HISTORY_SCAN_HOURS=${SYNC_HISTORY_SCAN_HOURS:-6}
+      - SYNC_HISTORY_SCAN_INTERVAL=${SYNC_HISTORY_SCAN_INTERVAL:-30}
+      # Skip list for problematic large files
+      - SYNC_SKIP_TITLES=${SYNC_SKIP_TITLES:-}
     volumes:
       # Synology NFS mounts (source)
       - /mnt/synology/rs-movies:/mnt/synology/rs-movies:ro

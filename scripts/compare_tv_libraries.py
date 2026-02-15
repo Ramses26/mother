@@ -13,13 +13,19 @@ Usage:
 """
 
 import json
+import os
 import re
+import sys
 import argparse
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Optional
+
+# Add script dir to path for lib imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lib.quality_scoring import calculate_quality_score, TV_SOURCE_SCORES, parse_episode_info
 
 ###############################################################################
 # Path Configuration (same as movies)
@@ -94,27 +100,17 @@ class TVEpisode:
 
     @property
     def quality_score(self) -> int:
-        """Score for quality comparison (higher = better)
+        """Score for quality comparison using shared TRaSH-aligned scoring.
 
-        For TV: Web-DL > BluRay (except Remux)
-        TV shows are mastered for streaming, so Web-DL is typically preferred.
-        Remux is still king for shows like Band of Brothers, Planet Earth.
+        For TV: WEB-DL preferred over BluRay (except Remux).
+        Includes audio, codec, HDR, and x265 penalty logic.
         """
-        score = 0
-
-        # Resolution
-        res_scores = {'2160p': 4000, '1080p': 3000, '720p': 2000, '480p': 1000}
-        score += res_scores.get(self.resolution, 0)
-
-        # Source - Web-DL preferred over BluRay for TV (except Remux)
-        source_scores = {'Remux': 500, 'WEB-DL': 400, 'BluRay': 300, 'WEBRip': 200, 'HDTV': 100}
-        score += source_scores.get(self.source, 0)
-
-        # HDR
-        if self.hdr:
-            score += 50
-
-        return score
+        return calculate_quality_score(
+            self.resolution, self.source, self.hdr,
+            self.audio_codec, self.video_codec, self.size_gb,
+            is_4k=('2160p' in (self.resolution or '')),
+            media_type='tv',
+        )
 
 
 @dataclass
@@ -191,13 +187,13 @@ class ShowComparison:
             chris_score = chris_ep.quality_score
 
             if ali_score > chris_score:
-                reason = f"Ali better: {ali_ep.resolution}/{ali_ep.source} ({ali_score}) vs {chris_ep.resolution}/{chris_ep.source} ({chris_score})"
+                reason = f"Ali better: {ali_ep.resolution}/{ali_ep.source}/{ali_ep.audio_codec} ({ali_score}) vs {chris_ep.resolution}/{chris_ep.source}/{chris_ep.audio_codec} ({chris_score})"
                 winner = 'ali'
             elif chris_score > ali_score:
-                reason = f"Chris better: {chris_ep.resolution}/{chris_ep.source} ({chris_score}) vs {ali_ep.resolution}/{ali_ep.source} ({ali_score})"
+                reason = f"Chris better: {chris_ep.resolution}/{chris_ep.source}/{chris_ep.audio_codec} ({chris_score}) vs {ali_ep.resolution}/{ali_ep.source}/{ali_ep.audio_codec} ({ali_score})"
                 winner = 'chris'
             else:
-                reason = f"Tie: both {ali_ep.resolution}/{ali_ep.source} ({ali_score})"
+                reason = f"Tie: both {ali_ep.resolution}/{ali_ep.source}/{ali_ep.audio_codec} ({ali_score})"
                 winner = 'tie'
 
             self.episode_results.append(EpisodeComparison(
@@ -237,11 +233,11 @@ def load_tv_inventory(inventory_path: Path) -> List[TVEpisode]:
         episode = item.get('episode')
 
         if season is None or episode is None:
-            # Try to extract from filename
-            match = re.search(r'S(\d{1,4})E(\d{1,3})', item.get('filename', ''), re.IGNORECASE)
-            if match:
-                season = int(match.group(1))
-                episode = int(match.group(2))
+            # Try to extract from filename (handles multi-episode: S01E01-E02)
+            s, first_ep, last_ep = parse_episode_info(item.get('filename', ''))
+            if s >= 0:
+                season = s
+                episode = first_ep
 
         ep = TVEpisode(
             filename=item.get('filename', ''),
@@ -762,7 +758,8 @@ def generate_sync_script(shows: Dict[str, ShowComparison], output_dir: Path, tim
                         translate_path_for_rsync(result.ali_ep.path, 'ali'),
                         deleted_base,
                         f"{show.show_name} {result.ep_key}",
-                        f"{result.ali_ep.resolution}/{result.ali_ep.source}"
+                        f"{result.ali_ep.resolution}/{result.ali_ep.source}",
+                        dst  # replacement file path for existence check
                     ))
 
         # Write sync commands - COPIES FIRST, then moves to Deleted
@@ -792,20 +789,25 @@ def generate_sync_script(shows: Dict[str, ShowComparison], output_dir: Path, tim
         for src, dst, desc in chris_to_ali_upgrade:
             f.write(f'do_rsync "{src}" "{dst}" "{desc}"\n')
 
-        # AFTER copies complete, move Ali's old files to Deleted folder
-        # This ensures we have the new file before removing the old one
-        f.write("\n#" + "=" * 78 + "\n")
-        f.write(f"# MOVE ALI'S LOWER QUALITY TO DELETED ({len(ali_moves_to_deleted)})\n")
-        f.write("# Done AFTER copies so we keep original if copy fails\n")
-        f.write("#" + "=" * 78 + "\n\n")
-        for src, deleted_base, show_ep, quality in ali_moves_to_deleted:
-            f.write(f'do_move "{src}" "{deleted_base}/" "[MOVE TO DELETED] {show_ep} ({quality})"\n')
-
-        f.write('\n# Wait for all parallel jobs to complete\n')
+        # Wait for ALL parallel copies to complete before any deletions
+        f.write('\n# Wait for all parallel rsync jobs to finish before deleting old files\n')
         f.write('if [ "$PARALLEL" -gt 1 ]; then\n')
-        f.write('    log "Waiting for parallel transfers to complete..."\n')
+        f.write('    log "Waiting for all parallel transfers to complete before cleanup..."\n')
         f.write('    wait\n')
         f.write('fi\n')
+
+        # NOW safe to move old files - all copies have finished
+        f.write("\n#" + "=" * 78 + "\n")
+        f.write(f"# MOVE ALI'S LOWER QUALITY TO DELETED ({len(ali_moves_to_deleted)})\n")
+        f.write("# Done AFTER copies complete so we keep original if copy fails\n")
+        f.write("#" + "=" * 78 + "\n\n")
+        for src, deleted_base, show_ep, quality, replacement_path in ali_moves_to_deleted:
+            f.write(f'# Verify replacement exists before deleting old file\n')
+            f.write(f'if [ -f "{replacement_path}" ]; then\n')
+            f.write(f'    do_move "{src}" "{deleted_base}/" "[MOVE TO DELETED] {show_ep} ({quality})"\n')
+            f.write(f'else\n')
+            f.write(f'    log "${{YELLOW}}SKIP${{NC}}: replacement not found for {show_ep} - keeping original"\n')
+            f.write(f'fi\n')
         f.write('\nlog "Sync complete!"\n')
 
     # Make executable

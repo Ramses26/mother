@@ -21,12 +21,23 @@ Last Updated: 2024-12-28
 import json
 import csv
 import argparse
+import os
 import re
+import sys
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 from collections import defaultdict
+
+# Add script dir to path for lib imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lib.quality_scoring import (
+    RESOLUTION_SCORES, SOURCE_SCORES, HDR_SCORES_4K, HDR_SCORES_1080P,
+    AUDIO_SCORES, CODEC_SCORES,
+    calculate_quality_score as _shared_calculate_quality_score,
+    parse_quality_from_filename,
+)
 
 ###############################################################################
 # Library Path Configuration
@@ -117,100 +128,9 @@ def translate_path_to_mother(path: str) -> str:
 ###############################################################################
 # Quality Scoring (Aligned with Recyclarr/TRaSH Guides)
 #
-# Key changes from original:
-# - 720p scores 0 (Huntarr will upgrade these, don't waste time syncing)
-# - x265 without HDR/DV is penalized at 1080p (recyclarr blocks these)
-# - x265 WITH DV HDR10 remains preferred
+# Score dictionaries are imported from lib/quality_scoring.py (shared module).
+# TV comparison is handled by compare_tv_libraries.py (episode-level matching).
 ###############################################################################
-
-# Resolution scores - 720p scores 0 since Huntarr will upgrade
-RESOLUTION_SCORES = {
-    '2160p': 4000,
-    '1080p': 2000,
-    '720p': 0,      # Changed: was 1000, now 0 - Huntarr will upgrade
-    '480p': -500,   # Changed: was 100, now negative - definitely upgrade
-    'Unknown': 0,
-}
-
-# Source scores
-SOURCE_SCORES = {
-    'Remux': 2000,
-    'Bluray': 1500,
-    'BluRay': 1500,
-    'WEB-DL': 1000,
-    'WEBDL': 1000,
-    'WEBRip': 800,
-    'HDTV': 200,
-    'DVDRip': 100,
-    'Unknown': 0,
-}
-
-# HDR scores for 4K
-HDR_SCORES_4K = {
-    'DV HDR10': 800,
-    'DV HDR10+': 800,
-    'HDR10': 700,
-    'HDR': 700,
-    'DV': 400,
-    'DV HLG': 400,
-    'DV SDR': 300,
-    'HDR10+': 300,
-    'HLG': 300,
-    'SDR': 0,
-    'None': 0,
-    '': 0,
-}
-
-# HDR scores for 1080p (bonus for downscaled 4K releases)
-HDR_SCORES_1080P = {
-    'DV HDR10': 400,
-    'DV HDR10+': 400,
-    'HDR10': 400,
-    'HDR': 400,
-    'DV': 350,
-    'DV HLG': 350,
-    'DV SDR': 300,
-    'HDR10+': 350,
-    'HLG': 300,
-    'SDR': 0,
-    'None': 0,
-    '': 0,
-}
-
-# Audio scores (Audio trumps HDR at 1080p!)
-AUDIO_SCORES = {
-    'TrueHD Atmos': 500,
-    'Atmos': 500,
-    'TrueHD': 450,
-    'DTS-HD MA': 400,
-    'DTS-HD': 350,
-    'DTS:X': 400,
-    'DTSX': 400,
-    'DTS': 200,
-    'DD+': 150,
-    'EAC3': 150,
-    'DD': 100,
-    'AC3': 100,
-    'AAC': 50,
-    'Unknown': 0,
-    '': 0,
-}
-
-# Codec scores - BASE scores only, x265 penalty applied in calculate_quality_score()
-# Per recyclarr: x265 (no HDR/DV) is blocked at 1080p, so we penalize it
-CODEC_SCORES = {
-    'AV1': 250,
-    'HEVC': 100,    # Changed: was 200, now 100 - penalty applied separately for no-HDR
-    'H.265': 100,   # Changed: was 200, now 100
-    'x265': 100,    # Changed: was 200, now 100
-    'AVC': 150,     # Changed: was 100, now 150 - preferred over x265 at 1080p (no HDR)
-    'H.264': 150,   # Changed: was 100, now 150
-    'x264': 150,    # Changed: was 100, now 150
-    'VC1': 100,     # Added: for Remux compatibility
-    'VC-1': 100,    # Added: alternate naming
-    'Unknown': 0,
-    '': 0,
-}
 
 ###############################################################################
 # Filename Parsing (TRaSH Format)
@@ -242,115 +162,12 @@ def detect_library_type(path: str) -> str:
 
 def parse_trash_filename(filename: str) -> Dict:
     """
-    Parse TRaSH-format filename for quality attributes
+    Parse TRaSH-format filename for quality attributes.
+    Delegates to shared lib/quality_scoring.py module.
 
     Example: Avatar (2009) {tmdb-19995} - [Bluray-1080p][DTS-HD MA 5.1][HDR][x265]-FraMeSToR.mkv
     """
-    result = {
-        'resolution': '',
-        'source': '',
-        'hdr': '',
-        'audio': '',
-        'codec': '',
-        'release_group': '',
-    }
-
-    # Extract content in square brackets
-    bracket_contents = re.findall(r'\[([^\]]+)\]', filename)
-
-    for content in bracket_contents:
-        content_upper = content.upper()
-
-        # Resolution + Source (e.g., "Bluray-1080p", "WEBDL-2160p", "Remux-1080p")
-        res_match = re.search(r'(Remux|Bluray|WEBDL|WEB-DL|WEBRip|HDTV)[- ]?(2160p|1080p|720p|480p)', content, re.IGNORECASE)
-        if res_match:
-            result['source'] = res_match.group(1)
-            result['resolution'] = res_match.group(2)
-            continue
-
-        # Just resolution
-        if content in ['2160p', '1080p', '720p', '480p']:
-            result['resolution'] = content
-            continue
-
-        # HDR formats
-        if 'DV HDR10+' in content_upper or 'DOLBY VISION HDR10+' in content_upper:
-            result['hdr'] = 'DV HDR10+'
-            continue
-        if 'DV HDR10' in content_upper or 'DOLBY VISION HDR10' in content_upper:
-            result['hdr'] = 'DV HDR10'
-            continue
-        if 'DV HLG' in content_upper:
-            result['hdr'] = 'DV HLG'
-            continue
-        if 'DV SDR' in content_upper:
-            result['hdr'] = 'DV SDR'
-            continue
-        if content_upper in ['DV', 'DOLBY VISION', 'DOVI']:
-            result['hdr'] = 'DV'
-            continue
-        if 'HDR10+' in content_upper:
-            result['hdr'] = 'HDR10+'
-            continue
-        if 'HDR10' in content_upper:
-            result['hdr'] = 'HDR10'
-            continue
-        if content_upper == 'HDR':
-            result['hdr'] = 'HDR'
-            continue
-        if content_upper == 'HLG':
-            result['hdr'] = 'HLG'
-            continue
-
-        # Audio formats
-        if 'TRUEHD ATMOS' in content_upper or 'TRUEHD.ATMOS' in content_upper:
-            result['audio'] = 'TrueHD Atmos'
-            continue
-        if 'TRUEHD' in content_upper:
-            result['audio'] = 'TrueHD'
-            continue
-        if 'DTS-HD MA' in content_upper or 'DTS-HD.MA' in content_upper or 'DTSHD MA' in content_upper:
-            result['audio'] = 'DTS-HD MA'
-            continue
-        if 'DTS-X' in content_upper or 'DTSX' in content_upper:
-            result['audio'] = 'DTS:X'
-            continue
-        if 'DTS-HD' in content_upper or 'DTSHD' in content_upper:
-            result['audio'] = 'DTS-HD'
-            continue
-        if 'DTS' in content_upper and 'HD' not in content_upper:
-            result['audio'] = 'DTS'
-            continue
-        if 'ATMOS' in content_upper and 'TRUEHD' not in content_upper:
-            result['audio'] = 'Atmos'
-            continue
-        if 'EAC3' in content_upper or 'DD+' in content_upper or 'DDP' in content_upper:
-            result['audio'] = 'DD+'
-            continue
-        if 'AC3' in content_upper or content_upper == 'DD':
-            result['audio'] = 'DD'
-            continue
-        if 'AAC' in content_upper:
-            result['audio'] = 'AAC'
-            continue
-
-        # Codec
-        if content_upper in ['HEVC', 'H.265', 'X265', 'H265']:
-            result['codec'] = 'HEVC'
-            continue
-        if content_upper in ['AVC', 'H.264', 'X264', 'H264']:
-            result['codec'] = 'AVC'
-            continue
-        if content_upper == 'AV1':
-            result['codec'] = 'AV1'
-            continue
-
-    # Extract release group (after last hyphen)
-    group_match = re.search(r'-([A-Za-z0-9]+)(?:\.[a-z]{3})?$', filename)
-    if group_match:
-        result['release_group'] = group_match.group(1)
-
-    return result
+    return parse_quality_from_filename(filename)
 
 def validate_file_placement(path: str, parsed_info: Dict) -> Tuple[bool, str]:
     """
@@ -415,54 +232,21 @@ class ComparisonResult:
 def calculate_quality_score(media_file: MediaFile) -> int:
     """
     Calculate overall quality score for a file.
+    Delegates to shared lib/quality_scoring.py module.
 
     Aligned with Recyclarr/TRaSH Guides scoring:
     - 720p content scores 0 (will be upgraded by Huntarr)
     - x265 without HDR/DV is penalized at 1080p (recyclarr blocks these)
     - x265 WITH DV/HDR10 is preferred (compression efficiency + HDR benefit)
     """
-    score = 0
     is_4k = media_file.library_type in ['4k_movies', '4k_tv']
-    is_x265 = media_file.codec in ['HEVC', 'H.265', 'x265']
-    has_hdr = media_file.hdr and media_file.hdr not in ['', 'None', 'SDR']
-    has_dv = media_file.hdr and 'DV' in media_file.hdr
+    media_type = 'tv' if 'tv' in (media_file.library_type or '') else 'movie'
 
-    # Resolution (720p scores 0 - Huntarr will upgrade)
-    score += RESOLUTION_SCORES.get(media_file.resolution, 0)
-
-    # Source
-    score += SOURCE_SCORES.get(media_file.source, 0)
-
-    # HDR (different scoring for 4K vs 1080p)
-    if is_4k:
-        score += HDR_SCORES_4K.get(media_file.hdr, 0)
-    else:
-        score += HDR_SCORES_1080P.get(media_file.hdr, 0)
-
-    # Audio (most important at 1080p - trumps HDR!)
-    score += AUDIO_SCORES.get(media_file.audio, 0)
-
-    # Codec with x265 penalty logic (aligned with recyclarr)
-    score += CODEC_SCORES.get(media_file.codec, 0)
-
-    # Apply x265 bonus/penalty based on HDR status (recyclarr alignment)
-    if is_x265 and not is_4k:
-        if has_dv:
-            # x265 with Dolby Vision at 1080p = good (recyclarr allows)
-            score += 200  # Bonus for DV + x265 efficiency
-        elif has_hdr:
-            # x265 with HDR10 only (no DV) at 1080p = neutral
-            # recyclarr doesn't block this but doesn't prefer it either
-            score += 0
-        else:
-            # x265 without any HDR at 1080p = BAD (recyclarr blocks this)
-            # trash_id: 839bea857ed2c0a8e084f3cbdbd65ecb (x265 no HDR/DV)
-            score -= 300  # Significant penalty
-
-    # File size bonus (larger is generally better for same quality)
-    score += min(int(media_file.size_gb * 10), 200)
-
-    return score
+    return _shared_calculate_quality_score(
+        media_file.resolution, media_file.source, media_file.hdr,
+        media_file.audio, media_file.codec, media_file.size_gb,
+        is_4k=is_4k, media_type=media_type,
+    )
 
 def extract_ids_from_filename(filename: str) -> Tuple[str, str, str]:
     """
@@ -969,6 +753,20 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
         f.write('SKIPPED=0\n')
         f.write('FAILED=0\n\n')
 
+        f.write('# Pause control - create this file to pause syncing\n')
+        f.write('PAUSE_FILE="${PAUSE_FILE:-/opt/mother/PAUSE_SYNC}"\n\n')
+
+        f.write('# Check if paused and wait\n')
+        f.write('check_pause() {\n')
+        f.write('    if [ -f "$PAUSE_FILE" ]; then\n')
+        f.write('        log "${YELLOW}PAUSED${NC} - waiting (remove $PAUSE_FILE to resume)"\n')
+        f.write('        while [ -f "$PAUSE_FILE" ]; do\n')
+        f.write('            sleep 5\n')
+        f.write('        done\n')
+        f.write('        log "${GREEN}RESUMED${NC} - continuing sync"\n')
+        f.write('    fi\n')
+        f.write('}\n\n')
+
         f.write('log() {\n')
         f.write('    echo -e "[$(date "+%Y-%m-%d %H:%M:%S")] $1"\n')
         f.write('}\n\n')
@@ -989,8 +787,9 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
         f.write('    echo "$hash" >> "$PROGRESS_FILE"\n')
         f.write('}\n\n')
 
-        f.write('# Semaphore for parallel execution\n')
+        f.write('# Semaphore for parallel execution (with pause check)\n')
         f.write('wait_for_slot() {\n')
+        f.write('    check_pause\n')
         f.write('    while [ $(jobs -r | wc -l) -ge $PARALLEL ]; do\n')
         f.write('        sleep 0.5\n')
         f.write('    done\n')
@@ -1121,11 +920,11 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
 
                     dest_dir = Path(dest) / '/'.join(rel_parts[:-1])  # Show/Season
                     f.write(f'run_cmd "Create dir for: {title}" mkdir -p "{dest_dir}"\n')
-                    f.write(f'run_cmd "Copy Ali->Chris: {title}" rsync -avhP --no-group --no-owner "{src_file}" "{dest_dir}/"\n\n')
+                    f.write(f'run_cmd "Copy Ali->Chris: {title}" rsync -avhP --no-group --no-owner --no-perms "{src_file}" "{dest_dir}/"\n\n')
                 else:
                     # Movies: Copy the entire movie folder to preserve structure
                     src_folder = str(Path(src_file).parent)
-                    f.write(f'run_cmd "Copy Ali->Chris: {title}" rsync -avhP --no-group --no-owner "{src_folder}" "{dest}/"\n\n')
+                    f.write(f'run_cmd "Copy Ali->Chris: {title}" rsync -avhP --no-group --no-owner --no-perms "{src_folder}" "{dest}/"\n\n')
 
             elif result.winner == 'chris' and result.chris_file:
                 # Chris has better version - copy from Synology to Unraid
@@ -1160,11 +959,11 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
 
                     dest_dir = Path(dest) / '/'.join(rel_parts[:-1])  # Show/Season
                     f.write(f'run_cmd "Create dir for: {title}" mkdir -p "{dest_dir}"\n')
-                    f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP --no-group --no-owner "{src_file}" "{dest_dir}/"\n\n')
+                    f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP --no-group --no-owner --no-perms "{src_file}" "{dest_dir}/"\n\n')
                 else:
                     # Movies: Copy the entire movie folder to preserve structure
                     src_folder = str(Path(src_file).parent)
-                    f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP --no-group --no-owner "{src_folder}" "{dest}/"\n\n')
+                    f.write(f'run_cmd "Copy Chris->Ali: {title}" rsync -avhP --no-group --no-owner --no-perms "{src_folder}" "{dest}/"\n\n')
 
         # AFTER copies complete, move Ali's old files to Deleted folder
         # This ensures we have the new file before removing the old one

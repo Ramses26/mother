@@ -2,7 +2,7 @@
 
 This directory contains all automation scripts for the Mother project.
 
-**Last Updated:** 2024-12-28
+**Last Updated:** 2026-02-14
 
 ## Quick Start - Library Analysis
 
@@ -177,6 +177,43 @@ export MAX_RETENTION_DAYS=120
 
 ---
 
+### 🔄 Sync Control
+
+#### `sync-control.sh`
+Control batch sync operations (pause, resume, status, stop, start).
+
+**Usage:**
+```bash
+# Pause syncs (current jobs finish, new ones wait)
+./scripts/sync-control.sh pause
+
+# Resume syncs
+./scripts/sync-control.sh resume
+
+# Check status (shows pause state and screen sessions)
+./scripts/sync-control.sh status
+
+# Stop sync screen sessions entirely
+./scripts/sync-control.sh stop
+
+# Start sync screen sessions
+./scripts/sync-control.sh start
+```
+
+**How it works:**
+- Creates/removes `/opt/mother/PAUSE_SYNC` file
+- Sync scripts check this file before starting new transfers
+- Allows pausing without killing running transfers
+
+---
+
+### 🧹 Cleanup Scripts
+
+#### `cleanup_duplicates.py`
+See "Library Analysis" section above for full details. Replaces the old shell-based cleanup scripts with a unified Python implementation using shared quality scoring.
+
+---
+
 ### 🔄 Sync to Unraid
 
 #### `sync_to_unraid.sh`
@@ -262,46 +299,79 @@ python3 scripts/generate_inventory.py \\\\unraid\\media\\4K TV Shows -o ali_4ktv
 
 ---
 
-#### `compare_libraries.py`
-**UPDATED 2024-12-28** - Compare two library inventories using Project Mother scoring.
+#### `compare_libraries.py` (Movies)
+Compare two movie library inventories using TMDB/IMDB matching and TRaSH-format filename parsing.
 
 **Usage:**
 ```bash
 python3 scripts/compare_libraries.py ali_movies.json chris_movies.json
-
-# With custom output directory
 python3 scripts/compare_libraries.py ali_movies.json chris_movies.json -o /path/to/reports
 ```
 
 **Output:**
-- `detailed_comparison_[timestamp].txt` - Human-readable report with all actions
-- `sync_plan_[timestamp].csv` - CSV file for review
-- `sync_actions_[timestamp].sh` - Executable sync script (DRY RUN by default)
+- `detailed_comparison_[timestamp].txt` - Human-readable report
+- `sync_plan_[timestamp].csv` - CSV for review
+- `sync_actions_[timestamp].sh` - Executable sync script
+- `chris_pending_deletions_[timestamp].sh` - Synology cleanup (run after sync)
 
-**Key Features:**
-- **Option C Analysis:** Uses path to determine library type (4K vs 1080p)
-- **TRaSH Filename Parsing:** Extracts quality from `[Bluray-1080p][DTS-HD MA 5.1][HDR]` format
-- **Misplaced File Detection:** Flags 4K files in 1080p libraries (and vice versa)
-- **Deleted Folder Handling:** Generates moves to proper deleted folders
+---
 
-**Quality Scoring (from HDR & Audio Format Preferences.md):**
+#### `compare_tv_libraries.py` (TV Shows)
+Compare two TV library inventories using TVDB + S##E## episode matching.
+
+**Usage:**
+```bash
+python3 scripts/compare_tv_libraries.py ali_tv.json chris_tv.json
+python3 scripts/compare_tv_libraries.py ali_tv.json chris_tv.json -o /path/to/reports
+```
+
+**Output:**
+- `tv_comparison_summary_[timestamp].txt` / `tv_comparison_detail_[timestamp].txt`
+- `tv_sync_actions_[timestamp].sh` - Uses `do_rsync` (copies) and `do_move` (deletions)
+- `chris_tv_pending_deletions_[timestamp].sh` - Synology cleanup
+
+**Safety features in generated scripts:**
+- `wait` before any `do_move` deletions (ensures parallel copies finish first)
+- Replacement file existence check before deleting old file
+- Progress tracking with resume support
+
+---
+
+#### `lib/quality_scoring.py` (Shared Module)
+Single source of truth for TRaSH-aligned quality scoring used by both comparison scripts and cleanup_duplicates.py.
+
+- Movies: `SOURCE_SCORES` (BluRay > WEB-DL)
+- TV: `TV_SOURCE_SCORES` (WEB-DL > BluRay)
+- Resolution, audio, HDR, and codec scoring
+
+**Quality Scoring summary:**
 - **Resolution:** 2160p (+4000) > 1080p (+2000) > 720p (+1000)
-- **Source:** Remux (+2000) > BluRay (+1500) > WEB-DL (+1000)
+- **Source (Movies):** Remux (+2000) > BluRay (+1500) > WEB-DL (+1000)
+- **Source (TV):** Remux (+2000) > WEB-DL (+1500) > BluRay (+1000)
 - **Audio:** TrueHD Atmos (+500) > DTS-HD MA (+400) > DTS (+200)
 - **HDR 4K:** DV HDR10 (+800) > HDR10 (+700) > DV (+400)
-- **HDR 1080p:** Any HDR (+400) - bonus for downscaled 4K releases
 - **Codec:** AV1 (+250) > HEVC (+200) > AVC (+100)
 
-**Priority Note:** Audio trumps HDR at 1080p (Atmos +500 > HDR +400)
+---
 
-**Example workflow:**
+#### `cleanup_duplicates.py`
+Find and remove duplicate media files using shared quality scoring.
+
+**Usage:**
 ```bash
-# Compare movie libraries
-python3 scripts/compare_libraries.py ali_movies.json chris_movies.json
+# Dry run (default)
+python3 scripts/cleanup_duplicates.py --media-type movie --location synology
+python3 scripts/cleanup_duplicates.py --media-type tv --location unraid
 
-# Review the reports
-cat comparison_summary_*.txt
+# Execute cleanup
+DRY_RUN=false python3 scripts/cleanup_duplicates.py --media-type tv --location unraid
 ```
+
+**Features:**
+- Uses `lib/quality_scoring.py` for consistent scoring
+- Supports both movie and TV media types
+- Generates action scripts, plans (CSV), and reports
+- DRY_RUN=true by default
 
 ---
 

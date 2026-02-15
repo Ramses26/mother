@@ -1,0 +1,1001 @@
+================================================================================
+DUPLICATE CLEANUP REPORT - MOVIES
+Generated: 2026-02-14 17:05:30
+================================================================================
+
+Groups with duplicates: 124
+Total files to remove:  124
+Total space to reclaim: 1093.42 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/American Psycho (2000)
+  KEEP:   American Psycho (2000) {tmdb-1359} - {edition-Uncut} [Bluray-1080p][EAC3 Atmos 5.1][DV HDR10][x265]-SQS.mkv
+          Score: 4754  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 5.45GB
+  REMOVE: American Psycho (2000) {tmdb-1359} - [Bluray-1080p][EAC3 7.1][x264]-c0kE.mkv
+          Score: 3933  Quality: 1080p/Bluray/DD+/AVC  Size: 13.37GB
+  Space saved: 13.37 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Baby Driver (2017)
+  KEEP:   Baby Driver (2017) {tmdb-339403} - [Bluray-1080p][EAC3 Atmos 5.1][DV HDR10][x265]-SM737.mkv
+          Score: 4756  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 5.69GB
+  REMOVE: Baby Driver (2017) {tmdb-339403} - [Bluray-1080p][EAC3 7.1][HDR10][x265]-NCmt.mkv
+          Score: 4322  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 17.26GB
+  Space saved: 17.26 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Big Trouble in Little China (1986)
+  KEEP:   Big Trouble in Little China (1986) {tmdb-6978} - [Hybrid][Bluray-1080p][EAC3 5.1][x264]-MaG.mkv
+          Score: 3964  Quality: 1080p/Bluray/DD+/AVC  Size: 16.49GB
+  REMOVE: Big Trouble in Little China (1986) {tmdb-6978} - [Bluray-1080p][DTS 5.1][x264].mkv
+          Score: 3933  Quality: 1080p/Bluray/DTS/AVC  Size: 8.38GB
+  Space saved: 8.38 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Bob Marley One Love (2024)
+  KEEP:   Bob Marley One Love (2024) {tmdb-802219} - [Bluray-1080p][EAC3 7.1][DV HDR10][x265]-BRUTE.mkv
+          Score: 4428  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 7.84GB
+  REMOVE: Bob Marley One Love (2024) {tmdb-802219} - [WEBDL-1080p][EAC3 Atmos 5.1][h264]-ETHEL.mkv
+          Score: 3704  Quality: 1080p/WEBDL/Atmos/AVC  Size: 5.45GB
+  Space saved: 5.45 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Borderline (2025)
+  KEEP:   Borderline (2025) {tmdb-1013482} - [Bluray-1080p][EAC3 5.1][x264]-hallowed.mkv
+          Score: 3870  Quality: 1080p/Bluray/DD+/AVC  Size: 7.07GB
+  REMOVE: Borderline (2025) {tmdb-1013482} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-BYNDR.mkv
+          Score: 3362  Quality: 1080p/WEBDL/DD+/AVC  Size: 6.27GB
+  Space saved: 6.27 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Breakwater (2023)
+  KEEP:   Breakwater (2023) {tmdb-1006228} - [Bluray-1080p][EAC3 5.1][x264]-hallowed.mkv
+          Score: 3872  Quality: 1080p/Bluray/DD+/AVC  Size: 7.25GB
+  REMOVE: Breakwater (2023) {tmdb-1006228} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3365  Quality: 1080p/WEBDL/DD+/AVC  Size: 6.56GB
+  Space saved: 6.56 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Bring It On (2000)
+  KEEP:   Bring It On (2000) {tmdb-1588} - [Bluray-1080p][EAC3 5.1][DV HDR10][x265]-SM737.mkv
+          Score: 4404  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 5.49GB
+  REMOVE: Bring It On (2000) {tmdb-1588} - [Bluray-1080p][DTS 5.1][x264]-ero.mkv
+          Score: 3995  Quality: 1080p/Bluray/DTS/AVC  Size: 14.55GB
+  Space saved: 14.55 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Champions (2023)
+  KEEP:   Champions (2023) {tmdb-933419} - [Bluray-1080p][EAC3 5.1][x264]-HiDt.mkv
+          Score: 3923  Quality: 1080p/Bluray/DD+/AVC  Size: 12.36GB
+  REMOVE: Champions (2023) {tmdb-933419} - [MA][WEBDL-1080p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 3725  Quality: 1080p/WEBDL/Atmos/AVC  Size: 7.55GB
+  Space saved: 7.55 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Childs Play 2 (1990)
+  KEEP:   Childs Play 2 (1990) {tmdb-11186} - [Bluray-1080p][EAC3 Atmos 7.1][DV HDR10][x265]-NTb.mkv
+          Score: 4824  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 12.48GB
+  REMOVE: Childs Play 2 (1990) {tmdb-11186} - [Bluray-1080p][EAC3 7.1][x264]-iFT.mkv
+          Score: 3924  Quality: 1080p/Bluray/DD+/AVC  Size: 12.42GB
+  Space saved: 12.42 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/City of God (2002)
+  KEEP:   City of God (2002) {tmdb-598} - [Bluray-1080p][EAC3 5.1][x264]-PTer.mkv
+          Score: 4000  Quality: 1080p/Bluray/DD+/AVC  Size: 22.92GB
+  REMOVE: City of God (2002) {tmdb-598} - [Bluray-1080p][DTS 5.1][x264]-HDC.mkv
+          Score: 3956  Quality: 1080p/Bluray/DTS/AVC  Size: 10.62GB
+  Space saved: 10.62 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Cool Hand Luke (1967)
+  KEEP:   Cool Hand Luke (1967) {tmdb-903} - [Bluray-1080p][FLAC 2.0][HDR10][x265]-DON.mkv
+          Score: 4200  Quality: 1080p/Bluray/HDR10/HEVC  Size: 22.27GB
+  REMOVE: Cool Hand Luke (1967) {tmdb-903} - [Bluray-1080p][AC3 1.0][x264]-ESiR.mkv
+          Score: 3829  Quality: 1080p/Bluray/DD/AVC  Size: 7.93GB
+  Space saved: 7.93 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Corpse Bride (2005)
+  KEEP:   Corpse Bride (2005) {tmdb-3933} - [Hybrid][Bluray-1080p][EAC3 Atmos 5.1][DV HDR10][x265]-HiDt.mkv
+          Score: 4815  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 11.57GB
+  REMOVE: Corpse Bride (2005) {tmdb-3933} - [Remux-1080p][DTS-HD MA 5.1][VC1].mkv
+          Score: 4521  Quality: 1080p/Remux/DTS-HD MA  Size: 12.20GB
+  Space saved: 12.20 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/DC League of Super-Pets (2022)
+  KEEP:   DC League of Super-Pets (2022) {tmdb-539681} - [Bluray-1080p][EAC3 7.1][x264]-iFT.mkv
+          Score: 3930  Quality: 1080p/Bluray/DD+/AVC  Size: 13.09GB
+  REMOVE: DC League of Super-Pets (2022) {tmdb-539681} - [HMAX][WEBDL-1080p][AC3 5.1][x264]-DKV.mkv
+          Score: 3327  Quality: 1080p/WEBDL/DD/AVC  Size: 7.77GB
+  Space saved: 7.77 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Daddys Head (2024)
+  KEEP:   Daddys Head (2024) {tmdb-1089123} - [Bluray-1080p][DTS-HD MA 5.1][x264]-GUACAMOLE.mkv
+          Score: 4118  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 6.86GB
+  REMOVE: Daddys Head (2024) {tmdb-1089123} - [WEBDL-1080p][EAC3 5.1][h264]-SoundsDirty.mkv
+          Score: 3332  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.20GB
+  Space saved: 3.20 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Dampyr (2022)
+  KEEP:   Dampyr (2022) {tmdb-644124} - [Bluray-1080p][EAC3 5.1][x264]-PSTX.mkv
+          Score: 3885  Quality: 1080p/Bluray/DD+/AVC  Size: 8.60GB
+  REMOVE: Dampyr (2022) {tmdb-644124} - [MA][WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3363  Quality: 1080p/WEBDL/DD+/AVC  Size: 6.38GB
+  Space saved: 6.38 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Dave Chappelle Deep in the Heart of Texas (2017)
+  KEEP:   Dave Chappelle Deep in the Heart of Texas (2017) {tmdb-444706} - [NF][WEBDL-1080p][EAC3 5.1][x264]-Kitsune.mkv
+          Score: 3326  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.66GB
+  REMOVE: Dave Chappelle Deep in the Heart of Texas (2017) {tmdb-444706} - [NF][WEBRip-1080p][AC3 5.1][x264]-TrollHD.mkv
+          Score: 3083  Quality: 1080p/WEBRip/DD/AVC  Size: 3.35GB
+  Space saved: 3.35 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Dave Chappelle The Age of Spin (2017)
+  KEEP:   Dave Chappelle The Age of Spin (2017) {tmdb-444705} - [NF][WEBDL-1080p][EAC3 5.1][x264]-Kitsune.mkv
+          Score: 3326  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.64GB
+  REMOVE: Dave Chappelle The Age of Spin (2017) {tmdb-444705} - [NF][WEBRip-1080p][AC3 5.1][x264]-TrollHD.mkv
+          Score: 3117  Quality: 1080p/WEBRip/DD/AVC  Size: 6.71GB
+  Space saved: 6.71 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Deep Blue Sea (1999)
+  KEEP:   Deep Blue Sea (1999) {tmdb-8914} - [Bluray-1080p][EAC3 Atmos 7.1][DV HDR10][x265]-BRUTE.mkv
+          Score: 4900  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 24.63GB
+  REMOVE: Deep Blue Sea (1999) {tmdb-8914} - [Bluray-1080p][DTS 5.1][x264]-HDMaNiAcS.mkv
+          Score: 3950  Quality: 1080p/Bluray/DTS/AVC  Size: 10.10GB
+  Space saved: 10.10 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Delicatessen (1991)
+  KEEP:   Delicatessen (1991) {tmdb-892} - [Bluray-1080p][EAC3 5.1][DV HDR10][x265]-W4NK3R.mkv
+          Score: 4457  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 10.70GB
+  REMOVE: Delicatessen (1991) {tmdb-892} - [Bluray-1080p][FLAC 2.0][x264]-Skazhutin.mkv
+          Score: 3771  Quality: 1080p/Bluray/AVC  Size: 12.15GB
+  Space saved: 12.15 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Dont Look Up (2021)
+  KEEP:   Dont Look Up (2021) {tmdb-646380} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][HDR10][h265]-TEPES.mkv
+          Score: 4062  Quality: 1080p/WEBDL/Atmos/HDR10/HEVC  Size: 6.21GB
+  REMOVE: Dont Look Up (2021) {tmdb-646380} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-EVO.mkv
+          Score: 3726  Quality: 1080p/WEBDL/Atmos/AVC  Size: 7.69GB
+  Space saved: 7.69 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Dr. No (1962)
+  KEEP:   Dr. No (1962) {tmdb-646} - [Bluray-1080p][EAC3 Atmos 5.1][DV HDR10][x265]-HiDt.mkv
+          Score: 4900  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 20.56GB
+  REMOVE: Dr. No (1962) {tmdb-646} - [Bluray-1080p][DTS 5.1][x264]-decibeL.mkv
+          Score: 3988  Quality: 1080p/Bluray/DTS/AVC  Size: 13.81GB
+  Space saved: 13.81 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Enders Game (2013)
+  KEEP:   Enders Game (2013) {tmdb-80274} - [Bluray-1080p Proper][EAC3 Atmos 5.1][HDR10][x265]-SM737.mkv
+          Score: 4564  Quality: 1080p/Bluray/Atmos/HDR10/HEVC  Size: 6.47GB
+  REMOVE: Enders Game (2013) {tmdb-80274} - [Bluray-1080p Proper][DTS 5.1][x264]-DON.mkv
+          Score: 4028  Quality: 1080p/Bluray/DTS/AVC  Size: 17.84GB
+  Space saved: 17.84 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Freakier Friday (2025)
+  KEEP:   Freakier Friday (2025) {tmdb-1125257} - [Bluray-1080p][DTS-HD MA 7.1][x264]-VoV.mkv
+          Score: 4223  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 17.37GB
+  REMOVE: Freakier Friday (2025) {tmdb-1125257} - [WEBDL-1080p][EAC3 Atmos 5.1][h264]-ETHEL.mkv
+          Score: 3731  Quality: 1080p/WEBDL/Atmos/AVC  Size: 8.20GB
+  Space saved: 8.20 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Friendship (2025)
+  KEEP:   Friendship (2025) {tmdb-1239655} - [Bluray-1080p][EAC3 5.1][x264]-ATELiER.mkv
+          Score: 3950  Quality: 1080p/Bluray/DD+/AVC  Size: 15.06GB
+  REMOVE: Friendship (2025) {tmdb-1239655} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-BYNDR.mkv
+          Score: 3370  Quality: 1080p/WEBDL/DD+/AVC  Size: 7.03GB
+  Space saved: 7.03 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Godfrey Regular Black (2016)
+  KEEP:   Godfrey Regular Black (2016) {tmdb-415730} - [AMZN][WEBDL-1080p][EAC3 2.0][x264]-monkee.mkv
+          Score: 3336  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.69GB
+  REMOVE: Godfrey Regular Black (2016) {tmdb-415730} - [Hulu][WEBDL-720p][AAC 2.0][h264]-monkee.mkv
+          Score: 1209  Quality: 720p/WEBDL/AAC/AVC  Size: 0.98GB
+  Space saved: 0.98 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Gone Baby Gone (2007)
+  KEEP:   Gone Baby Gone (2007) {tmdb-4771} - [Bluray-1080p][DTS 5.1][x264]-CtrlHD.mkv
+          Score: 3951  Quality: 1080p/Bluray/DTS/AVC  Size: 10.11GB
+  REMOVE: Gone Baby Gone (2007) {tmdb-4771} - [Bluray-1080p][EAC3 5.1][x264]-honeyvera.mkv
+          Score: 3917  Quality: 1080p/Bluray/DD+/AVC  Size: 11.73GB
+  Space saved: 11.73 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Good Burger 2 (2023)
+  KEEP:   Good Burger 2 (2023) {tmdb-1101582} - [Bluray-1080p][DTS 5.1][x264]-fl00f.mkv
+          Score: 3941  Quality: 1080p/Bluray/DTS/AVC  Size: 9.17GB
+  REMOVE: Good Burger 2 (2023) {tmdb-1101582} - [Bluray-1080p][AC3 5.1][x264]-ArMor.mkv
+          Score: 3802  Quality: 1080p/Bluray/DD/AVC  Size: 5.26GB
+  Space saved: 5.26 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Handling the Undead (2024)
+  KEEP:   Handling the Undead (2024) {tmdb-1020896} - [Bluray-1080p][EAC3 5.1][x264]-SbR.mkv
+          Score: 3908  Quality: 1080p/Bluray/DD+/AVC  Size: 10.89GB
+  REMOVE: Handling the Undead (2024) {tmdb-1020896} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3367  Quality: 1080p/WEBDL/DD+/AVC  Size: 6.76GB
+  Space saved: 6.76 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Home Alone 2 Lost in New York (1992)
+  KEEP:   Home Alone 2 Lost in New York (1992) {tmdb-772} - [Bluray-1080p][DTS-HD MA 5.1][x264]-MgB.mkv
+          Score: 4184  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 13.45GB
+  REMOVE: Home Alone 2 Lost in New York (1992) {tmdb-772} - [Bluray-1080p][AC3 5.1][x265].mkv
+          Score: 3440  Quality: 1080p/Bluray/DD/HEVC  Size: 4.07GB
+  Space saved: 4.07 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Hustlers (2019)
+  KEEP:   Hustlers (2019) {tmdb-540901} - [Bluray-1080p][EAC3 7.1][x264]-LoRD.mkv
+          Score: 3932  Quality: 1080p/Bluray/DD+/AVC  Size: 13.25GB
+  REMOVE: Hustlers (2019) {tmdb-540901} - [Bluray-1080p][AC3 5.1][x264]-AAA.mkv
+          Score: 3826  Quality: 1080p/Bluray/DD/AVC  Size: 7.65GB
+  Space saved: 7.65 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/In a Valley of Violence (2016)
+  KEEP:   In a Valley of Violence (2016) {tmdb-291356} - [Bluray-1080p][DTS-HD MA 5.1][x264]-iFT.mkv
+          Score: 4180  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 13.06GB
+  REMOVE: In a Valley of Violence (2016) {tmdb-291356} - [Bluray-1080p][DTS 5.1][x264].mkv
+          Score: 3980  Quality: 1080p/Bluray/DTS/AVC  Size: 13.03GB
+  Space saved: 13.03 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Incendies (2010)
+  KEEP:   Incendies (2010) {tmdb-46738} - [Bluray-1080p][EAC3 5.1][DV HDR10][x265]-PTer.mkv
+          Score: 4501  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 15.14GB
+  REMOVE: Incendies (2010) {tmdb-46738} - [Bluray-1080p][DTS 5.1][x264]-D-Z0N3.mkv
+          Score: 4048  Quality: 1080p/Bluray/DTS/AVC  Size: 19.88GB
+  Space saved: 19.88 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Incredibles 2 (2018)
+  KEEP:   Incredibles 2 (2018) {tmdb-260513} - [Bluray-1080p][EAC3 7.1][x264]-NCmt.mkv
+          Score: 3925  Quality: 1080p/Bluray/DD+/AVC  Size: 12.58GB
+  REMOVE: Incredibles 2 (2018) {tmdb-260513} - [Bluray-1080p][DTS 5.1][x264].mkv
+          Score: 3904  Quality: 1080p/Bluray/DTS/AVC  Size: 5.47GB
+  Space saved: 5.47 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Indiana Jones and the Temple of Doom (1984)
+  KEEP:   Indiana Jones and the Temple of Doom (1984) {tmdb-87} - [Bluray-1080p][EAC3 7.1][DV HDR10][x265]-DON.mkv
+          Score: 4550  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 27.49GB
+  REMOVE: Indiana Jones and the Temple of Doom (1984) {tmdb-87} - [Bluray-1080p][DTS 5.1][x264].mkv
+          Score: 3937  Quality: 1080p/Bluray/DTS/AVC  Size: 8.75GB
+  Space saved: 8.75 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Jay Kelly (2025)
+  KEEP:   Jay Kelly (2025) {tmdb-1069905} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 3702  Quality: 1080p/WEBDL/Atmos/AVC  Size: 5.29GB
+  REMOVE: Jay Kelly (2025) {tmdb-1069905} - [NF][WEBDL-720p][EAC3 Atmos 5.1][x264]-NoRBiT.mkv
+          Score: 1680  Quality: 720p/WEBDL/Atmos/AVC  Size: 3.08GB
+  Space saved: 3.08 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Jimmy Carr Funny Business (2016)
+  KEEP:   Jimmy Carr Funny Business (2016) {tmdb-387054} - [NF][WEBDL-1080p][EAC3 5.1][x264]-12GaugeShotgun.mkv
+          Score: 3333  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.30GB
+  REMOVE: Jimmy Carr Funny Business (2016) {tmdb-387054} - [WEBRip-1080p][AC3 5.1][x264]-RARBG.mkv
+          Score: 3099  Quality: 1080p/WEBRip/DD/AVC  Size: 4.97GB
+  Space saved: 4.97 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Judas and the Black Messiah (2021)
+  KEEP:   Judas and the Black Messiah (2021) {tmdb-583406} - [Bluray-1080p][EAC3 5.1][x264]-iFT.mkv
+          Score: 3932  Quality: 1080p/Bluray/DD+/AVC  Size: 13.29GB
+  REMOVE: Judas and the Black Messiah (2021) {tmdb-583406} - [WEBDL-1080p][EAC3 Atmos 5.1][h264]-naisu.mkv
+          Score: 3667  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.77GB
+  Space saved: 1.77 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Kinds of Kindness (2024)
+  KEEP:   Kinds of Kindness (2024) {tmdb-1029955} - [Bluray-1080p][EAC3 5.1][x264]-HiP.mkv
+          Score: 4000  Quality: 1080p/Bluray/DD+/AVC  Size: 21.78GB
+  REMOVE: Kinds of Kindness (2024) {tmdb-1029955} - [WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3735  Quality: 1080p/WEBDL/Atmos/AVC  Size: 8.50GB
+  Space saved: 8.50 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/King Arthur (2004)
+  KEEP:   King Arthur (2004) {tmdb-9477} - {edition-Director's Cut} [Bluray-1080p][DTS 5.1][x264]-D-Z0N3.mkv
+          Score: 4015  Quality: 1080p/Bluray/DTS/AVC  Size: 16.58GB
+  REMOVE: King Arthur (2004) {tmdb-9477} - [Bluray-1080p][DTS 5.1][x264].mkv
+          Score: 3973  Quality: 1080p/Bluray/DTS/AVC  Size: 12.32GB
+  Space saved: 12.32 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Kraven the Hunter (2024)
+  KEEP:   Kraven the Hunter (2024) {tmdb-539972} - [Bluray-1080p][TrueHD Atmos 7.1][x264]-PirateM.mkv
+          Score: 4242  Quality: 1080p/Bluray/TrueHD Atmos/AVC  Size: 9.26GB
+  REMOVE: Kraven the Hunter (2024) {tmdb-539972} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-APEX.mkv
+          Score: 3372  Quality: 1080p/WEBDL/DD+/AVC  Size: 7.24GB
+  Space saved: 7.24 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/L.A. Confidential (1997)
+  KEEP:   L.A. Confidential (1997) {tmdb-2118} - [Bluray-1080p][EAC3 5.1][x264]-c0kE.mkv
+          Score: 3971  Quality: 1080p/Bluray/DD+/AVC  Size: 17.18GB
+  REMOVE: L.A. Confidential (1997) {tmdb-2118} - [Bluray-1080p][AC3 5.1][x264].mkv
+          Score: 3880  Quality: 1080p/Bluray/DD/AVC  Size: 13.06GB
+  Space saved: 13.06 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/La La Land (2016)
+  KEEP:   La La Land (2016) {tmdb-313369} - [Bluray-1080p][EAC3 Atmos 7.1][HDR10][x265]-NCmt.mkv
+          Score: 4666  Quality: 1080p/Bluray/Atmos/HDR10/HEVC  Size: 16.67GB
+  REMOVE: La La Land (2016) {tmdb-313369} - [Bluray-1080p][AC3 5.1][x264]-LoRD.mkv
+          Score: 3900  Quality: 1080p/Bluray/DD/AVC  Size: 15.03GB
+  Space saved: 15.03 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Lady and the Tramp II Scamps Adventure (2001)
+  KEEP:   Lady and the Tramp II Scamps Adventure (2001) {tmdb-18269} - [Bluray-1080p][DTS 5.1][x264]-decibeL.mkv
+          Score: 3903  Quality: 1080p/Bluray/DTS/AVC  Size: 5.32GB
+  REMOVE: Lady and the Tramp II Scamps Adventure (2001) {tmdb-18269} - [Bluray-1080p][DTS 5.1][x264]-HDMaNiAcS.mkv
+          Score: 3900  Quality: 1080p/Bluray/DTS/AVC  Size: 5.04GB
+  Space saved: 5.04 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Land of Bad (2024)
+  KEEP:   Land of Bad (2024) {tmdb-969492} - [Hybrid][Bluray-1080p][EAC3 5.1][DV HDR10Plus][x265]-HiDt.mkv
+          Score: 4516  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 16.68GB
+  REMOVE: Land of Bad (2024) {tmdb-969492} - [WEBDL-1080p Proper][EAC3 5.1][h264]-RABBITS.mkv
+          Score: 3374  Quality: 1080p/WEBDL/DD+/AVC  Size: 7.40GB
+  Space saved: 7.40 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Last Breath (2025)
+  KEEP:   Last Breath (2025) {tmdb-972533} - [Bluray-1080p][TrueHD 5.1][x264]-KNiVES.mkv
+          Score: 4250  Quality: 1080p/Bluray/TrueHD/AVC  Size: 15.07GB
+  REMOVE: Last Breath (2025) {tmdb-972533} - [MA][WEBDL-1080p Proper][EAC3 Atmos 5.1][x264]-BYNDR.mkv
+          Score: 3705  Quality: 1080p/WEBDL/Atmos/AVC  Size: 5.57GB
+  Space saved: 5.57 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Little Dixie (2023)
+  KEEP:   Little Dixie (2023) {tmdb-1058949} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3370  Quality: 1080p/WEBDL/DD+/AVC  Size: 7.01GB
+  REMOVE: Little Dixie (2023) {tmdb-1058949} - [WEBRip-1080p][AAC 5.1][x264]-AOC.mkv
+          Score: 3022  Quality: 1080p/WEBRip/AAC/AVC  Size: 2.23GB
+  Space saved: 2.23 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Live and Let Die (1973)
+  KEEP:   Live and Let Die (1973) {tmdb-253} - [Bluray-1080p][DTS 5.1][x264]-NTb.mkv
+          Score: 4005  Quality: 1080p/Bluray/DTS/AVC  Size: 15.50GB
+  REMOVE: Live and Let Die (1973) {tmdb-253} - [Bluray-1080p][AC3 5.1][x265].mkv
+          Score: 3439  Quality: 1080p/Bluray/DD/HEVC  Size: 4.00GB
+  Space saved: 4.00 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Luckiest Girl Alive (2022)
+  KEEP:   Luckiest Girl Alive (2022) {tmdb-799546} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][DV][HEVC]-FLUX.mkv
+          Score: 4175  Quality: 1080p/WEBDL/Atmos/DV/HEVC  Size: 2.53GB
+  REMOVE: Luckiest Girl Alive (2022) {tmdb-799546} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-CMRG.mkv
+          Score: 3701  Quality: 1080p/WEBDL/Atmos/AVC  Size: 5.19GB
+  Space saved: 5.19 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/MLK FBI (2020)
+  KEEP:   MLK FBI (2020) {tmdb-728868} - [Bluray-1080p][DTS-HD MA 5.1][x264]-SCARE.mkv
+          Score: 4179  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 12.97GB
+  REMOVE: MLK FBI (2020) {tmdb-728868} - [WEBDL-1080p][EAC3 5.1][h264]-ISA.mkv
+          Score: 3369  Quality: 1080p/WEBDL/DD+/AVC  Size: 6.99GB
+  Space saved: 6.99 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Madagascar 3 Europes Most Wanted (2012)
+  KEEP:   Madagascar 3 Europes Most Wanted (2012) {tmdb-80321} - [Bluray-1080p][AC3 5.1][x264]-EbP.mkv
+          Score: 3836  Quality: 1080p/Bluray/DD/AVC  Size: 8.66GB
+  REMOVE: Madagascar 3 Europes Most Wanted (2012) {tmdb-80321} - [WEBDL-1080p][AC3 5.1][h264]-CiNEMiX.mkv
+          Score: 3292  Quality: 1080p/WEBDL/DD/AVC  Size: 4.24GB
+  Space saved: 4.24 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Maestro (2023)
+  KEEP:   Maestro (2023) {tmdb-523607} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][DV][h265]-Kitsune.mkv
+          Score: 4186  Quality: 1080p/WEBDL/Atmos/DV/HEVC  Size: 3.69GB
+  REMOVE: Maestro (2023) {tmdb-523607} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-playWEB.mkv
+          Score: 3726  Quality: 1080p/WEBDL/Atmos/AVC  Size: 7.62GB
+  Space saved: 7.62 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Meet Dave (2008)
+  KEEP:   Meet Dave (2008) {tmdb-11260} - [Bluray-1080p][DTS-HD MA 5.1][h264]-PRiSTiNE.mkv
+          Score: 4250  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 25.22GB
+  REMOVE: Meet Dave (2008) {tmdb-11260} - [Bluray-1080p][EAC3 7.1][x264]-NZT.mkv
+          Score: 3930  Quality: 1080p/Bluray/DD+/AVC  Size: 13.06GB
+  Space saved: 13.06 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Midnight Cowboy (1969)
+  KEEP:   Midnight Cowboy (1969) {tmdb-3116} - [Bluray-1080p][DTS-HD MA 5.1][x264]-Grym.MKV
+          Score: 4195  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 14.58GB
+  REMOVE: Midnight Cowboy (1969) {tmdb-3116} - [Bluray-1080p][DTS 5.1][x264]-DON.mkv
+          Score: 3983  Quality: 1080p/Bluray/DTS/AVC  Size: 13.35GB
+  Space saved: 13.35 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Mission Impossible II (2000)
+  KEEP:   Mission Impossible II (2000) {tmdb-955} - [Bluray-1080p][EAC3 5.1][HDR10][x265]-NCmt.mkv
+          Score: 4350  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 26.24GB
+  REMOVE: Mission Impossible II (2000) {tmdb-955} - [Bluray-1080p][EAC3 5.1][x264]-hallowed.mkv
+          Score: 3909  Quality: 1080p/Bluray/DD+/AVC  Size: 10.93GB
+  Space saved: 10.93 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Monster Island (2017)
+  KEEP:   Monster Island (2017) {tmdb-420279} - [Bluray-1080p][DTS 5.1][x264]-GUACAMOLE.mkv
+          Score: 3915  Quality: 1080p/Bluray/DTS/AVC  Size: 6.56GB
+  REMOVE: Monster Island (2017) {tmdb-420279} - [WEBDL-1080p][AC3 5.1][x264]-strife.mkv
+          Score: 3282  Quality: 1080p/WEBDL/DD/AVC  Size: 3.22GB
+  Space saved: 3.22 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Monsters Ball (2001)
+  KEEP:   Monsters Ball (2001) {tmdb-1365} - [Bluray-1080p][DTS 5.1][x264]-MCR.mkv
+          Score: 3937  Quality: 1080p/Bluray/DTS/AVC  Size: 8.75GB
+  REMOVE: Monsters Ball (2001) {tmdb-1365} - [Bluray-1080p][AC3 5.1][x264]-BHDStudio.mp4
+          Score: 3817  Quality: 1080p/Bluray/DD/AVC  Size: 6.77GB
+  Space saved: 6.77 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Noah (2014)
+  KEEP:   Noah (2014) {tmdb-86834} - [Bluray-1080p][DTS 5.1][x264]-DON.mkv
+          Score: 4015  Quality: 1080p/Bluray/DTS/AVC  Size: 16.55GB
+  REMOVE: Noah (2014) {tmdb-86834} - [Bluray-1080p][AC3 5.1][x264].mkv
+          Score: 3848  Quality: 1080p/Bluray/DD/AVC  Size: 9.84GB
+  Space saved: 9.84 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Nosferatu (2024)
+  KEEP:   Nosferatu (2024) {tmdb-426063} - {edition-Extended} [Bluray-1080p][TrueHD Atmos 7.1][x264]-KNiVES.mkv
+          Score: 4298  Quality: 1080p/Bluray/TrueHD Atmos/AVC  Size: 14.86GB
+  REMOVE: Nosferatu (2024) {tmdb-426063} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-APEX.mkv
+          Score: 3387  Quality: 1080p/WEBDL/DD+/AVC  Size: 8.76GB
+  Space saved: 8.76 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Old Guy (2024)
+  KEEP:   Old Guy (2024) {tmdb-1077782} - [Bluray-1080p][EAC3 5.1][x264]-HiDt.mkv
+          Score: 3876  Quality: 1080p/Bluray/DD+/AVC  Size: 7.69GB
+  REMOVE: Old Guy (2024) {tmdb-1077782} - [WEBDL-1080p][AC3 5.1][h264]-KBOX.mkv
+          Score: 3295  Quality: 1080p/WEBDL/DD/AVC  Size: 4.57GB
+  Space saved: 4.57 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Oliver! (1968)
+  KEEP:   Oliver! (1968) {tmdb-17917} - [Hybrid][Bluray-1080p][EAC3 7.1][DV HDR10][x265]-PTer.mkv
+          Score: 4550  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 23.97GB
+  REMOVE: Oliver! (1968) {tmdb-17917} - [Bluray-1080p][DTS 5.1][x264]-HDMaNiAcS.mkv
+          Score: 4050  Quality: 1080p/Bluray/DTS/AVC  Size: 21.50GB
+  Space saved: 21.50 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/On the Rocks (2020)
+  KEEP:   On the Rocks (2020) {tmdb-575417} - [Bluray-1080p][EAC3 5.1][x264]-iFT.mkv
+          Score: 3923  Quality: 1080p/Bluray/DD+/AVC  Size: 12.37GB
+  REMOVE: On the Rocks (2020) {tmdb-575417} - [WEBRip-1080p][DTS-HD MA 5.1][h264]-CREATiVE24.mkv
+          Score: 3479  Quality: 1080p/WEBRip/DTS-HD MA/AVC  Size: 12.93GB
+  Space saved: 12.93 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Once Upon a Time. in Hollywood (2019)
+  KEEP:   Once Upon a Time. in Hollywood (2019) {tmdb-466272} - [Bluray-1080p][EAC3 5.1][x264]-hallowed.mkv
+          Score: 3943  Quality: 1080p/Bluray/DD+/AVC  Size: 14.30GB
+  REMOVE: Once Upon a Time. in Hollywood (2019) {tmdb-466272} - [WEBDL-1080p][AC3 5.1][x264].mkv
+          Score: 3325  Quality: 1080p/WEBDL/DD/AVC  Size: 7.53GB
+  Space saved: 7.53 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Over the Moon (2020)
+  KEEP:   Over the Moon (2020) {tmdb-560050} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-NINJACENTRAL.mkv
+          Score: 3692  Quality: 1080p/WEBDL/Atmos/AVC  Size: 4.30GB
+  REMOVE: Over the Moon (2020) {tmdb-560050} - [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3692  Quality: 1080p/WEBDL/Atmos/AVC  Size: 4.29GB
+  Space saved: 4.29 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Pacific Rim Uprising (2018)
+  KEEP:   Pacific Rim Uprising (2018) {tmdb-268896} - [Bluray-1080p][EAC3 Atmos 7.1][DV HDR10][x265]-DON.mkv
+          Score: 4900  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 20.79GB
+  REMOVE: Pacific Rim Uprising (2018) {tmdb-268896} - [Bluray-1080p][AC3 5.1][x264].mkv
+          Score: 3899  Quality: 1080p/Bluray/DD/AVC  Size: 14.99GB
+  Space saved: 14.99 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Passages (2023)
+  KEEP:   Passages (2023) {tmdb-898673} - [Bluray-1080p][DTS-HD MA 5.1][x264]-PiTBULL.mkv
+          Score: 4165  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 11.53GB
+  REMOVE: Passages (2023) {tmdb-898673} - [AMZN][WEBDL-1080p][EAC3 2.0][h264]-XEBEC.mkv
+          Score: 3362  Quality: 1080p/WEBDL/DD+/AVC  Size: 6.20GB
+  Space saved: 6.20 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Pitch Black (2000)
+  KEEP:   Pitch Black (2000) {tmdb-2787} - {edition-Directors Cut} [Bluray-1080p][EAC3 Atmos 5.1][DV HDR10][x265]-SQS.mkv
+          Score: 4804  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 10.47GB
+  REMOVE: Pitch Black (2000) {tmdb-2787} - {edition-Director's Cut} [Bluray-1080p][EAC3 5.1][HDR10][x265]-DON.mkv
+          Score: 4350  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 20.06GB
+  Space saved: 20.06 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Pontypool (2009)
+  KEEP:   Pontypool (2009) {tmdb-23963} - [Bluray-1080p][DTS 5.1][x264]-MaG.mkv
+          Score: 3934  Quality: 1080p/Bluray/DTS/AVC  Size: 8.50GB
+  REMOVE: Pontypool (2009) {tmdb-23963} - [Bluray-1080p][DTS 5.1][x264]-thugline.mkv
+          Score: 3915  Quality: 1080p/Bluray/DTS/AVC  Size: 6.56GB
+  Space saved: 6.56 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Prey (2022)
+  KEEP:   Prey (2022) {tmdb-766507} - [Bluray-1080p Proper][TrueHD Atmos 7.1][x264]-Xewdy.mkv
+          Score: 4282  Quality: 1080p/Bluray/TrueHD Atmos/AVC  Size: 13.24GB
+  REMOVE: Prey (2022) {tmdb-766507} - [Bluray-1080p][EAC3 7.1][x264]-HiDt.mkv
+          Score: 3889  Quality: 1080p/Bluray/DD+/AVC  Size: 8.98GB
+  Space saved: 8.98 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Rambo First Blood Part II (1985)
+  KEEP:   Rambo First Blood Part II (1985) {tmdb-1369} - {edition-Remastered} [Bluray-1080p][EAC3 5.1][x264]-hallowed.mkv
+          Score: 3884  Quality: 1080p/Bluray/DD+/AVC  Size: 8.47GB
+  REMOVE: Rambo First Blood Part II (1985) {tmdb-1369} - [PMTP][WEBDL-1080p][EAC3 5.1][x264]-GRiMM.mkv
+          Score: 3330  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.09GB
+  Space saved: 3.09 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Redemption (2013)
+  KEEP:   Redemption (2013) {tmdb-271779} - [Bluray-1080p][DTS 5.1][x264]-D-Z0N3.mkv
+          Score: 3951  Quality: 1080p/Bluray/DTS/AVC  Size: 10.17GB
+  REMOVE: Redemption (2013) {tmdb-271779} - [Bluray-720p][DTS 5.1][x264].mkv
+          Score: 1893  Quality: 720p/Bluray/DTS/AVC  Size: 4.37GB
+  Space saved: 4.37 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Retribution (2023)
+  KEEP:   Retribution (2023) {tmdb-762430} - [Bluray-1080p][EAC3 Atmos 5.1][x264]-HiDt.mkv
+          Score: 4227  Quality: 1080p/Bluray/Atmos/AVC  Size: 7.78GB
+  REMOVE: Retribution (2023) {tmdb-762430} - [WEBDL-1080p][EAC3 Atmos 5.1][h264]-IWiLLFiNDyouANDiWiLLKiLLYOU.mkv
+          Score: 3718  Quality: 1080p/WEBDL/Atmos/AVC  Size: 6.84GB
+  Space saved: 6.84 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Showgirls (1995)
+  KEEP:   Showgirls (1995) {tmdb-10802} - [Bluray-1080p Proper][EAC3 5.1][HDR10][x265]-rodeO.mkv
+          Score: 4350  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 26.60GB
+  REMOVE: Showgirls (1995) {tmdb-10802} - [Bluray-1080p][EAC3 5.1][x264]-LoRD.mkv
+          Score: 3975  Quality: 1080p/Bluray/DD+/AVC  Size: 17.53GB
+  Space saved: 17.53 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Sister Death (2023)
+  KEEP:   Sister Death (2023) {tmdb-955531} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][DV HDR10][h265]-FLUX.mkv
+          Score: 4220  Quality: 1080p/WEBDL/Atmos/DV HDR10/HEVC  Size: 2.08GB
+  REMOVE: Sister Death (2023) {tmdb-955531} - [WEBDL-1080p][EAC3 Atmos 5.1][x264]-AOC.mp4
+          Score: 3680  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.00GB
+  Space saved: 3.00 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Sleeping Dogs (2024)
+  KEEP:   Sleeping Dogs (2024) {tmdb-978592} - [Bluray-1080p][DTS-HD MA 5.1][x264]-Replica.mkv
+          Score: 4143  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 9.35GB
+  REMOVE: Sleeping Dogs (2024) {tmdb-978592} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3359  Quality: 1080p/WEBDL/DD+/AVC  Size: 5.96GB
+  Space saved: 5.96 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Smile (2022)
+  KEEP:   Smile (2022) {tmdb-882598} - [Bluray-1080p][EAC3 7.1][DV HDR10][x265]-LEGi0N.mkv
+          Score: 4534  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 18.46GB
+  REMOVE: Smile (2022) {tmdb-882598} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-CMRG.mkv
+          Score: 3371  Quality: 1080p/WEBDL/DD+/AVC  Size: 7.17GB
+  Space saved: 7.17 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Snatch (2000)
+  KEEP:   Snatch (2000) {tmdb-107} - [Hybrid][Bluray-1080p][EAC3 Atmos 5.1][DV HDR10][x265]-HiDt.mkv
+          Score: 4900  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 22.24GB
+  REMOVE: Snatch (2000) {tmdb-107} - [Bluray-1080p][EAC3 7.1][HDR10][x265]-c0kE.mkv
+          Score: 4326  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 17.65GB
+  Space saved: 17.65 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Snitch (2013)
+  KEEP:   Snitch (2013) {tmdb-134411} - [Bluray-1080p][EAC3 7.1][HDR10][x265]-SoLaR.mkv
+          Score: 4256  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 10.68GB
+  REMOVE: Snitch (2013) {tmdb-134411} - [Bluray-1080p][DTS 5.1][x264]-HDMaNiAcS.mkv
+          Score: 3938  Quality: 1080p/Bluray/DTS/AVC  Size: 8.89GB
+  Space saved: 8.89 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Sorority Babes in the Slimeball Bowl-O-Rama (1988)
+  KEEP:   Sorority Babes in the Slimeball Bowl-O-Rama (1988) {tmdb-27390} - [Bluray-1080p][FLAC 2.0][x264]-MaG.mkv
+          Score: 3730  Quality: 1080p/Bluray/AVC  Size: 8.05GB
+  REMOVE: Sorority Babes in the Slimeball Bowl-O-Rama (1988) {tmdb-27390} - [AMZN MA][WEBDL-1080p][EAC3 2.0][h264]-Kitsune.mkv
+          Score: 3354  Quality: 1080p/WEBDL/DD+/AVC  Size: 5.42GB
+  Space saved: 5.42 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Soul (2020)
+  KEEP:   Soul (2020) {tmdb-508442} - [Bluray-1080p Proper][EAC3 7.1][x264]-SbR.mkv
+          Score: 3905  Quality: 1080p/Bluray/DD+/AVC  Size: 10.53GB
+  REMOVE: Soul (2020) {tmdb-508442} - [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3702  Quality: 1080p/WEBDL/Atmos/AVC  Size: 5.25GB
+  Space saved: 5.25 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Spider-Man Into the Spider-Verse (2018)
+  KEEP:   Spider-Man Into the Spider-Verse (2018) {tmdb-324857} - [Bluray-1080p][TrueHD Atmos 7.1][DV HDR10][x265]-PirateM.mkv
+          Score: 4792  Quality: 1080p/Bluray/TrueHD Atmos/DV HDR10/HEVC  Size: 9.20GB
+  REMOVE: Spider-Man Into the Spider-Verse (2018) {tmdb-324857} - [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3375  Quality: 1080p/WEBDL/DD+/AVC  Size: 7.57GB
+  Space saved: 7.57 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Spiral From the Book of Saw (2021)
+  KEEP:   Spiral From the Book of Saw (2021) {tmdb-602734} - [Bluray-1080p][EAC3 Atmos 7.1][x264]-iFT.mkv
+          Score: 4271  Quality: 1080p/Bluray/Atmos/AVC  Size: 12.16GB
+  REMOVE: Spiral From the Book of Saw (2021) {tmdb-602734} - [Bluray-1080p][EAC3 7.1][x264]-LoRD.mkv
+          Score: 3911  Quality: 1080p/Bluray/DD+/AVC  Size: 11.19GB
+  Space saved: 11.19 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Spirit Untamed (2021)
+  KEEP:   Spirit Untamed (2021) {tmdb-637693} - [Bluray-1080p][EAC3 7.1][x264]-iFT.mkv
+          Score: 3892  Quality: 1080p/Bluray/DD+/AVC  Size: 9.27GB
+  REMOVE: Spirit Untamed (2021) {tmdb-637693} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-CMRG.mkv
+          Score: 3345  Quality: 1080p/WEBDL/DD+/AVC  Size: 4.57GB
+  Space saved: 4.57 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Splitsville (2025)
+  KEEP:   Splitsville (2025) {tmdb-1337562} - [Bluray-1080p][DTS-HD MA 5.1][x264]-KNiVES.mkv
+          Score: 4160  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 11.06GB
+  REMOVE: Splitsville (2025) {tmdb-1337562} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-BYNDR.mkv
+          Score: 3372  Quality: 1080p/WEBDL/DD+/AVC  Size: 7.28GB
+  Space saved: 7.28 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Spoiler Alert (2022)
+  KEEP:   Spoiler Alert (2022) {tmdb-507903} - [Bluray-1080p][EAC3 Atmos 5.1][x264]-Kitsune.mkv
+          Score: 4234  Quality: 1080p/Bluray/Atmos/AVC  Size: 8.45GB
+  REMOVE: Spoiler Alert (2022) {tmdb-507903} - [Bluray-1080p][DTS-HD MA 5.1][x264]-PiGNUS.mkv
+          Score: 4217  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 16.71GB
+  Space saved: 16.71 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Starman (1984)
+  KEEP:   Starman (1984) {tmdb-9663} - [Bluray-1080p][EAC3 Atmos 5.1][DV HDR10][x265]-SQS.mkv
+          Score: 4766  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 6.68GB
+  REMOVE: Starman (1984) {tmdb-9663} - [Bluray-1080p][AC3 5.1][x264].mkv
+          Score: 3829  Quality: 1080p/Bluray/DD/AVC  Size: 7.95GB
+  Space saved: 7.95 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Summer Rental (1985)
+  KEEP:   Summer Rental (1985) {tmdb-19357} - [Bluray-1080p][AC3 2.0][x264]-BHDStudio.mp4
+          Score: 3800  Quality: 1080p/Bluray/DD/AVC  Size: 5.09GB
+  REMOVE: Summer Rental (1985) {tmdb-19357} - [WEBDL-1080p][EAC3 2.0][h264]-ETHiCS.mkv
+          Score: 3385  Quality: 1080p/WEBDL/DD+/AVC  Size: 8.56GB
+  Space saved: 8.56 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Swiss Army Man (2016)
+  KEEP:   Swiss Army Man (2016) {tmdb-347031} - [Bluray-1080p][DTS-ES 6.1][x264]-D-Z0N3.mkv
+          Score: 4003  Quality: 1080p/Bluray/DTS/AVC  Size: 15.32GB
+  REMOVE: Swiss Army Man (2016) {tmdb-347031} - [Bluray-1080p][AC3 5.1][x264].mkv
+          Score: 3882  Quality: 1080p/Bluray/DD/AVC  Size: 13.30GB
+  Space saved: 13.30 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Terminator 2 Judgment Day (1991)
+  KEEP:   Terminator 2 Judgment Day (1991) {tmdb-280} - [Bluray-1080p][EAC3 5.1][HDR10][x265]-CtrlHD.mkv
+          Score: 4256  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 10.62GB
+  REMOVE: Terminator 2 Judgment Day (1991) {tmdb-280} - {edition-Directors Cut} [Bluray-1080p][DTS 5.1][x264]-CtrlHD.mkv
+          Score: 4032  Quality: 1080p/Bluray/DTS/AVC  Size: 18.26GB
+  Space saved: 18.26 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Terrifier 3 (2024)
+  KEEP:   Terrifier 3 (2024) {tmdb-1034541} - [Bluray-1080p][EAC3 Atmos 5.1][DV HDR10][x265]-SQS.mkv
+          Score: 4778  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 7.81GB
+  REMOVE: Terrifier 3 (2024) {tmdb-1034541} - [WEBDL-1080p][AC3 5.1][h264]-BulkyMeekSpoonbillOfCookies.mkv
+          Score: 3310  Quality: 1080p/WEBDL/DD/AVC  Size: 6.09GB
+  Space saved: 6.09 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The 355 (2022)
+  KEEP:   The 355 (2022) {tmdb-522016} - [Bluray-1080p][EAC3 5.1][x264]-iFT.mkv
+          Score: 3932  Quality: 1080p/Bluray/DD+/AVC  Size: 13.21GB
+  REMOVE: The 355 (2022) {tmdb-522016} - [WEBDL-1080p][AC3 5.1][h264]-DKV.mkv
+          Score: 3284  Quality: 1080p/WEBDL/DD/AVC  Size: 3.43GB
+  Space saved: 3.43 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Bad Guys 2 (2025)
+  KEEP:   The Bad Guys 2 (2025) {tmdb-1175942} - [Hybrid][Bluray-1080p][EAC3 Atmos 5.1][DV HDR10Plus][x265]-HiDt.mkv
+          Score: 4847  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 14.78GB
+  REMOVE: The Bad Guys 2 (2025) {tmdb-1175942} - [WEBRip-1080p][EAC3 Atmos 5.1][x264]-HiDt.mkv
+          Score: 3584  Quality: 1080p/WEBRip/Atmos/AVC  Size: 13.43GB
+  Space saved: 13.43 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Beekeeper (2024)
+  KEEP:   The Beekeeper (2024) {tmdb-866398} - [Hybrid][Bluray-1080p][EAC3 Atmos 5.1][DV HDR10Plus][x265]-HiDt.mkv
+          Score: 4826  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 12.66GB
+  REMOVE: The Beekeeper (2024) {tmdb-866398} - [WEBDL-1080p][EAC3 5.1][h264]-LilKim.mkv
+          Score: 3368  Quality: 1080p/WEBDL/DD+/AVC  Size: 6.85GB
+  Space saved: 6.85 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Boss Baby Family Business (2021)
+  KEEP:   The Boss Baby Family Business (2021) {tmdb-459151} - [Bluray-1080p][EAC3 7.1][DV HDR10][x265]-c0kE.mkv
+          Score: 4451  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 10.18GB
+  REMOVE: The Boss Baby Family Business (2021) {tmdb-459151} - [PCOK][WEBDL-1080p][EAC3 5.1][h264]-EVO.mkv
+          Score: 3356  Quality: 1080p/WEBDL/DD+/AVC  Size: 5.64GB
+  Space saved: 5.64 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Chronicles of Narnia The Lion the Witch and the Wardrobe (2005)
+  KEEP:   The Chronicles of Narnia The Lion the Witch and the Wardrobe (2005) {tmdb-411} - [Bluray-1080p][DTS 5.1][x264]-DON.mkv
+          Score: 3976  Quality: 1080p/Bluray/DTS/AVC  Size: 12.61GB
+  REMOVE: The Chronicles of Narnia The Lion the Witch and the Wardrobe (2005) {tmdb-411} - [Bluray-1080p][DTS 5.1][x264].mkv
+          Score: 3960  Quality: 1080p/Bluray/DTS/AVC  Size: 11.00GB
+  Space saved: 11.00 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Death and Return of Superman (2019)
+  KEEP:   The Death and Return of Superman (2019) {tmdb-630656} - [Bluray-1080p][DTS 5.1][x264]-getit.mkv
+          Score: 3937  Quality: 1080p/Bluray/DTS/AVC  Size: 8.75GB
+  REMOVE: The Death and Return of Superman (2019) {tmdb-630656} - [Bluray-1080p][EAC3 5.1][x264]-Itwasntme.mkv
+          Score: 3839  Quality: 1080p/Bluray/DD+/AVC  Size: 3.97GB
+  Space saved: 3.97 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Dreamers (2003)
+  KEEP:   The Dreamers (2003) {tmdb-1278} - [Bluray-1080p][EAC3 5.1][x264]-c0kE.mkv
+          Score: 4000  Quality: 1080p/Bluray/DD+/AVC  Size: 20.21GB
+  REMOVE: The Dreamers (2003) {tmdb-1278} - [Bluray-1080p][AC3 5.1][x264]-Geek.mkv
+          Score: 3937  Quality: 1080p/Bluray/DD/AVC  Size: 18.73GB
+  Space saved: 18.73 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Florida Project (2017)
+  KEEP:   The Florida Project (2017) {tmdb-394117} - [Bluray-1080p][DTS 5.1][x264]-NCmt.mkv
+          Score: 4024  Quality: 1080p/Bluray/DTS/AVC  Size: 17.45GB
+  REMOVE: The Florida Project (2017) {tmdb-394117} - [Bluray-1080p][DTS 5.1][x264].mkv
+          Score: 3937  Quality: 1080p/Bluray/DTS/AVC  Size: 8.74GB
+  Space saved: 8.74 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Fugitive (1993)
+  KEEP:   The Fugitive (1993) {tmdb-5503} - [Bluray-1080p][EAC3 5.1][HDR10][x265]-c0kE.mkv
+          Score: 4350  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 21.38GB
+  REMOVE: The Fugitive (1993) {tmdb-5503} - [Bluray-1080p][AC3 5.1][x264].mkv
+          Score: 3829  Quality: 1080p/Bluray/DD/AVC  Size: 7.95GB
+  Space saved: 7.95 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Good Dinosaur (2015)
+  KEEP:   The Good Dinosaur (2015) {tmdb-105864} - [Bluray-1080p][EAC3 5.1][DV HDR10][AV1]-TiZU.mkv
+          Score: 4353  Quality: 1080p/Bluray/DD+/DV HDR10/AV1  Size: 5.35GB
+  REMOVE: The Good Dinosaur (2015) {tmdb-105864} - [Bluray-1080p][DTS-HD MA 7.1][x264]-FuzerHD.mkv
+          Score: 4149  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 9.94GB
+  Space saved: 9.94 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The House with a Clock in Its Walls (2018)
+  KEEP:   The House with a Clock in Its Walls (2018) {tmdb-463821} - [Bluray-1080p][TrueHD Atmos 7.1][x264]-iFT.mkv
+          Score: 4281  Quality: 1080p/Bluray/TrueHD Atmos/AVC  Size: 13.10GB
+  REMOVE: The House with a Clock in Its Walls (2018) {tmdb-463821} - [MA][WEBDL-1080p][EAC3 5.1][x264]-HHWEB.mkv
+          Score: 3360  Quality: 1080p/WEBDL/DD+/AVC  Size: 6.04GB
+  Space saved: 6.04 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Hunger Games The Ballad of Songbirds and Snakes (2023)
+  KEEP:   The Hunger Games The Ballad of Songbirds and Snakes (2023) {tmdb-695721} - [Bluray-1080p][TrueHD Atmos 7.1][x264]-ROEN.mkv
+          Score: 4335  Quality: 1080p/Bluray/TrueHD Atmos/AVC  Size: 18.54GB
+  REMOVE: The Hunger Games The Ballad of Songbirds and Snakes (2023) {tmdb-695721} - [AMZN][WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3740  Quality: 1080p/WEBDL/Atmos/AVC  Size: 9.05GB
+  Space saved: 9.05 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Hustle (2019)
+  KEEP:   The Hustle (2019) {tmdb-449562} - [Bluray-1080p][DTS-HD MA 7.1][x264]-HDChina.mkv
+          Score: 4187  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 13.78GB
+  REMOVE: The Hustle (2019) {tmdb-449562} - [Bluray-1080p][DTS 5.1][x264]-drones.mkv
+          Score: 3926  Quality: 1080p/Bluray/DTS/AVC  Size: 7.65GB
+  Space saved: 7.65 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Iron Claw (2023)
+  KEEP:   The Iron Claw (2023) {tmdb-850165} - [Bluray-1080p][DTS-HD MA 5.1][x264]-PiGNUS.mkv
+          Score: 4218  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 16.81GB
+  REMOVE: The Iron Claw (2023) {tmdb-850165} - [AMZN][WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3745  Quality: 1080p/WEBDL/Atmos/AVC  Size: 9.53GB
+  Space saved: 9.53 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Killing Fields (1984)
+  KEEP:   The Killing Fields (1984) {tmdb-625} - [Bluray-1080p][EAC3 5.1][x264]-EA.mkv
+          Score: 3987  Quality: 1080p/Bluray/DD+/AVC  Size: 18.78GB
+  REMOVE: The Killing Fields (1984) {tmdb-625} - [Bluray-1080p][DTS 5.1][x264]-TiMELORDS.mkv
+          Score: 3959  Quality: 1080p/Bluray/DTS/AVC  Size: 10.94GB
+  Space saved: 10.94 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Lego Movie (2014)
+  KEEP:   The Lego Movie (2014) {tmdb-137106} - [Bluray-1080p][DTS 5.1][x264]-LolHD.mkv
+          Score: 3945  Quality: 1080p/Bluray/DTS/AVC  Size: 9.58GB
+  REMOVE: The Lego Movie (2014) {tmdb-137106} - [Bluray-1080p][DTS 5.1][x264]-CyTSuNee.mkv
+          Score: 3929  Quality: 1080p/Bluray/DTS/AVC  Size: 7.94GB
+  Space saved: 7.94 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Lion King (1994)
+  KEEP:   The Lion King (1994) {tmdb-8587} - [Bluray-1080p][EAC3 7.1][HDR10][x265]-D-Z0N3.mkv
+          Score: 4200  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 5.05GB
+  REMOVE: The Lion King (1994) {tmdb-8587} - [Bluray-1080p][DTS 5.1][x264].mkv
+          Score: 3973  Quality: 1080p/Bluray/DTS/AVC  Size: 12.40GB
+  Space saved: 12.40 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Magnificent Seven (1960)
+  KEEP:   The Magnificent Seven (1960) {tmdb-966} - [Bluray-1080p][EAC3 5.1][DV HDR10][x265]-c0kE.mkv
+          Score: 4549  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 19.94GB
+  REMOVE: The Magnificent Seven (1960) {tmdb-966} - [Bluray-1080p][DTS 5.1][x264]-DON.mkv
+          Score: 3968  Quality: 1080p/Bluray/DTS/AVC  Size: 11.84GB
+  Space saved: 11.84 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Mummy Returns (2001)
+  KEEP:   The Mummy Returns (2001) {tmdb-1734} - [Bluray-1080p][EAC3 5.1][HDR10][x265]-SQS.mkv
+          Score: 4222  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 7.26GB
+  REMOVE: The Mummy Returns (2001) {tmdb-1734} - [Bluray-1080p][EAC3 7.1][x264].mkv
+          Score: 3987  Quality: 1080p/Bluray/DD+/AVC  Size: 18.75GB
+  Space saved: 18.75 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Outfit (2022)
+  KEEP:   The Outfit (2022) {tmdb-799876} - [Bluray-1080p][EAC3 7.1][HDR10][x265]-c0kE.mkv
+          Score: 4246  Quality: 1080p/Bluray/DD+/HDR10/HEVC  Size: 9.61GB
+  REMOVE: The Outfit (2022) {tmdb-799876} - [Bluray-1080p][EAC3 5.1][x264]-SPHD.mkv
+          Score: 3911  Quality: 1080p/Bluray/DD+/AVC  Size: 11.18GB
+  Space saved: 11.18 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Pirates! In an Adventure with Scientists! (2012)
+  KEEP:   The Pirates! In an Adventure with Scientists! (2012) {tmdb-72197} - [Bluray-1080p][DTS 5.1][x264]-EbP.mkv
+          Score: 3912  Quality: 1080p/Bluray/DTS/AVC  Size: 6.23GB
+  REMOVE: The Pirates! In an Adventure with Scientists! (2012) {tmdb-72197} - [Bluray-720p][DTS 5.1][x264].mkv
+          Score: 1882  Quality: 720p/Bluray/DTS/AVC  Size: 3.28GB
+  Space saved: 3.28 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Rock (1996)
+  KEEP:   The Rock (1996) {tmdb-9802} - [Bluray-1080p][DTS-HD MA 5.1][x264]-BluEvo.mkv
+          Score: 4212  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 16.25GB
+  REMOVE: The Rock (1996) {tmdb-9802} - [Bluray-1080p][DTS 5.1][x264]-ESiR.mkv
+          Score: 3973  Quality: 1080p/Bluray/DTS/AVC  Size: 12.32GB
+  Space saved: 12.32 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Substance (2024)
+  KEEP:   The Substance (2024) {tmdb-933260} - [Bluray-1080p][EAC3 5.1][DV HDR10][x265]-HiDt.mkv
+          Score: 4517  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 16.74GB
+  REMOVE: The Substance (2024) {tmdb-933260} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-Kitsune.mkv
+          Score: 3359  Quality: 1080p/WEBDL/DD+/AVC  Size: 5.97GB
+  Space saved: 5.97 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/The Tailor of Panama (2001)
+  KEEP:   The Tailor of Panama (2001) {tmdb-2575} - [Bluray-1080p][EAC3 5.1][x264]-hallowed.mkv
+          Score: 3897  Quality: 1080p/Bluray/DD+/AVC  Size: 9.76GB
+  REMOVE: The Tailor of Panama (2001) {tmdb-2575} - [Bluray-1080p][AC3 5.1][x264]-HDS.mkv
+          Score: 3883  Quality: 1080p/Bluray/DD/AVC  Size: 13.30GB
+  Space saved: 13.30 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Traffic (2000)
+  KEEP:   Traffic (2000) {tmdb-1900} - [Bluray-1080p][DTS 5.1][x264]-D-Z0N3.mkv
+          Score: 4050  Quality: 1080p/Bluray/DTS/AVC  Size: 24.37GB
+  REMOVE: Traffic (2000) {tmdb-1900} - [Bluray-1080p][EAC3 5.1][x264]-LoRD.mkv
+          Score: 3967  Quality: 1080p/Bluray/DD+/AVC  Size: 16.80GB
+  Space saved: 16.80 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Trollhunters Rise of the Titans (2021)
+  KEEP:   Trollhunters Rise of the Titans (2021) {tmdb-730840} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][HDR10][HEVC]-TEPES.mkv
+          Score: 4043  Quality: 1080p/WEBDL/Atmos/HDR10/HEVC  Size: 4.32GB
+  REMOVE: Trollhunters Rise of the Titans (2021) {tmdb-730840} - [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-EVO.mkv
+          Score: 3694  Quality: 1080p/WEBDL/Atmos/AVC  Size: 4.41GB
+  Space saved: 4.41 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Trolls Holiday in Harmony (2021)
+  KEEP:   Trolls Holiday in Harmony (2021) {tmdb-896221} - [Bluray-1080p][DTS 5.1][x264]-fl00f.mkv
+          Score: 3871  Quality: 1080p/Bluray/DTS/AVC  Size: 2.12GB
+  REMOVE: Trolls Holiday in Harmony (2021) {tmdb-896221} - [WEBDL-1080p][AAC 2.0][x264]-DiRT.mkv
+          Score: 3212  Quality: 1080p/WEBDL/AAC/AVC  Size: 1.20GB
+  Space saved: 1.20 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/V H S Beyond (2024)
+  KEEP:   V H S Beyond (2024) {tmdb-1190868} - [Bluray-1080p][EAC3 5.1][x264]-PTer.mkv
+          Score: 3948  Quality: 1080p/Bluray/DD+/AVC  Size: 14.84GB
+  REMOVE: V H S Beyond (2024) {tmdb-1190868} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3377  Quality: 1080p/WEBDL/DD+/AVC  Size: 7.75GB
+  Space saved: 7.75 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Wanted (2008)
+  KEEP:   Wanted (2008) {tmdb-8909} - [Bluray-1080p Proper][EAC3 5.1][DV HDR10][x265]-c0kE.mkv
+          Score: 4518  Quality: 1080p/Bluray/DD+/DV HDR10/HEVC  Size: 16.87GB
+  REMOVE: Wanted (2008) {tmdb-8909} - [Bluray-1080p][DTS 5.1][x264].mkv
+          Score: 3929  Quality: 1080p/Bluray/DTS/AVC  Size: 7.94GB
+  Space saved: 7.94 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/We Live in Time (2024)
+  KEEP:   We Live in Time (2024) {tmdb-1100099} - [Bluray-1080p][TrueHD Atmos 7.1][x264]-knives.mkv
+          Score: 4329  Quality: 1080p/Bluray/TrueHD Atmos/AVC  Size: 17.91GB
+  REMOVE: We Live in Time (2024) {tmdb-1100099} - [AMZN][WEBDL-1080p][EAC3 Atmos 5.1][h264]-Kitsune.mkv
+          Score: 3724  Quality: 1080p/WEBDL/Atmos/AVC  Size: 7.48GB
+  Space saved: 7.48 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Woman of the Hour (2024)
+  KEEP:   Woman of the Hour (2024) {tmdb-835113} - [Bluray-1080p][EAC3 5.1][x264]-hallowed.mkv
+          Score: 3870  Quality: 1080p/Bluray/DD+/AVC  Size: 7.03GB
+  REMOVE: Woman of the Hour (2024) {tmdb-835113} - [WEBDL-1080p][EAC3 Atmos 5.1][x264]-ETHEL.mkv
+          Score: 3686  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.69GB
+  Space saved: 3.69 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/You Me and Dupree (2006)
+  KEEP:   You Me and Dupree (2006) {tmdb-1819} - [Bluray-1080p][EAC3 5.1][x264]-RiCO.mkv
+          Score: 3970  Quality: 1080p/Bluray/DD+/AVC  Size: 17.05GB
+  REMOVE: You Me and Dupree (2006) {tmdb-1819} - [Bluray-1080p][DTS 5.1][x264].mkv
+          Score: 3969  Quality: 1080p/Bluray/DTS/AVC  Size: 11.97GB
+  Space saved: 11.97 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Zombeavers (2014)
+  KEEP:   Zombeavers (2014) {tmdb-254474} - [Bluray-1080p][DTS-HD MA 5.1][x264]-Grym.mkv
+          Score: 4133  Quality: 1080p/Bluray/DTS-HD MA/AVC  Size: 8.36GB
+  REMOVE: Zombeavers (2014) {tmdb-254474} - [AMZN][WEBDL-1080p][EAC3 5.1][h264]-Kitsune.mkv
+          Score: 3351  Quality: 1080p/WEBDL/DD+/AVC  Size: 5.13GB
+  Space saved: 5.13 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Zombieland (2009)
+  KEEP:   Zombieland (2009) {tmdb-19908} - [Hybrid][Bluray-1080p][EAC3 Atmos 5.1][DV HDR10][x265]-SQS.mkv
+          Score: 4756  Quality: 1080p/Bluray/Atmos/DV HDR10/HEVC  Size: 5.60GB
+  REMOVE: Zombieland (2009) {tmdb-19908} - {edition-Open Matte} [WEBDL-1080p][EAC3 5.1][h264]-spartanec163.mkv
+          Score: 3358  Quality: 1080p/WEBDL/DD+/AVC  Size: 5.88GB
+  Space saved: 5.88 GB
+
+------------------------------------------------------------
+Group: /mnt/synology/rs-movies/Zootopia (2016)
+  KEEP:   Zootopia (2016) {tmdb-269149} - [Bluray-1080p][DTS 5.1][x264]-TAiCHi.mkv
+          Score: 3967  Quality: 1080p/Bluray/DTS/AVC  Size: 11.74GB
+  REMOVE: Zootopia (2016) {tmdb-269149} - [Bluray-1080p][AC3 5.1][x264]-BHDStudio.mp4
+          Score: 3815  Quality: 1080p/Bluray/DD/AVC  Size: 6.52GB
+  Space saved: 6.52 GB
+

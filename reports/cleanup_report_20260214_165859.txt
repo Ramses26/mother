@@ -1,0 +1,25 @@
+================================================================================
+DUPLICATE CLEANUP REPORT - TV
+Generated: 2026-02-14 16:58:59
+================================================================================
+
+Groups with duplicates: 2
+Total files to remove:  2
+Total space to reclaim: 3.75 GB
+
+------------------------------------------------------------
+Group: The Bad Guys - Breaking In (2025) {tvdb-469095}/Season 01/S01E01
+  KEEP:   The Bad Guys - Breaking In (2025) - S01E01 - Bad Beginnings [WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3509  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.93GB
+  REMOVE: The Bad Guys - Breaking In (2025) - S01E01 - Bad Beginnings [NF][WEBDL-1080p][AAC 5.1][x264]-OldT.mkv
+          Score: 3418  Quality: 1080p/WEBDL/AAC/AVC  Size: 1.88GB
+  Space saved: 1.88 GB
+
+------------------------------------------------------------
+Group: The Bad Guys - Breaking In (2025) {tvdb-469095}/Season 01/S01E02
+  KEEP:   The Bad Guys - Breaking In (2025) - S01E02 - The Sweet Sweet Steal [WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3509  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.93GB
+  REMOVE: The Bad Guys - Breaking In (2025) - S01E02 - The Sweet Sweet Steal [NF][WEBDL-1080p][AAC 5.1][x264]-OldT.mkv
+          Score: 3418  Quality: 1080p/WEBDL/AAC/AVC  Size: 1.87GB
+  Space saved: 1.87 GB
+

@@ -97,7 +97,7 @@ run_comparison() {
     log_info "Comparing: $ali_inventory vs $chris_inventory"
     log_info "Output directory: $output_dir"
 
-    python3 "$SCRIPT_DIR/compare_libraries.py" "$ali_inventory" "$chris_inventory" -o "$output_dir"
+    python3 "$SCRIPT_DIR/compare_tv_libraries.py" "$ali_inventory" "$chris_inventory" -o "$output_dir"
 }
 
 ###############################################################################

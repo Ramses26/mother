@@ -1,0 +1,33 @@
+================================================================================
+TV LIBRARY COMPARISON - PROJECT MOTHER
+Generated: 2026-02-14 22:20:35
+================================================================================
+
+SHOW SUMMARY
+--------------------------------------------------
+Total shows:                   1620
+Ali only:                      300
+Chris only:                    399
+Both have:                     916
+
+EPISODE SUMMARY
+--------------------------------------------------
+Ali total episodes:            42653
+Chris total episodes:          57653
+Ali unique episodes:           6204
+Chris unique episodes:         21204
+Episodes both have:            36449
+
+QUALITY COMPARISON (Episodes Both Have)
+--------------------------------------------------
+Ali has better quality:        16439
+Chris has better quality:      2266
+Same quality (tie):            17744
+
+SYNC ACTIONS NEEDED
+--------------------------------------------------
+Copy Ali -> Chris (unique):    6204 episodes
+Copy Chris -> Ali (unique):    21204 episodes
+Upgrade Ali -> Chris (better): 16439 episodes
+Upgrade Chris -> Ali (better): 2266 episodes
+

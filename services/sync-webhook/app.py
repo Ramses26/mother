@@ -38,6 +38,28 @@ MAX_CONCURRENT_SYNCS = int(os.environ.get('SYNC_MAX_CONCURRENT', '2'))
 MAX_RETRIES = int(os.environ.get('SYNC_MAX_RETRIES', '20'))
 RETRY_LOOKBACK_DAYS = int(os.environ.get('SYNC_RETRY_LOOKBACK_DAYS', '7'))
 
+# Skip list - titles to exclude from syncing (case-insensitive partial match)
+# These are typically very large files that timeout or cause issues
+SKIP_TITLES = [
+    title.strip() for title in
+    os.environ.get('SYNC_SKIP_TITLES', 'The Lord of the Rings: The Fellowship of the Ring').split(',')
+    if title.strip()
+]
+
+# Radarr/Sonarr API configuration for history scanning
+RADARR_HD_URL = os.environ.get('RADARR_HD_URL', 'http://radarr-hd:7878')
+RADARR_HD_API_KEY = os.environ.get('RADARR_HD_API_KEY', '')
+RADARR_4K_URL = os.environ.get('RADARR_4K_URL', 'http://radarr-4k:7879')
+RADARR_4K_API_KEY = os.environ.get('RADARR_4K_API_KEY', '')
+SONARR_HD_URL = os.environ.get('SONARR_HD_URL', 'http://sonarr-hd:8989')
+SONARR_HD_API_KEY = os.environ.get('SONARR_HD_API_KEY', '')
+SONARR_4K_URL = os.environ.get('SONARR_4K_URL', 'http://sonarr-4k:8990')
+SONARR_4K_API_KEY = os.environ.get('SONARR_4K_API_KEY', '')
+
+# History scanner settings
+HISTORY_SCAN_HOURS = int(os.environ.get('SYNC_HISTORY_SCAN_HOURS', '6'))  # Look back 6 hours
+HISTORY_SCAN_INTERVAL = int(os.environ.get('SYNC_HISTORY_SCAN_INTERVAL', '30'))  # Every 30 minutes
+
 # Plex configuration
 PLEX_URL = os.environ.get('PLEX_URL', '')  # e.g., http://10.0.0.50:32400
 PLEX_TOKEN = os.environ.get('PLEX_TOKEN', '')
@@ -177,11 +199,13 @@ def init_database():
             )
         ''')
 
-        # Add retry_count column if it doesn't exist (for existing databases)
+        # Add columns if they don't exist (for existing databases)
         cursor.execute("PRAGMA table_info(sync_jobs)")
         columns = [col[1] for col in cursor.fetchall()]
         if 'retry_count' not in columns:
             cursor.execute('ALTER TABLE sync_jobs ADD COLUMN retry_count INTEGER DEFAULT 0')
+        if 'is_upgrade' not in columns:
+            cursor.execute('ALTER TABLE sync_jobs ADD COLUMN is_upgrade INTEGER DEFAULT 0')
 
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_status ON sync_jobs(status)
@@ -597,6 +621,28 @@ def delete_from_destination(container_path: str, title: str = "Unknown") -> tupl
                 logger.info(msg)
                 return True, msg
         else:
+            # Fuzzy delete fallback: search same directory for matching episode
+            # Handles case where upgrade filename differs from what's on Unraid
+            parent_dir = os.path.dirname(dest_path)
+            if os.path.isdir(parent_dir):
+                basename = os.path.basename(dest_path)
+                ep_match = re.search(r'S(\d+)E(\d+)', basename, re.IGNORECASE)
+                if ep_match:
+                    ep_pattern = f"S{ep_match.group(1)}E{ep_match.group(2)}"
+                    video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v')
+                    for f in os.listdir(parent_dir):
+                        if ep_pattern.upper() in f.upper() and f.lower().endswith(video_exts):
+                            alt_path = os.path.join(parent_dir, f)
+                            try:
+                                os.remove(alt_path)
+                                msg = f"Fuzzy-deleted (episode match): {alt_path} (expected: {dest_path})"
+                                logger.info(msg)
+                                return True, msg
+                            except OSError as e:
+                                msg = f"Fuzzy-delete failed for {alt_path}: {e}"
+                                logger.error(msg)
+                                return False, msg
+
             msg = f"File not found on destination (already deleted?): {dest_path}"
             logger.info(msg)
             return True, msg  # Not an error - file might have been manually deleted
@@ -1111,6 +1157,157 @@ scheduler.add_job(
     replace_existing=True
 )
 
+
+def scan_arr_history():
+    """
+    Scan Radarr/Sonarr history for recent downloads and sync any that were missed.
+    This catches downloads where the webhook failed (container down, network issue, etc).
+    """
+    logger.info("History scanner: checking for missed downloads...")
+
+    missed_count = 0
+    lookback = datetime.now() - timedelta(hours=HISTORY_SCAN_HOURS)
+
+    # Get list of recently synced titles from our database
+    synced_titles = set()
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('''
+            SELECT title FROM sync_jobs
+            WHERE created_at > ? AND status IN ('completed', 'in_progress', 'pending')
+        ''', (lookback.isoformat(),))
+        synced_titles = {row[0] for row in c.fetchall()}
+        conn.close()
+    except Exception as e:
+        logger.error(f"History scanner: database error: {e}")
+        return
+
+    # Define arr instances to check
+    arr_configs = [
+        ('Radarr-HD', RADARR_HD_URL, RADARR_HD_API_KEY, 'movie', '/movies'),
+        ('Radarr-4K', RADARR_4K_URL, RADARR_4K_API_KEY, 'movie', '/movies-4k'),
+        ('Sonarr-HD', SONARR_HD_URL, SONARR_HD_API_KEY, 'episode', '/tv'),
+        ('Sonarr-4K', SONARR_4K_URL, SONARR_4K_API_KEY, 'episode', '/tv-4k'),
+    ]
+
+    for name, url, api_key, media_type, container_path in arr_configs:
+        if not api_key:
+            continue
+
+        try:
+            # Query history API
+            history_url = f"{url}/api/v3/history"
+            params = {
+                'pageSize': 100,
+                'sortKey': 'date',
+                'sortDirection': 'descending',
+                # Note: eventType filter requires numeric value, we filter in Python instead
+            }
+            headers = {'X-Api-Key': api_key}
+
+            response = requests.get(history_url, params=params, headers=headers, timeout=30)
+            if response.status_code != 200:
+                logger.warning(f"History scanner: {name} API returned {response.status_code}")
+                continue
+
+            data = response.json()
+            # Filter for completed downloads only
+            records = [r for r in data.get('records', []) if r.get('eventType') == 'downloadFolderImported']
+
+            for record in records:
+                # Check if within lookback window
+                date_str = record.get('date', '')
+                if date_str:
+                    try:
+                        record_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                        if record_date.replace(tzinfo=None) < lookback:
+                            continue  # Too old
+                    except:
+                        pass
+
+                # Get title
+                if media_type == 'movie':
+                    movie = record.get('movie', {})
+                    title = movie.get('title', '')
+                    year = movie.get('year', '')
+                    display_title = f"{title} ({year})" if year else title
+                    folder_path = movie.get('folderPath', '')
+                else:
+                    series = record.get('series', {})
+                    episode = record.get('episode', {})
+                    title = series.get('title', '')
+                    season = episode.get('seasonNumber', 0)
+                    ep_num = episode.get('episodeNumber', 0)
+                    display_title = f"{title} - S{season:02d}E{ep_num:02d}"
+                    folder_path = series.get('path', '')
+
+                if not title:
+                    continue
+
+                # Check if already synced (fuzzy match on title)
+                already_synced = any(title.lower() in s.lower() or s.lower() in title.lower()
+                                    for s in synced_titles)
+                if already_synced:
+                    continue
+
+                # Check skip list
+                skip = False
+                for skip_title in SKIP_TITLES:
+                    if skip_title.lower() in title.lower():
+                        skip = True
+                        break
+                if skip:
+                    continue
+
+                # Get source and dest paths
+                source, dest, dest_base = translate_path(folder_path)
+                if not source:
+                    continue
+
+                logger.info(f"History scanner: found missed download - {display_title}")
+
+                # Queue the sync
+                source_path = source if media_type == 'movie' else folder_path.replace(container_path, source.rsplit('/', 1)[0])
+                background_sync(
+                    source=source,
+                    dest=dest,
+                    title=display_title,
+                    quality="(catchup)",
+                    file_size=0,
+                    media_type="Movie" if media_type == 'movie' else "Episode",
+                    dest_base=dest_base
+                )
+                missed_count += 1
+
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"History scanner: {name} connection error: {e}")
+        except Exception as e:
+            logger.error(f"History scanner: {name} error: {e}")
+
+    if missed_count > 0:
+        logger.info(f"History scanner: queued {missed_count} missed downloads for sync")
+        send_notification(
+            title="Catchup Sync",
+            body=f"Found and queued {missed_count} missed download(s) for sync",
+            notify_type=apprise.NotifyType.INFO
+        )
+    else:
+        logger.info("History scanner: no missed downloads found")
+
+
+# Add history scanner job
+if RADARR_HD_API_KEY or SONARR_HD_API_KEY:
+    scheduler.add_job(
+        func=scan_arr_history,
+        trigger='interval',
+        minutes=HISTORY_SCAN_INTERVAL,
+        id='history_scanner',
+        name='Scan Radarr/Sonarr history for missed downloads',
+        replace_existing=True
+    )
+    logger.info(f"History scanner enabled - checking every {HISTORY_SCAN_INTERVAL} min, looking back {HISTORY_SCAN_HOURS} hours")
+
 scheduler.start()
 logger.info("Scheduler started - daily summary at 00:05, auto-retry every 15 min")
 
@@ -1308,6 +1505,16 @@ def radarr_webhook():
         year = movie.get('year', '')
         display_title = f"{title} ({year})" if year else title
 
+        # Check if title should be skipped
+        for skip_title in SKIP_TITLES:
+            if skip_title.lower() in title.lower():
+                logger.info(f"Skipping excluded title: {display_title} (matched: {skip_title})")
+                return jsonify({
+                    'status': 'skipped',
+                    'reason': f'Title in skip list: {skip_title}',
+                    'title': display_title
+                })
+
         # Handle MovieFileDelete event (manual deletion or cleanup)
         if event_type == 'MovieFileDelete':
             movie_file = data.get('movieFile', {})
@@ -1350,6 +1557,15 @@ def radarr_webhook():
 
             if deletion_results['fail_count'] > 0:
                 logger.warning(f"Some deletions failed for {display_title}: {deletion_results['messages']}")
+                try:
+                    send_notification(
+                        "UPGRADE WARNING",
+                        f"Failed to delete {deletion_results['fail_count']} old file(s) for {display_title}. "
+                        f"Orphan duplicates may exist on Unraid.",
+                        apprise.NotifyType.WARNING,
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send deletion warning notification: {e}")
 
         # Safely extract quality - handle various payload formats
         quality_data = movie_file.get('quality', {})
@@ -1503,6 +1719,15 @@ def sonarr_webhook():
 
             if deletion_results['fail_count'] > 0:
                 logger.warning(f"Some deletions failed for {series_title}: {deletion_results['messages']}")
+                try:
+                    send_notification(
+                        "UPGRADE WARNING",
+                        f"Failed to delete {deletion_results['fail_count']} old file(s) for {series_title}. "
+                        f"Orphan duplicates may exist on Unraid.",
+                        apprise.NotifyType.WARNING,
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send deletion warning notification: {e}")
 
         # Safely extract quality - handle various payload formats
         quality_data = episode_file.get('quality', {})

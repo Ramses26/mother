@@ -39,7 +39,7 @@ from urllib.error import URLError
 # =============================================================================
 
 APPRISE_URL = "http://192.168.1.14:8000/notify/apprise"
-APPRISE_TAG = "servers"
+APPRISE_TAG = "media"
 
 # Default paths (can be overridden via environment or arguments)
 DEFAULT_SCRIPTS_DIR = Path("/opt/mother/reports")
@@ -94,13 +94,23 @@ def progress_bar(percent: float, width: int = 15) -> str:
 # =============================================================================
 
 def find_sync_script(scripts_dir: Path, pattern: str) -> Path:
-    """Find the most recent sync script matching pattern"""
+    """Find the most recent sync script matching pattern.
+
+    Sorts by the timestamp embedded in the filename (e.g. _20260207_135102)
+    rather than file mtime, since mtime can change from edits/git operations
+    without reflecting which script is actually newest.
+    """
     scripts = list(scripts_dir.glob(pattern))
     if not scripts:
         return None
 
-    # Sort by modification time, most recent first
-    scripts.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    # Extract embedded timestamp from filename for sorting
+    # e.g. sync_actions_20260207_135102.sh -> "20260207_135102"
+    def extract_timestamp(p):
+        match = re.search(r'_(\d{8}_\d{6})\.sh$', p.name)
+        return match.group(1) if match else ''
+
+    scripts.sort(key=extract_timestamp, reverse=True)
     return scripts[0]
 
 
@@ -140,18 +150,21 @@ def count_operations_movies(script_path: Path) -> int:
     """Count sync operations in movie sync script"""
     with open(script_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    matches = re.findall(r'run_cmd "[^"]+" rsync', content)
-    return len(matches)
+    matches_rsync = re.findall(r'^do_rsync ', content, re.MULTILINE)
+    matches_move = re.findall(r'^do_move ', content, re.MULTILINE)
+    matches_runcmd = re.findall(r'^run_cmd "[^"]+" rsync', content, re.MULTILINE)
+    return len(matches_rsync) + len(matches_move) + len(matches_runcmd)
 
 
 def count_operations_tv(script_path: Path) -> int:
     """Count sync operations in TV sync script"""
     with open(script_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    # Support both old format (do_rsync) and new format (run_cmd ... rsync)
-    matches_old = re.findall(r'do_rsync "[^"]+"', content)
-    matches_new = re.findall(r'run_cmd "[^"]+" rsync', content)
-    return len(matches_old) + len(matches_new)
+    # Support all formats: do_rsync (new), do_move (new), run_cmd ... rsync (old)
+    matches_rsync = re.findall(r'^do_rsync ', content, re.MULTILINE)
+    matches_move = re.findall(r'^do_move ', content, re.MULTILINE)
+    matches_runcmd = re.findall(r'^run_cmd "[^"]+" rsync', content, re.MULTILINE)
+    return len(matches_rsync) + len(matches_move) + len(matches_runcmd)
 
 
 def count_completed(progress_path: Path) -> int:

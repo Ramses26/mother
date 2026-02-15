@@ -1,0 +1,2703 @@
+================================================================================
+DUPLICATE CLEANUP REPORT - TV
+Generated: 2026-02-14 17:05:12
+================================================================================
+
+Groups with duplicates: 296
+Total files to remove:  459
+Total space to reclaim: 716.81 GB
+
+------------------------------------------------------------
+Group: Anne with an E (2017) {tvdb-322971}/Season 01/S01E07
+  KEEP:   Anne with an E (2017) - S01E07 - Wherever You Are is My Home [Bluray-1080p][AC3 5.1][x264]-iNGOT.mkv
+          Score: 3276  Quality: 1080p/Bluray/DD/AVC  Size: 2.64GB
+  REMOVE: Anne with an E (2017) - S01E07 - Wherever You Are is My Home [Bluray-1080p][AC3 5.1][x264].mkv
+          Score: 3276  Quality: 1080p/Bluray/DD/AVC  Size: 2.64GB
+  Space saved: 2.64 GB
+
+------------------------------------------------------------
+Group: Bel-Air (2022) {tvdb-388151}/Season 01/S01E01
+  KEEP:   Bel-Air (2022) - S01E01 - Dreams and Nightmares [WEBDL-1080p][EAC3 5.1][h264]-NTb.mkv
+          Score: 3538  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.87GB
+  REMOVE: Bel-Air (2022) - S01E01 - Dreams and Nightmares [WEBDL-1080p Proper][EAC3 5.1][x264]-NTb.mkv
+          Score: 3533  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.36GB
+  Space saved: 3.36 GB
+
+------------------------------------------------------------
+Group: Black Mirror (2011) {tvdb-253463}/Season 07/S07E02
+  KEEP:   Black Mirror (2011) - S07E02 - Bête Noire [WEBDL-720p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 1857  Quality: 720p/WEBDL/Atmos/AVC  Size: 0.74GB
+  REMOVE: Black Mirror (2011) - S07E02 - Bête Noire [NF][WEBDL-720p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 1857  Quality: 720p/WEBDL/Atmos/AVC  Size: 0.74GB
+  Space saved: 0.74 GB
+
+------------------------------------------------------------
+Group: Black Mirror (2011) {tvdb-253463}/Season 07/S07E03
+  KEEP:   Black Mirror (2011) - S07E03 - Hotel Reverie [WEBDL-720p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 1859  Quality: 720p/WEBDL/Atmos/AVC  Size: 0.98GB
+  REMOVE: Black Mirror (2011) - S07E03 - Hotel Reverie [NF][WEBDL-720p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 1859  Quality: 720p/WEBDL/Atmos/AVC  Size: 0.98GB
+  Space saved: 0.98 GB
+
+------------------------------------------------------------
+Group: Black Mirror (2011) {tvdb-253463}/Season 07/S07E04
+  KEEP:   Black Mirror (2011) - S07E04 - Plaything [NF][WEBDL-720p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 1859  Quality: 720p/WEBDL/Atmos/AVC  Size: 0.91GB
+  REMOVE: Black Mirror (2011) - S07E04 - Plaything [WEBDL-720p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 1859  Quality: 720p/WEBDL/Atmos/AVC  Size: 0.91GB
+  Space saved: 0.91 GB
+
+------------------------------------------------------------
+Group: Black Mirror (2011) {tvdb-253463}/Season 07/S07E05
+  KEEP:   Black Mirror (2011) - S07E05 - Eulogy [WEBDL-720p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 1855  Quality: 720p/WEBDL/Atmos/AVC  Size: 0.57GB
+  REMOVE: Black Mirror (2011) - S07E05 - Eulogy [NF][WEBDL-720p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 1855  Quality: 720p/WEBDL/Atmos/AVC  Size: 0.57GB
+  Space saved: 0.57 GB
+
+------------------------------------------------------------
+Group: Black Mirror (2011) {tvdb-253463}/Season 07/S07E06
+  KEEP:   Black Mirror (2011) - S07E06 - USS Callister Into Infinity [WEBDL-720p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 1866  Quality: 720p/WEBDL/Atmos/AVC  Size: 1.66GB
+  REMOVE: Black Mirror (2011) - S07E06 - USS Callister Into Infinity [NF][WEBDL-720p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 1866  Quality: 720p/WEBDL/Atmos/AVC  Size: 1.66GB
+  Space saved: 1.66 GB
+
+------------------------------------------------------------
+Group: Bob's Burgers (2011) {tvdb-194031}/Season 16/S16E10
+  KEEP:   Bob's Burgers (2011) - S16E10 - Heist Things Are Heist [DSNP][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3505  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.51GB
+  REMOVE: Bob's Burgers (2011) - S16E10 - Heist Things Are Heist [[Trash] Release Sources (Streaming Service)_25_3 Release Sources (Streaming Service)_22_1][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3505  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.51GB
+  Space saved: 0.51 GB
+
+------------------------------------------------------------
+Group: Challenger - The Final Flight (2020) {tvdb-387206}/Season 01/S01E01
+  KEEP:   Challenger - The Final Flight (2020) - S01E01 - Space for Everyone [NF][WEBDL-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3520  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.04GB
+  REMOVE: Challenger - The Final Flight (2020) - S01E01 - Space for Everyone [WEBDL-1080p][EAC3 5.1][x264].mkv
+          Score: 3520  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.04GB
+  Space saved: 2.04 GB
+
+------------------------------------------------------------
+Group: Challenger - The Final Flight (2020) {tvdb-387206}/Season 01/S01E02
+  KEEP:   Challenger - The Final Flight (2020) - S01E02 - HELP! [WEBDL-1080p][EAC3 5.1][x264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.33GB
+  REMOVE: Challenger - The Final Flight (2020) - S01E02 - HELP! [NF][WEBDL-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.33GB
+  Space saved: 2.33 GB
+
+------------------------------------------------------------
+Group: Creepshow (2019) {tvdb-364865}/Season 01/S01E03
+  KEEP:   Creepshow (2019) - S01E03 - All Hallows Eve The Man in the Suitcase [AMZN][WEBDL-1080p][EAC3 2.0][h264]-NTG.mkv
+          Score: 3528  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.85GB
+  REMOVE: Creepshow (2019) - S01E03 - All Hallows Eve The Man in the Suitcase [WEBRip-1080p][EAC3 5.1][h265].mkv
+          Score: 2764  Quality: 1080p/WEBRip/DD+/HEVC  Size: 1.44GB
+  Space saved: 1.44 GB
+
+------------------------------------------------------------
+Group: Cross (2024) {tvdb-426501}/Season 01/S01E01
+  KEEP:   Cross (2024) - S01E01 - Hero Complex [WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.87GB
+  REMOVE: Cross (2024) - S01E01 - Hero Complex [WEBRip-1080p][AAC 5.1][x265]-KONTRAST.mp4
+          Score: 2661  Quality: 1080p/WEBRip/AAC/HEVC  Size: 1.15GB
+  Space saved: 1.15 GB
+
+------------------------------------------------------------
+Group: Cross (2024) {tvdb-426501}/Season 01/S01E02
+  KEEP:   Cross (2024) - S01E02 - Ride the White Horsey [WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3866  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.67GB
+  REMOVE: Cross (2024) - S01E02 - Ride the White Horsey [WEBRip-1080p][AAC 5.1][x265]-KONTRAST.mp4
+          Score: 2659  Quality: 1080p/WEBRip/AAC/HEVC  Size: 0.98GB
+  Space saved: 0.98 GB
+
+------------------------------------------------------------
+Group: Cross (2024) {tvdb-426501}/Season 01/S01E03
+  KEEP:   Cross (2024) - S01E03 - The Good Book [WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.81GB
+  REMOVE: Cross (2024) - S01E03 - The Good Book [WEBRip-1080p][AAC 5.1][x265]-KONTRAST.mp4
+          Score: 2660  Quality: 1080p/WEBRip/AAC/HEVC  Size: 1.08GB
+  Space saved: 1.08 GB
+
+------------------------------------------------------------
+Group: Cross (2024) {tvdb-426501}/Season 01/S01E04
+  KEEP:   Cross (2024) - S01E04 - Masks [WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3869  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.96GB
+  REMOVE: Cross (2024) - S01E04 - Masks [WEBRip-1080p][AAC 5.1][x265]-KONTRAST.mp4
+          Score: 2660  Quality: 1080p/WEBRip/AAC/HEVC  Size: 1.06GB
+  Space saved: 1.06 GB
+
+------------------------------------------------------------
+Group: Cross (2024) {tvdb-426501}/Season 01/S01E05
+  KEEP:   Cross (2024) - S01E05 - What Happens At Ramsey's [WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3864  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.47GB
+  REMOVE: Cross (2024) - S01E05 - What Happens At Ramsey's [WEBRip-1080p][AAC 5.1][x265]-KONTRAST.mp4
+          Score: 2659  Quality: 1080p/WEBRip/AAC/HEVC  Size: 0.94GB
+  Space saved: 0.94 GB
+
+------------------------------------------------------------
+Group: Cross (2024) {tvdb-426501}/Season 01/S01E06
+  KEEP:   Cross (2024) - S01E06 - A Bang Not A Whimper [WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3867  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.78GB
+  REMOVE: Cross (2024) - S01E06 - A Bang Not A Whimper [WEBRip-1080p][AAC 5.1][x265]-KONTRAST.mp4
+          Score: 2659  Quality: 1080p/WEBRip/AAC/HEVC  Size: 0.99GB
+  Space saved: 0.99 GB
+
+------------------------------------------------------------
+Group: Cross (2024) {tvdb-426501}/Season 01/S01E07
+  KEEP:   Cross (2024) - S01E07 - Happy Birthday [WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3869  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.91GB
+  REMOVE: Cross (2024) - S01E07 - Happy Birthday [WEBRip-1080p][AAC 5.1][x265]-KONTRAST.mp4
+          Score: 2661  Quality: 1080p/WEBRip/AAC/HEVC  Size: 1.10GB
+  Space saved: 1.10 GB
+
+------------------------------------------------------------
+Group: Cross (2024) {tvdb-426501}/Season 01/S01E08
+  KEEP:   Cross (2024) - S01E08 - You Had Me At Motherfucker [WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3872  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.22GB
+  REMOVE: Cross (2024) - S01E08 - You Had Me At Motherfucker [WEBRip-1080p][AAC 5.1][x265]-KONTRAST.mp4
+          Score: 2661  Quality: 1080p/WEBRip/AAC/HEVC  Size: 1.13GB
+  Space saved: 1.13 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E02
+  KEEP:   Dark Matter (2015) - S02E02 - Kill Them All [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.87GB
+  REMOVE: Dark Matter (2015) - S02E02 - Kill Them All [[Trash] Release Sources (Streaming Service)_25_0 Release Sources (Streaming Service)_22_5][WEBDL-720p][EAC3 2.0][h264]-playWEB.mkv
+          Score: 1509  Quality: 720p/WEBDL/DD+/AVC  Size: 0.96GB
+  Space saved: 0.96 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E03
+  KEEP:   Dark Matter (2015) - S02E03 - Ive Seen the Other Side of You [WEBDL-1080p Proper][AC3 5.1][h264]-VietHD.mkv
+          Score: 3466  Quality: 1080p/WEBDL/DD/AVC  Size: 1.62GB
+  REMOVE: Dark Matter (2015) - S02E03 - Ive Seen the Other Side of You [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.87GB
+  Space saved: 0.87 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E04
+  KEEP:   Dark Matter (2015) - S02E04 - We Were Family [WEBDL-1080p Proper][AC3 5.1][h264]-VietHD.mkv
+          Score: 3466  Quality: 1080p/WEBDL/DD/AVC  Size: 1.69GB
+  REMOVE: Dark Matter (2015) - S02E04 - We Were Family [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.88GB
+  Space saved: 0.88 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E05
+  KEEP:   Dark Matter (2015) - S02E05 - We Voted Not to Space You [WEBDL-1080p Proper][AC3 5.1][h264]-VietHD.mkv
+          Score: 3466  Quality: 1080p/WEBDL/DD/AVC  Size: 1.69GB
+  REMOVE: Dark Matter (2015) - S02E05 - We Voted Not to Space You [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.87GB
+  Space saved: 0.87 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E06
+  KEEP:   Dark Matter (2015) - S02E06 - We Should Have Seen This Coming [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.88GB
+  REMOVE: Dark Matter (2015) - S02E06 - We Should Have Seen This Coming [[Trash] Release Sources (Streaming Service)_25_0 Release Sources (Streaming Service)_22_5][WEBDL-720p][EAC3 2.0][h264]-playWEB.mkv
+          Score: 1509  Quality: 720p/WEBDL/DD+/AVC  Size: 0.97GB
+  Space saved: 0.97 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E08
+  KEEP:   Dark Matter (2015) - S02E08 - Stuff to Steal People to Kill [WEBDL-1080p Proper][AC3 5.1][h264]-VietHD.mkv
+          Score: 3466  Quality: 1080p/WEBDL/DD/AVC  Size: 1.67GB
+  REMOVE: Dark Matter (2015) - S02E08 - Stuff to Steal People to Kill [WEBRip-1080p Proper][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.88GB
+  Space saved: 0.88 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E09
+  KEEP:   Dark Matter (2015) - S02E09 - Going Out Fighting [WEBDL-1080p Proper][AC3 5.1][h264]-VietHD.mkv
+          Score: 3466  Quality: 1080p/WEBDL/DD/AVC  Size: 1.68GB
+  REMOVE: Dark Matter (2015) - S02E09 - Going Out Fighting [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.87GB
+  Space saved: 0.87 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E10
+  KEEP:   Dark Matter (2015) - S02E10 - Take the Shot [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.88GB
+  REMOVE: Dark Matter (2015) - S02E10 - Take the Shot [[Trash] Release Sources (Streaming Service)_25_0 Release Sources (Streaming Service)_22_5][WEBDL-720p][EAC3 2.0][h264]-playWEB.mkv
+          Score: 1508  Quality: 720p/WEBDL/DD+/AVC  Size: 0.87GB
+  Space saved: 0.87 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E11
+  KEEP:   Dark Matter (2015) - S02E11 - Wish Id Spaced You When I Had the Chance [WEBDL-1080p Proper][AC3 5.1][h264]-VietHD.mkv
+          Score: 3466  Quality: 1080p/WEBDL/DD/AVC  Size: 1.68GB
+  REMOVE: Dark Matter (2015) - S02E11 - Wish Id Spaced You When I Had the Chance [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.87GB
+  Space saved: 0.87 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E12
+  KEEP:   Dark Matter (2015) - S02E12 - Sometimes in Life You Dont Get to Choose [WEBDL-1080p Proper][AC3 5.1][h264]-VietHD.mkv
+          Score: 3466  Quality: 1080p/WEBDL/DD/AVC  Size: 1.63GB
+  REMOVE: Dark Matter (2015) - S02E12 - Sometimes in Life You Dont Get to Choose [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.88GB
+  Space saved: 0.88 GB
+
+------------------------------------------------------------
+Group: Dark Matter (2015) {tvdb-292174}/Season 02/S02E13
+  KEEP:   Dark Matter (2015) - S02E13 - But First We Save the Galaxy [WEBDL-1080p Proper][AC3 5.1][h264]-VietHD.mkv
+          Score: 3466  Quality: 1080p/WEBDL/DD/AVC  Size: 1.65GB
+  REMOVE: Dark Matter (2015) - S02E13 - But First We Save the Galaxy [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2758  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.88GB
+  Space saved: 0.88 GB
+
+------------------------------------------------------------
+Group: Fresh Off the Boat (2015) {tvdb-281618}/Season 04/S04E05
+  KEEP:   Fresh Off the Boat (2015) - S04E05 - Four Funerals and a Wedding [WEBDL-1080p][EAC3 5.1][x264]-TrollHD.mkv
+          Score: 3521  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.19GB
+  REMOVE: Fresh Off the Boat (2015) - S04E05 - Four Funerals and a Wedding [HDTV-1080p][EAC3 5.1][h264].mkv
+          Score: 2521  Quality: 1080p/HDTV/DD+/AVC  Size: 2.19GB
+  Space saved: 2.19 GB
+
+------------------------------------------------------------
+Group: Game of Thrones (2011) {tvdb-121361}/Season 08/S08E03
+  KEEP:   Game of Thrones (2011) - S08E03 - The Long Night [WEBDL-1080p][EAC3 Atmos 5.1][x264]-BANDOLEROS.mkv
+          Score: 3900  Quality: 1080p/WEBDL/Atmos/AVC  Size: 5.10GB
+  REMOVE: Game of Thrones (2011) - S08E03 - The Long Night [HDTV-1080p][EAC3 5.1][h264].mkv
+          Score: 2543  Quality: 1080p/HDTV/DD+/AVC  Size: 4.32GB
+  Space saved: 4.32 GB
+
+------------------------------------------------------------
+Group: Generation Kill (2008) {tvdb-82109}/Season 01/S01E01
+  KEEP:   Generation Kill (2008) - S01E01 - Get Some [HMAX][WEBDL-1080p][AC3 5.1][h264]-SLiGNOME.mkv
+          Score: 3491  Quality: 1080p/WEBDL/DD/AVC  Size: 4.14GB
+  REMOVE: Generation Kill (2008) - S01E01 - Get Some [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2772  Quality: 1080p/WEBRip/DD+/HEVC  Size: 2.28GB
+  Space saved: 2.28 GB
+
+------------------------------------------------------------
+Group: Generation Kill (2008) {tvdb-82109}/Season 01/S01E02
+  KEEP:   Generation Kill (2008) - S01E02 - The Cradle of Civilization [HMAX][WEBDL-1080p][AC3 5.1][h264]-SLiGNOME.mkv
+          Score: 3490  Quality: 1080p/WEBDL/DD/AVC  Size: 4.08GB
+  REMOVE: Generation Kill (2008) - S01E02 - The Cradle of Civilization [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2772  Quality: 1080p/WEBRip/DD+/HEVC  Size: 2.25GB
+  Space saved: 2.25 GB
+
+------------------------------------------------------------
+Group: Generation Kill (2008) {tvdb-82109}/Season 01/S01E03
+  KEEP:   Generation Kill (2008) - S01E03 - Screwby [HMAX][WEBDL-1080p][AC3 5.1][h264]-SLiGNOME.mkv
+          Score: 3488  Quality: 1080p/WEBDL/DD/AVC  Size: 3.83GB
+  REMOVE: Generation Kill (2008) - S01E03 - Screwby [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2770  Quality: 1080p/WEBRip/DD+/HEVC  Size: 2.09GB
+  Space saved: 2.09 GB
+
+------------------------------------------------------------
+Group: Generation Kill (2008) {tvdb-82109}/Season 01/S01E04
+  KEEP:   Generation Kill (2008) - S01E04 - Combat Jack [HMAX][WEBDL-1080p][AC3 5.1][h264]-SLiGNOME.mkv
+          Score: 3490  Quality: 1080p/WEBDL/DD/AVC  Size: 4.04GB
+  REMOVE: Generation Kill (2008) - S01E04 - Combat Jack [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2772  Quality: 1080p/WEBRip/DD+/HEVC  Size: 2.23GB
+  Space saved: 2.23 GB
+
+------------------------------------------------------------
+Group: Generation Kill (2008) {tvdb-82109}/Season 01/S01E05
+  KEEP:   Generation Kill (2008) - S01E05 - A Burning Dog [HMAX][WEBDL-1080p][AC3 5.1][h264]-SLiGNOME.mkv
+          Score: 3491  Quality: 1080p/WEBDL/DD/AVC  Size: 4.18GB
+  REMOVE: Generation Kill (2008) - S01E05 - A Burning Dog [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2773  Quality: 1080p/WEBRip/DD+/HEVC  Size: 2.31GB
+  Space saved: 2.31 GB
+
+------------------------------------------------------------
+Group: Generation Kill (2008) {tvdb-82109}/Season 01/S01E06
+  KEEP:   Generation Kill (2008) - S01E06 - Stay Frosty [HMAX][WEBDL-1080p][AC3 5.1][h264]-SLiGNOME.mkv
+          Score: 3490  Quality: 1080p/WEBDL/DD/AVC  Size: 4.02GB
+  REMOVE: Generation Kill (2008) - S01E06 - Stay Frosty [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2772  Quality: 1080p/WEBRip/DD+/HEVC  Size: 2.21GB
+  Space saved: 2.21 GB
+
+------------------------------------------------------------
+Group: Generation Kill (2008) {tvdb-82109}/Season 01/S01E07
+  KEEP:   Generation Kill (2008) - S01E07 - Bomb in the Garden [HMAX][WEBDL-1080p][AC3 5.1][h264]-SLiGNOME.mkv
+          Score: 3490  Quality: 1080p/WEBDL/DD/AVC  Size: 4.10GB
+  REMOVE: Generation Kill (2008) - S01E07 - Bomb in the Garden [WEBRip-1080p][EAC3 5.1][HEVC]-d3g.mkv
+          Score: 2772  Quality: 1080p/WEBRip/DD+/HEVC  Size: 2.26GB
+  Space saved: 2.26 GB
+
+------------------------------------------------------------
+Group: Harley Quinn (2019) {tvdb-365677}/Season 05/S05E06
+  KEEP:   Harley Quinn (2019) - S05E06 - Bottle My Heart [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3516  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.67GB
+  REMOVE: Harley Quinn (2019) - S05E06 - Bottle My Heart [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3516  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.67GB
+  Space saved: 1.67 GB
+
+------------------------------------------------------------
+Group: Helstrom (2020) {tvdb-364038}/Season 01/S01E10
+  KEEP:   Helstrom (2020) - S01E10 - Hell Storm [WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3513  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.33GB
+  REMOVE: Helstrom (2020) - S01E10 - Hell Storm [HDTV-1080p][EAC3 5.1][h264].mkv
+          Score: 2513  Quality: 1080p/HDTV/DD+/AVC  Size: 1.33GB
+  Space saved: 1.33 GB
+
+------------------------------------------------------------
+Group: Homeland (2011) {tvdb-247897}/Season 07/S07E10
+  KEEP:   Homeland (2011) - S07E10 - Clarity [WEBDL-1080p Proper][EAC3 5.1][h264]-NTb.mkv
+          Score: 3552  Quality: 1080p/WEBDL/DD+/AVC  Size: 5.22GB
+  REMOVE: Homeland (2011) - S07E10 - Clarity [HDTV-720p][EAC3 5.1][h264].mkv
+          Score: 508  Quality: 720p/HDTV/DD+/AVC  Size: 0.89GB
+  Space saved: 0.89 GB
+
+------------------------------------------------------------
+Group: Invasion (2021) {tvdb-404492}/Season 02/S02E01
+  KEEP:   Invasion (2021) - S02E01 - Somethings Changed [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3893  Quality: 1080p/WEBDL/Atmos/AVC  Size: 4.34GB
+  REMOVE: Invasion (2021) - S02E01 - Somethings Changed [WEBRip-1080p][EAC3 Atmos 5.1][x265].mkv
+          Score: 3107  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.71GB
+  Space saved: 0.71 GB
+
+------------------------------------------------------------
+Group: Invasion (2021) {tvdb-404492}/Season 02/S02E02
+  KEEP:   Invasion (2021) - S02E02 - Chasing Ghosts [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3889  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.94GB
+  REMOVE: Invasion (2021) - S02E02 - Chasing Ghosts [WEBRip-1080p][EAC3 Atmos 5.1][x265].mkv
+          Score: 3106  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.66GB
+  Space saved: 0.66 GB
+
+------------------------------------------------------------
+Group: Invasion (2021) {tvdb-404492}/Season 02/S02E03
+  KEEP:   Invasion (2021) - S02E03 - Fireworks [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3886  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.62GB
+  REMOVE: Invasion (2021) - S02E03 - Fireworks [WEBRip-1080p][EAC3 Atmos 5.1][x265].mkv
+          Score: 3105  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.52GB
+  Space saved: 0.52 GB
+
+------------------------------------------------------------
+Group: Invasion (2021) {tvdb-404492}/Season 02/S02E04
+  KEEP:   Invasion (2021) - S02E04 - The Tunnel [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3888  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.82GB
+  REMOVE: Invasion (2021) - S02E04 - The Tunnel [WEBRip-1080p][EAC3 Atmos 5.1][x265].mkv
+          Score: 3105  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.51GB
+  Space saved: 0.51 GB
+
+------------------------------------------------------------
+Group: Invasion (2021) {tvdb-404492}/Season 02/S02E05
+  KEEP:   Invasion (2021) - S02E05 - A Voice From the Other Side [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3888  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.83GB
+  REMOVE: Invasion (2021) - S02E05 - A Voice From the Other Side [WEBRip-1080p][EAC3 Atmos 5.1][x265].mkv
+          Score: 3107  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.70GB
+  Space saved: 0.70 GB
+
+------------------------------------------------------------
+Group: Invasion (2021) {tvdb-404492}/Season 02/S02E06
+  KEEP:   Invasion (2021) - S02E06 - Pressure Points [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3889  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.90GB
+  REMOVE: Invasion (2021) - S02E06 - Pressure Points [WEBRip-1080p][EAC3 Atmos 5.1][x265].mkv
+          Score: 3105  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.56GB
+  Space saved: 0.56 GB
+
+------------------------------------------------------------
+Group: Invasion (2021) {tvdb-404492}/Season 02/S02E07
+  KEEP:   Invasion (2021) - S02E07 - Down the Rabbit Hole [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3886  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.64GB
+  REMOVE: Invasion (2021) - S02E07 - Down the Rabbit Hole [WEBRip-1080p][EAC3 Atmos 5.1][x265].mkv
+          Score: 3106  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.63GB
+  Space saved: 0.63 GB
+
+------------------------------------------------------------
+Group: Invasion (2021) {tvdb-404492}/Season 02/S02E08
+  KEEP:   Invasion (2021) - S02E08 - Cosmic Ocean [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3888  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.86GB
+  REMOVE: Invasion (2021) - S02E08 - Cosmic Ocean [WEBRip-1080p][EAC3 Atmos 5.1][x265].mkv
+          Score: 3106  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.60GB
+  Space saved: 0.60 GB
+
+------------------------------------------------------------
+Group: Invasion (2021) {tvdb-404492}/Season 02/S02E09
+  KEEP:   Invasion (2021) - S02E09 - Breakthrough [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3879  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.99GB
+  REMOVE: Invasion (2021) - S02E09 - Breakthrough [WEBRip-1080p][EAC3 Atmos 5.1][x265].mkv
+          Score: 3105  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.56GB
+  Space saved: 0.56 GB
+
+------------------------------------------------------------
+Group: Invasion (2021) {tvdb-404492}/Season 02/S02E10
+  KEEP:   Invasion (2021) - S02E10 - Old Friends New Frontiers [WEBDL-1080p][EAC3 Atmos 5.1][h264].mkv
+          Score: 3887  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.74GB
+  REMOVE: Invasion (2021) - S02E10 - Old Friends New Frontiers [WEBRip-1080p][EAC3 Atmos 5.1][x265].mkv
+          Score: 3106  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.61GB
+  Space saved: 0.61 GB
+
+------------------------------------------------------------
+Group: Jupiter's Legacy (2021) {tvdb-368388}/Season 01/S01E01
+  KEEP:   Jupiter's Legacy (2021) - S01E01 - By Dawns Early Light [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.14GB
+  REMOVE: Jupiter's Legacy (2021) - S01E01 - By Dawns Early Light [NF][WEBDL-1080p][EAC3 5.1][x264]-NTb.mkv
+          Score: 3510  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.09GB
+  Space saved: 1.09 GB
+
+------------------------------------------------------------
+Group: Jupiter's Legacy (2021) {tvdb-368388}/Season 01/S01E02
+  KEEP:   Jupiter's Legacy (2021) - S01E02 - Paper and Stone [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3857  Quality: 1080p/WEBDL/Atmos/AVC  Size: 0.72GB
+  REMOVE: Jupiter's Legacy (2021) - S01E02 - Paper and Stone [NF][WEBDL-1080p][EAC3 5.1][x264]-NTb.mkv
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.64GB
+  Space saved: 0.64 GB
+
+------------------------------------------------------------
+Group: Jupiter's Legacy (2021) {tvdb-368388}/Season 01/S01E03
+  KEEP:   Jupiter's Legacy (2021) - S01E03 - Painting the Clouds With Sunshine [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3867  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.79GB
+  REMOVE: Jupiter's Legacy (2021) - S01E03 - Painting the Clouds With Sunshine [NF][WEBDL-1080p][EAC3 5.1][x264]-NTb.mkv
+          Score: 3517  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.75GB
+  Space saved: 1.75 GB
+
+------------------------------------------------------------
+Group: Jupiter's Legacy (2021) {tvdb-368388}/Season 01/S01E04
+  KEEP:   Jupiter's Legacy (2021) - S01E04 - All the Devils Are Here [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.83GB
+  REMOVE: Jupiter's Legacy (2021) - S01E04 - All the Devils Are Here [NF][WEBDL-1080p][EAC3 5.1][x264]-NTb.mkv
+          Score: 3517  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.78GB
+  Space saved: 1.78 GB
+
+------------------------------------------------------------
+Group: Jupiter's Legacy (2021) {tvdb-368388}/Season 01/S01E05
+  KEEP:   Jupiter's Legacy (2021) - S01E05 - Whats the Use [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.18GB
+  REMOVE: Jupiter's Legacy (2021) - S01E05 - Whats the Use [NF][WEBDL-1080p][EAC3 5.1][x264]-NTb.mkv
+          Score: 3511  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.14GB
+  Space saved: 1.14 GB
+
+------------------------------------------------------------
+Group: Jupiter's Legacy (2021) {tvdb-368388}/Season 01/S01E06
+  KEEP:   Jupiter's Legacy (2021) - S01E06 - Cover Her Face [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3863  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.39GB
+  REMOVE: Jupiter's Legacy (2021) - S01E06 - Cover Her Face [NF][WEBDL-1080p][EAC3 5.1][x264]-NTb.mkv
+          Score: 3513  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.35GB
+  Space saved: 1.35 GB
+
+------------------------------------------------------------
+Group: Jupiter's Legacy (2021) {tvdb-368388}/Season 01/S01E07
+  KEEP:   Jupiter's Legacy (2021) - S01E07 - Omnes Pro Uno [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3865  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.56GB
+  REMOVE: Jupiter's Legacy (2021) - S01E07 - Omnes Pro Uno [NF][WEBDL-1080p][EAC3 5.1][x264]-NTb.mkv
+          Score: 3515  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.51GB
+  Space saved: 1.51 GB
+
+------------------------------------------------------------
+Group: Jupiter's Legacy (2021) {tvdb-368388}/Season 01/S01E08
+  KEEP:   Jupiter's Legacy (2021) - S01E08 - How It All Ends [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3859  Quality: 1080p/WEBDL/Atmos/AVC  Size: 0.95GB
+  REMOVE: Jupiter's Legacy (2021) - S01E08 - How It All Ends [NF][WEBDL-1080p][EAC3 5.1][x264]-NTb.mkv
+          Score: 3509  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.92GB
+  Space saved: 0.92 GB
+
+------------------------------------------------------------
+Group: Jurassic World - Camp Cretaceous (2020) {tvdb-365066}/Season 01/S01E01
+  KEEP:   Jurassic World - Camp Cretaceous (2020) - S01E01 - Camp Cretaceous [WEBDL-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.23GB
+  REMOVE: Jurassic World - Camp Cretaceous (2020) - S01E01 - Camp Cretaceous [HDTV-1080p][EAC3 5.1][x264].mkv
+          Score: 2512  Quality: 1080p/HDTV/DD+/AVC  Size: 1.23GB
+  Space saved: 1.23 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E01
+  KEEP:   Knight Rider (1982) - S02E01-E02 - Goliath [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3315  Quality: 1080p/Bluray/DD/AVC  Size: 6.55GB
+  REMOVE: Knight Rider (1982) - S02E01-E02 - Goliath [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 482  Quality: 720p/HDTV/DD/AVC  Size: 3.27GB
+  Space saved: 3.27 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E03
+  KEEP:   Knight Rider (1982) - S02E03 - Brothers Keeper [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E03 - Brothers Keeper [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E04
+  KEEP:   Knight Rider (1982) - S02E04 - Merchants of Death [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E04 - Merchants of Death [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E05
+  KEEP:   Knight Rider (1982) - S02E05 - Blind Spot [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E05 - Blind Spot [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E06
+  KEEP:   Knight Rider (1982) - S02E06 - Return to Cadiz [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E06 - Return to Cadiz [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E07
+  KEEP:   Knight Rider (1982) - S02E07 - K.I.T.T. the Cat [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E07 - K.I.T.T. the Cat [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E08
+  KEEP:   Knight Rider (1982) - S02E08 - Custom K.I.T.T [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E08 - Custom K.I.T.T [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E09
+  KEEP:   Knight Rider (1982) - S02E09 - Soul Survivor [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E09 - Soul Survivor [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E10
+  KEEP:   Knight Rider (1982) - S02E10 - Ring of Fire [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E10 - Ring of Fire [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E11
+  KEEP:   Knight Rider (1982) - S02E11 - Knightmares [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E11 - Knightmares [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E12
+  KEEP:   Knight Rider (1982) - S02E12 - Silent Knight [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E12 - Silent Knight [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E13
+  KEEP:   Knight Rider (1982) - S02E13 - A Knight in Shining Armor [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E13 - A Knight in Shining Armor [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E14
+  KEEP:   Knight Rider (1982) - S02E14 - Diamonds Arent a Girls Best Friend [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E14 - Diamonds Arent a Girls Best Friend [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E15
+  KEEP:   Knight Rider (1982) - S02E15 - White-Line Warriors [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E15 - White-Line Warriors [HDTV-720p][AC3 2.0][x264]-Line.mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E16
+  KEEP:   Knight Rider (1982) - S02E16 - Race for Life [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E16 - Race for Life [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E17
+  KEEP:   Knight Rider (1982) - S02E17 - Speed Demons [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E17 - Speed Demons [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E18
+  KEEP:   Knight Rider (1982) - S02E18-E19 - Goliath Returns [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3315  Quality: 1080p/Bluray/DD/AVC  Size: 6.55GB
+  REMOVE: Knight Rider (1982) - S02E18-E19 - Goliath Returns [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 482  Quality: 720p/HDTV/DD/AVC  Size: 3.27GB
+  Space saved: 3.27 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E20
+  KEEP:   Knight Rider (1982) - S02E20 - A Good Knights Work [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E20 - A Good Knights Work [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E21
+  KEEP:   Knight Rider (1982) - S02E21-E22 - Mouth of the Snake a.k.a. All That Glitters [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3315  Quality: 1080p/Bluray/DD/AVC  Size: 6.55GB
+  REMOVE: Knight Rider (1982) - S02E21-E22 - Mouth of the Snake a.k.a. All That Glitters [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 482  Quality: 720p/HDTV/DD/AVC  Size: 3.27GB
+  Space saved: 3.27 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E23
+  KEEP:   Knight Rider (1982) - S02E23 - Let It Be Me [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E23 - Let It Be Me [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 02/S02E24
+  KEEP:   Knight Rider (1982) - S02E24 - Big Iron [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S02E24 - Big Iron [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E04
+  KEEP:   Knight Rider (1982) - S03E04 - Knights of the Fast Lane [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E04 - Knights of the Fast Lane [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E05
+  KEEP:   Knight Rider (1982) - S03E05 - Halloween Knight [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E05 - Halloween Knight [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E06
+  KEEP:   Knight Rider (1982) - S03E06 - K.I.T.T. vs. K.A.R.R [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E06 - K.I.T.T. vs. K.A.R.R [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E07
+  KEEP:   Knight Rider (1982) - S03E07 - The Rotten Apples [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E07 - The Rotten Apples [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E08
+  KEEP:   Knight Rider (1982) - S03E08 - Knight in Disgrace [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E08 - Knight in Disgrace [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E09
+  KEEP:   Knight Rider (1982) - S03E09 - Dead of Knight [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E09 - Dead of Knight [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E10
+  KEEP:   Knight Rider (1982) - S03E10 - Lost Knight [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E10 - Lost Knight [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E11
+  KEEP:   Knight Rider (1982) - S03E11 - Knight of the Chameleon [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E11 - Knight of the Chameleon [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E12
+  KEEP:   Knight Rider (1982) - S03E12 - Custom Made Killer [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E12 - Custom Made Killer [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E13
+  KEEP:   Knight Rider (1982) - S03E13 - Knight by a Nose [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E13 - Knight by a Nose [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E14
+  KEEP:   Knight Rider (1982) - S03E14 - Junk Yard Dog [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E14 - Junk Yard Dog [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E15
+  KEEP:   Knight Rider (1982) - S03E15 - Buy Out [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E15 - Buy Out [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E16
+  KEEP:   Knight Rider (1982) - S03E16 - Knightlines [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E16 - Knightlines [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E17
+  KEEP:   Knight Rider (1982) - S03E17 - The Nineteenth Hole [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E17 - The Nineteenth Hole [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E18
+  KEEP:   Knight Rider (1982) - S03E18 - Knight and Knerd [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E18 - Knight and Knerd [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 03/S03E19
+  KEEP:   Knight Rider (1982) - S03E19 - Ten Wheel Trouble [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S03E19 - Ten Wheel Trouble [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E01
+  KEEP:   Knight Rider (1982) - S04E01-E02 - Knight of the Juggernaut [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3315  Quality: 1080p/Bluray/DD/AVC  Size: 6.55GB
+  REMOVE: Knight Rider (1982) - S04E01 - Knight of the Juggernaut 1 [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 585  Quality: 720p/HDTV/DTS/AVC  Size: 3.59GB
+  Space saved: 3.59 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E03
+  KEEP:   Knight Rider (1982) - S04E03 - KITTnap [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E03 - KITTnap [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 580  Quality: 720p/HDTV/DTS/AVC  Size: 3.03GB
+  Space saved: 3.03 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E04
+  KEEP:   Knight Rider (1982) - S04E04 - Sky Knight [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E04 - Sky Knight [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 583  Quality: 720p/HDTV/DTS/AVC  Size: 3.35GB
+  Space saved: 3.35 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E05
+  KEEP:   Knight Rider (1982) - S04E05 - Burial Ground [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E05 - Burial Ground [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 573  Quality: 720p/HDTV/DTS/AVC  Size: 2.39GB
+  Space saved: 2.39 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E06
+  KEEP:   Knight Rider (1982) - S04E06 - The Wrong Crowd [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E06 - The Wrong Crowd [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 579  Quality: 720p/HDTV/DTS/AVC  Size: 2.90GB
+  Space saved: 2.90 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E07
+  KEEP:   Knight Rider (1982) - S04E07 - Knight Sting [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E07 - Knight Sting [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 582  Quality: 720p/HDTV/DTS/AVC  Size: 3.25GB
+  Space saved: 3.25 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E08
+  KEEP:   Knight Rider (1982) - S04E08 - Many Happy Returns [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E08 - Many Happy Returns [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 576  Quality: 720p/HDTV/DTS/AVC  Size: 2.68GB
+  Space saved: 2.68 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E09
+  KEEP:   Knight Rider (1982) - S04E09 - Knight Racer [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E09 - Knight Racer [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 578  Quality: 720p/HDTV/DTS/AVC  Size: 2.89GB
+  Space saved: 2.89 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E10
+  KEEP:   Knight Rider (1982) - S04E10 - Knight Behind Bars [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E10 - Knight Behind Bars [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 580  Quality: 720p/HDTV/DTS/AVC  Size: 3.04GB
+  Space saved: 3.04 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E11
+  KEEP:   Knight Rider (1982) - S04E11 - Knight Song [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E11 - Knight Song [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E12
+  KEEP:   Knight Rider (1982) - S04E12 - The Scent of Roses [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E12 - The Scent of Roses [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 577  Quality: 720p/HDTV/DTS/AVC  Size: 2.73GB
+  Space saved: 2.73 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E13
+  KEEP:   Knight Rider (1982) - S04E13 - Killer K.I.T.T [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E13 - Killer K.I.T.T [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 580  Quality: 720p/HDTV/DTS/AVC  Size: 3.02GB
+  Space saved: 3.02 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E14
+  KEEP:   Knight Rider (1982) - S04E14 - Out of the Woods [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E14 - Out of the Woods [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 573  Quality: 720p/HDTV/DTS/AVC  Size: 2.35GB
+  Space saved: 2.35 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E15
+  KEEP:   Knight Rider (1982) - S04E15 - Deadly Knightshade [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E15 - Deadly Knightshade [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 584  Quality: 720p/HDTV/DTS/AVC  Size: 3.47GB
+  Space saved: 3.47 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E16
+  KEEP:   Knight Rider (1982) - S04E16 - Redemption of a Champion [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E16 - Redemption of a Champion [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 575  Quality: 720p/HDTV/DTS/AVC  Size: 2.59GB
+  Space saved: 2.59 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E17
+  KEEP:   Knight Rider (1982) - S04E17 - Knight of a Thousand Devils [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E17 - Knight of a Thousand Devils [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 574  Quality: 720p/HDTV/DTS/AVC  Size: 2.46GB
+  Space saved: 2.46 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E18
+  KEEP:   Knight Rider (1982) - S04E18 - Hills of Fire [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E18 - Hills of Fire [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E19
+  KEEP:   Knight Rider (1982) - S04E19 - Knight Flight to Freedom [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E19 - Knight Flight to Freedom [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E20
+  KEEP:   Knight Rider (1982) - S04E20 - Fright Knight [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E20 - Fright Knight [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 575  Quality: 720p/HDTV/DTS/AVC  Size: 2.54GB
+  Space saved: 2.54 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E21
+  KEEP:   Knight Rider (1982) - S04E21 - Knight of the Rising Sun [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E21 - Knight of the Rising Sun [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 471  Quality: 720p/HDTV/DD/AVC  Size: 2.18GB
+  Space saved: 2.18 GB
+
+------------------------------------------------------------
+Group: Knight Rider (1982) {tvdb-77216}/Season 04/S04E22
+  KEEP:   Knight Rider (1982) - S04E22 - Voo Doo Knight [Bluray-1080p][AC3 2.0][x264]-YELLOWBiRD.mkv
+          Score: 3282  Quality: 1080p/Bluray/DD/AVC  Size: 3.27GB
+  REMOVE: Knight Rider (1982) - S04E22 - Voo Doo Knight [HDTV-720p][DTS 2.0][x264].mkv
+          Score: 575  Quality: 720p/HDTV/DTS/AVC  Size: 2.54GB
+  Space saved: 2.54 GB
+
+------------------------------------------------------------
+Group: Locke & Key (2020) {tvdb-361594}/Season 03/S03E01
+  KEEP:   Locke & Key (2020) - S03E01 - The Snow Globe [WEBDL-1080p Proper][EAC3 Atmos 5.1][x264].mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.16GB
+  REMOVE: Locke & Key (2020) - S03E01 - The Snow Globe [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-NTb.mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.16GB
+  Space saved: 1.16 GB
+
+------------------------------------------------------------
+Group: Locke & Key (2020) {tvdb-361594}/Season 03/S03E02
+  KEEP:   Locke & Key (2020) - S03E02 - Wedding Crashers [WEBDL-1080p Proper][EAC3 Atmos 5.1][x264].mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.10GB
+  REMOVE: Locke & Key (2020) - S03E02 - Wedding Crashers [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-NTb.mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.10GB
+  Space saved: 1.10 GB
+
+------------------------------------------------------------
+Group: Locke & Key (2020) {tvdb-361594}/Season 03/S03E03
+  KEEP:   Locke & Key (2020) - S03E03 - Five Minutes Past [WEBDL-1080p Proper][EAC3 Atmos 5.1][x264].mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.16GB
+  REMOVE: Locke & Key (2020) - S03E03 - Five Minutes Past [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-NTb.mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.16GB
+  Space saved: 1.16 GB
+
+------------------------------------------------------------
+Group: Locke & Key (2020) {tvdb-361594}/Season 03/S03E04
+  KEEP:   Locke & Key (2020) - S03E04 - Deep Cover [WEBDL-1080p Proper][EAC3 Atmos 5.1][x264].mkv
+          Score: 3862  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.25GB
+  REMOVE: Locke & Key (2020) - S03E04 - Deep Cover [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-NTb.mkv
+          Score: 3862  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.25GB
+  Space saved: 1.25 GB
+
+------------------------------------------------------------
+Group: Locke & Key (2020) {tvdb-361594}/Season 03/S03E05
+  KEEP:   Locke & Key (2020) - S03E05 - Siege [WEBDL-1080p Proper][EAC3 Atmos 5.1][x264].mkv
+          Score: 3862  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.27GB
+  REMOVE: Locke & Key (2020) - S03E05 - Siege [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-NTb.mkv
+          Score: 3862  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.27GB
+  Space saved: 1.27 GB
+
+------------------------------------------------------------
+Group: Locke & Key (2020) {tvdb-361594}/Season 03/S03E06
+  KEEP:   Locke & Key (2020) - S03E06 - Free Bird [WEBDL-1080p Proper][EAC3 Atmos 5.1][x264].mkv
+          Score: 3858  Quality: 1080p/WEBDL/Atmos/AVC  Size: 0.88GB
+  REMOVE: Locke & Key (2020) - S03E06 - Free Bird [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-NTb.mkv
+          Score: 3858  Quality: 1080p/WEBDL/Atmos/AVC  Size: 0.88GB
+  Space saved: 0.88 GB
+
+------------------------------------------------------------
+Group: Locke & Key (2020) {tvdb-361594}/Season 03/S03E07
+  KEEP:   Locke & Key (2020) - S03E07 - Curtain [WEBDL-1080p Proper][EAC3 Atmos 5.1][x264].mkv
+          Score: 3859  Quality: 1080p/WEBDL/Atmos/AVC  Size: 0.93GB
+  REMOVE: Locke & Key (2020) - S03E07 - Curtain [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-NTb.mkv
+          Score: 3859  Quality: 1080p/WEBDL/Atmos/AVC  Size: 0.93GB
+  Space saved: 0.93 GB
+
+------------------------------------------------------------
+Group: Locke & Key (2020) {tvdb-361594}/Season 03/S03E08
+  KEEP:   Locke & Key (2020) - S03E08 - Farewell [WEBDL-1080p Proper][EAC3 Atmos 5.1][x264].mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.10GB
+  REMOVE: Locke & Key (2020) - S03E08 - Farewell [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-NTb.mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.10GB
+  Space saved: 1.10 GB
+
+------------------------------------------------------------
+Group: Murderbot (2025) {tvdb-443396}/Season 01/S01E01
+  KEEP:   Murderbot (2025) - S01E01 - FreeCommerce [ATVP][WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3872  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.20GB
+  REMOVE: Murderbot (2025) - S01E01 - FreeCommerce [WEBDL-1080p][EAC3 Atmos 5.1][h264]-ETHEL.mkv
+          Score: 3872  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.20GB
+  Space saved: 2.20 GB
+
+------------------------------------------------------------
+Group: Murderbot (2025) {tvdb-443396}/Season 01/S01E02
+  KEEP:   Murderbot (2025) - S01E02 - Eye Contact [ATVP][WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.87GB
+  REMOVE: Murderbot (2025) - S01E02 - Eye Contact [WEBDL-1080p][EAC3 Atmos 5.1][h264]-SuccessfulCrab.mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.87GB
+  Space saved: 1.87 GB
+
+------------------------------------------------------------
+Group: Murderbot (2025) {tvdb-443396}/Season 01/S01E03
+  KEEP:   Murderbot (2025) - S01E03 - Risk Assessment [WEBDL-1080p][EAC3 Atmos 5.1][h264]-STC.mkv
+          Score: 3866  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.70GB
+  REMOVE: Murderbot (2025) - S01E03 - Risk Assessment [ATVP][WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3866  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.70GB
+  Space saved: 1.70 GB
+
+------------------------------------------------------------
+Group: Murderbot (2025) {tvdb-443396}/Season 01/S01E04
+  KEEP:   Murderbot (2025) - S01E04 - Escape Velocity Protocol [ATVP][WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3866  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.66GB
+  REMOVE: Murderbot (2025) - S01E04 - Escape Velocity Protocol [WEBDL-1080p][EAC3 Atmos 5.1][h264]-ETHEL.mkv
+          Score: 3866  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.66GB
+  Space saved: 1.66 GB
+
+------------------------------------------------------------
+Group: Power (2014) {tvdb-276562}/Season 02/S02E08
+  KEEP:   Power (2014) - S02E08 - Three Moves Ahead [WEBDL-1080p][EAC3 5.1][h264]-Kitsune.mkv
+          Score: 3543  Quality: 1080p/WEBDL/DD+/AVC  Size: 4.31GB
+  REMOVE: Power (2014) - S02E08 - Three Moves Ahead [HDTV-1080p][AC3 5.1][x264].mkv
+          Score: 2489  Quality: 1080p/HDTV/DD/AVC  Size: 3.97GB
+  Space saved: 3.97 GB
+
+------------------------------------------------------------
+Group: RIPLEY (2024) {tvdb-372727}/Season 01/S01E01
+  KEEP:   RIPLEY (2024) - S01E01 - I A HARD MAN TO FIND [WEBDL-1080p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.86GB
+  REMOVE: RIPLEY (2024) - S01E01 - I A HARD MAN TO FIND [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.86GB
+  Space saved: 1.86 GB
+
+------------------------------------------------------------
+Group: RIPLEY (2024) {tvdb-372727}/Season 01/S01E02
+  KEEP:   RIPLEY (2024) - S01E02 - II SEVEN MERCIES [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.85GB
+  REMOVE: RIPLEY (2024) - S01E02 - II SEVEN MERCIES [WEBDL-1080p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.85GB
+  Space saved: 1.85 GB
+
+------------------------------------------------------------
+Group: RIPLEY (2024) {tvdb-372727}/Season 01/S01E03
+  KEEP:   RIPLEY (2024) - S01E03 - III SOMMERSO [WEBDL-1080p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.86GB
+  REMOVE: RIPLEY (2024) - S01E03 - III SOMMERSO [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3868  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.86GB
+  Space saved: 1.86 GB
+
+------------------------------------------------------------
+Group: RIPLEY (2024) {tvdb-372727}/Season 01/S01E04
+  KEEP:   RIPLEY (2024) - S01E04 - IV LA DOLCE VITA [WEBDL-1080p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 3866  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.65GB
+  REMOVE: RIPLEY (2024) - S01E04 - IV LA DOLCE VITA [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3866  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.65GB
+  Space saved: 1.65 GB
+
+------------------------------------------------------------
+Group: RIPLEY (2024) {tvdb-372727}/Season 01/S01E05
+  KEEP:   RIPLEY (2024) - S01E05 - V LUCIO [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3872  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.30GB
+  REMOVE: RIPLEY (2024) - S01E05 - V LUCIO [WEBDL-1080p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 3872  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.30GB
+  Space saved: 2.30 GB
+
+------------------------------------------------------------
+Group: RIPLEY (2024) {tvdb-372727}/Season 01/S01E06
+  KEEP:   RIPLEY (2024) - S01E06 - VI SOME HEAVY INSTRUMENT [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3872  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.27GB
+  REMOVE: RIPLEY (2024) - S01E06 - VI SOME HEAVY INSTRUMENT [WEBDL-1080p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 3872  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.27GB
+  Space saved: 2.27 GB
+
+------------------------------------------------------------
+Group: RIPLEY (2024) {tvdb-372727}/Season 01/S01E07
+  KEEP:   RIPLEY (2024) - S01E07 - VII MACABRE ENTERTAINMENT [WEBDL-1080p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 3872  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.22GB
+  REMOVE: RIPLEY (2024) - S01E07 - VII MACABRE ENTERTAINMENT [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3872  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.22GB
+  Space saved: 2.22 GB
+
+------------------------------------------------------------
+Group: RIPLEY (2024) {tvdb-372727}/Season 01/S01E08
+  KEEP:   RIPLEY (2024) - S01E08 - VIII NARCISSUS [WEBDL-1080p][EAC3 Atmos 5.1][x264].mkv
+          Score: 3879  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.92GB
+  REMOVE: RIPLEY (2024) - S01E08 - VIII NARCISSUS [WEBDL-1080p][EAC3 Atmos 5.1][x264]-FLUX.mkv
+          Score: 3879  Quality: 1080p/WEBDL/Atmos/AVC  Size: 2.92GB
+  Space saved: 2.92 GB
+
+------------------------------------------------------------
+Group: Raised by Wolves (2020) {tvdb-368643}/Season 02/S02E03
+  KEEP:   Raised by Wolves (2020) - S02E03 - Good Creatures [WEBDL-1080p][EAC3 5.1][h264]-NTb.mkv
+          Score: 3533  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.34GB
+  REMOVE: Raised by Wolves (2020) - S02E03 - Good Creatures [WEBDL-720p][AC3 5.1][x264]-cakes.mkv
+          Score: 1464  Quality: 720p/WEBDL/DD/AVC  Size: 1.43GB
+  Space saved: 1.43 GB
+
+------------------------------------------------------------
+Group: Ray Donovan (2013) {tvdb-259866}/Season 03/S03E12
+  KEEP:   Ray Donovan (2013) - S03E12 - Exsuscito [Bluray-1080p][AC3 5.1][x264]-CtrlHD.mkv
+          Score: 3296  Quality: 1080p/Bluray/DD/AVC  Size: 4.63GB
+  REMOVE: Ray Donovan (2013) - S03E12 - Exsuscito [HDTV-720p][AC3 2.0][x264].mkv
+          Score: 459  Quality: 720p/HDTV/DD/AVC  Size: 0.96GB
+  Space saved: 0.96 GB
+
+------------------------------------------------------------
+Group: Real Vikings (2016) {tvdb-320625}/Season 01/S01E01
+  KEEP:   Real Vikings (2016) - S01E01 - Age of Invasion [WEBDL-1080p][EAC3 5.1][h264]-RCVR.mkv
+          Score: 3533  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.33GB
+  REMOVE: Real Vikings (2016) - S01E01 - Age of Invasion [HDTV-720p][AC3 5.1][x264].mkv
+          Score: 460  Quality: 720p/HDTV/DD/AVC  Size: 1.01GB
+  Space saved: 1.01 GB
+
+------------------------------------------------------------
+Group: Resident Alien (2021) {tvdb-368166}/Season 01/S01E03
+  KEEP:   Resident Alien (2021) - S01E03 - Secrets [WEBDL-1080p][AAC 2.0][h264]-ggez.mkv
+          Score: 3418  Quality: 1080p/WEBDL/AAC/AVC  Size: 1.80GB
+  REMOVE: Resident.Alien.S01E03.720p.WEB.H264-GGEZ.mkv
+          Score: 156  Quality: 720p/AVC  Size: 0.66GB
+  Space saved: 0.66 GB
+
+------------------------------------------------------------
+Group: Robin Hood (2025) {tvdb-454834}/Season 01/S01E03
+  KEEP:   Robin Hood (2025) - S01E03 - No Man Can Hide Forever [AMZN][WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3534  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.47GB
+  REMOVE: Robin Hood (2025) - S01E03 - No Man Can Hide Forever [WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3534  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.47GB
+  Space saved: 3.47 GB
+
+------------------------------------------------------------
+Group: Robin Hood (2025) {tvdb-454834}/Season 01/S01E04
+  KEEP:   Robin Hood (2025) - S01E04 - The Cause of This Unrest [AMZN][WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3535  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.50GB
+  REMOVE: Robin Hood (2025) - S01E04 - The Cause of This Unrest [WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3535  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.50GB
+  Space saved: 3.50 GB
+
+------------------------------------------------------------
+Group: Robin Hood (2025) {tvdb-454834}/Season 01/S01E05
+  KEEP:   Robin Hood (2025) - S01E05 - Go Back to Them [AMZN][WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3536  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.67GB
+  REMOVE: Robin Hood (2025) - S01E05 - Go Back to Them [WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3536  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.67GB
+  Space saved: 3.67 GB
+
+------------------------------------------------------------
+Group: Robin Hood (2025) {tvdb-454834}/Season 01/S01E06
+  KEEP:   Robin Hood (2025) - S01E06 - Bound by Love Divided by Lies [WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3540  Quality: 1080p/WEBDL/DD+/AVC  Size: 4.08GB
+  REMOVE: Robin Hood (2025) - S01E06 - Bound by Love Divided by Lies [AMZN][WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3540  Quality: 1080p/WEBDL/DD+/AVC  Size: 4.08GB
+  Space saved: 4.08 GB
+
+------------------------------------------------------------
+Group: Robin Hood (2025) {tvdb-454834}/Season 01/S01E07
+  KEEP:   Robin Hood (2025) - S01E07 - Thieves with Purpose [AMZN][WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3539  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.98GB
+  REMOVE: Robin Hood (2025) - S01E07 - Thieves with Purpose [WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3539  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.98GB
+  Space saved: 3.98 GB
+
+------------------------------------------------------------
+Group: Robin Hood (2025) {tvdb-454834}/Season 01/S01E08
+  KEEP:   Robin Hood (2025) - S01E08 - The True Price of Defiance [AMZN][WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3534  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.50GB
+  REMOVE: Robin Hood (2025) - S01E08 - The True Price of Defiance [WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3534  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.50GB
+  Space saved: 3.50 GB
+
+------------------------------------------------------------
+Group: Robin Hood (2025) {tvdb-454834}/Season 01/S01E09
+  KEEP:   Robin Hood (2025) - S01E09 - I Choose You [AMZN][WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3537  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.75GB
+  REMOVE: Robin Hood (2025) - S01E09 - I Choose You [WEBDL-1080p][EAC3 5.1][h264]-RAWR.mkv
+          Score: 3537  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.75GB
+  Space saved: 3.75 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 01/S01E01
+  KEEP:   Sealab 2021 (2000) - S01E01 - Radio Free Sealab [HMAX][WEBDL-1080p][EAC3 2.0][x264]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  REMOVE: Sealab 2021 (2000) - S01E01 - Radio Free Sealab [WEBRip-1080p][EAC3 2.0][x265]-iVy.mkv
+          Score: 2751  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.13GB
+  Space saved: 0.13 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 01/S01E02
+  KEEP:   Sealab 2021 (2000) - S01E02 - I Robot [WEBRip-1080p][EAC3 2.0][x265]-iVy.mkv
+          Score: 2751  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.13GB
+  REMOVE: Sealab.2021.S01E02.I,.Robot.HBOMAX.WEB-DL1080.p.x264.EAC3.2.0-soopkitchen.mp4
+          Score: 1507  Quality: WEB-DL/DD+/AVC  Size: 0.70GB
+  Space saved: 0.70 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 01/S01E03
+  KEEP:   Sealab 2021 (2000) - S01E03 - Happy Cake [HMAX][WEBDL-1080p][EAC3 2.0][x264]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.70GB
+  REMOVE: Sealab 2021 (2000) - S01E03 - Happy Cake [WEBRip-1080p][EAC3 2.0][x265]-iVy.mkv
+          Score: 2751  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.19GB
+  Space saved: 0.19 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 01/S01E04
+  KEEP:   Sealab 2021 (2000) - S01E04 - Chickmate [HMAX][WEBDL-1080p][EAC3 2.0][x264]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S01E04 - Chickmate [WEBRip-1080p][EAC3 2.0][x265]-iVy.mkv
+          Score: 2751  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.11GB
+  Space saved: 0.11 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 01/S01E05
+  KEEP:   Sealab 2021 (2000) - S01E05 - Predator [HMAX][WEBDL-1080p][EAC3 2.0][x264]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  REMOVE: Sealab 2021 (2000) - S01E05 - Predator [WEBRip-1080p][EAC3 2.0][x265]-iVy.mkv
+          Score: 2750  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.09GB
+  Space saved: 0.09 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 01/S01E06
+  KEEP:   Sealab 2021 (2000) - S01E06 - Lost in Time [HMAX][WEBDL-1080p][EAC3 2.0][x264]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.66GB
+  REMOVE: Sealab 2021 (2000) - S01E06 - Lost in Time [WEBRip-1080p][EAC3 2.0][x265]-iVy.mkv
+          Score: 2751  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.10GB
+  Space saved: 0.10 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 01/S01E07
+  KEEP:   Sealab 2021 (2000) - S01E07 - Little Orphan Angry [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S01E07 - Little Orphan Angry [WEBRip-1080p][EAC3 2.0][x265]-iVy.mkv
+          Score: 2751  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.13GB
+  Space saved: 0.13 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 01/S01E08
+  KEEP:   Sealab 2021 (2000) - S01E08 - Waking Quinn [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S01E08 - Waking Quinn [WEBRip-1080p][EAC3 2.0][x265]-iVy.mkv
+          Score: 2751  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.13GB
+  Space saved: 0.13 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 01/S01E09
+  KEEP:   Sealab 2021 (2000) - S01E09 - All That Jazz [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S01E09 - All That Jazz [WEBRip-1080p][EAC3 2.0][x265]-iVy.mkv
+          Score: 2750  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.08GB
+  Space saved: 0.08 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 01/S01E10
+  KEEP:   Sealab 2021 (2000) - S01E10 - Murphy Murph and the Feng Shui Bunch [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S01E10 - Murphy Murph and the Feng Shui Bunch [WEBRip-1080p][EAC3 2.0][x265]-iVy.mkv
+          Score: 2750  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.08GB
+  Space saved: 0.08 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E01
+  KEEP:   Sealab 2021 (2000) - S02E01 - In The Closet [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S02E01 - In The Closet [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E02
+  KEEP:   Sealab 2021 (2000) - S02E02 - Stimutacs [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S02E02 - Stimutacs [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E03
+  KEEP:   Sealab 2021 (2000) - S02E03 - Swimming in Oblivion [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S02E03 - Swimming in Oblivion [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E04
+  KEEP:   Sealab 2021 (2000) - S02E04 - Der Dieb [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S02E04 - Der Dieb [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E05
+  KEEP:   Sealab 2021 (2000) - S02E05 - The Policy [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S02E05 - The Policy [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E06
+  KEEP:   Sealab 2021 (2000) - S02E06 - Hail Squishface [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S02E06 - Hail Squishface [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E07
+  KEEP:   Sealab 2021 (2000) - S02E07 - Bizzaro [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.66GB
+  REMOVE: Sealab 2021 (2000) - S02E07 - Bizzaro [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.66GB
+  Space saved: 0.66 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E08
+  KEEP:   Sealab 2021 (2000) - S02E08 - Legend of Baggy Pants [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  REMOVE: Sealab 2021 (2000) - S02E08 - Legend of Baggy Pants [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  Space saved: 0.67 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E09
+  KEEP:   Sealab 2021 (2000) - S02E09 - Tinfins [WEBDL-1080p][EAC3 2.0][x264]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  REMOVE: Sealab 2021 (2000) - S02E09 - Tinfins [HMAX][WEBDL-1080p][EAC3 2.0][x264]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  Space saved: 0.68 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E10
+  KEEP:   Sealab 2021 (2000) - S02E10 - 7211 [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  REMOVE: Sealab 2021 (2000) - S02E10 - 7211 [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  Space saved: 0.68 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 02/S02E11
+  KEEP:   Sealab 2021 (2000) - S02E11 - Feast of Alvis [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  REMOVE: Sealab 2021 (2000) - S02E11 - Feast of Alvis [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  Space saved: 0.67 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E01
+  KEEP:   Sealab 2021 (2000) - S03E01 - Brainswitch [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  REMOVE: Sealab 2021 (2000) - S03E01 - Brainswitch [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  Space saved: 0.68 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E02
+  KEEP:   Sealab 2021 (2000) - S03E02 - Vacation [HMAX][WEBDL-1080p][EAC3 2.0][x264]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S03E02 - Vacation [WEBDL-1080p][EAC3 2.0][x264]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E03
+  KEEP:   Sealab 2021 (2000) - S03E03 - Fusebox [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3505  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.59GB
+  REMOVE: Sealab 2021 (2000) - S03E03 - Fusebox [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3505  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.59GB
+  Space saved: 0.59 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E04
+  KEEP:   Sealab 2021 (2000) - S03E04 - Article 4 [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S03E04 - Article 4 [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E05
+  KEEP:   Sealab 2021 (2000) - S03E05 - Return to Oblivion [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  REMOVE: Sealab 2021 (2000) - S03E05 - Return to Oblivion [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  Space saved: 0.68 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E06
+  KEEP:   Sealab 2021 (2000) - S03E06 - Splitsville [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  REMOVE: Sealab 2021 (2000) - S03E06 - Splitsville [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  Space saved: 0.67 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E07
+  KEEP:   Sealab 2021 (2000) - S03E07 - Tourist Season [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S03E07 - Tourist Season [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E08
+  KEEP:   Sealab 2021 (2000) - S03E08 - Red Dawn [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S03E08 - Red Dawn [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E09
+  KEEP:   Sealab 2021 (2000) - S03E09 - Meet Beck Bristow [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S03E09 - Meet Beck Bristow [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E10
+  KEEP:   Sealab 2021 (2000) - S03E10 - I Robot Really [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  REMOVE: Sealab 2021 (2000) - S03E10 - I Robot Really [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  Space saved: 0.68 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E11
+  KEEP:   Sealab 2021 (2000) - S03E11 - Frozen Dinner [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S03E11 - Frozen Dinner [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 03/S03E12
+  KEEP:   Sealab 2021 (2000) - S03E12 - Tornado Shanks [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  REMOVE: Sealab 2021 (2000) - S03E12 - Tornado Shanks [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  Space saved: 0.67 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E01
+  KEEP:   Sealab 2021 (2000) - S04E01 - ASHDTV [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  REMOVE: Sealab 2021 (2000) - S04E01 - ASHDTV [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  Space saved: 0.68 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E02
+  KEEP:   Sealab 2021 (2000) - S04E02 - Chalkboard Jungle [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  REMOVE: Sealab 2021 (2000) - S04E02 - Chalkboard Jungle [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.68GB
+  Space saved: 0.68 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E03
+  KEEP:   Sealab 2021 (2000) - S04E03 - Dearly Beloved Seed [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.64GB
+  REMOVE: Sealab 2021 (2000) - S04E03 - Dearly Beloved Seed [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.64GB
+  Space saved: 0.64 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E04
+  KEEP:   Sealab 2021 (2000) - S04E04 - Craptastic Voyage [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  REMOVE: Sealab 2021 (2000) - S04E04 - Craptastic Voyage [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  Space saved: 0.67 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E05
+  KEEP:   Sealab 2021 (2000) - S04E05 - Let 'Em Eat Corn [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S04E05 - Let 'Em Eat Corn [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E06
+  KEEP:   Sealab 2021 (2000) - S04E06 - Neptunati [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S04E06 - Neptunati [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E07
+  KEEP:   Sealab 2021 (2000) - S04E07 - Isla de las Chupracabras [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S04E07 - Isla de las Chupracabras [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E08
+  KEEP:   Sealab 2021 (2000) - S04E08 - Joy of Grief [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S04E08 - Joy of Grief [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E09
+  KEEP:   Sealab 2021 (2000) - S04E09 - Green Fever [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S04E09 - Green Fever [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E10
+  KEEP:   Sealab 2021 (2000) - S04E10 - Sharkos Machine [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S04E10 - Sharkos Machine [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Sealab 2021 (2000) {tvdb-76884}/Season 04/S04E11
+  KEEP:   Sealab 2021 (2000) - S04E11 - Return of Marco [HMAX][WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  REMOVE: Sealab 2021 (2000) - S04E11 - Return of Marco [WEBDL-1080p][EAC3 2.0][AVC]-soopkitchen.mp4
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.65GB
+  Space saved: 0.65 GB
+
+------------------------------------------------------------
+Group: Secrets of the Whales (2021) {tvdb-393225}/Season 01/S01E01
+  KEEP:   Secrets of the Whales (2021) - S01E01 - Orca Dynasty [DSNP][WEBDL-1080p][EAC3 5.1][h264]-WH4L3S.mkv
+          Score: 3528  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.84GB
+  REMOVE: Secrets of the Whales (2021) - S01E01 - Orca Dynasty [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3528  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.84GB
+  Space saved: 2.84 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 08/S08E04
+  KEEP:   Seinfeld (1989) - S08E04 - The Little Kicks [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.34GB
+  REMOVE: Seinfeld (1989) - S08E04 - The Little Kicks [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 08/S08E07
+  KEEP:   Seinfeld (1989) - S08E07 - The Checks [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.35GB
+  REMOVE: Seinfeld (1989) - S08E07 - The Checks [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 08/S08E08
+  KEEP:   Seinfeld (1989) - S08E08 - The Chicken Roaster [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.38GB
+  REMOVE: Seinfeld (1989) - S08E08 - The Chicken Roaster [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 08/S08E16
+  KEEP:   Seinfeld (1989) - S08E16 - The Pothole [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.37GB
+  REMOVE: Seinfeld (1989) - S08E16 - The Pothole [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 08/S08E18
+  KEEP:   Seinfeld (1989) - S08E18 - The Nap [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.36GB
+  REMOVE: Seinfeld (1989) - S08E18 - The Nap [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 08/S08E19
+  KEEP:   Seinfeld (1989) - S08E19 - The Yada Yada [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3527  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.76GB
+  REMOVE: Seinfeld (1989) - S08E19 - The Yada Yada [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.49GB
+  Space saved: 0.49 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 08/S08E22
+  KEEP:   Seinfeld (1989) - S08E22 - The Summer of George [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.35GB
+  REMOVE: Seinfeld (1989) - S08E22 - The Summer of George [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 09/S09E01
+  KEEP:   Seinfeld (1989) - S09E01 - The Butter Shave [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.34GB
+  REMOVE: Seinfeld (1989) - S09E01 - The Butter Shave [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 09/S09E02
+  KEEP:   Seinfeld (1989) - S09E02 - The Voice [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.36GB
+  REMOVE: Seinfeld (1989) - S09E02 - The Voice [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 09/S09E03
+  KEEP:   Seinfeld (1989) - S09E03 - The Serenity Now [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.37GB
+  REMOVE: Seinfeld (1989) - S09E03 - The Serenity Now [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 09/S09E08
+  KEEP:   Seinfeld (1989) - S09E08 - The Betrayal [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3524  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.46GB
+  REMOVE: Seinfeld (1989) - S09E08 - The Betrayal [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.44GB
+  Space saved: 0.44 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 09/S09E09
+  KEEP:   Seinfeld (1989) - S09E09 - The Apology [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.36GB
+  REMOVE: Seinfeld (1989) - S09E09 - The Apology [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 09/S09E12
+  KEEP:   Seinfeld (1989) - S09E12 - The Reverse Peephole [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.36GB
+  REMOVE: Seinfeld (1989) - S09E12 - The Reverse Peephole [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 09/S09E16
+  KEEP:   Seinfeld (1989) - S09E16 - The Burning [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.37GB
+  REMOVE: Seinfeld (1989) - S09E16 - The Burning [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 09/S09E17
+  KEEP:   Seinfeld (1989) - S09E17 - The Bookstore [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.31GB
+  REMOVE: Seinfeld (1989) - S09E17 - The Bookstore [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.41GB
+  Space saved: 0.41 GB
+
+------------------------------------------------------------
+Group: Seinfeld (1989) {tvdb-79169}/Season 09/S09E19
+  KEEP:   Seinfeld (1989) - S09E19 - The Maid [WEBDL-1080p][EAC3 2.0][h264].mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.36GB
+  REMOVE: Seinfeld (1989) - S09E19 - The Maid [WEBRip-1080p][AC3 2.0][h265].mkv
+          Score: 2704  Quality: 1080p/WEBRip/DD/HEVC  Size: 0.42GB
+  Space saved: 0.42 GB
+
+------------------------------------------------------------
+Group: Snowpiercer (2020) {tvdb-364928}/Season 01/S01E01
+  KEEP:   Snowpiercer (2020) - S01E01 - First the Weather Changed [AMZN][WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3534  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.41GB
+  REMOVE: Snowpiercer (2020) - S01E01 - First the Weather Changed [Bluray-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3344  Quality: 1080p/Bluray/DD+/AVC  Size: 4.49GB
+  Space saved: 4.49 GB
+
+------------------------------------------------------------
+Group: Snowpiercer (2020) {tvdb-364928}/Season 01/S01E02
+  KEEP:   Snowpiercer (2020) - S01E02 - Prepare to Brace [AMZN][WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3529  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.94GB
+  REMOVE: Snowpiercer (2020) - S01E02 - Prepare to Brace [Bluray-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3338  Quality: 1080p/Bluray/DD+/AVC  Size: 3.87GB
+  Space saved: 3.87 GB
+
+------------------------------------------------------------
+Group: Snowpiercer (2020) {tvdb-364928}/Season 01/S01E03
+  KEEP:   Snowpiercer (2020) - S01E03 - Access Is Power [AMZN][WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3527  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.73GB
+  REMOVE: Snowpiercer (2020) - S01E03 - Access Is Power [Bluray-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3335  Quality: 1080p/Bluray/DD+/AVC  Size: 3.58GB
+  Space saved: 3.58 GB
+
+------------------------------------------------------------
+Group: Snowpiercer (2020) {tvdb-364928}/Season 01/S01E04
+  KEEP:   Snowpiercer (2020) - S01E04 - Without Their Maker [AMZN][WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3526  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.67GB
+  REMOVE: Snowpiercer (2020) - S01E04 - Without Their Maker [Bluray-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3335  Quality: 1080p/Bluray/DD+/AVC  Size: 3.53GB
+  Space saved: 3.53 GB
+
+------------------------------------------------------------
+Group: Snowpiercer (2020) {tvdb-364928}/Season 01/S01E05
+  KEEP:   Snowpiercer (2020) - S01E05 - Justice Never Boarded [AMZN][WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3528  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.83GB
+  REMOVE: Snowpiercer (2020) - S01E05 - Justice Never Boarded [Bluray-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3335  Quality: 1080p/Bluray/DD+/AVC  Size: 3.55GB
+  Space saved: 3.55 GB
+
+------------------------------------------------------------
+Group: Snowpiercer (2020) {tvdb-364928}/Season 01/S01E06
+  KEEP:   Snowpiercer (2020) - S01E06 - Trouble Comes Sideways [AMZN][WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3527  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.73GB
+  REMOVE: Snowpiercer (2020) - S01E06 - Trouble Comes Sideways [Bluray-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3336  Quality: 1080p/Bluray/DD+/AVC  Size: 3.62GB
+  Space saved: 3.62 GB
+
+------------------------------------------------------------
+Group: Snowpiercer (2020) {tvdb-364928}/Season 01/S01E07
+  KEEP:   Snowpiercer (2020) - S01E07 - The Universe Is Indifferent [AMZN][WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3528  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.81GB
+  REMOVE: Snowpiercer (2020) - S01E07 - The Universe Is Indifferent [Bluray-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3335  Quality: 1080p/Bluray/DD+/AVC  Size: 3.58GB
+  Space saved: 3.58 GB
+
+------------------------------------------------------------
+Group: Snowpiercer (2020) {tvdb-364928}/Season 01/S01E08
+  KEEP:   Snowpiercer (2020) - S01E08 - These Are His Revolutions [AMZN][WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3530  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.07GB
+  REMOVE: Snowpiercer (2020) - S01E08 - These Are His Revolutions [Bluray-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3338  Quality: 1080p/Bluray/DD+/AVC  Size: 3.87GB
+  Space saved: 3.87 GB
+
+------------------------------------------------------------
+Group: Snowpiercer (2020) {tvdb-364928}/Season 01/S01E09
+  KEEP:   Snowpiercer (2020) - S01E09 - The Train Demanded Blood [AMZN][WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3525  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.59GB
+  REMOVE: Snowpiercer (2020) - S01E09 - The Train Demanded Blood [Bluray-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3334  Quality: 1080p/Bluray/DD+/AVC  Size: 3.44GB
+  Space saved: 3.44 GB
+
+------------------------------------------------------------
+Group: Snowpiercer (2020) {tvdb-364928}/Season 01/S01E10
+  KEEP:   Snowpiercer (2020) - S01E10 - 994 Cars Long [AMZN][WEBDL-1080p Proper][EAC3 5.1][h264]-NTG.mkv
+          Score: 3528  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.90GB
+  REMOVE: Snowpiercer (2020) - S01E10 - 994 Cars Long [Bluray-1080p][EAC3 5.1][x264]-BTN.mkv
+          Score: 3336  Quality: 1080p/Bluray/DD+/AVC  Size: 3.69GB
+  Space saved: 3.69 GB
+
+------------------------------------------------------------
+Group: Squid Game - The Challenge (2023) {tvdb-421260}/Season 02/S02E04
+  KEEP:   Squid Game - The Challenge (2023) - S02E04 - Mingle [WEBDL-1080p][EAC3 5.1][x264].mkv
+          Score: 3528  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.86GB
+  REMOVE: Squid Game - The Challenge (2023) - S02E04 - Mingle [NF][WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3528  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.86GB
+  Space saved: 2.86 GB
+
+------------------------------------------------------------
+Group: Stargate SG-1 (1997) {tvdb-72449}/Season 07/S07E14
+  KEEP:   Stargate SG-1 (1997) - S07E14 - Fallout [Bluray-1080p][EAC3 2.0][AVC]-PiR8.mkv
+          Score: 3329  Quality: 1080p/Bluray/DD+/AVC  Size: 2.95GB
+  REMOVE: Stargate SG-1 (1997) - S07E14 - Fallout [HDTV-1080p][MP2 2.0][h264]-SFM.mkv
+          Score: 2367  Quality: 1080p/HDTV/AVC  Size: 1.76GB
+  Space saved: 1.76 GB
+
+------------------------------------------------------------
+Group: Station 19 (2018) {tvdb-341852}/Season 01/S01E04
+  KEEP:   Station 19 (2018) - S01E04 - Reignited [AMZN][WEBDL-1080p][EAC3 5.1][h264]-NTb.mkv
+          Score: 3535  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.60GB
+  REMOVE: Station 19 (2018) - S01E04 - Reignited [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3526  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.63GB
+  Space saved: 2.63 GB
+
+------------------------------------------------------------
+Group: Strike Back (2010) {tvdb-148581}/Season 08/S08E10
+  KEEP:   Strike Back (2010) - S08E10 - Episode 10 [WEBDL-1080p][EAC3 5.1][h264]-NTb.mkv
+          Score: 3534  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.45GB
+  REMOVE: Strike Back (2010) - S08E10 - Episode 10 [HDTV-1080p][EAC3 5.1][h264].MKV
+          Score: 2534  Quality: 1080p/HDTV/DD+/AVC  Size: 3.45GB
+  Space saved: 3.45 GB
+
+------------------------------------------------------------
+Group: Terminator Zero (2024) {tvdb-442145}/Season 01/S01E01
+  KEEP:   Terminator Zero (2024) - S01E01 - Model 101 [WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.20GB
+  REMOVE: Terminator Zero (2024) - S01E01 - 001 - Model 101 [WEBDL-1080p][EAC3 5.1][JA+EN][x264 8bit]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.20GB
+  Space saved: 1.20 GB
+
+------------------------------------------------------------
+Group: Terminator Zero (2024) {tvdb-442145}/Season 01/S01E02
+  KEEP:   Terminator Zero (2024) - S01E02 - Model 102 [WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.22GB
+  REMOVE: Terminator Zero (2024) - S01E02 - 002 - Model 102 [WEBDL-1080p][EAC3 5.1][JA+EN][x264 8bit]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.22GB
+  Space saved: 1.22 GB
+
+------------------------------------------------------------
+Group: Terminator Zero (2024) {tvdb-442145}/Season 01/S01E03
+  KEEP:   Terminator Zero (2024) - S01E03 - Model 103 [WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.27GB
+  REMOVE: Terminator Zero (2024) - S01E03 - 003 - Model 103 [WEBDL-1080p][EAC3 5.1][JA+EN][x264 8bit]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.27GB
+  Space saved: 1.27 GB
+
+------------------------------------------------------------
+Group: Terminator Zero (2024) {tvdb-442145}/Season 01/S01E04
+  KEEP:   Terminator Zero (2024) - S01E04 - Model 104 [WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3511  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.16GB
+  REMOVE: Terminator Zero (2024) - S01E04 - 004 - Model 104 [WEBDL-1080p][EAC3 5.1][JA+EN][x264 8bit]-FLUX.mkv
+          Score: 3511  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.16GB
+  Space saved: 1.16 GB
+
+------------------------------------------------------------
+Group: Terminator Zero (2024) {tvdb-442145}/Season 01/S01E05
+  KEEP:   Terminator Zero (2024) - S01E05 - Model 105 [WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.26GB
+  REMOVE: Terminator Zero (2024) - S01E05 - 005 - Model 105 [WEBDL-1080p][EAC3 5.1][JA+EN][x264 8bit]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.26GB
+  Space saved: 1.26 GB
+
+------------------------------------------------------------
+Group: Terminator Zero (2024) {tvdb-442145}/Season 01/S01E06
+  KEEP:   Terminator Zero (2024) - S01E06 - 006 - Model 106 [WEBDL-1080p][EAC3 5.1][JA+EN][x264 8bit]-FLUX.mkv
+          Score: 3510  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.10GB
+  REMOVE: Terminator Zero (2024) - S01E06 - Model 106 [WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3510  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.10GB
+  Space saved: 1.10 GB
+
+------------------------------------------------------------
+Group: Terminator Zero (2024) {tvdb-442145}/Season 01/S01E07
+  KEEP:   Terminator Zero (2024) - S01E07 - Model 107 [WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.22GB
+  REMOVE: Terminator Zero (2024) - S01E07 - 007 - Model 107 [WEBDL-1080p][EAC3 5.1][JA+EN][x264 8bit]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.22GB
+  Space saved: 1.22 GB
+
+------------------------------------------------------------
+Group: Terminator Zero (2024) {tvdb-442145}/Season 01/S01E08
+  KEEP:   Terminator Zero (2024) - S01E08 - 008 - Model 108 [WEBDL-1080p][EAC3 5.1][JA+EN][x264 8bit]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.22GB
+  REMOVE: Terminator Zero (2024) - S01E08 - Model 108 [WEBDL-1080p][EAC3 5.1][x264]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.22GB
+  Space saved: 1.22 GB
+
+------------------------------------------------------------
+Group: The Blacklist (2013) {tvdb-266189}/Season 06/S06E01
+  KEEP:   The Blacklist (2013) - S06E01 - Dr. Hans Koehler [Bluray-1080p][DTS 5.1][x264]-ROVERS.mkv
+          Score: 3382  Quality: 1080p/Bluray/DTS/AVC  Size: 3.28GB
+  REMOVE: The Blacklist (2013) - S06E01 - Dr. Hans Koehler [HDTV-720p][AC3 5.1][x264].mkv
+          Score: 458  Quality: 720p/HDTV/DD/AVC  Size: 0.88GB
+  Space saved: 0.88 GB
+
+------------------------------------------------------------
+Group: The Bondsman (2025) {tvdb-436695}/Season 01/S01E01
+  KEEP:   The Bondsman (2025) - S01E01 - Pot O’Gold [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3522  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.26GB
+  REMOVE: The Bondsman (2025) - S01E01 - Pot O’Gold [WEBRip-1080p][EAC3 5.1][x265]-HODL.mkv
+          Score: 2754  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.50GB
+  Space saved: 0.50 GB
+
+------------------------------------------------------------
+Group: The Bondsman (2025) {tvdb-436695}/Season 01/S01E02
+  KEEP:   The Bondsman (2025) - S01E02 - Valacor [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3517  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.78GB
+  REMOVE: The Bondsman (2025) - S01E02 - Valacor [WEBRip-1080p][EAC3 5.1][x265]-HODL.mkv
+          Score: 2753  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.39GB
+  Space saved: 0.39 GB
+
+------------------------------------------------------------
+Group: The Bondsman (2025) {tvdb-436695}/Season 01/S01E03
+  KEEP:   The Bondsman (2025) - S01E03 - Marphos [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3520  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.05GB
+  REMOVE: The Bondsman (2025) - S01E03 - Marphos [WEBRip-1080p][EAC3 5.1][x265]-HODL.mkv
+          Score: 2754  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.44GB
+  Space saved: 0.44 GB
+
+------------------------------------------------------------
+Group: The Bondsman (2025) {tvdb-436695}/Season 01/S01E04
+  KEEP:   The Bondsman (2025) - S01E04 - Erdos [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3518  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.86GB
+  REMOVE: The Bondsman (2025) - S01E04 - Erdos [WEBRip-1080p][EAC3 5.1][x265]-HODL.mkv
+          Score: 2754  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.40GB
+  Space saved: 0.40 GB
+
+------------------------------------------------------------
+Group: The Bondsman (2025) {tvdb-436695}/Season 01/S01E05
+  KEEP:   The Bondsman (2025) - S01E05 - Slypharis [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3519  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.95GB
+  REMOVE: The Bondsman (2025) - S01E05 - Slypharis [WEBRip-1080p][EAC3 5.1][x265]-HODL.mkv
+          Score: 2754  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.43GB
+  Space saved: 0.43 GB
+
+------------------------------------------------------------
+Group: The Bondsman (2025) {tvdb-436695}/Season 01/S01E06
+  KEEP:   The Bondsman (2025) - S01E06 - Revelations [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3520  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.09GB
+  REMOVE: The Bondsman (2025) - S01E06 - Revelations [WEBRip-1080p][EAC3 5.1][x265]-HODL.mkv
+          Score: 2754  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.45GB
+  Space saved: 0.45 GB
+
+------------------------------------------------------------
+Group: The Bondsman (2025) {tvdb-436695}/Season 01/S01E07
+  KEEP:   The Bondsman (2025) - S01E07 - Pyralis [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3516  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.63GB
+  REMOVE: The Bondsman (2025) - S01E07 - Pyralis [WEBRip-1080p][EAC3 5.1][x265]-HODL.mkv
+          Score: 2753  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.36GB
+  Space saved: 0.36 GB
+
+------------------------------------------------------------
+Group: The Bondsman (2025) {tvdb-436695}/Season 01/S01E08
+  KEEP:   The Bondsman (2025) - S01E08 - Lilith [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3518  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.84GB
+  REMOVE: The Bondsman (2025) - S01E08 - Lilith [WEBRip-1080p][EAC3 5.1][x265]-HODL.mkv
+          Score: 2754  Quality: 1080p/WEBRip/DD+/HEVC  Size: 0.40GB
+  Space saved: 0.40 GB
+
+------------------------------------------------------------
+Group: The Right Stuff (2020) {tvdb-362576}/Season 01/S01E04
+  KEEP:   The Right Stuff (2020) - S01E04 - Advent [WEBDL-1080p][EAC3 Atmos 5.1][h264]-LAZY.mkv
+          Score: 3881  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.18GB
+  REMOVE: The Right Stuff (2020) - S01E04 - Advent [HDTV-720p][EAC3 5.1][h264].mkv
+          Score: 515  Quality: 720p/HDTV/DD+/AVC  Size: 1.55GB
+  Space saved: 1.55 GB
+
+------------------------------------------------------------
+Group: The Righteous Gemstones (2019) {tvdb-357223}/Season 04/S04E09
+  KEEP:   The Righteous Gemstones (2019) - S04E09 - That Man of God May Be Complete [WEBDL-1080p][EAC3 Atmos 5.1][h264]-FLUX.mkv
+          Score: 3881  Quality: 1080p/WEBDL/Atmos/AVC  Size: 3.13GB
+  REMOVE: The Righteous Gemstones (2019) - S04E09 - That Man of God May Be Complete [WEBDL-1080p][EAC3 5.1][h264]-SuccessfulCrab.mkv
+          Score: 3531  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.13GB
+  Space saved: 3.13 GB
+
+------------------------------------------------------------
+Group: The Simpsons (1989) {tvdb-71663}/Season 37/S37E12
+  KEEP:   The Simpsons (1989) - S37E12 - ¡The Fall Guy-Yi-Yi! [DSNP][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  REMOVE: The Simpsons (1989) - S37E12 - ¡The Fall Guy-Yi-Yi! [[Trash] Release Sources (Streaming Service)_25_3 Release Sources (Streaming Service)_22_1][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3506  Quality: 1080p/WEBDL/DD+/AVC  Size: 0.67GB
+  Space saved: 0.67 GB
+
+------------------------------------------------------------
+Group: Twilight of the Gods (2024) {tvdb-404605}/Season 01/S01E01
+  KEEP:   Twilight of the Gods (2024) - S01E01 - The Bride-Price [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-BYNDR.mkv
+          Score: 3862  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.25GB
+  REMOVE: Twilight of the Gods (2024) - S01E01 - The Bride-Price [WEBRip-1080p][EAC3 Atmos 5.1][x265]-iVy.mkv
+          Score: 3104  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.45GB
+  Space saved: 0.45 GB
+
+------------------------------------------------------------
+Group: Twilight of the Gods (2024) {tvdb-404605}/Season 01/S01E02
+  KEEP:   Twilight of the Gods (2024) - S01E02 - Heretic Spear [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-BYNDR.mkv
+          Score: 3860  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.06GB
+  REMOVE: Twilight of the Gods (2024) - S01E02 - Heretic Spear [WEBRip-1080p][EAC3 Atmos 5.1][x265]-iVy.mkv
+          Score: 3103  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.35GB
+  Space saved: 0.35 GB
+
+------------------------------------------------------------
+Group: Twilight of the Gods (2024) {tvdb-404605}/Season 01/S01E03
+  KEEP:   Twilight of the Gods (2024) - S01E03 - You Will Gladden His Ravens [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-BYNDR.mkv
+          Score: 3860  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.04GB
+  REMOVE: Twilight of the Gods (2024) - S01E03 - You Will Gladden His Ravens [WEBRip-1080p][EAC3 Atmos 5.1][x265]-iVy.mkv
+          Score: 3103  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.39GB
+  Space saved: 0.39 GB
+
+------------------------------------------------------------
+Group: Twilight of the Gods (2024) {tvdb-404605}/Season 01/S01E04
+  KEEP:   Twilight of the Gods (2024) - S01E04 - The Worm [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-BYNDR.mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.19GB
+  REMOVE: Twilight of the Gods (2024) - S01E04 - The Worm [WEBRip-1080p][EAC3 Atmos 5.1][x265]-iVy.mkv
+          Score: 3103  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.39GB
+  Space saved: 0.39 GB
+
+------------------------------------------------------------
+Group: Twilight of the Gods (2024) {tvdb-404605}/Season 01/S01E05
+  KEEP:   Twilight of the Gods (2024) - S01E05 - The Scapegoat God [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-BYNDR.mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.12GB
+  REMOVE: Twilight of the Gods (2024) - S01E05 - The Scapegoat God [WEBRip-1080p][EAC3 Atmos 5.1][x265]-iVy.mkv
+          Score: 3104  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.44GB
+  Space saved: 0.44 GB
+
+------------------------------------------------------------
+Group: Twilight of the Gods (2024) {tvdb-404605}/Season 01/S01E06
+  KEEP:   Twilight of the Gods (2024) - S01E06 - Now Hear Of… [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-BYNDR.mkv
+          Score: 3861  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.13GB
+  REMOVE: Twilight of the Gods (2024) - S01E06 - Now Hear Of… [WEBRip-1080p][EAC3 Atmos 5.1][x265]-iVy.mkv
+          Score: 3104  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.40GB
+  Space saved: 0.40 GB
+
+------------------------------------------------------------
+Group: Twilight of the Gods (2024) {tvdb-404605}/Season 01/S01E07
+  KEEP:   Twilight of the Gods (2024) - S01E07 - If I Had a Hammer [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-BYNDR.mkv
+          Score: 3860  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.04GB
+  REMOVE: Twilight of the Gods (2024) - S01E07 - If I Had a Hammer [WEBRip-1080p][EAC3 Atmos 5.1][x265]-iVy.mkv
+          Score: 3103  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.36GB
+  Space saved: 0.36 GB
+
+------------------------------------------------------------
+Group: Twilight of the Gods (2024) {tvdb-404605}/Season 01/S01E08
+  KEEP:   Twilight of the Gods (2024) - S01E08 - Song of Sigrid [NF][WEBDL-1080p][EAC3 Atmos 5.1][x264]-BYNDR.mkv
+          Score: 3866  Quality: 1080p/WEBDL/Atmos/AVC  Size: 1.63GB
+  REMOVE: Twilight of the Gods (2024) - S01E08 - Song of Sigrid [WEBRip-1080p][EAC3 Atmos 5.1][x265]-iVy.mkv
+          Score: 3106  Quality: 1080p/WEBRip/Atmos/HEVC  Size: 0.66GB
+  Space saved: 0.66 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/Burn Notice (2007) {tvdb-80270}/02
+  KEEP:   2009-03-05 - Lesser Evil.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2008-09-11 - Double Booked.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2009-02-26 - Sins of Omission.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2009-02-12 - Bad Breaks.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2009-01-22 - Do No Harm.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2009-02-19 - Truth and Reconciliation.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2008-08-07 - Scatter Point.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2008-08-14 - Bad Blood.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2008-07-24 - Trust Me.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2008-09-18 - Good Soldier.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2008-07-31 - Comrades.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2008-07-17 - Turn and Burn.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2008-08-21 - Rough Seas.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2009-02-05 - Seek and Destroy.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2008-07-10 - Breaking and Entering.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  REMOVE: 2009-01-29 - Hot Spot.mkv
+          Score: 21  Quality: Unknown  Size: 2.19GB
+  Space saved: 32.79 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/Cunk on Britain (2018) {tvdb-339732}
+  KEEP:   Cunk on Christmas (2016) {imdb-tt6326816} [WEBDL-1080p][AAC 2.0][h264]-AEK.mkv
+          Score: 3414  Quality: 1080p/WEBDL/AAC/AVC  Size: 1.48GB
+  REMOVE: Cunk on Shakespeare (2016) {imdb-tt5715186} [WEBRip-720p][AAC 2.0][h264]-btw.mkv
+          Score: 1004  Quality: 720p/WEBRip/AAC/AVC  Size: 0.48GB
+  Space saved: 0.48 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/Days of our Lives - The Digital Series (2019) {tvdb-368783}/01
+  KEEP:   Doraleous and Associates All Episodes Supercut.mkv
+          Score: 200  Quality: Unknown  Size: 22.35GB
+  REMOVE: HALO - [Fan Animation] - Remember.mkv
+          Score: 5  Quality: Unknown  Size: 0.52GB
+  Space saved: 0.52 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/Fraggle Rock - The Animated Series (1987) {tvdb-139151}
+  KEEP:   EP21 - Time Fugitives (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP23 - Beauty & the Beast.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP32 - The Phoenix Saga (Part 4) The Starjammers.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP03 - Enter Magneto.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP28 - Out of the Past (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP22 - A Rogue's Tale.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP39 - Savage Land, Strange Heart (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP35 - Obsession.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP18 - Repo Man.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP30 - The Phoenix Saga (Part 2) The Dark Shroud.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP37 - Cold Comfort.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP14 - Till Death Do Us Part (Part 1).mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP24 - Mojovision.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP68 - The Phalanx Covenant (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP20 - Time Fugitives (Part 1).mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP57 - Proteus (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP26 - Reunion (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP44 - Orphan's End.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP60 - Lotus and the Steel.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP25 - Reunion (Part 1).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP34 - No Mutant Is an Island.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP29 - The Phoenix Saga (Part 1) Sacrifice.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP55 - One Man's Worth (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP70 - Storm Front (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP41 - The Dark Phoenix (Part 2) The Inner Circle.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP40 - The Dark Phoenix (Part 1) Dazzled.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP15 - Till Death Do Us Part (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP31 - The Phoenix Saga (Part 3) The Cry of the Banshee.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP56 - Proteus (Part 1).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP49 - Sanctuary (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP64 - Beyond Good and Evil (Part 2) Promise of Apocalypse.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP16 - Whatever It Takes.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP46 - The Juggernaut Returns.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP19 - X-Ternally Yours.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP58 - Family Ties.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP33 - The Phoenix Saga (Part 5) Child of Light.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP61 - Weapon X, Lies, and Video Tape.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP08 - The Unstoppable Juggernaut.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP17 - Red Dawn.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP48 - Sanctuary (Part 1).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP06 - Cold Vengeance.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP53 - Nightcrawler.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP10 - Come the Apocalypse.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP12 - Days of Future Past (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP51 - Courage.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP52 - Secrets, Not Long Buried.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP11 - Days of Future Past (Part 1).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP09 - The Cure.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP07 - Slave Island.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP01 - Night of the Sentinels (Part 1).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP27 - Out of the Past (Part 1).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP05 - Captive Hearts.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP13 - The Final Decision.mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP02 - Night of the Sentinels (Part 2).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP38 - Savage Land, Strange Heart (Part 1).mkv
+          Score: 18  Quality: Unknown  Size: 1.86GB
+  REMOVE: EP04 - Deadly Reunions.mkv
+          Score: 18  Quality: Unknown  Size: 1.85GB
+  REMOVE: EP43 - The Dark Phoenix (Part 4) The Fate of the Phoenix.mkv
+          Score: 18  Quality: Unknown  Size: 1.84GB
+  REMOVE: EP47 - A Deal with the Devil.mkv
+          Score: 17  Quality: Unknown  Size: 1.79GB
+  REMOVE: EP67 - The Phalanx Covenant (Part 1).mkv
+          Score: 17  Quality: Unknown  Size: 1.79GB
+  REMOVE: EP59 - Bloodlines.mkv
+          Score: 17  Quality: Unknown  Size: 1.79GB
+  REMOVE: EP63 - Beyond Good and Evil (Part 1) The End of Time.mkv
+          Score: 17  Quality: Unknown  Size: 1.79GB
+  REMOVE: EP54 - One Man's Worth (Part 1).mkv
+          Score: 17  Quality: Unknown  Size: 1.79GB
+  REMOVE: EP66 - Beyond Good and Evil (Part 4) End and Beginning.mkv
+          Score: 17  Quality: Unknown  Size: 1.79GB
+  REMOVE: EP45 - Love in Vain.mkv
+          Score: 17  Quality: Unknown  Size: 1.79GB
+  REMOVE: EP65 - Beyond Good and Evil (Part 3) The Lazarus Chamber.mkv
+          Score: 17  Quality: Unknown  Size: 1.79GB
+  REMOVE: EP69 - Storm Front (Part 1).mkv
+          Score: 17  Quality: Unknown  Size: 1.79GB
+  REMOVE: EP62 - Have Yourself a Morlock Little X-Mas.mkv
+          Score: 17  Quality: Unknown  Size: 1.78GB
+  REMOVE: EP42 - The Dark Phoenix (Part 3) The Dark Phoenix.mkv
+          Score: 17  Quality: Unknown  Size: 1.77GB
+  REMOVE: EP74 - Hidden Agendas.mkv
+          Score: 17  Quality: Unknown  Size: 1.75GB
+  REMOVE: EP75 - Descent.mkv
+          Score: 17  Quality: Unknown  Size: 1.75GB
+  REMOVE: EP36 - Longshot.mkv
+          Score: 17  Quality: Unknown  Size: 1.75GB
+  REMOVE: EP76 - Graduation Day.mkv
+          Score: 17  Quality: Unknown  Size: 1.75GB
+  REMOVE: EP72 - Jubilee's Fairytale Theatre.mkv
+          Score: 17  Quality: Unknown  Size: 1.75GB
+  REMOVE: EP71 - The Fifth Horseman.mkv
+          Score: 17  Quality: Unknown  Size: 1.75GB
+  REMOVE: EP73 - Old Soldiers.mkv
+          Score: 17  Quality: Unknown  Size: 1.74GB
+  REMOVE: EP50 - Xavier Remembers.mkv
+          Score: 17  Quality: Unknown  Size: 1.70GB
+  Space saved: 137.92 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/Minority Report (2015) {tvdb-295680}/01
+  KEEP:   2015-11-02 - Honor Among Thieves.mkv
+          Score: 14  Quality: Unknown  Size: 1.49GB
+  REMOVE: 2015-11-30 - Everybody Runs.mkv
+          Score: 14  Quality: Unknown  Size: 1.42GB
+  REMOVE: 2015-11-16 - The American Dream.mkv
+          Score: 14  Quality: Unknown  Size: 1.42GB
+  REMOVE: 2015-09-28 - Mr. Nice Guy.mkv
+          Score: 14  Quality: Unknown  Size: 1.41GB
+  REMOVE: 2015-09-21 - Pilot.mkv
+          Score: 13  Quality: Unknown  Size: 1.38GB
+  REMOVE: 2015-10-05 - Hawk-Eye.mkv
+          Score: 13  Quality: Unknown  Size: 1.33GB
+  REMOVE: 2015-11-23 - Memento Mori.mkv
+          Score: 12  Quality: Unknown  Size: 1.21GB
+  REMOVE: 2015-10-12 - Fredi.mkv
+          Score: 11  Quality: Unknown  Size: 1.17GB
+  REMOVE: 2015-10-26 - Fiddler's Neck.mkv
+          Score: 11  Quality: Unknown  Size: 1.12GB
+  REMOVE: 2015-10-19 - The Present.mkv
+          Score: 8  Quality: Unknown  Size: 0.87GB
+  Space saved: 11.34 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/MythBusters (2003) {tvdb-73388}/Season 09
+  KEEP:   09x17 - Flying Guillotine - HD TV.mkv
+          Score: 18  Quality: Unknown  Size: 1.80GB
+  REMOVE: 09x18 - Drain Disaster - HD TV.mkv
+          Score: 15  Quality: Unknown  Size: 1.57GB
+  REMOVE: 09x15 - Walk a Straight Line - HD TV.mkv
+          Score: 15  Quality: Unknown  Size: 1.55GB
+  REMOVE: 09x14 - Newton's Crane Cradle - HD TV.mkv
+          Score: 14  Quality: Unknown  Size: 1.44GB
+  REMOVE: 09x21 - Wheel of Mythfortune - HD TV.mkv
+          Score: 14  Quality: Unknown  Size: 1.41GB
+  REMOVE: 09x16 - Duct Tape Plane - HD TV.mkv
+          Score: 13  Quality: Unknown  Size: 1.36GB
+  REMOVE: 09x19 - Location, Location, Location - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.24GB
+  REMOVE: 09x12 - Paper Armor - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.22GB
+  REMOVE: 09x20 - Wet and Wild - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.20GB
+  REMOVE: 09x13 - Bikes and Bazookas - HD TV.mkv
+          Score: 11  Quality: Unknown  Size: 1.16GB
+  REMOVE: 09x01 - Mission Impossible Face Off - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.09GB
+  REMOVE: 09x04 - Bubble Trouble - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.09GB
+  REMOVE: 09x10 - Planes, Trains and Automobiles - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.09GB
+  REMOVE: 09x03 - Running on Water - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.09GB
+  REMOVE: 09x06 - Blow Your Own Sail - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.09GB
+  REMOVE: 09x05 - Torpedo Tastic - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.09GB
+  REMOVE: 09x09 - Fixing a Flat - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.09GB
+  REMOVE: 09x07 - Spy Car 2 - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.09GB
+  REMOVE: 09x08 - Dodge a Bullet - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.09GB
+  REMOVE: 09x02 - Blue Ice - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.09GB
+  REMOVE: 09x22 - Toilet Bomb - HD TV.mkv
+          Score: 10  Quality: Unknown  Size: 1.08GB
+  REMOVE: 09x11 - Let There Be Light - HD TV.mkv
+          Score: 9  Quality: Unknown  Size: 0.97GB
+  Space saved: 25.11 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/MythBusters (2003) {tvdb-73388}/Season 10
+  KEEP:   10x08 - Bouncing Bullet - 720p WEB-DL.mp4
+          Score: 1212  Quality: 720p/WEB-DL  Size: 1.26GB
+  REMOVE: 10x01 - Duct Tape Island - HD TV.mkv
+          Score: 18  Quality: Unknown  Size: 1.83GB
+  REMOVE: 10x04 - Swinging Pirates - HD TV.mkv
+          Score: 15  Quality: Unknown  Size: 1.51GB
+  REMOVE: 10x12 - Hollywood Gunslingers - HD TV.mkv
+          Score: 14  Quality: Unknown  Size: 1.49GB
+  REMOVE: 10x05 - Battle Of The Sexes - HD TV.mkv
+          Score: 14  Quality: Unknown  Size: 1.45GB
+  REMOVE: 10x09 - Mailbag Special - HD TV.mkv
+          Score: 14  Quality: Unknown  Size: 1.40GB
+  REMOVE: 10x13 - Jawsome Shark Special - HD TV.mkv
+          Score: 14  Quality: Unknown  Size: 1.40GB
+  REMOVE: 10x07 - Revenge of the Myth - HD TV.mkv
+          Score: 13  Quality: Unknown  Size: 1.37GB
+  REMOVE: 10x11 - Duel Dilemmas - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.26GB
+  REMOVE: 10x10 - Bubble Pack Plunge - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.23GB
+  REMOVE: 10x06 - Mailbag Special - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.22GB
+  REMOVE: 10x02 - Fire vs Ice - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.22GB
+  Space saved: 15.38 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/MythBusters (2003) {tvdb-73388}/Season 11
+  KEEP:   11x06 - Cannonball Chemistry - HD TV.mkv
+          Score: 15  Quality: Unknown  Size: 1.57GB
+  REMOVE: 11x02 - Trench Torpedo - HD TV.mkv
+          Score: 13  Quality: Unknown  Size: 1.38GB
+  REMOVE: 11x03 - Hail Hijinx - HD TV.mkv
+          Score: 13  Quality: Unknown  Size: 1.38GB
+  REMOVE: 11x05 - Mini Myth Medley - HD TV.mkv
+          Score: 13  Quality: Unknown  Size: 1.37GB
+  REMOVE: 11x08 - Explosions A to Z - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.25GB
+  REMOVE: 11x07 - Surreal Gourmet Hour - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.22GB
+  Space saved: 6.60 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/MythBusters (2003) {tvdb-73388}/Season 12
+  KEEP:   12x10 - Breaking Bad Special - 720p WEB-DL.mkv
+          Score: 1213  Quality: 720p/WEB-DL  Size: 1.33GB
+  REMOVE: 12x06 - Motorcycle Water Ski - 720p WEB-DL.mkv
+          Score: 1213  Quality: 720p/WEB-DL  Size: 1.33GB
+  REMOVE: 12x11 - Zombie Special - 720p WEB-DL.mkv
+          Score: 1213  Quality: 720p/WEB-DL  Size: 1.33GB
+  REMOVE: 12x05 - Battle of the Sexes - Round 2 - 720p WEB-DL.mkv
+          Score: 1213  Quality: 720p/WEB-DL  Size: 1.31GB
+  REMOVE: 12x02 - Deadliest Catch Crabtastic Special - 720p WEB-DL.mkv
+          Score: 1213  Quality: 720p/WEB-DL  Size: 1.31GB
+  REMOVE: 12x03 - Down and Dirty- Earthquake Survival - 720p WEB-DL.mkv
+          Score: 1213  Quality: 720p/WEB-DL  Size: 1.31GB
+  REMOVE: 12x07 - Hypermilling-Crash Cushion - 720p WEB-DL.mkv
+          Score: 1212  Quality: 720p/WEB-DL  Size: 1.27GB
+  REMOVE: 12x08 - Duct Tape Canyon - HD TV.mkv
+          Score: 15  Quality: Unknown  Size: 1.59GB
+  REMOVE: 12x09 - Painting With Explosives, Bifurcated Boat - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.30GB
+  REMOVE: 12x04 - Indy Car Special - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.29GB
+  Space saved: 12.03 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/MythBusters (2003) {tvdb-73388}/Season 13
+  KEEP:   13x06 - Mythssion Impossible - HD TV.mkv
+          Score: 15  Quality: Unknown  Size: 1.55GB
+  REMOVE: 13x03 - Hollywood Car Crash Cliches - HD TV.mkv
+          Score: 14  Quality: Unknown  Size: 1.42GB
+  REMOVE: 13x01 - Star Wars  Revenge of the Myth - HD TV.mkv
+          Score: 14  Quality: Unknown  Size: 1.42GB
+  REMOVE: 13x04 - Car Chase Chaos - Animal Antics - HD TV.mkv
+          Score: 13  Quality: Unknown  Size: 1.38GB
+  REMOVE: 13x07 - Bullet Baloney - HD TV.mkv
+          Score: 13  Quality: Unknown  Size: 1.30GB
+  REMOVE: 13x08 - Supersonic Ping Pong-Ice Cannon - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.24GB
+  REMOVE: 13x02 - Moonshiner Myths - HD TV.mkv
+          Score: 12  Quality: Unknown  Size: 1.23GB
+  REMOVE: 13x05 - -Do- Try This At Home - HD TV.mkv
+          Score: 11  Quality: Unknown  Size: 1.19GB
+  Space saved: 9.19 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/Son of Zorn (2016) {tvdb-311817}/01
+  KEEP:   2016-12-11 - The War On Grafelnik.mkv
+          Score: 6  Quality: Unknown  Size: 0.62GB
+  REMOVE: 2016-10-23 - A Taste of Zephyria.mkv
+          Score: 6  Quality: Unknown  Size: 0.61GB
+  REMOVE: 2016-10-02 - The War of the Workplace.mkv
+          Score: 5  Quality: Unknown  Size: 0.56GB
+  REMOVE: 2016-11-06 - A Tale of Two Zorns.mkv
+          Score: 5  Quality: Unknown  Size: 0.55GB
+  REMOVE: 2016-11-13 - The Battle of Thanksgiving.mkv
+          Score: 5  Quality: Unknown  Size: 0.55GB
+  REMOVE: 2016-12-04 - Return of the Drinking Buddy.mkv
+          Score: 5  Quality: Unknown  Size: 0.53GB
+  REMOVE: 2016-10-16 - The Weekend Warrior.mkv
+          Score: 5  Quality: Unknown  Size: 0.53GB
+  REMOVE: 2016-09-25 - Defender of Teen Love.mkv
+          Score: 4  Quality: Unknown  Size: 0.42GB
+  Space saved: 3.74 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/Teenage Mutant Ninja Turtles (1987) {tvdb-74582}/10
+  KEEP:   Teenage Mutant Ninja Turtles - 10x10 - Planet of the Turtleoids.mp4
+          Score: 20  Quality: Unknown  Size: 2.02GB
+  REMOVE: Teenage Mutant Ninja Turtles - 10x09 - Once Upon a Time Machine.mp4
+          Score: 9  Quality: Unknown  Size: 0.95GB
+  Space saved: 0.95 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/The Real Ghostbusters (1986) {tvdb-71824}/Extras
+  KEEP:   Real Ghostbusters Bonus-5.mkv
+          Score: 2  Quality: Unknown  Size: 0.26GB
+  REMOVE: Real Ghostbusters Bonus-7.mkv
+          Score: 2  Quality: Unknown  Size: 0.21GB
+  REMOVE: Real Ghostbusters Bonus-6.mkv
+          Score: 1  Quality: Unknown  Size: 0.20GB
+  REMOVE: Real Ghostbusters Bonus-3.mkv
+          Score: 1  Quality: Unknown  Size: 0.16GB
+  REMOVE: Real Ghostbusters Bonus-4.mkv
+          Score: 1  Quality: Unknown  Size: 0.12GB
+  REMOVE: Real Ghostbusters Bonus-9.mkv
+          Score: 0  Quality: Unknown  Size: 0.10GB
+  REMOVE: Real Ghostbusters Bonus-1.mkv
+          Score: 0  Quality: Unknown  Size: 0.10GB
+  REMOVE: Real Ghostbusters Bonus-8.mkv
+          Score: 0  Quality: Unknown  Size: 0.06GB
+  REMOVE: Real Ghostbusters Bonus-11.mkv
+          Score: 0  Quality: Unknown  Size: 0.03GB
+  REMOVE: Real Ghostbusters Bonus-2.mkv
+          Score: 0  Quality: Unknown  Size: 0.03GB
+  REMOVE: Real Ghostbusters Bonus-10.mkv
+          Score: 0  Quality: Unknown  Size: 0.01GB
+  Space saved: 1.02 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/World War II in Colour (2010) {tvdb-394418}/Season 02
+  KEEP:   world.war.ii.in.hd.colour.111.1080p.br-ifh.mkv
+          Score: 2043  Quality: 1080p  Size: 4.37GB
+  REMOVE: world.war.ii.in.hd.colour.109.1080p.br-ifh.mkv
+          Score: 2043  Quality: 1080p  Size: 4.37GB
+  REMOVE: world.war.ii.in.hd.colour.112.1080p.br-ifh.mkv
+          Score: 2043  Quality: 1080p  Size: 4.37GB
+  REMOVE: world.war.ii.in.hd.colour.113.1080p.br-ifh.mkv
+          Score: 2043  Quality: 1080p  Size: 4.37GB
+  REMOVE: world.war.ii.in.hd.colour.110.1080p.br-ifh.mkv
+          Score: 2043  Quality: 1080p  Size: 4.37GB
+  Space saved: 17.48 GB
+
+------------------------------------------------------------
+Group: UNPARSED:/mnt/synology/rs-tv/X-Men - The Animated Series (1992) {tvdb-76115}/00
+  KEEP:   EP35 - Obsession.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP37 - Cold Comfort.mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  REMOVE: EP14 - Till Death Do Us Part (Part 1).mkv
+          Score: 18  Quality: Unknown  Size: 1.87GB
+  Space saved: 3.73 GB
+
+------------------------------------------------------------
+Group: Undone (2019) {tvdb-357756}/Season 01/S01E02
+  KEEP:   Undone (2019) - S01E02 - The Hospital [WEBDL-1080p][EAC3 5.1][h264]-NTG.mkv
+          Score: 3514  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.46GB
+  REMOVE: Undone (2019) - S01E02 - The Hospital [HDTV-1080p][EAC3 5.1][h264].mkv
+          Score: 2514  Quality: 1080p/HDTV/DD+/AVC  Size: 1.46GB
+  Space saved: 1.46 GB
+
+------------------------------------------------------------
+Group: V (1984) {tvdb-76354}/Specials/S00E01
+  KEEP:   V (1984) - S00E01 - The Original Miniseries 1 [SDTV][AC3 2.0][XviD].avi
+          Score: 106  Quality: DD  Size: 0.68GB
+  REMOVE: S00E01 - The Original Miniseries (1) SDTV.avi
+          Score: 6  Quality: Unknown  Size: 0.68GB
+  Space saved: 0.68 GB
+
+------------------------------------------------------------
+Group: V (1984) {tvdb-76354}/Specials/S00E02
+  KEEP:   V (1984) - S00E02 - The Original Miniseries 2 [SDTV][AC3 2.0][XviD].avi
+          Score: 106  Quality: DD  Size: 0.68GB
+  REMOVE: S00E02 - The Original Miniseries (2) SDTV.avi
+          Score: 6  Quality: Unknown  Size: 0.68GB
+  Space saved: 0.68 GB
+
+------------------------------------------------------------
+Group: V (1984) {tvdb-76354}/Specials/S00E03
+  KEEP:   V (1984) - S00E03 - The Final Battle 1 [SDTV][AAC 1.0][x264].mp4
+          Score: 208  Quality: AAC/AVC  Size: 0.82GB
+  REMOVE: S00E03 - The Final Battle (1) SDTV.mp4
+          Score: 8  Quality: Unknown  Size: 0.82GB
+  Space saved: 0.82 GB
+
+------------------------------------------------------------
+Group: V (1984) {tvdb-76354}/Specials/S00E04
+  KEEP:   V (1984) - S00E04 - The Final Battle 2 [SDTV][AC3 1.0][XviD].avi
+          Score: 110  Quality: DD  Size: 1.10GB
+  REMOVE: S00E04 - The Final Battle (2) SDTV.avi
+          Score: 10  Quality: Unknown  Size: 1.10GB
+  Space saved: 1.10 GB
+
+------------------------------------------------------------
+Group: V (1984) {tvdb-76354}/Specials/S00E05
+  KEEP:   V (1984) - S00E05 - The Final Battle 3 [SDTV][AC3 1.0][XviD].avi
+          Score: 110  Quality: DD  Size: 1.08GB
+  REMOVE: S00E05 - The Final Battle (3) SDTV.avi
+          Score: 10  Quality: Unknown  Size: 1.08GB
+  Space saved: 1.08 GB
+
+------------------------------------------------------------
+Group: Washington Black (2025) {tvdb-410925}/Season 01/S01E01
+  KEEP:   Washington Black (2025) - S01E01 - The Flying Man and The Musician [DSNP][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3523  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.32GB
+  REMOVE: Washington Black (2025) - S01E01 - The Flying Man and The Musician [WEBDL-720p][EAC3 5.1][h264]-BiOMA.mkv
+          Score: 1512  Quality: 720p/WEBDL/DD+/AVC  Size: 1.21GB
+  Space saved: 1.21 GB
+
+------------------------------------------------------------
+Group: Washington Black (2025) {tvdb-410925}/Season 01/S01E02
+  KEEP:   Washington Black (2025) - S01E02 - Movements of Jah People [DSNP][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3520  Quality: 1080p/WEBDL/DD+/AVC  Size: 2.05GB
+  REMOVE: Washington Black (2025) - S01E02 - Movements of Jah People [WEBDL-720p][EAC3 5.1][h264]-BiOMA.mkv
+          Score: 1510  Quality: 720p/WEBDL/DD+/AVC  Size: 1.08GB
+  Space saved: 1.08 GB
+
+------------------------------------------------------------
+Group: Washington Black (2025) {tvdb-410925}/Season 01/S01E03
+  KEEP:   Washington Black (2025) - S01E03 - Of Love and Caribbean Rum [DSNP][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3512  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.30GB
+  REMOVE: Washington Black (2025) - S01E03 - Of Love and Caribbean Rum [WEBDL-720p][EAC3 5.1][h264]-BiOMA.mkv
+          Score: 1506  Quality: 720p/WEBDL/DD+/AVC  Size: 0.66GB
+  Space saved: 0.66 GB
+
+------------------------------------------------------------
+Group: Washington Black (2025) {tvdb-410925}/Season 01/S01E04
+  KEEP:   Washington Black (2025) - S01E04 - The Souls and Science of Black Folk [DSNP][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3517  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.70GB
+  REMOVE: Washington Black (2025) - S01E04 - The Souls and Science of Black Folk [WEBDL-720p][EAC3 5.1][h264]-BiOMA.mkv
+          Score: 1508  Quality: 720p/WEBDL/DD+/AVC  Size: 0.86GB
+  Space saved: 0.86 GB
+
+------------------------------------------------------------
+Group: Washington Black (2025) {tvdb-410925}/Season 01/S01E05
+  KEEP:   Washington Black (2025) - S01E05 - St. George and the Dragon [DSNP][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3513  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.30GB
+  REMOVE: Washington Black (2025) - S01E05 - St. George and the Dragon [WEBDL-720p][EAC3 5.1][h264]-BiOMA.mkv
+          Score: 1506  Quality: 720p/WEBDL/DD+/AVC  Size: 0.67GB
+  Space saved: 0.67 GB
+
+------------------------------------------------------------
+Group: Washington Black (2025) {tvdb-410925}/Season 01/S01E06
+  KEEP:   Washington Black (2025) - S01E06 - Selamiut [DSNP][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3517  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.78GB
+  REMOVE: Washington Black (2025) - S01E06 - Selamiut [WEBDL-720p][EAC3 5.1][h264]-BiOMA.mkv
+          Score: 1509  Quality: 720p/WEBDL/DD+/AVC  Size: 0.94GB
+  Space saved: 0.94 GB
+
+------------------------------------------------------------
+Group: Washington Black (2025) {tvdb-410925}/Season 01/S01E07
+  KEEP:   Washington Black (2025) - S01E07 - J’ouvert Morning [DSNP][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3516  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.69GB
+  REMOVE: Washington Black (2025) - S01E07 - J’ouvert Morning [WEBDL-720p][EAC3 5.1][h264]-BiOMA.mkv
+          Score: 1508  Quality: 720p/WEBDL/DD+/AVC  Size: 0.87GB
+  Space saved: 0.87 GB
+
+------------------------------------------------------------
+Group: Washington Black (2025) {tvdb-410925}/Season 01/S01E08
+  KEEP:   Washington Black (2025) - S01E08 - If You See My Mama Whisper Her This… [DSNP][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3519  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.93GB
+  REMOVE: Washington Black (2025) - S01E08 - If You See My Mama Whisper Her This… [WEBDL-720p][EAC3 5.1][h264]-BiOMA.mkv
+          Score: 1510  Quality: 720p/WEBDL/DD+/AVC  Size: 1.01GB
+  Space saved: 1.01 GB
+
+------------------------------------------------------------
+Group: Whose Line Is It Anyway! (US) (1998) {tvdb-76808}/Season 16/S16E20
+  KEEP:   Whose Line Is It Anyway! (US) (1998) - S16E20 - Jonathan Mangum 8 [WEBDL-1080p][AAC 2.0][h264]-BAE.mkv
+          Score: 3411  Quality: 1080p/WEBDL/AAC/AVC  Size: 1.19GB
+  REMOVE: Whose Line Is It Anyway! (US) (1998) - S16E20 - Jonathan Mangum 8 [HDTV-720p][AC3 5.1][h264].ts
+          Score: 462  Quality: 720p/HDTV/DD/AVC  Size: 1.27GB
+  Space saved: 1.27 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 02/S02E01
+  KEEP:   Will Trent (2023) - S02E01 - Me Llamo Will Trent [WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3530  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.07GB
+  REMOVE: Will Trent (2023) - S02E01 - Me Llamo Will Trent [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3518  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.84GB
+  Space saved: 1.84 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 02/S02E02
+  KEEP:   Will Trent (2023) - S02E02 - Its the Work I Signed Up For [WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3530  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.03GB
+  REMOVE: Will Trent (2023) - S02E02 - Its the Work I Signed Up For [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3518  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.84GB
+  Space saved: 1.84 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 02/S02E03
+  KEEP:   Will Trent (2023) - S02E03 - You Dont Have to Understand [WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3530  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.03GB
+  REMOVE: Will Trent (2023) - S02E03 - You Dont Have to Understand [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3518  Quality: 1080p/WEBDL/DD+/AVC  Size: 1.83GB
+  Space saved: 1.83 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 02/S02E04
+  KEEP:   Will Trent (2023) - S02E04 - Its Easier to Handcuff a Human Being [WEBDL-1080p][EAC3 5.1][h264]-ELEANOR.mkv
+          Score: 3534  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.44GB
+  REMOVE: Will Trent (2023) - S02E04 - Its Easier to Handcuff a Human Being [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3534  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.44GB
+  Space saved: 3.44 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 02/S02E05
+  KEEP:   Will Trent (2023) - S02E05 - Capt. Duke Wagners Daughter [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3530  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.03GB
+  REMOVE: Will Trent (2023) - S02E05 - Capt. Duke Wagners Daughter [WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3529  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.00GB
+  Space saved: 3.00 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 02/S02E06
+  KEEP:   Will Trent (2023) - S02E06 - We Are Family [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3531  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.10GB
+  REMOVE: Will Trent (2023) - S02E06 - We Are Family [WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3530  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.07GB
+  Space saved: 3.07 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 02/S02E07
+  KEEP:   Will Trent (2023) - S02E07 - Have You Never Been to a Wedding [WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3530  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.06GB
+  REMOVE: Will Trent (2023) - S02E07 - Have You Never Been to a Wedding [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3530  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.06GB
+  Space saved: 3.06 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 02/S02E08
+  KEEP:   Will Trent (2023) - S02E08 - Why Is Jacks Arm Bleeding [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3530  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.04GB
+  REMOVE: Will Trent (2023) - S02E08 - Why Is Jacks Arm Bleeding [WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3529  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.00GB
+  Space saved: 3.00 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 02/S02E09
+  KEEP:   Will Trent (2023) - S02E09 - Residente o Visitante [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3531  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.16GB
+  REMOVE: Will Trent (2023) - S02E09 - Residente o Visitante [WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3530  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.07GB
+  Space saved: 3.07 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 02/S02E10
+  KEEP:   Will Trent (2023) - S02E10 - Do You See the Vision [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3533  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.31GB
+  REMOVE: Will Trent (2023) - S02E10 - Do You See the Vision [WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3531  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.14GB
+  Space saved: 3.14 GB
+
+------------------------------------------------------------
+Group: Will Trent (2023) {tvdb-419879}/Season 03/S03E01
+  KEEP:   Will Trent (2023) - S03E01 - Im a Guest Here 1 [AMZN][WEBDL-1080p][EAC3 5.1][h264]-FLUX.mkv
+          Score: 3531  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.12GB
+  REMOVE: Will Trent (2023) - S03E01 - Im a Guest Here 1 [WEBDL-1080p][EAC3 5.1][h264].mkv
+          Score: 3531  Quality: 1080p/WEBDL/DD+/AVC  Size: 3.12GB
+  Space saved: 3.12 GB
+
+------------------------------------------------------------
+Group: X-Men - The Animated Series (1992) {tvdb-76115}/Season 02/S02E05
+  KEEP:   X-Men - The Animated Series (1992) - S02E05 - Repo Man [HDTV-1080p][AC3 2.0][h265]-Ternally.mkv
+          Score: 2118  Quality: 1080p/HDTV/DD/HEVC  Size: 1.86GB
+  REMOVE: X-Men - The Animated Series (1992) - S02E05 - Repo Man [HDTV-1080p][AC3 2.0][h265].mkv
+          Score: 2118  Quality: 1080p/HDTV/DD/HEVC  Size: 1.86GB
+  Space saved: 1.86 GB
+

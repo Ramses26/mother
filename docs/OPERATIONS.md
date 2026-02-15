@@ -1,6 +1,6 @@
 # Project Mother - Operations Guide
 
-**Last Updated**: 2026-02-01
+**Last Updated**: 2026-02-14
 
 This document covers day-to-day operations, monitoring, alerting, and optimization for Project Mother.
 
@@ -8,10 +8,10 @@ This document covers day-to-day operations, monitoring, alerting, and optimizati
 
 ## Current Status Overview
 
-### Sync Progress (as of 2026-02-01)
-- **Movies**: 17.0% complete (691 / 4,070)
-- **TV Shows**: 5.2% complete (2,267 / 43,508)
-- **Overall**: 6.2% complete (2,958 / 47,578)
+### Sync Progress (as of 2026-02-14)
+- **Movies**: Starting fresh sync after duplicate cleanup (3,744 operations)
+- **TV Shows**: Starting fresh sync after duplicate cleanup (46,113 operations)
+- Duplicate cleanup removed 585 files (~1,814 GB) across both libraries
 
 ### Active Components
 
@@ -36,6 +36,7 @@ This document covers day-to-day operations, monitoring, alerting, and optimizati
 | sync-webhook health | Docker healthcheck | Every 30 sec | Docker restart |
 | sync-webhook failures | Built-in auto-retry | Every 15 min | Telegram on failure |
 | sync-webhook daily summary | Built-in scheduler | 00:05 daily | Telegram summary |
+| sync-webhook history scanner | Built-in scheduler | Every 30 min | Catches missed webhooks |
 
 ### Telegram Notifications You Receive
 
@@ -59,18 +60,19 @@ This document covers day-to-day operations, monitoring, alerting, and optimizati
 
 Current crontab on Mother:
 ```
-# Daily status report at 8 AM
-0 8 * * * /opt/mother/reports/daily_report.py >> /opt/mother/logs/daily_report.log 2>&1
+# Status report every 2 hours + end-of-day at 11:58 PM
+0 0,2,4,6,8,10,12,14,16,18,20,22 * * * /opt/mother/reports/daily_report.py
+58 23 * * * /opt/mother/reports/daily_report.py
 
 # Health check every 10 minutes - restarts dead sync screens
 */10 * * * * /opt/mother/scripts/check-sync-health.sh
+
+# VPN ping monitor - every 2 minutes
+*/2 * * * * /opt/mother/vpn_ping_monitor.sh
+
+# Sync stall detector - every hour at :30
+30 * * * * /opt/mother/sync_stall_check.sh
 ```
-
-### NOT Scheduled (Available for Future Use)
-
-| Script | Purpose | Suggested Schedule |
-|--------|---------|-------------------|
-| `nightly_reconcile.py` | Compare source/dest, find missed files | `0 3 * * *` (3 AM daily) |
 
 ---
 
@@ -199,6 +201,29 @@ ssh mother 'screen -r tvsync'
 ssh mother '/opt/mother/reports/daily_report.py --dry-run'
 ```
 
+### Pause/Resume Batch Syncs
+
+Use the sync-control script to pause and resume batch syncs without killing them:
+
+```bash
+# Pause syncs (current jobs finish, new ones wait)
+ssh mother '/opt/mother/scripts/sync-control.sh pause'
+
+# Resume syncs
+ssh mother '/opt/mother/scripts/sync-control.sh resume'
+
+# Check status
+ssh mother '/opt/mother/scripts/sync-control.sh status'
+
+# Stop sync screens entirely
+ssh mother '/opt/mother/scripts/sync-control.sh stop'
+
+# Start sync screens
+ssh mother '/opt/mother/scripts/sync-control.sh start'
+```
+
+**How it works:** Creates/removes `/opt/mother/PAUSE_SYNC` file. Sync scripts check this file before starting new transfers.
+
 ### Restart a Stuck Sync
 
 ```bash
@@ -206,8 +231,10 @@ ssh mother '/opt/mother/reports/daily_report.py --dry-run'
 ssh mother 'screen -S movie -X quit'
 ssh mother '/opt/mother/scripts/check-sync-health.sh'
 
-# Or manually:
-ssh mother 'cd /opt/mother/reports && PARALLEL=8 screen -dmS movie ./sync_actions_20260122_180402.sh'
+# Or use the screen management scripts:
+ssh mother '/opt/mother/scripts/stop-sync-screens.sh'
+ssh mother '/opt/mother/scripts/start-sync-screens.sh'
+# start-sync-screens.sh auto-discovers the most recent sync scripts
 ```
 
 ### Check sync-webhook Status
@@ -318,11 +345,15 @@ ssh mother 'tail -50 /opt/mother/logs/sync-health.log'
 ### Scripts
 | Path | Purpose |
 |------|---------|
-| `/opt/mother/scripts/start-sync-screens.sh` | Start batch sync screens |
+| `/opt/mother/scripts/start-sync-screens.sh` | Start batch sync screens (auto-discovers latest scripts) |
 | `/opt/mother/scripts/stop-sync-screens.sh` | Stop batch sync screens |
+| `/opt/mother/scripts/sync-control.sh` | Pause/resume/status for batch syncs |
 | `/opt/mother/scripts/check-sync-health.sh` | Health monitor (cron) |
-| `/opt/mother/scripts/nightly_reconcile.py` | Compare and find missing files |
-| `/opt/mother/reports/daily_report.py` | Daily Telegram report |
+| `/opt/mother/scripts/compare_libraries.py` | Movie library comparison & sync script generation |
+| `/opt/mother/scripts/compare_tv_libraries.py` | TV library comparison & sync script generation |
+| `/opt/mother/scripts/cleanup_duplicates.py` | Duplicate file cleanup (movies & TV) |
+| `/opt/mother/scripts/lib/quality_scoring.py` | Shared TRaSH-aligned quality scoring |
+| `/opt/mother/reports/daily_report.py` | Telegram status report (every 2 hours) |
 
 ### Logs
 | Path | Contents |

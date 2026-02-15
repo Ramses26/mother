@@ -96,7 +96,25 @@ curl -X POST http://localhost:5001/sync/manual \
 | `SYNC_LOG_PATH` | `/logs` | Directory for persistent log files |
 | `SYNC_DB_PATH` | `/data/sync_jobs.db` | SQLite database path |
 | `SYNC_MAX_CONCURRENT` | `2` | Max concurrent rsync operations (prevents NFS overload) |
+| `SYNC_MAX_RETRIES` | `20` | Max retry attempts per job |
+| `SYNC_RETRY_LOOKBACK_DAYS` | `7` | Days to look back for retryable jobs |
+| `SYNC_SKIP_TITLES` | (empty) | Comma-separated titles to skip (e.g., large files that timeout) |
 | `TZ` | `UTC` | Timezone for timestamps |
+
+### History Scanner (Failsafe for Missed Webhooks)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RADARR_HD_URL` | `http://radarr-hd:7878` | Radarr HD API URL |
+| `RADARR_HD_API_KEY` | (required) | Radarr HD API key |
+| `RADARR_4K_URL` | `http://radarr-4k:7879` | Radarr 4K API URL |
+| `RADARR_4K_API_KEY` | (required) | Radarr 4K API key |
+| `SONARR_HD_URL` | `http://sonarr-hd:8989` | Sonarr HD API URL |
+| `SONARR_HD_API_KEY` | (required) | Sonarr HD API key |
+| `SONARR_4K_URL` | `http://sonarr-4k:8990` | Sonarr 4K API URL |
+| `SONARR_4K_API_KEY` | (required) | Sonarr 4K API key |
+| `SYNC_HISTORY_SCAN_HOURS` | `6` | How far back to scan for missed downloads |
+| `SYNC_HISTORY_SCAN_INTERVAL` | `30` | Minutes between history scans |
 
 ### Plex Integration (Optional)
 
@@ -148,10 +166,32 @@ The service includes APScheduler for automatic background tasks:
 | Task | Schedule | Description |
 |------|----------|-------------|
 | Daily Summary | 00:05 | Sends Telegram summary with failed titles and items needing attention |
-| Auto-Retry | Every 15 min | Retries failed jobs (up to 3 attempts per job) |
+| Auto-Retry | Every 15 min | Retries failed jobs (up to 20 attempts per job) |
+| History Scanner | Every 30 min | Scans Radarr/Sonarr history for missed webhooks (failsafe) |
 | Startup Recovery | On start | Recovers in-progress jobs interrupted by restart |
 
 **These run automatically when the container starts - no cron setup needed.**
+
+### History Scanner (Failsafe)
+
+The history scanner is a critical failsafe that catches downloads missed due to:
+- Container downtime or restarts
+- Network issues during webhook delivery
+- Radarr/Sonarr webhook failures (no built-in retry)
+
+**How it works:**
+1. Every 30 minutes, queries Radarr/Sonarr history API
+2. Finds all `downloadFolderImported` events in the last 6 hours
+3. Cross-checks against sync-webhook's database of completed jobs
+4. Automatically queues any missed downloads for sync
+5. Sends Telegram notification when catchup syncs are queued
+
+**Configuration:**
+```bash
+# In .env file
+SYNC_HISTORY_SCAN_HOURS=6      # Look back 6 hours
+SYNC_HISTORY_SCAN_INTERVAL=30  # Scan every 30 minutes
+```
 
 ## Reliability Features
 
@@ -161,12 +201,12 @@ Jobs are marked as `in_progress` in the database when they start. If the contain
 2. Marks them as failed with "Interrupted by restart"
 3. Automatically queues them for retry
 
-### Retry Logic (Up to 3 Attempts)
+### Retry Logic (Up to 20 Attempts)
 - Failed jobs automatically retry every 15 minutes
 - Each job tracks its `retry_count` in the database
-- Jobs retry up to 3 times before giving up
+- Jobs retry up to 20 times before giving up (configurable via `SYNC_MAX_RETRIES`)
 - Successfully synced jobs are excluded from retry
-- Logs show attempt number: `(retry 1/3)`, `(retry 2/3)`, etc.
+- Logs show attempt number for each retry
 
 ### Daily Summary Report
 The 00:05 daily summary includes:
@@ -494,6 +534,9 @@ curl -X POST http://localhost:5000/sync/radarr \
 | 2026-01-12 | Added `MovieFileDelete` event handler for Radarr manual deletions |
 | 2026-01-12 | Added `EpisodeFileDelete` event handler for Sonarr manual deletions |
 | 2026-01-12 | Empty parent directories are cleaned up after file deletions |
+| 2026-02-07 | **V2.3: History Scanner Failsafe** - Automatically catches missed webhooks by scanning Radarr/Sonarr history every 30 min |
+| 2026-02-07 | Added `SYNC_SKIP_TITLES` for excluding problematic large files (e.g., LOTR extended editions) |
+| 2026-02-07 | Increased max retries to 20, extended retry lookback to 7 days |
 
 ## Related Documentation
 

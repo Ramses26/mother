@@ -35,16 +35,16 @@ radarr:
       - template: radarr-quality-profile-remux-web-1080p
       - template: radarr-custom-formats-remux-web-1080p
 
-    # Enable upgrades - Huntarr will trigger searches, Radarr handles upgrades
+    # Upgrades DISABLED - prioritizing initial sync (re-enable with Huntarr later)
     quality_profiles:
       - name: HD Bluray + WEB
         upgrade:
-          allowed: true
+          allowed: false
           until_quality: Bluray-1080p
           until_score: 10000
       - name: Remux + WEB 1080p
         upgrade:
-          allowed: true
+          allowed: false
           until_quality: Remux-1080p
           until_score: 10000
 
@@ -264,12 +264,12 @@ radarr:
     quality_profiles:
       - name: UHD Bluray + WEB
         upgrade:
-          allowed: true
+          allowed: false
           until_quality: Bluray-2160p
           until_score: 10000
       - name: Remux + WEB 2160p
         upgrade:
-          allowed: true
+          allowed: false
           until_quality: Remux-2160p
           until_score: 10000
 
@@ -299,7 +299,7 @@ sonarr:
         reset_unmatched_scores:
           enabled: true
         upgrade:
-          allowed: true
+          allowed: false
           until_quality: WEB 1080p
           until_score: 10000
         min_format_score: 0
@@ -318,7 +318,7 @@ sonarr:
         reset_unmatched_scores:
           enabled: true
         upgrade:
-          allowed: true
+          allowed: false
           until_quality: Bluray-1080p
           until_score: 10000
         min_format_score: 0
@@ -334,7 +334,7 @@ sonarr:
         reset_unmatched_scores:
           enabled: true
         upgrade:
-          allowed: true
+          allowed: false
           until_quality: Bluray-1080p Remux
           until_score: 10000
         min_format_score: 0
@@ -636,7 +636,7 @@ sonarr:
         reset_unmatched_scores:
           enabled: true
         upgrade:
-          allowed: true
+          allowed: false
           until_quality: Bluray-2160p
           until_score: 10000
         min_format_score: 0
@@ -652,7 +652,7 @@ sonarr:
         reset_unmatched_scores:
           enabled: true
         upgrade:
-          allowed: true
+          allowed: false
           until_quality: Bluray-2160p Remux
           until_score: 10000
         min_format_score: 0
