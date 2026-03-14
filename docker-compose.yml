@@ -208,8 +208,9 @@ services:
 
   #Media Requesting Docker
   overseerr:
-    image: sctx/overseerr:latest
-    container_name: overseerr
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
     environment:
       - LOG_LEVEL=debug
       - TZ=${TZ}  
@@ -218,6 +219,12 @@ services:
       - 5055:5055
     volumes:
       - ${CONFIG_PATH}/overseer:/app/config
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/status || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
     restart: unless-stopped
     networks:
       - mother_network        
@@ -421,6 +428,74 @@ services:
     networks:
       - mother_network      
 
+  # Tracearr - Media Server Monitoring (Plex/Jellyfin/Emby)
+  # Stream tracking, library analytics, account sharing detection
+  tracearr:
+    image: ghcr.io/connorgallopo/tracearr:latest
+    container_name: tracearr
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - TZ=${TZ}
+      - DATABASE_URL=postgres://tracearr:${TRACEARR_DB_PASSWORD:-tracearr}@tracearr-db:5432/tracearr
+      - REDIS_URL=redis://tracearr-redis:6379
+      - JWT_SECRET=${TRACEARR_JWT_SECRET}
+      - COOKIE_SECRET=${TRACEARR_COOKIE_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - LOG_LEVEL=info
+    ports:
+      - "${TRACEARR_PORT:-3002}:3000"
+    depends_on:
+      tracearr-db:
+        condition: service_healthy
+      tracearr-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Tracearr - TimescaleDB (PostgreSQL)
+  tracearr-db:
+    image: timescale/timescaledb-ha:pg18.1-ts2.25.0
+    container_name: tracearr-db
+    shm_size: 512mb
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    command: postgres -c timescaledb.max_tuples_decompressed_per_dml_transaction=0 -c max_locks_per_transaction=4096 -c timescaledb.telemetry_level=off
+    environment:
+      - POSTGRES_USER=tracearr
+      - POSTGRES_PASSWORD=${TRACEARR_DB_PASSWORD:-tracearr}
+      - POSTGRES_DB=tracearr
+    volumes:
+      - tracearr_timescale_data:/home/postgres/pgdata/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tracearr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - mother_network
+
+  # Tracearr - Redis Cache
+  tracearr-redis:
+    image: redis:8-alpine
+    container_name: tracearr-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - tracearr_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - mother_network
+
   # Sync Webhook - Real-time sync triggered by Radarr/Sonarr
   sync-webhook:
     build:
@@ -477,15 +552,14 @@ services:
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 30s
-      timeout: 10s
-      retries: 3
+      timeout: 30s
+      retries: 5
       start_period: 10s
 
 networks:
   mother_network:
     driver: bridge
 
-# Optional: Define named volumes for databases
-# volumes:
-#   postgres_data:
-#   redis_data:
+volumes:
+  tracearr_timescale_data:
+  tracearr_redis_data:
