@@ -47,6 +47,7 @@
         <th>Searches</th>
         <th>Status</th>
         <th>Cooldown Until</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
@@ -60,9 +61,12 @@
         <td>{{ item.search_count }}</td>
         <td><span class="result-badge result-{{ item.status }}">{{ item.status }}</span></td>
         <td class="mono small">{{ fmt_dt(item.cooldown_until) }}</td>
+        <td>
+          <button class="btn btn-sm btn-ghost" onclick="searchNow({{ item.id }})">Search</button>
+        </td>
       </tr>
       {% else %}
-      <tr><td colspan="8" class="empty">No items match the current filter.</td></tr>
+      <tr><td colspan="9" class="empty">No items match the current filter.</td></tr>
       {% endfor %}
     </tbody>
   </table>

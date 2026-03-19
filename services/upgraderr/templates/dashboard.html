@@ -43,7 +43,16 @@
   <div class="instance-grid">
     {% for iname, idata in instance_status.items() %}
     <div class="instance-card {% if not idata.enabled %}disabled{% endif %}">
-      <div class="instance-name">{{ idata.label }}</div>
+      <div class="instance-name">
+        {% if idata.enabled %}
+          {% if instance_health.get(iname) %}
+            <span style="color:var(--success)" title="Reachable">●</span>
+          {% else %}
+            <span style="color:var(--danger)" title="Unreachable">●</span>
+          {% endif %}
+        {% endif %}
+        {{ idata.label }}
+      </div>
       <div class="instance-queue">{{ idata.queue_depth }}</div>
       <div class="instance-queue-label">items pending</div>
       <div class="instance-status">

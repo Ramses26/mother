@@ -223,6 +223,22 @@ async function restoreBackup() {
   }
 }
 
+// ── Manual queue search ───────────────────────────────────────────────────
+
+async function searchNow(itemId) {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Searching\u2026';
+  try {
+    await apiFetch(`/api/queue/${itemId}/search`, 'POST');
+    btn.textContent = '\u2713 Sent';
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Search'; }, 3000);
+  } catch(e) {
+    btn.textContent = '\u2717 Error';
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Search'; }, 3000);
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 async function apiFetch(url, method = 'GET', body = null) {
