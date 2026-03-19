@@ -1121,10 +1121,15 @@ def api_sweep():
     threading.Thread(target=do_sweep, args=('manual',), daemon=True).start()
     return jsonify({'status': 'started'})
 
+def _is_local_request():
+    """True if request comes from localhost or Docker bridge network (172.x.x.x)"""
+    addr = request.remote_addr or ''
+    return addr == '127.0.0.1' or addr.startswith('172.')
+
 @app.route('/api/stats')
 def api_stats():
-    # Allow unauthenticated access from localhost (for daily_report.py)
-    if request.remote_addr != '127.0.0.1':
+    # Allow unauthenticated access from localhost/Docker host (for daily_report.py)
+    if not _is_local_request():
         token = get_token()
         if not (token and verify_token(token, 'access')):
             refresh = request.cookies.get('refresh_token')
