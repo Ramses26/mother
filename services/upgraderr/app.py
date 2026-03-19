@@ -79,6 +79,9 @@ MIN_SCORE          = int(os.environ.get('UPGRADERR_MIN_SCORE', '200'))
 SEASON_THRESHOLD   = int(os.environ.get('UPGRADERR_SEASON_THRESHOLD', '50'))
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 UPGRADERR_TG_CHAT  = os.environ.get('UPGRADERR_TELEGRAM_CHAT_ID', '')
+TMDB_BASE          = 'https://api.themoviedb.org/3'
+BLURAY_WAIT_DAYS   = int(os.environ.get('UPGRADERR_BLURAY_WAIT_DAYS', '90'))
+SYNC_REPORTS_DIR   = '/opt/sync_reports'
 
 JWT_ACCESS_TTL  = 3600
 JWT_REFRESH_TTL = 604800
@@ -216,8 +219,35 @@ def init_database():
             key   TEXT PRIMARY KEY,
             value TEXT
         );
+        CREATE TABLE IF NOT EXISTS upgrade_history (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            instance       TEXT NOT NULL,
+            media_id       INTEGER NOT NULL,
+            media_type     TEXT NOT NULL,
+            title          TEXT,
+            before_quality TEXT,
+            before_score   INTEGER,
+            after_quality  TEXT,
+            after_score    INTEGER,
+            tier           INTEGER,
+            imported_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS tmdb_cache (
+            tmdb_id          INTEGER PRIMARY KEY,
+            physical_release TEXT,
+            streaming_only   INTEGER DEFAULT 0,
+            checked_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
     conn.commit()
+
+    # Migrate upgrade_queue: add before_quality, before_score columns if missing
+    for col, coldef in [('before_quality', 'TEXT'), ('before_score', 'INTEGER')]:
+        try:
+            conn.execute(f"ALTER TABLE upgrade_queue ADD COLUMN {col} {coldef}")
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
 
     # Bootstrap instances from env if table is empty
     existing = conn.execute("SELECT COUNT(*) FROM instances").fetchone()[0]
@@ -456,7 +486,7 @@ SURROUND_AUDIO = {
 def get_pre_era_skip_tier5(year):
     return year is not None and year < 1992
 
-def classify_tiers(filename, year=None, is_4k=False, media_type='movie'):
+def classify_tiers(filename, year=None, is_4k=False, media_type='movie', tmdb_id=None, web_source=False):
     if not filename:
         return []
     tiers = []
@@ -479,6 +509,20 @@ def classify_tiers(filename, year=None, is_4k=False, media_type='movie'):
 
     if resolution in ('720p', '480p'):
         tiers.append((3, 'tier3_720p'))
+
+    # Tier 4: WEB-DL/WEBRip with BluRay now available
+    detected_web = web_source or any(
+        t in fn_lower for t in ('webdl', 'webrip', 'web-dl', 'web-rip')
+    )
+    if tmdb_id and detected_web:
+        physical_date, streaming_only = _tmdb_get_physical_release(tmdb_id)
+        if physical_date and not streaming_only:
+            try:
+                phys_dt = datetime.strptime(physical_date, '%Y-%m-%d')
+                if (datetime.utcnow() - phys_dt).days >= BLURAY_WAIT_DAYS:
+                    tiers.append((4, 'tier4_bluray'))
+            except Exception:
+                pass
 
     if not get_pre_era_skip_tier5(year):
         import re
@@ -507,6 +551,114 @@ def get_current_score(filename, is_4k=False, media_type='movie'):
         codec=q.get('codec', ''), size_gb=0,
         is_4k=is_4k, media_type=media_type,
     )
+
+# ---------------------------------------------------------------------------
+# TMDB helpers (Tier 4 — BluRay release detection)
+# ---------------------------------------------------------------------------
+
+def _tmdb_api_key():
+    return get_cfg('tmdb_api_key', os.getenv('TMDB_API_KEY', ''))
+
+def _tmdb_get_physical_release(tmdb_id: int) -> tuple:
+    """Returns (physical_release_date_str_or_None, streaming_only_bool).
+    Checks cache first (valid for 7 days). Queries TMDB if stale/missing."""
+    db = get_db()
+    row = db.execute(
+        "SELECT physical_release, streaming_only, checked_at FROM tmdb_cache WHERE tmdb_id=?",
+        (tmdb_id,)
+    ).fetchone()
+    if row:
+        checked = row['checked_at']
+        if isinstance(checked, str):
+            try:
+                checked_dt = datetime.fromisoformat(checked)
+            except Exception:
+                checked_dt = datetime.utcnow() - timedelta(days=8)
+        else:
+            checked_dt = checked
+        if (datetime.utcnow() - checked_dt).days < 7:
+            return row['physical_release'], bool(row['streaming_only'])
+
+    api_key = _tmdb_api_key()
+    if not api_key:
+        return None, False
+
+    try:
+        url = f"{TMDB_BASE}/movie/{tmdb_id}/release_dates?api_key={api_key}"
+        r = requests.get(url, timeout=10)
+        if not r.ok:
+            return None, False
+        data = r.json()
+        results = data.get('results', [])
+
+        has_any_release = len(results) > 0
+        type5_dates = []
+        for country in results:
+            for rel in country.get('release_dates', []):
+                if rel.get('type') == 5 and rel.get('release_date'):
+                    date_str = rel['release_date'][:10]
+                    type5_dates.append(date_str)
+
+        if type5_dates:
+            physical_date = min(type5_dates)
+            streaming_only = False
+        else:
+            streaming_only = has_any_release
+            physical_date = None
+
+        db.execute(
+            "INSERT OR REPLACE INTO tmdb_cache (tmdb_id, physical_release, streaming_only, checked_at) VALUES (?,?,?,?)",
+            (tmdb_id, physical_date, 1 if streaming_only else 0, datetime.utcnow().isoformat())
+        )
+        db.commit()
+        return physical_date, streaming_only
+    except Exception as e:
+        log.warning(f"TMDB lookup failed for {tmdb_id}: {e}")
+        return None, False
+
+def _scan_tmdb_releases():
+    """Daily job: pre-warm TMDB cache for all WEB-DL/WEBRip movies."""
+    log.info("[tmdb_scan] Starting TMDB release date pre-fetch")
+    instances = get_instances_from_db()
+    count = 0
+    for inst_name, inst in instances.items():
+        if not inst.get('enabled') or inst.get('type') != 'radarr':
+            continue
+        inst['name'] = inst_name
+        movies = arr_get(inst, '/movie') or []
+        for movie in movies:
+            mfile = movie.get('movieFile')
+            if not mfile:
+                continue
+            fn = mfile.get('relativePath', '') or mfile.get('path', '')
+            fn_lower = fn.lower()
+            if not any(t in fn_lower for t in ('webdl', 'webrip', 'web-dl', 'web-rip')):
+                continue
+            tmdb_id = movie.get('tmdbId')
+            if not tmdb_id:
+                continue
+            _tmdb_get_physical_release(tmdb_id)
+            count += 1
+    log.info(f"[tmdb_scan] Pre-fetched TMDB data for {count} WEB-DL movies")
+
+# ---------------------------------------------------------------------------
+# Bandwidth-aware sweep guard
+# ---------------------------------------------------------------------------
+
+def _sync_is_active() -> bool:
+    """Returns True if batch sync is actively writing progress (within last 2 minutes)."""
+    import glob as _glob
+    import time as _time
+    try:
+        pattern = os.path.join(SYNC_REPORTS_DIR, 'sync_progress_*.log')
+        files = _glob.glob(pattern)
+        if not files:
+            return False
+        newest = max(files, key=os.path.getmtime)
+        age_seconds = _time.time() - os.path.getmtime(newest)
+        return age_seconds < 120
+    except Exception:
+        return False
 
 # ---------------------------------------------------------------------------
 # Sweep rate limiting — in-memory counter (reliable, no DB-read race conditions)
@@ -562,18 +714,22 @@ def _db_increment_daily(searches=0, upgrades=0):
         )
         db.commit()
 
-def _db_upsert_queue(instance, media_id, media_type, title, score, tier, reason, search_type, season=None):
+def _db_upsert_queue(instance, media_id, media_type, title, score, tier, reason, search_type,
+                     season=None, current_filename=None):
     db = get_db()
     with _db_lock:
+        # Only set before_quality/before_score on INSERT (first time), not on subsequent sweeps
         db.execute(
             """INSERT INTO upgrade_queue
-               (instance,media_id,media_type,title,current_score,priority_tier,upgrade_reason,search_type,season_number)
-               VALUES(?,?,?,?,?,?,?,?,?)
+               (instance,media_id,media_type,title,current_score,priority_tier,upgrade_reason,
+                search_type,season_number,before_quality,before_score)
+               VALUES(?,?,?,?,?,?,?,?,?,?,?)
                ON CONFLICT(instance,media_id,media_type) DO UPDATE SET
                  title=excluded.title, current_score=excluded.current_score,
                  priority_tier=excluded.priority_tier, upgrade_reason=excluded.upgrade_reason,
                  search_type=excluded.search_type, status='pending'""",
-            (instance, media_id, media_type, title, score, tier, reason, search_type, season)
+            (instance, media_id, media_type, title, score, tier, reason, search_type, season,
+             current_filename, score)
         )
         db.commit()
 
@@ -618,6 +774,10 @@ def do_sweep(trigger='scheduled'):
         _sweep_lock.release()
 
 def _run_sweep(trigger):
+    if _sync_is_active():
+        log.info("Batch sync is active — deferring sweep to avoid conflicts")
+        return
+
     _reload_config()
 
     per_inst  = int(get_cfg('searches_per_hour', str(SEARCHES_PER_HOUR)))
@@ -683,7 +843,8 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
             continue
 
         filename = mfile.get('relativePath', '') or mfile.get('path', '')
-        tiers = classify_tiers(filename, year=year, is_4k=is_4k, media_type='movie')
+        tmdb_id = movie.get('tmdbId')
+        tiers = classify_tiers(filename, year=year, is_4k=is_4k, media_type='movie', tmdb_id=tmdb_id)
         tiers = [(t, r) for (t, r) in tiers if _tier_enabled(t)]
         if not tiers:
             continue
@@ -699,7 +860,8 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
             if datetime.utcnow().isoformat() < row['cooldown_until']:
                 continue
 
-        _db_upsert_queue(inst_name, mid, 'movie', full_title, score, top_tier, top_reason, 'movie')
+        _db_upsert_queue(inst_name, mid, 'movie', full_title, score, top_tier, top_reason, 'movie',
+                         current_filename=filename)
 
         if _is_paused():
             _db_log_search(inst_name, full_title, trigger, 'skipped_paused', top_tier, 'movie')
@@ -815,7 +977,8 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
 
             score = get_current_score(sdata['fn'], is_4k=is_4k, media_type='tv')
             _db_upsert_queue(inst_name, composite_id, 'season', title, score,
-                             top_tier, top_reason, search_type, snum)
+                             top_tier, top_reason, search_type, snum,
+                             current_filename=sdata['fn'])
 
             if _is_paused():
                 _db_log_search(inst_name, title, trigger, 'skipped_paused', top_tier, search_type)
@@ -896,6 +1059,12 @@ def start_scheduler():
         id='backup', replace_existing=True,
     )
 
+    scheduler.add_job(
+        lambda: _scan_tmdb_releases(),
+        'cron', hour=2, minute=30,
+        id='tmdb_scan', replace_existing=True,
+    )
+
     scheduler.start()
     log.info(f"Scheduler started — sweep every {sweep_interval}m, backup at {backup_hour:02d}:00 UTC")
 
@@ -969,6 +1138,7 @@ def dashboard():
 
     instances = get_instances_request()
     instance_status = {}
+    instance_health = {}
     for iname, idata in instances.items():
         qd = db.execute(
             "SELECT COUNT(*) as cnt FROM upgrade_queue WHERE instance=? AND status='pending'",
@@ -979,6 +1149,8 @@ def dashboard():
             'enabled': bool(idata['enabled']),
             'queue_depth': qd,
         }
+        if idata.get('enabled'):
+            instance_health[iname] = _check_instance_health(idata)
 
     next_sweep = None
     job = scheduler.get_job('sweep')
@@ -993,6 +1165,7 @@ def dashboard():
         tier_counts=tier_counts,
         activity=activity,
         instance_status=instance_status,
+        instance_health=instance_health,
         next_sweep=next_sweep,
     )
 
@@ -1441,6 +1614,211 @@ def api_backup_restore():
     f.save(str(restore_path))
     log.info(f"Database restored from uploaded file")
     return jsonify({'status': 'restored', 'message': 'DB restored. Restart container to apply.'})
+
+# ---------------------------------------------------------------------------
+# Instance helpers
+# ---------------------------------------------------------------------------
+
+def get_instance(name):
+    """Return a single instance dict by name (request-scoped)."""
+    db = get_request_db()
+    row = db.execute("SELECT * FROM instances WHERE name=?", (name,)).fetchone()
+    return dict(row) if row else None
+
+def _check_instance_health(inst) -> bool:
+    """Quick health check — returns True if instance responds within 3s."""
+    try:
+        url = inst['url'].rstrip('/') + '/api/v3/system/status'
+        r = requests.get(url, headers={'X-Api-Key': inst['api_key']}, timeout=3)
+        return r.ok
+    except Exception:
+        return False
+
+# ---------------------------------------------------------------------------
+# Webhook endpoints (unauthenticated — called by Radarr/Sonarr)
+# ---------------------------------------------------------------------------
+
+def _is_internal_request():
+    """Allow requests from Docker bridge (172.x), private LAN (10.x, 192.168.x), or localhost."""
+    addr = request.remote_addr or ''
+    return (addr == '127.0.0.1' or addr.startswith('172.') or
+            addr.startswith('10.') or addr.startswith('192.168.'))
+
+@app.route('/webhook/radarr', methods=['POST'])
+def webhook_radarr():
+    """Receive download/import events from Radarr."""
+    if not _is_internal_request():
+        return jsonify({'error': 'Forbidden'}), 403
+
+    data = request.get_json(silent=True) or {}
+    event_type = data.get('eventType', '')
+
+    if event_type not in ('Download', 'MovieFileRenamed'):
+        return jsonify({'status': 'ignored'}), 200
+
+    movie = data.get('movie', {})
+    movie_file = data.get('movieFile', {})
+    mid = movie.get('id')
+    title = movie.get('title', 'Unknown')
+    year = movie.get('year', '')
+    new_path = movie_file.get('relativePath', '') or movie_file.get('path', '')
+
+    if not mid:
+        return jsonify({'status': 'no_id'}), 200
+
+    db = get_request_db()
+    row = db.execute(
+        "SELECT * FROM upgrade_queue WHERE media_id=? AND media_type='movie'", (mid,)
+    ).fetchone()
+
+    inst_name = row['instance'] if row else 'radarr-unknown'
+    before_quality = row['before_quality'] if row else None
+    before_score = row['before_score'] if row else None
+    tier = row['priority_tier'] if row else None
+    full_title = f"{title} ({year})" if year else title
+
+    after_score = get_current_score(new_path, media_type='movie') if new_path else None
+
+    db.execute(
+        """INSERT INTO upgrade_history
+           (instance, media_id, media_type, title, before_quality, before_score,
+            after_quality, after_score, tier)
+           VALUES (?,?,?,?,?,?,?,?,?)""",
+        (inst_name, mid, 'movie', full_title, before_quality, before_score,
+         new_path, after_score, tier)
+    )
+
+    db.execute(
+        """UPDATE upgrade_queue SET status='found', searched_at=CURRENT_TIMESTAMP
+           WHERE media_id=? AND media_type='movie'""",
+        (mid,)
+    )
+    db.commit()
+
+    log.info(f"[webhook] Radarr import: {full_title} -> {new_path}")
+    return jsonify({'status': 'recorded'}), 200
+
+
+@app.route('/webhook/sonarr', methods=['POST'])
+def webhook_sonarr():
+    """Receive download/import events from Sonarr."""
+    if not _is_internal_request():
+        return jsonify({'error': 'Forbidden'}), 403
+
+    data = request.get_json(silent=True) or {}
+    event_type = data.get('eventType', '')
+
+    if event_type not in ('Download', 'EpisodeFileRenamed'):
+        return jsonify({'status': 'ignored'}), 200
+
+    series = data.get('series', {})
+    episode_file = data.get('episodeFile', {})
+    sid = series.get('id')
+    title = series.get('title', 'Unknown')
+    year = series.get('year', '')
+    new_path = episode_file.get('relativePath', '') or episode_file.get('path', '')
+    season_num = episode_file.get('seasonNumber', 0)
+
+    if not sid:
+        return jsonify({'status': 'no_id'}), 200
+
+    composite_id = sid * 10000 + season_num
+    db = get_request_db()
+    row = db.execute(
+        "SELECT * FROM upgrade_queue WHERE media_id=? AND media_type='season'", (composite_id,)
+    ).fetchone()
+
+    inst_name = row['instance'] if row else 'sonarr-unknown'
+    before_quality = row['before_quality'] if row else None
+    before_score = row['before_score'] if row else None
+    tier = row['priority_tier'] if row else None
+    season_title = f"{title} S{season_num:02d}" if season_num else title
+
+    after_score = get_current_score(new_path, media_type='tv') if new_path else None
+
+    db.execute(
+        """INSERT INTO upgrade_history
+           (instance, media_id, media_type, title, before_quality, before_score,
+            after_quality, after_score, tier)
+           VALUES (?,?,?,?,?,?,?,?,?)""",
+        (inst_name, composite_id, 'season', season_title, before_quality, before_score,
+         new_path, after_score, tier)
+    )
+
+    db.execute(
+        """UPDATE upgrade_queue SET status='found', searched_at=CURRENT_TIMESTAMP
+           WHERE media_id=? AND media_type='season'""",
+        (composite_id,)
+    )
+    db.commit()
+
+    log.info(f"[webhook] Sonarr import: {season_title} -> {new_path}")
+    return jsonify({'status': 'recorded'}), 200
+
+# ---------------------------------------------------------------------------
+# API — Manual queue search
+# ---------------------------------------------------------------------------
+
+@app.route('/api/queue/<int:item_id>/search', methods=['POST'])
+@require_auth
+def api_queue_search(item_id):
+    db = get_request_db()
+    row = db.execute("SELECT * FROM upgrade_queue WHERE id=?", (item_id,)).fetchone()
+    if not row:
+        return jsonify({'error': 'Not found'}), 404
+
+    inst = get_instance(row['instance'])
+    if not inst or not inst.get('enabled'):
+        return jsonify({'error': 'Instance not available'}), 400
+
+    if row['media_type'] == 'movie':
+        result = arr_post(inst, '/command', {'name': 'MoviesSearch', 'movieIds': [row['media_id']]})
+    elif row['search_type'] == 'season':
+        sid = row['media_id'] // 10000
+        snum = row['season_number']
+        result = arr_post(inst, '/command', {
+            'name': 'SeasonSearch', 'seriesId': sid, 'seasonNumber': snum
+        })
+    else:
+        return jsonify({'error': 'Unsupported search type'}), 400
+
+    if result:
+        cooldown_h = int(get_config('cooldown_hours', str(COOLDOWN_HOURS)))
+        cooldown_until = (datetime.utcnow() + timedelta(hours=cooldown_h)).isoformat()
+        search_count = (row['search_count'] or 0) + 1
+        db.execute(
+            """UPDATE upgrade_queue SET status='searching', searched_at=CURRENT_TIMESTAMP,
+               search_count=?, cooldown_until=? WHERE id=?""",
+            (search_count, cooldown_until, item_id)
+        )
+        db.commit()
+        _db_log_search(row['instance'], row['title'], 'manual', 'triggered',
+                       row['priority_tier'], row['search_type'] or 'movie')
+        _db_increment_daily(searches=1)
+        return jsonify({'status': 'triggered'})
+    else:
+        return jsonify({'error': 'Search command failed'}), 500
+
+# ---------------------------------------------------------------------------
+# Upgrade History page
+# ---------------------------------------------------------------------------
+
+@app.route('/upgrades')
+@require_auth
+def upgrades_page():
+    db = get_request_db()
+    page = max(1, request.args.get('page', 1, type=int))
+    per_page = 50
+    offset = (page - 1) * per_page
+
+    total = db.execute("SELECT COUNT(*) as cnt FROM upgrade_history").fetchone()['cnt']
+    items = db.execute(
+        "SELECT * FROM upgrade_history ORDER BY imported_at DESC LIMIT ? OFFSET ?",
+        (per_page, offset)
+    ).fetchall()
+
+    return render_template('upgrades.html', items=items, total=total,
+                           page=page, per_page=per_page, fmt_dt=fmt_dt)
 
 # ---------------------------------------------------------------------------
 # Init

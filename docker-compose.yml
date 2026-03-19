@@ -527,6 +527,7 @@ services:
       - UPGRADERR_TELEGRAM_CHAT_ID=${UPGRADERR_TELEGRAM_CHAT_ID:-}
     volumes:
       - /opt/mother/data/upgraderr:/data
+      - /opt/mother/reports:/opt/sync_reports:ro
     ports:
       - "${UPGRADERR_PORT:-9706}:5000"
     restart: unless-stopped
