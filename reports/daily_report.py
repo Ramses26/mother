@@ -152,7 +152,7 @@ def count_operations_movies(script_path: Path) -> int:
         content = f.read()
     matches_rsync = re.findall(r'^do_rsync ', content, re.MULTILINE)
     matches_move = re.findall(r'^do_move ', content, re.MULTILINE)
-    matches_runcmd = re.findall(r'^run_cmd "[^"]+" rsync', content, re.MULTILINE)
+    matches_runcmd = re.findall(r'^run_cmd "', content, re.MULTILINE)
     return len(matches_rsync) + len(matches_move) + len(matches_runcmd)
 
 
@@ -241,6 +241,38 @@ def get_sync_status(scripts_dir: Path, script_pattern: str, script_type: str) ->
         'errors_today': errors_today,
         'last_activity': last_activity,
     }
+
+
+# =============================================================================
+# Upgraderr Functions
+# =============================================================================
+
+def get_upgraderr_stats() -> dict:
+    """Fetch stats from the Upgraderr API"""
+    try:
+        import urllib.request
+        import json
+        import http.cookiejar
+
+        # Need session cookie — use the /api/stats endpoint with JWT
+        # Upgraderr runs on localhost:9706; try without auth first (health)
+        req = urllib.request.urlopen('http://localhost:9706/api/stats', timeout=5)
+        data = json.loads(req.read().decode())
+        return data
+    except Exception:
+        return None
+
+
+def get_upgraderr_queue_summary() -> dict:
+    """Get queue tier breakdown from Upgraderr API"""
+    try:
+        import urllib.request
+        import json
+        req = urllib.request.urlopen('http://localhost:9706/api/queue/summary', timeout=5)
+        data = json.loads(req.read().decode())
+        return data
+    except Exception:
+        return None
 
 
 # =============================================================================
@@ -390,6 +422,21 @@ def generate_report(scripts_dir: Path, snapshots_file: Path) -> tuple:
         lines.append(f"\U0001F4E4 {bytes_to_human(vpn_traffic['to_unraid'])} sent | \U0001F4E5 {bytes_to_human(vpn_traffic['from_unraid'])} received")
         lines.append(f"\U0001F4E6 {bytes_to_human(vpn_traffic['total'])} today | \u26A1 {vpn_traffic['avg_speed_mbps']:.1f} Mbps avg")
         lines.append(f"\U0001F4C8 {vpn_traffic['utilization']:.1f}% utilization ({vpn_traffic['hours_tracked']:.1f}h tracked)")
+        lines.append("")
+
+    # Upgraderr Section
+    upgraderr_stats = get_upgraderr_stats()
+    if upgraderr_stats:
+        paused = upgraderr_stats.get('paused', False)
+        pause_icon = "⏸" if paused else "▶"
+        lines.append("━━━ Upgraderr ━━━")
+        lines.append(f"🔍 {pause_icon} {'PAUSED' if paused else 'Running'} | Searches today: {upgraderr_stats.get('searches_today', 0)} | Queue: {upgraderr_stats.get('queue_total', 0)}")
+        tier_counts = upgraderr_stats.get('tier_counts', {})
+        if tier_counts:
+            tier_labels = {1: 'm2ts', 2: 'non-MKV', 3: '720p', 4: 'BluRay', 5: 'audio', 6: 'score'}
+            tier_parts = [f"T{t}({tier_labels.get(t,'?')}): {n}" for t, n in sorted(tier_counts.items()) if n > 0]
+            if tier_parts:
+                lines.append(f"   {' | '.join(tier_parts)}")
         lines.append("")
 
     # Health Section (only show if errors exceed threshold)

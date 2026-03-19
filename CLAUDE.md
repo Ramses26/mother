@@ -42,13 +42,24 @@ Project Mother is a media management and synchronization system consolidating tw
 
 ## Key Code Components
 
-### `services/sync-webhook/app.py` (72KB Flask app)
+### `services/sync-webhook/app.py` (Flask app)
 The largest and most critical codebase component. Handles:
 - Webhook endpoints: `POST /sync/radarr`, `/sync/sonarr`, `/sync/manual`
 - SQLite job tracking with retry logic (up to 20 retries)
-- APScheduler tasks: daily summary, auto-retry (15min), history scanner (30min)
+- APScheduler tasks: daily summary, auto-retry (15min), history scanner (30min), **stall watchdog (15min)**
 - Plex library scan integration (optional)
 - Health/stats API: `GET /health`, `/stats`, `/jobs`
+
+**Stall Watchdog** (`check_stalled_syncs`): Self-healing mechanism that detects frozen rsync processes.
+Monitors `/proc/<pid>/io` (rchar+wchar) every 15 min for each in-progress job. Kills the rsync
+process group (`killpg`) if no I/O activity for `RSYNC_STALL_MINUTES` (default 15m) or if total
+runtime exceeds `RSYNC_MAX_MINUTES` (default 240m). Uses `stall_killed` DB flag so the `do_sync()`
+thread sends a "Stalled Sync Killed" Telegram alert instead of generic "Sync Failed".
+
+**History scanner TV path fix**: Uses `data.importedPath` (specific episode file) from Sonarr history
+instead of `series.path` (entire show directory), preventing whole-show rsyncs that block the queue.
+
+**DB columns**: `rsync_pid`, `last_progress_bytes`, `last_progress_at`, `stall_killed` (added 2026-02-23)
 
 ### `scripts/compare_libraries.py` (~1500 lines) — Movies
 Compares two movie library inventories using TMDB/IMDB matching and TRASH-format filename parsing. Generates three outputs: human-readable report, CSV sync plan, and executable sync shell script. Quality scoring prioritizes: Audio > HDR at 1080p (Atmos +500 > HDR +400).

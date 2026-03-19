@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Queue — Upgraderr{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Upgrade Queue</h1>
+  <span class="stat-badge">{{ total }} items</span>
+</div>
+
+<p class="help-text">
+  Items here were <strong>identified</strong> as needing a quality upgrade.
+  <strong>Pending</strong> = not yet searched (or in cooldown after a previous attempt).
+  <strong>Searching</strong> = search command was sent to Radarr/Sonarr — check their Activity log for results.
+</p>
+
+<form class="filter-bar" method="get">
+  <select name="instance" class="form-select">
+    <option value="">All Instances</option>
+    {% for iname in instances %}
+    <option value="{{ iname }}" {% if instance_filter == iname %}selected{% endif %}>{{ iname }}</option>
+    {% endfor %}
+  </select>
+  <select name="tier" class="form-select">
+    <option value="">All Tiers</option>
+    {% for t in range(1, 7) %}
+    <option value="{{ t }}" {% if tier_filter == t|string %}selected{% endif %}>Tier {{ t }}</option>
+    {% endfor %}
+  </select>
+  <select name="status" class="form-select">
+    <option value="pending"   {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+    <option value="searching" {% if status_filter == 'searching' %}selected{% endif %}>Searching</option>
+    <option value="found"     {% if status_filter == 'found' %}selected{% endif %}>Found</option>
+    <option value=""          {% if not status_filter %}selected{% endif %}>All</option>
+  </select>
+  <button type="submit" class="btn btn-primary">Filter</button>
+</form>
+
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Instance</th>
+        <th>Tier</th>
+        <th>Reason</th>
+        <th>Score</th>
+        <th>Searches</th>
+        <th>Status</th>
+        <th>Cooldown Until</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.title or '—' }}</td>
+        <td><span class="badge badge-gray">{{ item.instance }}</span></td>
+        <td><span class="badge tier-badge-{{ item.priority_tier }}">T{{ item.priority_tier }}</span></td>
+        <td class="mono small">{{ item.upgrade_reason or '—' }}</td>
+        <td class="mono">{{ item.current_score }}</td>
+        <td>{{ item.search_count }}</td>
+        <td><span class="result-badge result-{{ item.status }}">{{ item.status }}</span></td>
+        <td class="mono small">{{ fmt_dt(item.cooldown_until) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="empty">No items match the current filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if total > per_page %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a href="?page={{ page-1 }}&instance={{ instance_filter }}&tier={{ tier_filter }}&status={{ status_filter }}"
+     class="btn btn-sm btn-ghost">← Prev</a>
+  {% endif %}
+  <span>Page {{ page }} of {{ ((total-1)//per_page)+1 }}</span>
+  {% if page * per_page < total %}
+  <a href="?page={{ page+1 }}&instance={{ instance_filter }}&tier={{ tier_filter }}&status={{ status_filter }}"
+     class="btn btn-sm btn-ghost">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

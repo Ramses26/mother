@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Upgraderr{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  {% if request.path != '/login' %}
+  <nav class="navbar">
+    <div class="nav-brand">⬆ Upgraderr</div>
+    <div class="nav-links">
+      <a href="{{ url_for('dashboard') }}"    class="{% if request.path == '/' %}active{% endif %}">Dashboard</a>
+      <a href="{{ url_for('queue_page') }}"   class="{% if request.path == '/queue' %}active{% endif %}">Queue</a>
+      <a href="{{ url_for('history_page') }}" class="{% if request.path == '/history' %}active{% endif %}">History</a>
+      <a href="{{ url_for('settings_page') }}" class="{% if request.path == '/settings' %}active{% endif %}">Settings</a>
+    </div>
+    <form action="{{ url_for('logout') }}" method="post" style="display:inline">
+      <button type="submit" class="btn btn-sm btn-ghost">Logout</button>
+    </form>
+  </nav>
+
+  {% if paused is defined and paused %}
+  <div class="pause-banner">
+    ⏸ Upgraderr is paused — discovery running, searches suspended
+    <button class="btn btn-sm btn-success" onclick="resumeSweeps()" style="margin-left:1rem">▶ Resume</button>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

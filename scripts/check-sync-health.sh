@@ -75,6 +75,41 @@ check_and_restart() {
     fi
 }
 
+# Check if sync-webhook container can see the CIFS mount.
+# After a reboot, Docker may start the container before the VPN+CIFS is ready,
+# binding it to an empty directory. Restart it once the mount is available.
+check_webhook_mount() {
+    # First verify CIFS is actually mounted on the host
+    if ! timeout 5 ls /mnt/unraid/media/ > /dev/null 2>&1; then
+        log "webhook-mount: CIFS not ready on host yet - skipping"
+        return 0
+    fi
+
+    # Check if the container can see any subdirectories
+    local container_visible
+    container_visible=$(docker exec sync-webhook ls /mnt/unraid/media/ 2>/dev/null | wc -l)
+    if [ "$container_visible" -gt 0 ]; then
+        return 0  # Container sees the mount fine
+    fi
+
+    log "webhook-mount: Container sees empty /mnt/unraid/media (stale bind mount) - RESTARTING"
+    cd /opt/mother && docker compose restart sync-webhook >> "$LOG_DIR/sync-health.log" 2>&1
+
+    # Notify
+    if command -v curl &>/dev/null && [ -f /opt/mother/.env ]; then
+        source /opt/mother/.env 2>/dev/null
+        if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                -d "chat_id=${TELEGRAM_CHAT_ID}" \
+                -d "text=Mother: sync-webhook restarted to pick up CIFS mount (post-reboot recovery)" \
+                >/dev/null 2>&1
+        fi
+    fi
+}
+
 # Check both syncs
 check_and_restart "movie" "sync_actions_*.sh"
 check_and_restart "tvsync" "tv_sync_actions_*.sh"
+
+# Check webhook mount visibility
+check_webhook_mount

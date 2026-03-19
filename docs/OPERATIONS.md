@@ -35,15 +35,17 @@ This document covers day-to-day operations, monitoring, alerting, and optimizati
 | Daily progress | `daily_report.py` | 8 AM daily | Telegram summary |
 | sync-webhook health | Docker healthcheck | Every 30 sec | Docker restart |
 | sync-webhook failures | Built-in auto-retry | Every 15 min | Telegram on failure |
+| sync-webhook stall watchdog | Built-in scheduler | Every 15 min | Telegram ⚠️ "Stalled Sync Killed" |
 | sync-webhook daily summary | Built-in scheduler | 00:05 daily | Telegram summary |
 | sync-webhook history scanner | Built-in scheduler | Every 30 min | Catches missed webhooks |
 
 ### Telegram Notifications You Receive
 
-1. **Daily Report (8 AM)** - Sync progress, VPN traffic, errors
-2. **Sync Webhook Failures** - Immediate alert when rsync fails
-3. **Sync Webhook Daily Summary** - Failed titles, items needing attention
-4. **Screen Restart Alerts** - When health check restarts a dead screen
+1. **Daily Report (every 2 hours)** - Sync progress, VPN traffic, errors
+2. **Sync Webhook Failures** - Immediate alert when rsync fails after all retries
+3. **⚠️ Stalled Sync Killed** - When watchdog kills a frozen rsync (will auto-retry)
+4. **Sync Webhook Daily Summary** - Failed titles, items needing attention
+5. **Screen Restart Alerts** - When health check restarts a dead batch sync screen
 
 ### What's NOT Currently Monitored (Future Enhancements)
 
@@ -53,6 +55,8 @@ This document covers day-to-day operations, monitoring, alerting, and optimizati
 | VPN tunnel down | Add ping check to daily report | Medium |
 | Disk space on Mother | Add df check | Low |
 | Docker container crashes | Uptime Kuma or similar | Low |
+
+> **Stall detection is now built in** — the sync-webhook stall watchdog handles frozen rsync processes automatically via `/proc/<pid>/io` monitoring. No manual intervention needed for D-state NFS hangs.
 
 ---
 
@@ -135,6 +139,8 @@ Once the batch sync finishes (movies and TV both at 100%):
 | `SYNC_MAX_CONCURRENT` | 2 | 4-8 | Increase after bulk sync completes |
 | `SYNC_DRY_RUN` | false | false | Preview mode |
 | `SYNC_LOG_LEVEL` | INFO | INFO | DEBUG for troubleshooting |
+| `RSYNC_STALL_MINUTES` | 15 | 15 | Minutes of zero I/O before watchdog kills rsync |
+| `RSYNC_MAX_MINUTES` | 240 | 240 | Absolute max runtime (even if making progress) |
 
 ### How to Increase SYNC_MAX_CONCURRENT
 
@@ -278,6 +284,8 @@ ssh mother 'tail -50 /opt/mother/logs/sync-health.log'
 - [x] Daily Telegram progress report
 - [x] Webhook sync for new content
 - [x] Auto-retry for failed webhook syncs
+- [x] Stall watchdog (auto-kills frozen rsync, Telegram alert)
+- [x] History scanner failsafe (catches missed webhooks)
 - [ ] Nightly reconciliation (not scheduled)
 - [ ] NFS mount monitoring
 - [ ] VPN tunnel monitoring

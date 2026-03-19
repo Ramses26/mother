@@ -80,3 +80,15 @@ credentials/
 # Personal notes
 NOTES.md
 TODO_PERSONAL.md
+
+# Generated inventories and sync reports (large, auto-generated)
+inventories/*.json
+inventories/*.csv
+reports/*.sh
+reports/*.log
+reports/*.txt
+reports/dedup/
+reports/plex_dupes/
+
+# Upgraderr runtime data
+data/upgraderr/

@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% block title %}Settings — Upgraderr{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Settings</h1>
+</div>
+
+<div id="saveAlert"  class="alert alert-success" style="display:none">Saved.</div>
+<div id="saveError"  class="alert alert-error"   style="display:none"></div>
+
+<!-- ── Global Control ── -->
+<div class="settings-section">
+  <h2>Global Control</h2>
+  <div class="form-row" style="gap:1rem;align-items:center">
+    <button type="button" id="pauseBtn"
+            class="btn {% if paused %}btn-success{% else %}btn-warning{% endif %}"
+            onclick="togglePause({{ 'true' if paused else 'false' }})">
+      {% if paused %}▶ Resume Sweeps{% else %}⏸ Pause Sweeps{% endif %}
+    </button>
+    <span class="settings-note">{% if paused %}Sweeps paused. Discovery still runs; searches suspended.
+    {% else %}Sweeps running. Pause to temporarily stop all searches.{% endif %}</span>
+  </div>
+</div>
+
+<!-- ── Instances ── -->
+<div class="settings-section">
+  <h2>Instances</h2>
+  <p class="help-text">API URLs and keys are stored in the database and can be changed here at any time.</p>
+  <div id="instanceList">
+    {% for iname, inst in instances.items() %}
+    <div class="instance-row" id="inst-{{ iname }}">
+      <div class="instance-row-header">
+        <strong>{{ inst.label }}</strong>
+        <span class="badge badge-gray">{{ inst.type }}</span>
+        {% if inst.enabled %}<span class="badge badge-green">Enabled</span>
+        {% else %}<span class="badge badge-gray">Disabled</span>{% endif %}
+      </div>
+      <div class="instance-fields">
+        <div class="form-group" style="flex:2">
+          <label>URL</label>
+          <input type="text" id="url-{{ iname }}" class="form-control"
+                 value="{{ inst.url }}" placeholder="http://radarr-hd:7878">
+        </div>
+        <div class="form-group" style="flex:3">
+          <label>API Key</label>
+          <input type="password" id="key-{{ iname }}" class="form-control"
+                 value="{{ inst.api_key }}" placeholder="API key"
+                 autocomplete="new-password">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Label</label>
+          <input type="text" id="label-{{ iname }}" class="form-control" value="{{ inst.label }}">
+        </div>
+      </div>
+      <div class="instance-actions">
+        <label class="toggle" title="Enable/disable this instance">
+          <input type="checkbox" id="enabled-{{ iname }}"
+                 {% if inst.enabled %}checked{% endif %}
+                 onchange="saveInstance('{{ iname }}')">
+          <span class="toggle-slider"></span>
+        </label>
+        <button class="btn btn-sm btn-ghost" onclick="saveInstance('{{ iname }}')">Save</button>
+        <button class="btn btn-sm btn-ghost" onclick="testInstance('{{ iname }}')"
+                id="test-{{ iname }}">Test Connection</button>
+        <span id="test-result-{{ iname }}" class="test-result"></span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Add new instance -->
+  <details class="add-instance-panel">
+    <summary class="btn btn-sm btn-ghost" style="cursor:pointer;display:inline-flex">+ Add Instance</summary>
+    <div class="add-instance-form">
+      <div class="instance-fields">
+        <div class="form-group" style="flex:1">
+          <label>Name (unique ID)</label>
+          <input type="text" id="new-name" class="form-control" placeholder="e.g. radarr-anime">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Type</label>
+          <select id="new-type" class="form-select">
+            <option value="radarr">Radarr</option>
+            <option value="sonarr">Sonarr</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Label</label>
+          <input type="text" id="new-label" class="form-control" placeholder="Radarr Anime">
+        </div>
+        <div class="form-group" style="flex:2">
+          <label>URL</label>
+          <input type="text" id="new-url" class="form-control" placeholder="http://radarr-anime:7878">
+        </div>
+        <div class="form-group" style="flex:2">
+          <label>API Key</label>
+          <input type="password" id="new-key" class="form-control" autocomplete="new-password">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addInstance()">Add Instance</button>
+      <span id="add-result" class="test-result"></span>
+    </div>
+  </details>
+</div>
+
+<!-- ── Rate Limits ── -->
+<div class="settings-section">
+  <h2>Rate Limits</h2>
+  <div class="settings-grid">
+    <div class="form-group">
+      <label>Max Searches per Sweep (per instance)</label>
+      <input type="number" name="searches_per_hour" class="form-control"
+             value="{{ cfg.searches_per_hour }}" min="1" max="100">
+      <small>Upgraderr sends at most this many search commands per instance per sweep run. Default: 5</small>
+    </div>
+    <div class="form-group">
+      <label>Max Total Searches per Sweep (global)</label>
+      <input type="number" name="downloads_per_day" class="form-control"
+             value="{{ cfg.downloads_per_day }}" min="1" max="200">
+      <small>Hard cap across all instances per sweep. Default: 10</small>
+    </div>
+    <div class="form-group">
+      <label>Cooldown After Search (hours)</label>
+      <input type="number" name="cooldown_hours" class="form-control"
+             value="{{ cfg.cooldown_hours }}" min="1" max="720">
+      <small>How long to wait before re-searching an item that returned no result. Adaptive: increases with each failed attempt.</small>
+    </div>
+    <div class="form-group">
+      <label>Sweep Interval (minutes)</label>
+      <input type="number" name="sweep_minutes" class="form-control"
+             value="{{ cfg.sweep_minutes }}" min="5" max="1440">
+    </div>
+    <div class="form-group">
+      <label>Min TRaSH Score (Tier 6 threshold)</label>
+      <input type="number" name="min_score" class="form-control"
+             value="{{ cfg.min_score }}" min="0" max="10000">
+    </div>
+    <div class="form-group">
+      <label>Season Search Threshold (%)</label>
+      <input type="number" name="season_threshold" class="form-control"
+             value="{{ cfg.season_threshold }}" min="10" max="100">
+      <small>If ≥ this % of a season's episodes need upgrading → use SeasonSearch (better pack chances)</small>
+    </div>
+  </div>
+</div>
+
+<!-- ── Upgrade Tiers ── -->
+<div class="settings-section">
+  <h2>Upgrade Tiers</h2>
+  {% set tier_descs = {
+    1: ('m2ts Container',      'Files with .m2ts extension (no companion .mkv). Legacy format.'),
+    2: ('Non-MKV Container',   '.avi, .mp4, .ts, .wmv, .m4v — container upgrade needed.'),
+    3: ('720p or Lower',       'Resolution below 1080p — search for 1080p or better.'),
+    4: ('BluRay Available',    'WEB-DL/WEBRip where physical BluRay release is ≥90 days old (requires TMDB key).'),
+    5: ('No Surround Sound',   'Stereo-only audio. Skips pre-1992 titles (DD 5.1 didn\'t exist before 1992).'),
+    6: ('Low TRaSH Score',     'Catch-all: score below the minimum threshold above.'),
+  } %}
+  <div class="settings-grid">
+    {% for t in range(1, 7) %}
+    {% set desc = tier_descs[t] %}
+    <div class="form-group toggle-group">
+      <div>
+        <strong>Tier {{ t }}: {{ desc[0] }}</strong>
+        <small>{{ desc[1] }}</small>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" name="tier_enabled_{{ t }}"
+               {% if tier_enabled[t] %}checked{% endif %}>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ── Notifications ── -->
+<div class="settings-section">
+  <h2>Telegram Notifications</h2>
+  <p class="help-text">Control which events send a message to your Telegram upgrade channel.
+     "Each individual search" is off by default — with 5+ searches per sweep it gets noisy fast.</p>
+  <div class="settings-grid">
+    {% for key, (label, default) in notify_keys.items() %}
+    <div class="form-group toggle-group">
+      <div>
+        <strong>{{ label }}</strong>
+        <small>Default: {{ 'on' if default == 'true' else 'off' }}</small>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" name="{{ key }}"
+               {% if notify_cfg[key] %}checked{% endif %}>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ── Display ── -->
+<div class="settings-section">
+  <h2>Display</h2>
+  <div class="settings-grid">
+    <div class="form-group">
+      <label>Timezone</label>
+      <select name="display_tz" class="form-select" style="width:100%">
+        {% for tz in ['America/New_York','America/Chicago','America/Denver','America/Los_Angeles','America/Phoenix','UTC','Europe/London','Europe/Paris'] %}
+        <option value="{{ tz }}" {% if cfg.display_tz == tz %}selected{% endif %}>{{ tz }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="form-actions">
+  <button type="button" class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+</div>
+
+<!-- ── When Ready to Upgrade ── -->
+<div class="settings-section" style="border-color:#f59e0b33">
+  <h2 style="color:var(--warning)">⚠ When Ready to Start Upgrading</h2>
+  <p class="help-text">
+    Radarr/Sonarr quality profiles currently have <strong>upgradeAllowed: false</strong> (set by Recyclarr to
+    prevent upgrades during the initial sync). Until this is enabled, Upgraderr's searches will find nothing —
+    Radarr/Sonarr will reject every candidate with "Quality profile does not allow upgrades."
+    <br><br>
+    When your sync is fully complete, use the buttons below to enable upgrades on each instance.
+    You can also disable them again at any time (e.g., to re-run a large batch sync).
+  </p>
+
+  <div id="upgradeStatusArea">
+    {% for iname, inst in instances.items() %}
+    <div class="instance-row" style="margin-bottom:.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+        <div>
+          <strong>{{ inst.label }}</strong>
+          <span id="upgrade-status-{{ iname }}" class="test-result" style="margin-left:.5rem"></span>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="btn btn-sm btn-ghost" onclick="checkUpgradeStatus('{{ iname }}')">
+            Check Status
+          </button>
+          <button class="btn btn-sm btn-success" onclick="setUpgradesEnabled('{{ iname }}', true)">
+            ✓ Enable Upgrades
+          </button>
+          <button class="btn btn-sm btn-warning" onclick="setUpgradesEnabled('{{ iname }}', false)">
+            ✗ Disable Upgrades
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)">
+    <strong>Reset Queue & History</strong>
+    <p class="help-text" style="margin:.25rem 0 .75rem">
+      Clear all identified items and search history so Upgraderr rediscovers everything on the next sweep.
+      Use this after enabling upgrades, or any time you want a fresh start.
+    </p>
+    <button class="btn btn-sm btn-danger" onclick="resetQueue()">🗑 Reset Queue &amp; History</button>
+    <span id="reset-result" class="test-result" style="margin-left:.5rem"></span>
+  </div>
+</div>
+
+<!-- ── Password ── -->
+<div class="settings-section" style="margin-top:2rem">
+  <h2>Change Password</h2>
+  <div class="settings-grid" style="max-width:500px">
+    <div class="form-group">
+      <label>Current Password</label>
+      <input type="password" id="pw-current" class="form-control" autocomplete="current-password">
+    </div>
+    <div class="form-group">
+      <label>New Password</label>
+      <input type="password" id="pw-new" class="form-control" autocomplete="new-password">
+    </div>
+    <div class="form-group">
+      <label>Confirm New Password</label>
+      <input type="password" id="pw-confirm" class="form-control" autocomplete="new-password">
+    </div>
+  </div>
+  <div id="pw-result" class="test-result" style="margin-bottom:.5rem"></div>
+  <button type="button" class="btn btn-primary" onclick="changePassword()">Update Password</button>
+</div>
+
+<!-- ── Backup & Restore ── -->
+<div class="settings-section" style="margin-top:2rem">
+  <h2>Backup & Restore</h2>
+  <div class="settings-grid">
+    <div class="form-group">
+      <label>Daily Backup Time (UTC hour, 0–23)</label>
+      <input type="number" name="backup_schedule_hour" class="form-control"
+             value="{{ cfg.backup_schedule_hour }}" min="0" max="23">
+      <small>Automatic backup runs at this hour every day. Up to 10 backups retained.</small>
+    </div>
+  </div>
+
+  <div class="backup-actions">
+    <a href="{{ url_for('api_backup_download') }}" class="btn btn-ghost btn-sm">⬇ Download Backup Now</a>
+    <button class="btn btn-ghost btn-sm" onclick="createBackupNow()">💾 Save Backup to Server</button>
+  </div>
+
+  {% if backups %}
+  <div class="table-wrapper" style="margin-top:1rem">
+    <table class="table">
+      <thead>
+        <tr><th>Filename</th><th>Size</th><th>Created</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for b in backups %}
+        <tr>
+          <td class="mono small">{{ b.name }}</td>
+          <td class="mono">{{ b.size_kb }} KB</td>
+          <td>{{ b.ts }}</td>
+          <td><a href="{{ url_for('api_backup_download') }}" class="btn btn-sm btn-ghost">Download</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty" style="margin-top:.75rem">No backups yet.</p>
+  {% endif %}
+
+  <div class="restore-area" style="margin-top:1rem">
+    <label class="settings-note"><strong>Restore from file:</strong></label>
+    <input type="file" id="restoreFile" accept=".db" style="margin:0.5rem 0;display:block">
+    <button class="btn btn-warning btn-sm" onclick="restoreBackup()">⚠ Restore Database</button>
+    <span id="restore-result" class="test-result"></span>
+    <small style="display:block;margin-top:.4rem;color:var(--text-muted)">
+      Current database is automatically backed up before any restore.
+      Container restart required for restore to take full effect.
+    </small>
+  </div>
+</div>
+{% endblock %}

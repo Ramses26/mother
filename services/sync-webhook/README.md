@@ -115,6 +115,8 @@ curl -X POST http://localhost:5001/sync/manual \
 | `SONARR_4K_API_KEY` | (required) | Sonarr 4K API key |
 | `SYNC_HISTORY_SCAN_HOURS` | `6` | How far back to scan for missed downloads |
 | `SYNC_HISTORY_SCAN_INTERVAL` | `30` | Minutes between history scans |
+| `RSYNC_STALL_MINUTES` | `15` | Minutes of zero I/O before a sync is considered stalled and killed |
+| `RSYNC_MAX_MINUTES` | `240` | Absolute max runtime for any rsync (killed even if making progress) |
 
 ### Plex Integration (Optional)
 
@@ -167,6 +169,7 @@ The service includes APScheduler for automatic background tasks:
 |------|----------|-------------|
 | Daily Summary | 00:05 | Sends Telegram summary with failed titles and items needing attention |
 | Auto-Retry | Every 15 min | Retries failed jobs (up to 20 attempts per job) |
+| Stall Watchdog | Every 15 min | Detects and kills frozen rsync processes; sends Telegram alert |
 | History Scanner | Every 30 min | Scans Radarr/Sonarr history for missed webhooks (failsafe) |
 | Startup Recovery | On start | Recovers in-progress jobs interrupted by restart |
 
@@ -537,6 +540,9 @@ curl -X POST http://localhost:5000/sync/radarr \
 | 2026-02-07 | **V2.3: History Scanner Failsafe** - Automatically catches missed webhooks by scanning Radarr/Sonarr history every 30 min |
 | 2026-02-07 | Added `SYNC_SKIP_TITLES` for excluding problematic large files (e.g., LOTR extended editions) |
 | 2026-02-07 | Increased max retries to 20, extended retry lookback to 7 days |
+| 2026-02-23 | **V2.4: Stall Watchdog** - Self-healing: detects frozen rsync (D-state NFS hangs) via `/proc/<pid>/io` monitoring, kills process group, sends Telegram alert. Configurable via `RSYNC_STALL_MINUTES` / `RSYNC_MAX_MINUTES` |
+| 2026-02-23 | History scanner TV fix: uses `importedPath` (episode file) instead of `series.path` (whole show dir), preventing multi-hour rsyncs that block the semaphore queue |
+| 2026-02-23 | Switched `run_rsync()` from `subprocess.run` to `Popen` with `start_new_session=True` for process group killing; stores PID in DB |
 
 ## Related Documentation
 

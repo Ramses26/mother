@@ -115,27 +115,28 @@ Need to map from what Radarr/Sonarr sees to what Mother sees:
 - [x] Create Dockerfile
 - [x] Add to docker-compose.yml
 
-### Phase 3: Radarr/Sonarr Configuration - PENDING
-- [ ] Deploy sync-webhook container
-- [ ] Configure webhook in Radarr-HD (http://sync-webhook:5000/sync/radarr)
-- [ ] Configure webhook in Radarr-4K (http://sync-webhook:5000/sync/radarr)
-- [ ] Configure webhook in Sonarr-HD (http://sync-webhook:5000/sync/sonarr)
-- [ ] Configure webhook in Sonarr-4K (http://sync-webhook:5000/sync/sonarr)
-- [ ] Test with actual download
+### Phase 3: Radarr/Sonarr Configuration - COMPLETE
+- [x] Deploy sync-webhook container
+- [x] Configure webhook in Radarr-HD (http://sync-webhook:5001/sync/radarr)
+- [x] Configure webhook in Radarr-4K (http://sync-webhook:5001/sync/radarr)
+- [x] Configure webhook in Sonarr-HD (http://sync-webhook:5001/sync/sonarr)
+- [x] Configure webhook in Sonarr-4K (http://sync-webhook:5001/sync/sonarr)
+- [x] Tested with actual downloads
 
-### Phase 4: Testing & Monitoring
-- [ ] Test Movies 1080p sync
-- [ ] Test Movies 4K sync
-- [ ] Test TV 1080p sync
-- [ ] Test TV 4K sync
-- [ ] Verify notifications on success
-- [ ] Verify notifications on failure
+### Phase 4: Testing & Monitoring - COMPLETE
+- [x] Movies 1080p sync working
+- [x] Movies 4K sync working
+- [x] TV 1080p sync working
+- [x] TV 4K sync working
+- [x] Success/failure notifications confirmed
 
-### Phase 5: Future Enhancements (Optional)
-- [ ] Add Discord notifications
-- [ ] Add sync statistics/dashboard
-- [ ] Add retry logic for failed syncs
-- [ ] Add queue for multiple simultaneous downloads
+### Phase 5: Enhancements - COMPLETE
+- [x] Retry logic (up to 20 attempts with exponential backoff)
+- [x] Queue for simultaneous downloads (semaphore, configurable `SYNC_MAX_CONCURRENT`)
+- [x] SQLite job tracking with status history
+- [x] History scanner failsafe (catches missed webhooks every 30 min)
+- [x] Upgrade handling (deletes old file from destination before syncing new one)
+- [x] Stall watchdog (auto-kills frozen rsync processes, Telegram alert)
 
 ---
 
@@ -178,7 +179,7 @@ For each Radarr instance (HD and 4K):
    - Notification Triggers:
      - [x] On Import
      - [x] On Upgrade
-   - URL: `http://sync-webhook:5000/sync/radarr`
+   - URL: `http://sync-webhook:5001/sync/radarr`
    - Method: POST
 5. Click "Test" to verify
 6. Save
@@ -195,7 +196,7 @@ For each Sonarr instance (HD and 4K):
    - Notification Triggers:
      - [x] On Import
      - [x] On Upgrade
-   - URL: `http://sync-webhook:5000/sync/sonarr`
+   - URL: `http://sync-webhook:5001/sync/sonarr`
    - Method: POST
 5. Click "Test" to verify
 6. Save
@@ -310,18 +311,23 @@ urls:
 ## Environment Variables
 
 ```bash
-# Apprise
-APPRISE_TELEGRAM_TOKEN=your_bot_token
-APPRISE_TELEGRAM_CHAT_ID=your_chat_id
+# Telegram
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
 
 # Sync Webhook
-SYNC_WEBHOOK_PORT=5000
+SYNC_WEBHOOK_PORT=5001
 SYNC_DRY_RUN=false
 SYNC_LOG_LEVEL=INFO
+SYNC_MAX_CONCURRENT=2         # Max parallel rsyncs (increase after bulk sync completes)
+SYNC_MAX_RETRIES=20           # Max retry attempts per job
+SYNC_HISTORY_SCAN_HOURS=48   # How far back history scanner looks
+SYNC_HISTORY_SCAN_INTERVAL=30 # Minutes between history scans
+SYNC_SKIP_TITLES=             # Comma-separated titles to skip (e.g., very large box sets)
 
-# Path mappings (if needed to override)
-SYNC_SOURCE_BASE=/mnt/synology
-SYNC_DEST_BASE=/mnt/unraid/media
+# Stall watchdog
+RSYNC_STALL_MINUTES=15        # No I/O for this long = stalled, kill it
+RSYNC_MAX_MINUTES=240         # Absolute max runtime regardless of progress
 ```
 
 ---
@@ -358,5 +364,8 @@ SYNC_DEST_BASE=/mnt/unraid/media
 
 | Date | Change |
 |------|--------|
-| 2026-01-01 | Initial plan created |
-| 2026-01-01 | Built sync-webhook service, tested Telegram notifications |
+| 2026-01-01 | Initial plan created, built sync-webhook service, tested Telegram notifications |
+| 2026-01-03 | V2.1: SQLite job tracking, startup recovery, retry logic (3 attempts) |
+| 2026-01-12 | V2.2: Upgrade/deletion handling — removes old file from dest before syncing upgrade |
+| 2026-02-07 | V2.3: History scanner failsafe — scans Radarr/Sonarr history every 30 min for missed webhooks |
+| 2026-02-23 | V2.4: Stall watchdog — self-healing frozen rsync detection via `/proc/<pid>/io`; history scanner TV fix to use episode file paths instead of whole show directory |

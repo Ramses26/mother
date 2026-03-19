@@ -496,6 +496,54 @@ services:
     networks:
       - mother_network
 
+  # Upgraderr - Quality upgrade automation (Huntarr replacement)
+  upgraderr:
+    build:
+      context: .
+      dockerfile: services/upgraderr/Dockerfile
+    container_name: upgraderr
+    environment:
+      - TZ=${TZ}
+      - RADARR_HD_URL=http://radarr-hd:7878
+      - RADARR_HD_API_KEY=${RADARR_HD_API_KEY}
+      - RADARR_4K_URL=http://radarr-4k:7879
+      - RADARR_4K_API_KEY=${RADARR_4K_API_KEY}
+      - SONARR_HD_URL=http://sonarr-hd:8989
+      - SONARR_HD_API_KEY=${SONARR_HD_API_KEY}
+      - SONARR_4K_URL=http://sonarr-4k:8990
+      - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}
+      - UPGRADERR_ADMIN_PASSWORD=${UPGRADERR_ADMIN_PASSWORD}
+      - UPGRADERR_SECRET_KEY=${UPGRADERR_SECRET_KEY}
+      - UPGRADERR_SEARCHES_PER_HOUR=${UPGRADERR_SEARCHES_PER_HOUR:-5}
+      - UPGRADERR_DOWNLOADS_PER_DAY=${UPGRADERR_DOWNLOADS_PER_DAY:-10}
+      - UPGRADERR_COOLDOWN_HOURS=${UPGRADERR_COOLDOWN_HOURS:-24}
+      - UPGRADERR_SWEEP_MINUTES=${UPGRADERR_SWEEP_MINUTES:-30}
+      - UPGRADERR_MIN_SCORE=${UPGRADERR_MIN_SCORE:-200}
+      - UPGRADERR_SEASON_THRESHOLD=${UPGRADERR_SEASON_THRESHOLD:-50}
+      - UPGRADERR_BLURAY_WAIT_DAYS=${UPGRADERR_BLURAY_WAIT_DAYS:-90}
+      - UPGRADERR_ENABLE_TMDB=${UPGRADERR_ENABLE_TMDB:-true}
+      - TMDB_API_KEY=${TMDB_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - UPGRADERR_TELEGRAM_CHAT_ID=${UPGRADERR_TELEGRAM_CHAT_ID:-}
+    volumes:
+      - /opt/mother/data/upgraderr:/data
+    ports:
+      - "${UPGRADERR_PORT:-9706}:5000"
+    restart: unless-stopped
+    depends_on:
+      - radarr-hd
+      - radarr-4k
+      - sonarr-hd
+      - sonarr-4k
+    networks:
+      - mother_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
   # Sync Webhook - Real-time sync triggered by Radarr/Sonarr
   sync-webhook:
     build:

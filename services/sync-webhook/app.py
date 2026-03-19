@@ -13,6 +13,8 @@ Endpoints:
 """
 
 import os
+import re
+import signal
 import subprocess
 import logging
 import json
@@ -59,6 +61,10 @@ SONARR_4K_API_KEY = os.environ.get('SONARR_4K_API_KEY', '')
 # History scanner settings
 HISTORY_SCAN_HOURS = int(os.environ.get('SYNC_HISTORY_SCAN_HOURS', '6'))  # Look back 6 hours
 HISTORY_SCAN_INTERVAL = int(os.environ.get('SYNC_HISTORY_SCAN_INTERVAL', '30'))  # Every 30 minutes
+
+# Stall watchdog settings
+RSYNC_STALL_MINUTES = int(os.environ.get('RSYNC_STALL_MINUTES', '15'))   # No I/O for this long = stalled
+RSYNC_MAX_MINUTES = int(os.environ.get('RSYNC_MAX_MINUTES', '240'))       # Absolute max runtime (4h)
 
 # Plex configuration
 PLEX_URL = os.environ.get('PLEX_URL', '')  # e.g., http://10.0.0.50:32400
@@ -206,6 +212,14 @@ def init_database():
             cursor.execute('ALTER TABLE sync_jobs ADD COLUMN retry_count INTEGER DEFAULT 0')
         if 'is_upgrade' not in columns:
             cursor.execute('ALTER TABLE sync_jobs ADD COLUMN is_upgrade INTEGER DEFAULT 0')
+        if 'rsync_pid' not in columns:
+            cursor.execute('ALTER TABLE sync_jobs ADD COLUMN rsync_pid INTEGER')
+        if 'last_progress_bytes' not in columns:
+            cursor.execute('ALTER TABLE sync_jobs ADD COLUMN last_progress_bytes INTEGER')
+        if 'last_progress_at' not in columns:
+            cursor.execute('ALTER TABLE sync_jobs ADD COLUMN last_progress_at TIMESTAMP')
+        if 'stall_killed' not in columns:
+            cursor.execute('ALTER TABLE sync_jobs ADD COLUMN stall_killed INTEGER DEFAULT 0')
 
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_status ON sync_jobs(status)
@@ -243,23 +257,59 @@ def log_sync_job(job_type, source, dest, title, status, duration=None, error=Non
         logger.error(f"Could not log sync job: {e}")
 
 
-def start_sync_job(job_type, source, dest, title, quality, file_size, retry_count=0):
-    """Create an in_progress job entry and return the job_id"""
+def start_sync_job(job_type, source, dest, title, quality, file_size, retry_count=0, status='in_progress'):
+    """Create a job entry with the given status and return the job_id.
+
+    Pass status='pending' to create the row before the semaphore is acquired
+    so the history scanner and auto-retry see it immediately and skip duplicates.
+    Promote to 'in_progress' via _update_job_status() once the semaphore is held.
+    """
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO sync_jobs (job_type, source_path, dest_path, title, quality, file_size, status, retry_count)
-            VALUES (?, ?, ?, ?, ?, ?, 'in_progress', ?)
-        ''', (job_type, source, dest, title, quality, file_size, retry_count))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (job_type, source, dest, title, quality, file_size, status, retry_count))
         job_id = cursor.lastrowid
         conn.commit()
         conn.close()
-        logger.debug(f"Started job {job_id}: {title}")
+        logger.debug(f"Created job {job_id} ({status}): {title}")
         return job_id
     except Exception as e:
         logger.error(f"Could not start sync job: {e}")
         return None
+
+
+def _is_already_queued(source_path: str) -> bool:
+    """Return True if a pending or in_progress row already exists for this
+    source path.  Used to prevent the history scanner and auto-retry from
+    spawning duplicate threads for items already waiting in the queue."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute(
+            "SELECT 1 FROM sync_jobs WHERE source_path = ? AND status IN ('pending', 'in_progress') LIMIT 1",
+            (source_path,)
+        )
+        result = c.fetchone()
+        conn.close()
+        return result is not None
+    except Exception:
+        return False  # On DB error, allow the sync to proceed
+
+
+def _update_job_status(job_id: int | None, status: str):
+    """Promote a job row from one status to another (e.g. pending → in_progress)."""
+    if job_id is None:
+        return
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute('UPDATE sync_jobs SET status = ? WHERE id = ?', (status, job_id))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Could not update job {job_id} status to {status}: {e}")
 
 
 def complete_sync_job(job_id, status, duration=None, error=None):
@@ -292,12 +342,218 @@ def complete_sync_job(job_id, status, duration=None, error=None):
         logger.error(f"Could not complete sync job: {e}")
 
 
+def update_job_pid(job_id: int, pid: int):
+    """Store the rsync PID in the job record so the stall watchdog can track it."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute('UPDATE sync_jobs SET rsync_pid = ? WHERE id = ?', (pid, job_id))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Could not update rsync PID for job {job_id}: {e}")
+
+
+def get_rsync_io_bytes(pid: int):
+    """
+    Read total I/O bytes (rchar + wchar) summed across the entire process group
+    of the given PID.  rsync spawns 2-3 child processes (generator, sender,
+    receiver) and the actual data transfer happens in the children.  Monitoring
+    only the parent PID can show zero I/O while children are actively copying,
+    triggering false-positive stall kills.  Summing the whole pgid gives a true
+    picture of transfer activity.
+
+    Returns None if the process is gone or no I/O data is readable.
+    """
+    try:
+        pgid = os.getpgid(pid)
+    except (ProcessLookupError, OSError):
+        return None
+
+    total = 0
+    found = False
+    try:
+        for entry in os.scandir('/proc'):
+            if not entry.name.isdigit():
+                continue
+            try:
+                if os.getpgid(int(entry.name)) != pgid:
+                    continue
+                with open(f'/proc/{entry.name}/io', 'r') as f:
+                    data = dict(
+                        line.split(': ', 1)
+                        for line in f.read().splitlines()
+                        if ': ' in line
+                    )
+                total += int(data.get('rchar', 0)) + int(data.get('wchar', 0))
+                found = True
+            except (ProcessLookupError, PermissionError, FileNotFoundError, ValueError, OSError):
+                continue
+    except OSError:
+        return None
+
+    return total if found else None
+
+
+def validate_rsync_pid(pid: int, source_path: str) -> bool:
+    """
+    Confirm a PID is our rsync process and not a recycled unrelated process.
+    Checks /proc/<pid>/cmdline for 'rsync' and the source path.
+    """
+    try:
+        with open(f'/proc/{pid}/cmdline', 'rb') as f:
+            cmdline = f.read().replace(b'\x00', b' ').decode('utf-8', errors='replace')
+        return 'rsync' in cmdline and source_path in cmdline
+    except (FileNotFoundError, PermissionError):
+        return False
+
+
+def _kill_stalled_job(cursor, job_id: int, pid: int, title: str, reason: str, running_minutes: float):
+    """
+    Kill a stalled rsync process group and set stall_killed=1 in the DB.
+    The do_sync() thread will detect the flag and send the proper Telegram alert
+    instead of a generic "Sync Failed" notification.
+    """
+    logger.warning(f"Stall watchdog: killing '{title}' (PID {pid}) - {reason}")
+
+    # Mark stall_killed BEFORE sending the signal so do_sync() sees it immediately
+    cursor.execute(
+        "UPDATE sync_jobs SET stall_killed = 1 WHERE id = ? AND status = 'in_progress'",
+        (job_id,)
+    )
+
+    # Kill the entire process group - rsync spawns sender/receiver/generator children
+    try:
+        pgid = os.getpgid(pid)
+        os.killpg(pgid, signal.SIGKILL)
+        logger.info(f"Stall watchdog: killed process group {pgid} for '{title}'")
+    except ProcessLookupError:
+        logger.debug(f"Stall watchdog: PID {pid} already gone for '{title}'")
+    except Exception as e:
+        logger.error(f"Stall watchdog: failed to kill PID {pid} for '{title}': {e}")
+
+
+def check_stalled_syncs():
+    """
+    Watchdog: periodically detect and kill rsync processes that are frozen or
+    have exceeded their maximum allowed runtime.
+
+    A sync is stalled if its rsync process shows no I/O activity (rchar+wchar
+    unchanged) for RSYNC_STALL_MINUTES. This catches D-state NFS hangs and
+    other frozen-but-not-dead processes without killing legitimately slow transfers.
+
+    A sync is force-killed if it exceeds RSYNC_MAX_MINUTES regardless of progress.
+
+    A 30-minute grace period prevents killing fast syncs that haven't had their
+    first progress snapshot yet.
+    """
+    logger.debug("Stall watchdog: checking for stalled syncs...")
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+
+        # Use UTC for all comparisons — SQLite CURRENT_TIMESTAMP stores UTC,
+        # so datetime.now() (local time) would cause a 5h offset mismatch.
+        now = datetime.utcnow()
+
+        # Only check jobs older than the grace period (avoids false positives on fresh starts)
+        grace_cutoff = (now - timedelta(minutes=30)).isoformat()
+        c.execute("""
+            SELECT id, title, source_path, rsync_pid,
+                   last_progress_bytes, last_progress_at, created_at
+            FROM sync_jobs
+            WHERE status = 'in_progress'
+              AND rsync_pid IS NOT NULL
+              AND created_at < ?
+        """, (grace_cutoff,))
+        jobs = [dict(row) for row in c.fetchall()]
+
+        for job in jobs:
+            job_id = job['id']
+            pid = job['rsync_pid']
+            title = job['title']
+            source_path = job['source_path']
+
+            try:
+                started = datetime.fromisoformat(job['created_at'])
+                running_minutes = (now - started).total_seconds() / 60
+            except (ValueError, TypeError):
+                continue
+
+            # Validate PID is still our rsync (guards against PID reuse)
+            if not validate_rsync_pid(pid, source_path):
+                logger.debug(f"Stall watchdog: PID {pid} for '{title}' is gone (completed normally)")
+                continue
+
+            # Read current I/O bytes
+            current_bytes = get_rsync_io_bytes(pid)
+            if current_bytes is None:
+                continue  # Can't read /proc/io, skip this cycle
+
+            # Check absolute maximum runtime first
+            if running_minutes >= RSYNC_MAX_MINUTES:
+                reason = f"exceeded {RSYNC_MAX_MINUTES}m maximum runtime ({running_minutes:.0f}m elapsed)"
+                _kill_stalled_job(c, job_id, pid, title, reason, running_minutes)
+                continue
+
+            # Check for stall (no I/O progress since last snapshot)
+            last_bytes = job.get('last_progress_bytes')
+            last_progress_at = job.get('last_progress_at')
+
+            if last_bytes is None or current_bytes != last_bytes:
+                # Progress made - update snapshot
+                c.execute(
+                    "UPDATE sync_jobs SET last_progress_bytes = ?, last_progress_at = ? WHERE id = ?",
+                    (current_bytes, now.isoformat(), job_id)
+                )
+                if last_bytes is not None:
+                    logger.debug(f"Stall watchdog: '{title}' active (+{current_bytes - last_bytes:,} bytes)")
+            else:
+                # No progress since last snapshot
+                if last_progress_at:
+                    try:
+                        last_active = datetime.fromisoformat(last_progress_at)
+                        stall_minutes = (now - last_active).total_seconds() / 60
+                        if stall_minutes >= RSYNC_STALL_MINUTES:
+                            reason = f"no I/O activity for {stall_minutes:.0f}m (threshold: {RSYNC_STALL_MINUTES}m)"
+                            _kill_stalled_job(c, job_id, pid, title, reason, running_minutes)
+                        else:
+                            logger.debug(f"Stall watchdog: '{title}' idle {stall_minutes:.0f}m/{RSYNC_STALL_MINUTES}m")
+                    except (ValueError, TypeError):
+                        pass
+                else:
+                    # First time we've seen this job - initialize the snapshot
+                    c.execute(
+                        "UPDATE sync_jobs SET last_progress_bytes = ?, last_progress_at = ? WHERE id = ?",
+                        (current_bytes, now.isoformat(), job_id)
+                    )
+
+        conn.commit()
+        conn.close()
+
+    except Exception as e:
+        logger.error(f"Stall watchdog error: {e}")
+
+
 def recover_interrupted_jobs():
     """On startup, recover interrupted jobs and retry unresolved failures"""
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
+
+        # Delete any 'pending' rows left over from the previous session.
+        # These are threads that were waiting for a semaphore slot when the
+        # container was restarted — they never ran rsync, so there's nothing
+        # to recover.  The history scanner will re-queue them on its next run
+        # (within 30 min), and failed-job retries will re-queue them too.
+        # Clearing them also unblocks _is_already_queued for the same sources.
+        cursor.execute("DELETE FROM sync_jobs WHERE status = 'pending'")
+        deleted_pending = cursor.rowcount
+        if deleted_pending:
+            logger.info(f"Cleared {deleted_pending} orphaned pending job(s) from previous session")
+        conn.commit()
 
         # Find jobs that were in_progress (interrupted by restart)
         cursor.execute('''
@@ -320,6 +576,9 @@ def recover_interrupted_jobs():
 
             conn.commit()
 
+            # Track IDs just recovered so we don't double-queue them below
+            interrupted_ids = {job['id'] for job in interrupted_jobs}
+
             # Queue them for retry
             for job in interrupted_jobs:
                 retry_count = (job.get('retry_count') or 0) + 1
@@ -336,23 +595,44 @@ def recover_interrupted_jobs():
                     )
                 else:
                     logger.warning(f"Job exceeded max retries, not retrying: {job['title']}")
+        else:
+            interrupted_ids = set()
 
         # Also find unresolved failed jobs that should be retried after restart
+        # Exclude any jobs already queued above to prevent double-queuing
         lookback = f'-{RETRY_LOOKBACK_DAYS} days'
-        cursor.execute('''
-            SELECT f.* FROM sync_jobs f
-            WHERE f.status = 'failed'
-            AND f.created_at > datetime('now', ?)
-            AND (f.retry_count IS NULL OR f.retry_count < ?)
-            AND NOT EXISTS (
-                SELECT 1 FROM sync_jobs s
-                WHERE s.title = f.title
-                AND s.status = 'success'
-                AND s.created_at > f.created_at
-            )
-            ORDER BY f.created_at DESC
-            LIMIT 50
-        ''', (lookback, MAX_RETRIES))
+        if interrupted_ids:
+            placeholders = ','.join('?' * len(interrupted_ids))
+            cursor.execute(f'''
+                SELECT f.* FROM sync_jobs f
+                WHERE f.status = 'failed'
+                AND f.created_at > datetime('now', ?)
+                AND (f.retry_count IS NULL OR f.retry_count < ?)
+                AND f.id NOT IN ({placeholders})
+                AND NOT EXISTS (
+                    SELECT 1 FROM sync_jobs s
+                    WHERE s.title = f.title
+                    AND s.status = 'success'
+                    AND s.created_at > f.created_at
+                )
+                ORDER BY f.created_at DESC
+                LIMIT 50
+            ''', (lookback, MAX_RETRIES) + tuple(interrupted_ids))
+        else:
+            cursor.execute('''
+                SELECT f.* FROM sync_jobs f
+                WHERE f.status = 'failed'
+                AND f.created_at > datetime('now', ?)
+                AND (f.retry_count IS NULL OR f.retry_count < ?)
+                AND NOT EXISTS (
+                    SELECT 1 FROM sync_jobs s
+                    WHERE s.title = f.title
+                    AND s.status = 'success'
+                    AND s.created_at > f.created_at
+                )
+                ORDER BY f.created_at DESC
+                LIMIT 50
+            ''', (lookback, MAX_RETRIES))
         unresolved_jobs = [dict(row) for row in cursor.fetchall()]
         conn.close()
 
@@ -591,22 +871,60 @@ def delete_from_destination(container_path: str, title: str = "Unknown") -> tupl
     logger.info(f"Attempting to delete from destination: {dest_path}")
 
     try:
+        parent_dir = os.path.dirname(dest_path)
+        basename = os.path.basename(dest_path)
+        video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v')
+        ep_match = re.search(r'S(\d+)E(\d+)', basename, re.IGNORECASE)
+        ep_pattern = f"S{ep_match.group(1)}E{ep_match.group(2)}" if ep_match else None
+
+        def _sweep_episode_duplicates(skip_name: str) -> list:
+            """
+            After deleting the primary file, remove any remaining files in the
+            same directory that match the same S##E## pattern.  This catches
+            leftover intermediate upgrade versions (e.g., old -BLOOM and -TORK
+            files sitting alongside a freshly-synced -FLUX file).
+
+            Only runs when we have an episode pattern to match against.
+            skip_name: filename we just deleted (already gone, skip re-deletion).
+            """
+            removed = []
+            if not ep_pattern or not os.path.isdir(parent_dir):
+                return removed
+            for f in os.listdir(parent_dir):
+                if f == skip_name:
+                    continue
+                if ep_pattern.upper() in f.upper() and f.lower().endswith(video_exts):
+                    alt_path = os.path.join(parent_dir, f)
+                    try:
+                        os.remove(alt_path)
+                        logger.info(f"Swept duplicate episode version: {alt_path}")
+                        removed.append(f)
+                    except OSError as e:
+                        logger.warning(f"Could not sweep duplicate {alt_path}: {e}")
+            return removed
+
         if os.path.exists(dest_path):
             if os.path.isfile(dest_path):
                 os.remove(dest_path)
+                logger.info(f"Deleted file: {dest_path}")
+
+                # Sweep any other versions of the same episode that may have
+                # accumulated from intermediate upgrades during batch sync.
+                extras = _sweep_episode_duplicates(skip_name=basename)
                 msg = f"Deleted file: {dest_path}"
-                logger.info(msg)
+                if extras:
+                    msg += f" + swept {len(extras)} duplicate(s): {', '.join(extras)}"
+                    logger.info(f"Swept {len(extras)} leftover episode version(s) alongside {basename}")
 
                 # Also try to clean up empty parent directories
-                parent_dir = os.path.dirname(dest_path)
                 try:
-                    # Only remove if empty and not a base destination path
                     base_paths = [dst for _, (_, dst) in PATH_MAPPINGS.items()]
-                    while parent_dir and parent_dir not in base_paths:
-                        if os.path.isdir(parent_dir) and not os.listdir(parent_dir):
-                            os.rmdir(parent_dir)
-                            logger.info(f"Removed empty directory: {parent_dir}")
-                            parent_dir = os.path.dirname(parent_dir)
+                    check_dir = parent_dir
+                    while check_dir and check_dir not in base_paths:
+                        if os.path.isdir(check_dir) and not os.listdir(check_dir):
+                            os.rmdir(check_dir)
+                            logger.info(f"Removed empty directory: {check_dir}")
+                            check_dir = os.path.dirname(check_dir)
                         else:
                             break
                 except OSError as e:
@@ -614,34 +932,36 @@ def delete_from_destination(container_path: str, title: str = "Unknown") -> tupl
 
                 return True, msg
             elif os.path.isdir(dest_path):
-                # For directories (e.g., movie folders), use shutil.rmtree
                 import shutil
                 shutil.rmtree(dest_path)
                 msg = f"Deleted directory: {dest_path}"
                 logger.info(msg)
                 return True, msg
         else:
-            # Fuzzy delete fallback: search same directory for matching episode
-            # Handles case where upgrade filename differs from what's on Unraid
-            parent_dir = os.path.dirname(dest_path)
-            if os.path.isdir(parent_dir):
-                basename = os.path.basename(dest_path)
-                ep_match = re.search(r'S(\d+)E(\d+)', basename, re.IGNORECASE)
-                if ep_match:
-                    ep_pattern = f"S{ep_match.group(1)}E{ep_match.group(2)}"
-                    video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v')
-                    for f in os.listdir(parent_dir):
-                        if ep_pattern.upper() in f.upper() and f.lower().endswith(video_exts):
-                            alt_path = os.path.join(parent_dir, f)
-                            try:
-                                os.remove(alt_path)
-                                msg = f"Fuzzy-deleted (episode match): {alt_path} (expected: {dest_path})"
-                                logger.info(msg)
-                                return True, msg
-                            except OSError as e:
-                                msg = f"Fuzzy-delete failed for {alt_path}: {e}"
-                                logger.error(msg)
-                                return False, msg
+            # Exact file not found — fuzzy fallback: delete ALL files in the
+            # same directory matching the same S##E## pattern.  Previous code
+            # only deleted the first match; if multiple old versions exist (from
+            # intermediate upgrades) they all need to go before the new file lands.
+            if ep_pattern and os.path.isdir(parent_dir):
+                deleted = []
+                errors = []
+                for f in os.listdir(parent_dir):
+                    if ep_pattern.upper() in f.upper() and f.lower().endswith(video_exts):
+                        alt_path = os.path.join(parent_dir, f)
+                        try:
+                            os.remove(alt_path)
+                            logger.info(f"Fuzzy-deleted (episode match): {alt_path}")
+                            deleted.append(f)
+                        except OSError as e:
+                            logger.error(f"Fuzzy-delete failed for {alt_path}: {e}")
+                            errors.append(f)
+                if deleted:
+                    msg = f"Fuzzy-deleted {len(deleted)} file(s) for {ep_pattern} (expected: {basename}): {', '.join(deleted)}"
+                    logger.info(msg)
+                    return len(errors) == 0, msg
+                if errors:
+                    msg = f"Fuzzy-delete failed for all {len(errors)} candidate(s) for {ep_pattern}"
+                    return False, msg
 
             msg = f"File not found on destination (already deleted?): {dest_path}"
             logger.info(msg)
@@ -702,7 +1022,7 @@ def process_deleted_files(deleted_files: list, media_type: str, title: str = "Un
     return results
 
 
-def run_rsync(source: str, dest_dir: str, is_file: bool = True) -> tuple:
+def run_rsync(source: str, dest_dir: str, is_file: bool = True, job_id: int = None) -> tuple:
     """
     Run rsync for a specific file or folder.
 
@@ -747,23 +1067,42 @@ def run_rsync(source: str, dest_dir: str, is_file: bool = True) -> tuple:
     logger.info(f"Running: {' '.join(cmd)}")
 
     try:
-        result = subprocess.run(
+        # Use Popen (not subprocess.run) so we can capture the PID immediately
+        # and store it in the DB for the stall watchdog.
+        # start_new_session=True puts rsync in its own process group so we can
+        # killpg() all child processes (sender/receiver/generator) at once.
+        proc = subprocess.Popen(
             cmd,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=14400  # 4 hour timeout for large files over NFS
+            start_new_session=True
         )
 
+        # Store PID in DB so stall watchdog can monitor this process
+        if job_id:
+            update_job_pid(job_id, proc.pid)
+            logger.debug(f"Rsync started: PID {proc.pid} for job {job_id}")
+
+        try:
+            stdout, stderr = proc.communicate(timeout=14400)  # 4 hour absolute timeout
+        except subprocess.TimeoutExpired:
+            logger.warning(f"Rsync timeout after 4 hours: {source}")
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except Exception:
+                pass
+            stdout, stderr = proc.communicate()
+            duration = (datetime.now() - start_time).total_seconds()
+            return False, "Rsync timed out after 4 hours", duration
+
         duration = (datetime.now() - start_time).total_seconds()
 
-        if result.returncode == 0:
-            return True, result.stdout, duration
+        if proc.returncode == 0:
+            return True, stdout, duration
         else:
-            return False, result.stderr, duration
+            return False, stderr or stdout, duration
 
-    except subprocess.TimeoutExpired:
-        duration = (datetime.now() - start_time).total_seconds()
-        return False, "Rsync timed out after 4 hours", duration
     except Exception as e:
         duration = (datetime.now() - start_time).total_seconds()
         return False, str(e), duration
@@ -797,6 +1136,17 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
     # Fall back to extracting dest_base from dest if not provided (for retries from database)
     plex_base = dest_base or get_dest_base_from_path(dest)
 
+    # Deduplicate: if a pending or in_progress row already exists for this
+    # source path, another thread is already queued or running — skip.
+    if _is_already_queued(source):
+        logger.info(f"Skipping duplicate queue for: {title} (already pending/running)")
+        return
+
+    # Create the DB row as 'pending' NOW, before the semaphore.  This makes
+    # the item visible to the history scanner and auto-retry immediately so
+    # neither will re-queue it while it waits for a free slot.
+    job_id = start_sync_job(job_type, source, dest, title, quality, file_size, retry_count, status='pending')
+
     def do_sync():
         # Acquire semaphore to limit concurrent syncs (prevents overwhelming NFS)
         retry_info = f" (retry {retry_count}/{MAX_RETRIES})" if retry_count > 0 else ""
@@ -805,8 +1155,8 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
         logger.info(f"Acquired sync slot: {title}{retry_info}")
 
         try:
-            # Create in_progress job entry for tracking
-            job_id = start_sync_job(job_type, source, dest, title, quality, file_size, retry_count)
+            # Promote pending → in_progress now that we hold the semaphore slot
+            _update_job_status(job_id, 'in_progress')
 
             logger.info(f"Background sync started: {title}{retry_info}")
 
@@ -825,8 +1175,8 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                 )
                 return
 
-            # Run the rsync
-            success, output, duration = run_rsync(source, dest, is_file=False)
+            # Run the rsync - pass job_id so PID is tracked for stall watchdog
+            success, output, duration = run_rsync(source, dest, is_file=False, job_id=job_id)
 
             if success:
                 # Update job to success
@@ -866,17 +1216,41 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
 
                 logger.info(f"Background sync completed: {title} in {duration:.1f}s")
             else:
-                # Update job to failed
+                # Check if this was killed by the stall watchdog before marking failed
+                stall_killed = False
+                if job_id:
+                    try:
+                        conn = sqlite3.connect(DB_PATH)
+                        row = conn.execute(
+                            'SELECT stall_killed FROM sync_jobs WHERE id = ?', (job_id,)
+                        ).fetchone()
+                        conn.close()
+                        stall_killed = bool(row and row[0])
+                    except Exception:
+                        pass
+
                 if job_id:
                     complete_sync_job(job_id, 'failed', duration=duration, error=output[:500])
                 update_stats(job_type, success=False)
 
-                send_notification(
-                    title=f"Sync Failed - {media_type}",
-                    body=f"*{title}*{retry_info}\n\nError: {output[:500]}",
-                    notify_type=apprise.NotifyType.FAILURE
-                )
-                logger.error(f"Background sync failed: {title} - {output[:200]}")
+                if stall_killed:
+                    send_notification(
+                        title=f"⚠️ Stalled Sync Killed - {media_type}",
+                        body=(
+                            f"*{title}*{retry_info}\n"
+                            f"Duration: {duration/60:.0f}m\n\n"
+                            f"Killed by stall watchdog (no I/O progress). Will auto-retry."
+                        ),
+                        notify_type=apprise.NotifyType.WARNING
+                    )
+                    logger.warning(f"Stalled sync killed: {title} after {duration/60:.0f}m")
+                else:
+                    send_notification(
+                        title=f"Sync Failed - {media_type}",
+                        body=f"*{title}*{retry_info}\n\nError: {output[:500]}",
+                        notify_type=apprise.NotifyType.FAILURE
+                    )
+                    logger.error(f"Background sync failed: {title} - {output[:200]}")
         finally:
             # Always release semaphore, even if exception occurs
             sync_semaphore.release()
@@ -1157,6 +1531,17 @@ scheduler.add_job(
     replace_existing=True
 )
 
+# Add stall watchdog job (every 15 minutes, offset by 7 min to spread load)
+scheduler.add_job(
+    func=check_stalled_syncs,
+    trigger='interval',
+    minutes=15,
+    id='stall_watchdog',
+    name='Stall watchdog - detect and kill frozen rsync processes',
+    replace_existing=True
+)
+logger.info(f"Stall watchdog enabled - stall threshold: {RSYNC_STALL_MINUTES}m, max runtime: {RSYNC_MAX_MINUTES}m")
+
 
 def scan_arr_history():
     """
@@ -1166,6 +1551,7 @@ def scan_arr_history():
     logger.info("History scanner: checking for missed downloads...")
 
     missed_count = 0
+    missed_titles = []
     lookback = datetime.now() - timedelta(hours=HISTORY_SCAN_HOURS)
 
     # Get list of recently synced titles from our database
@@ -1175,7 +1561,7 @@ def scan_arr_history():
         c = conn.cursor()
         c.execute('''
             SELECT title FROM sync_jobs
-            WHERE created_at > ? AND status IN ('completed', 'in_progress', 'pending')
+            WHERE created_at > ? AND status IN ('success', 'in_progress', 'pending', 'failed')
         ''', (lookback.isoformat(),))
         synced_titles = {row[0] for row in c.fetchall()}
         conn.close()
@@ -1202,7 +1588,10 @@ def scan_arr_history():
                 'pageSize': 100,
                 'sortKey': 'date',
                 'sortDirection': 'descending',
-                # Note: eventType filter requires numeric value, we filter in Python instead
+                # Include nested media objects so title/path fields are populated
+                'includeMovie': 'true',
+                'includeSeries': 'true',
+                'includeEpisode': 'true',
             }
             headers = {'X-Api-Key': api_key}
 
@@ -1232,7 +1621,12 @@ def scan_arr_history():
                     title = movie.get('title', '')
                     year = movie.get('year', '')
                     display_title = f"{title} ({year})" if year else title
-                    folder_path = movie.get('folderPath', '')
+                    # folderPath may be null; fall back to directory of importedPath
+                    folder_path = movie.get('folderPath', '') or ''
+                    if not folder_path:
+                        imported = record.get('data', {}).get('importedPath', '')
+                        if imported:
+                            folder_path = imported.rsplit('/', 1)[0]
                 else:
                     series = record.get('series', {})
                     episode = record.get('episode', {})
@@ -1240,13 +1634,16 @@ def scan_arr_history():
                     season = episode.get('seasonNumber', 0)
                     ep_num = episode.get('episodeNumber', 0)
                     display_title = f"{title} - S{season:02d}E{ep_num:02d}"
-                    folder_path = series.get('path', '')
+                    # Use specific episode file path if available (avoids syncing entire show dir)
+                    imported_path = record.get('data', {}).get('importedPath', '')
+                    folder_path = imported_path if imported_path else series.get('path', '')
 
                 if not title:
                     continue
 
-                # Check if already synced (fuzzy match on title)
-                already_synced = any(title.lower() in s.lower() or s.lower() in title.lower()
+                # Check if already synced (episode-level match for TV, title match for movies)
+                check_title = display_title if media_type == 'episode' else title
+                already_synced = any(check_title.lower() in s.lower() or s.lower() in check_title.lower()
                                     for s in synced_titles)
                 if already_synced:
                     continue
@@ -1266,6 +1663,7 @@ def scan_arr_history():
                     continue
 
                 logger.info(f"History scanner: found missed download - {display_title}")
+                missed_titles.append(display_title)
 
                 # Queue the sync
                 source_path = source if media_type == 'movie' else folder_path.replace(container_path, source.rsplit('/', 1)[0])
@@ -1287,9 +1685,10 @@ def scan_arr_history():
 
     if missed_count > 0:
         logger.info(f"History scanner: queued {missed_count} missed downloads for sync")
+        titles_list = "\n".join(f"• {t}" for t in missed_titles)
         send_notification(
             title="Catchup Sync",
-            body=f"Found and queued {missed_count} missed download(s) for sync",
+            body=f"Queued {missed_count} missed download(s):\n{titles_list}",
             notify_type=apprise.NotifyType.INFO
         )
     else:

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}History — Upgraderr{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Search History</h1>
+  <span class="stat-badge">{{ total }} entries</span>
+</div>
+
+<form class="filter-bar" method="get">
+  <select name="instance" class="form-select">
+    <option value="">All Instances</option>
+    {% for iname in instances %}
+    <option value="{{ iname }}" {% if instance_filter == iname %}selected{% endif %}>{{ iname }}</option>
+    {% endfor %}
+  </select>
+  <select name="result" class="form-select">
+    <option value="">All Results</option>
+    {% for r in ['triggered','no_result','skipped_cooldown','skipped_queue','skipped_limit','skipped_paused','error'] %}
+    <option value="{{ r }}" {% if result_filter == r %}selected{% endif %}>{{ r }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-primary">Filter</button>
+</form>
+
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Instance</th>
+        <th>Title</th>
+        <th>Tier</th>
+        <th>Type</th>
+        <th>Trigger</th>
+        <th>Result</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="mono">{{ fmt_dt(item.searched_at) }}</td>
+        <td><span class="badge badge-gray">{{ item.instance or '—' }}</span></td>
+        <td>{{ item.title or '—' }}</td>
+        <td>{% if item.tier %}<span class="badge tier-badge-{{ item.tier }}">T{{ item.tier }}</span>{% else %}—{% endif %}</td>
+        <td>{{ item.search_type or '—' }}</td>
+        <td>{{ item.trigger or '—' }}</td>
+        <td><span class="result-badge result-{{ item.result }}">{{ item.result or '—' }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty">No history yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if total > per_page %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a href="?page={{ page-1 }}&instance={{ instance_filter }}&result={{ result_filter }}"
+     class="btn btn-sm btn-ghost">← Prev</a>
+  {% endif %}
+  <span>Page {{ page }} of {{ ((total-1)//per_page)+1 }}</span>
+  {% if page * per_page < total %}
+  <a href="?page={{ page+1 }}&instance={{ instance_filter }}&result={{ result_filter }}"
+     class="btn btn-sm btn-ghost">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
