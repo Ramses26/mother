@@ -1069,6 +1069,7 @@ def settings_page():
         'season_threshold':  get_config('season_threshold',  str(SEASON_THRESHOLD)),
         'display_tz':        get_config('display_tz',        DISPLAY_TZ),
         'backup_schedule_hour': get_config('backup_schedule_hour', '3'),
+        'tmdb_api_key': get_config('tmdb_api_key', os.getenv('TMDB_API_KEY', '')),
     }
     tier_enabled = {
         t: get_config(f'tier_enabled_{t}', 'true') == 'true'
@@ -1174,6 +1175,9 @@ def api_settings():
 
     if 'display_tz' in data:
         set_config('display_tz', data['display_tz'])
+
+    if 'tmdb_api_key' in data:
+        set_config('tmdb_api_key', str(data['tmdb_api_key']).strip())
 
     for t in range(1, 7):
         k = f'tier_enabled_{t}'

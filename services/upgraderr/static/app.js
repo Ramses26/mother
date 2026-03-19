@@ -56,6 +56,13 @@ async function saveSettings() {
   const tzEl = document.querySelector('[name="display_tz"]');
   if (tzEl) data['display_tz'] = tzEl.value;
 
+  // Text/password fields saved as-is
+  const textKeys = ['tmdb_api_key'];
+  textKeys.forEach(name => {
+    const el = document.querySelector(`[name="${name}"]`);
+    if (el) data[name] = el.value.trim();
+  });
+
   // Tier toggles
   for (let t = 1; t <= 6; t++) {
     const el = document.querySelector(`[name="tier_enabled_${t}"]`);

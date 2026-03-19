@@ -196,6 +196,21 @@
   </div>
 </div>
 
+<!-- ── API Keys ── -->
+<div class="settings-section">
+  <h2>API Keys</h2>
+  <p class="help-text">TMDB is used for Tier 4 (BluRay availability detection) — checks physical release dates for WEB-DL/WEBRip movies and detects streaming-only titles. Get a free key at <strong>themoviedb.org → Settings → API</strong>.</p>
+  <div class="settings-grid">
+    <div class="form-group">
+      <label>TMDB API Key</label>
+      <input type="password" name="tmdb_api_key" class="form-control"
+             value="{{ cfg.tmdb_api_key }}" placeholder="eeac92d90af5a1613d2ffaac7db1d171"
+             autocomplete="new-password">
+      <small>Required for Tier 4 (BluRay available). Leave blank to disable Tier 4.</small>
+    </div>
+  </div>
+</div>
+
 <!-- ── Display ── -->
 <div class="settings-section">
   <h2>Display</h2>
