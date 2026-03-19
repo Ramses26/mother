@@ -92,3 +92,10 @@ reports/plex_dupes/
 
 # Upgraderr runtime data
 data/upgraderr/
+
+# Recyclarr managed cache (TRaSH guide data, auto-downloaded)
+configs/recyclarr/resources/
+configs/recyclarr/state/
+
+# Sync plan CSVs (auto-generated)
+reports/*.csv
