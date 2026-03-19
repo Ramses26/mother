@@ -668,11 +668,8 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
     random.shuffle(movies)
 
     for movie in movies:
-        if not budget.can_search(inst_name):
+        if not budget.can_search(inst_name) and not _is_paused():
             log.debug(f"[{inst_name}] Budget exhausted, stopping")
-            break
-        if _is_paused():
-            log.info(f"[{inst_name}] Paused mid-sweep, stopping")
             break
 
         mid   = movie.get('id')
@@ -747,10 +744,7 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
     season_threshold = int(get_cfg('season_threshold', str(SEASON_THRESHOLD)))
 
     for series in series_list:
-        if not budget.can_search(inst_name):
-            break
-        if _is_paused():
-            log.info(f"[{inst_name}] Paused mid-sweep, stopping")
+        if not budget.can_search(inst_name) and not _is_paused():
             break
 
         sid   = series.get('id')
@@ -788,7 +782,7 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
                 seasons[snum]['top_reason'] = top_reason
 
         for snum, sdata in seasons.items():
-            if not budget.can_search(inst_name) or _is_paused():
+            if not budget.can_search(inst_name) and not _is_paused():
                 break
 
             # Get total monitored eps in season for threshold calc
