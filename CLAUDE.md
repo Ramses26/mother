@@ -21,7 +21,7 @@ Ali's Location (192.168.1.0/24)         Chris's Location (10.0.0.0/23)
 
 ## Architecture Overview
 
-Project Mother is a media management and synchronization system consolidating two users' (~160TB each) media libraries. Mother runs on an Ubuntu VM at Chris's location, managing Docker services for media acquisition (Radarr/Sonarr), quality automation (Recyclarr/Huntarr), and real-time sync to Ali's Unraid via VPN.
+Project Mother is a media management and synchronization system consolidating two users' (~160TB each) media libraries. Mother runs on an Ubuntu VM at Chris's location, managing Docker services for media acquisition (Radarr/Sonarr), quality automation (Recyclarr/Upgraderr), and real-time sync to Ali's Unraid via VPN.
 
 ### Three Sync Systems
 
@@ -29,7 +29,7 @@ Project Mother is a media management and synchronization system consolidating tw
 
 2. **Webhook Sync** — Real-time sync of new downloads. Flask app (`services/sync-webhook/app.py`) receives Radarr/Sonarr webhooks, queues rsync jobs in SQLite, with auto-retry, history scanning failsafe, and Telegram notifications.
 
-3. **Huntarr** — Quality upgrade automation (currently DISABLED, re-enable after initial sync completes).
+3. **Upgraderr** — Custom quality upgrade automation service (replaces Huntarr). Paused until initial movie sync completes. See `services/upgraderr/`. UI at port 9706.
 
 ### Key Path Mappings (Container → NFS → Destination)
 
@@ -76,8 +76,33 @@ Finds and removes duplicate media files (movies and TV) on both Synology and Unr
 ### `scripts/generate_inventory.py` (~600 lines)
 Scans media directories, extracts quality metadata from filenames via regex, outputs JSON/CSV inventories.
 
+### `services/upgraderr/app.py` (Flask app)
+Custom quality upgrade automation service replacing Huntarr. Handles:
+- Discovery sweep every 30 min: classifies all 4 *arr instances into 6 upgrade tiers
+- **6 Tiers**: m2ts/BDMV (1), non-MKV container (2), 720p/SD (3), TMDB BluRay available (4), no surround audio (5), low TRaSH score (6)
+- APScheduler tasks: 30min sweep, daily TMDB scan (02:30 UTC), 03:00 UTC DB backup
+- Global pause toggle + per-instance budget (searches/day from `config` table)
+- Webhook endpoints: `POST /webhook/radarr`, `/webhook/sonarr` — records before/after quality on upgrades
+- Manual search: `POST /api/queue/<id>/search`
+- Bandwidth-aware: defers sweep if batch sync is actively writing (`/opt/sync_reports/` log mtime < 120s)
+- Instance health indicators: 3s timeout check on each *arr's `/api/v3/system/status`
+- JWT auth (bcrypt), rate-limited login (5/min per IP)
+- Telegram notifications to `UPGRADERR_TELEGRAM_CHAT_ID`
+- Tags: `upgraderr-skip` (permanent skip), `upgraderr-no-source` (no source found)
+
+**DB tables**: `upgrade_queue`, `search_log`, `daily_stats`, `config`, `upgrade_history`, `tmdb_cache`
+
+**TMDB Tier 4**: Calls TMDB `/movie/{id}/release_dates` to detect physical (BluRay/DVD) release.
+Type 5 = Physical release. If physical release exists and ≥ `UPGRADERR_BLURAY_WAIT_DAYS` (90) days ago,
+item is eligible for Tier 4 (better BluRay source likely available on indexers).
+Results cached in `tmdb_cache` for 7 days.
+
+**Port**: 9706 (host) → 5000 (container). UI: `http://mother:9706`
+
+**Volumes**: `/opt/mother/reports` mounted read-only as `/opt/sync_reports` for sync activity detection.
+
 ### `reports/daily_report.py`
-Unified status report (sync progress, VPN traffic, errors). Sends via Apprise to Telegram. Runs from cron every 2 hours. Auto-discovers the most recent sync scripts by embedded timestamp.
+Unified status report (sync progress, VPN traffic, errors, Upgraderr queue summary). Sends via Apprise to Telegram. Runs from cron every 2 hours. Auto-discovers the most recent sync scripts by embedded timestamp.
 
 ## Common Commands
 
@@ -114,6 +139,8 @@ python3 /opt/mother/scripts/compare_libraries.py ali.json chris.json
 curl http://localhost:5001/health                     # Webhook health
 curl http://localhost:5001/stats                      # Sync stats
 curl http://localhost:5001/jobs?limit=10              # Recent jobs
+curl http://localhost:9706/health                     # Upgraderr health
+# Upgraderr UI: http://mother:9706  (JWT login required)
 ```
 
 ### Deployment Script
@@ -145,10 +172,10 @@ curl http://localhost:5001/jobs?limit=10              # Recent jobs
 - `radarr-hd` (7878), `radarr-4k` (7879) — Movie management
 - `sonarr-hd` (8989), `sonarr-4k` (8990) — TV management
 - `sync-webhook` (5001) — Custom Flask sync service (built from `services/sync-webhook/Dockerfile`)
+- `upgraderr` (9706) — Custom quality upgrade automation (built from `services/upgraderr/`); **paused** until 1080p movie sync completes
 - `prowlarr` (9696) — Indexer management
 - `overseerr` (5055) — Media requests
 - `nginx-proxy-manager` (80/443/81) — Reverse proxy
-- `huntarr` (9705) — Quality upgrades (currently stopped)
 
 ## Python Dependencies
 
@@ -161,7 +188,8 @@ Analysis scripts use: `tqdm` (optional, for progress bars). Some scripts use `pa
 | File | Purpose |
 |------|---------|
 | `docs/OPERATIONS.md` | Day-to-day operations, monitoring, troubleshooting |
-| `docs/HUNTARR_SYNC_SETUP.md` | Huntarr & sync optimization details |
+| `services/upgraderr/README.md` | Upgraderr service — setup, tiers, webhooks, env vars |
+| `docs/HUNTARR_SYNC_SETUP.md` | Legacy Huntarr notes (replaced by Upgraderr) |
 | `docs/SYNC_AUTOSTART.md` | Boot and health monitoring setup |
 | `services/sync-webhook/README.md` | Webhook sync service documentation |
 | `scripts/README.md` | All scripts with usage examples |
