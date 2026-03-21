@@ -20,7 +20,7 @@ PRESET_FILTERS = {
     'never_watched': {'neither_watched': 'true'},
     'low_rated_unwatched': {'composite_max': 5.0, 'neither_watched': 'true'},
     'hidden_gems': {'composite_min': 7.5, 'neither_watched': 'true'},
-    'purge_candidates': {'purge_score_min': 70},
+    'purge_candidates': {'purge_score_min': 30},
     'large_files': {'sort_by': 'file_size_bytes', 'sort_dir': 'desc'},
     'cancelled_watched': {},  # handled specially for TV
 }
@@ -77,6 +77,9 @@ def build_movie_query(params: dict) -> tuple[str, list]:
 
     if params.get('neither_watched') == 'true':
         conditions.append("ali_play_count = 0 AND chris_play_count = 0")
+
+    if params.get('both_watched') == 'true':
+        conditions.append("ali_play_count > 0 AND chris_play_count > 0")
 
     for field, col in [
         ('composite_min', 'composite_score'), ('composite_max', 'composite_score'),
@@ -152,6 +155,7 @@ async def list_movies(
     ali_watched: Optional[str] = None,
     chris_watched: Optional[str] = None,
     neither_watched: Optional[str] = None,
+    both_watched: Optional[str] = None,
     composite_min: Optional[float] = None,
     composite_max: Optional[float] = None,
     imdb_min: Optional[float] = None,
@@ -178,7 +182,7 @@ async def list_movies(
         'resolution': resolution, 'language': language, 'genre': genre,
         'monitored': monitored, 'ali_watched': ali_watched,
         'chris_watched': chris_watched, 'neither_watched': neither_watched,
-        'composite_min': composite_min, 'composite_max': composite_max,
+        'both_watched': both_watched, 'composite_min': composite_min, 'composite_max': composite_max,
         'imdb_min': imdb_min, 'imdb_max': imdb_max,
         'rt_min': rt_min, 'rt_max': rt_max,
         'metacritic_min': metacritic_min, 'metacritic_max': metacritic_max,

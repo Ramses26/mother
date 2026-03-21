@@ -28,7 +28,7 @@ async def dashboard_stats(_auth=Depends(require_auth)):
         async with db.execute("SELECT COUNT(*) FROM tv_shows WHERE composite_score < 5 AND composite_score > 0") as cur:
             tv_below_5 = (await cur.fetchone())[0]
 
-        # Storage
+        # Storage (movies only — TV file sizes not tracked in DB)
         async with db.execute("SELECT COALESCE(SUM(file_size_bytes), 0) FROM movies") as cur:
             total_bytes = (await cur.fetchone())[0]
 
@@ -91,7 +91,7 @@ async def dashboard_stats(_auth=Depends(require_auth)):
                 'never_watched': tv_never_watched,
                 'below_5': tv_below_5,
             },
-            'storage': {'total_bytes': total_bytes},
+            'storage': {'total_bytes': total_bytes, 'movies_only': True},
             'rating_histogram': {
                 'movies': movie_hist,
                 'tv': tv_hist,

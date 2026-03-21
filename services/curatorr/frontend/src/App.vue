@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth.js'
 import axios from 'axios'
@@ -46,6 +46,19 @@ const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
+// Provide public URLs to all child components (used by MediaDetail for deep links)
+const publicUrls = ref({})
+provide('publicUrls', publicUrls)
+
+const loadPublicUrls = async () => {
+  try {
+    const res = await axios.get('/api/settings')
+    publicUrls.value = res.data.public_urls || {}
+  } catch {
+    // Non-fatal — deep links just won't show
+  }
+}
+
 const navLinks = [
   { to: '/', label: 'Dashboard' },
   { to: '/movies', label: 'Movies' },
@@ -53,6 +66,7 @@ const navLinks = [
   { to: '/collections', label: 'Collections' },
   { to: '/duplicates', label: 'Duplicates' },
   { to: '/rules', label: 'Rules' },
+  { to: '/logs', label: 'Logs' },
   { to: '/settings', label: 'Settings' },
 ]
 
@@ -76,6 +90,8 @@ onMounted(async () => {
       router.push('/setup')
     } else if (!res.data.authenticated && route.path !== '/login') {
       router.push('/login')
+    } else if (res.data.authenticated) {
+      loadPublicUrls()
     }
   } catch {
     router.push('/login')

@@ -9,6 +9,7 @@ const routes = [
   { path: '/collections', component: () => import('../views/Collections.vue') },
   { path: '/duplicates', component: () => import('../views/Duplicates.vue') },
   { path: '/rules', component: () => import('../views/Rules.vue') },
+  { path: '/logs', component: () => import('../views/Logs.vue') },
   { path: '/settings', component: () => import('../views/Settings.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]

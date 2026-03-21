@@ -13,7 +13,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       <!-- Histogram -->
       <div class="card lg:col-span-2">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-3">
           <h3 class="font-semibold text-white">Rating Distribution</h3>
           <div class="flex gap-2">
             <button @click="histTab='movies'" class="text-xs px-3 py-1 rounded-full transition-colors"
@@ -38,6 +38,17 @@
           </div>
         </div>
         <div v-else class="h-28 flex items-center justify-center text-slate-500 text-sm">Loading...</div>
+        <!-- Source toggle pills -->
+        <div class="mt-3 flex items-center gap-2 flex-wrap">
+          <span class="text-xs text-slate-500">Source:</span>
+          <button v-for="src in histSources" :key="src.value"
+            @click="histSource = src.value"
+            class="text-xs px-2 py-0.5 rounded-full transition-colors"
+            :class="histSource === src.value ? 'bg-violet-600 text-white' : 'bg-surface-200 text-slate-400 hover:text-white'">
+            {{ src.label }}
+          </button>
+          <span class="text-slate-600 text-xs ml-1" title="Composite = weighted avg: IMDb 35%, RT 25%, MDBList 20%, Metacritic 15%, TMDB 5%">ⓘ</span>
+        </div>
       </div>
 
       <!-- Top Purge Candidates -->
@@ -46,7 +57,7 @@
         <div v-if="stats && stats.top_purge_candidates.length > 0" class="space-y-2">
           <div v-for="item in stats.top_purge_candidates" :key="item.id"
             class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-200 transition-colors cursor-pointer"
-            @click="$router.push('/movies?purge_score_min=70')">
+            @click="$router.push('/movies?preset=purge_candidates')">
             <div class="flex-1 min-w-0">
               <div class="text-sm text-white truncate">{{ item.title }}</div>
               <div class="text-xs text-slate-500">{{ item.year }} · {{ item.resolution }}</div>
@@ -92,22 +103,29 @@
       <!-- Sync status -->
       <div class="card">
         <h3 class="font-semibold text-white mb-3">Sync Status</h3>
-        <div v-if="stats && stats.sync_status.length > 0" class="space-y-2">
-          <div v-for="row in stats.sync_status" :key="row.source" class="text-xs">
+        <div class="space-y-2">
+          <div v-for="source in allSyncSources" :key="source.key" class="text-xs">
             <div class="flex items-center justify-between mb-0.5">
-              <span class="text-slate-300 font-medium">{{ row.source }}</span>
-              <span :class="row.status === 'ok' ? 'text-green-400' : 'text-red-400'">
-                {{ row.status || '?' }}
+              <span class="text-slate-300 font-medium">{{ source.label }}</span>
+              <span class="flex items-center gap-1">
+                <!-- Spinning indicator while syncing -->
+                <span v-if="isSyncing && !hasSyncCompleted(source)" class="inline-block w-3 h-3">
+                  <svg class="animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+                    <path d="M12 2 a10 10 0 0 1 10 10" stroke-opacity="1"/>
+                  </svg>
+                </span>
+                <span v-else-if="isSyncing && hasSyncCompleted(source)" class="text-green-400">✓</span>
+                <span :class="source.status === 'ok' ? 'text-green-400' : source.status === 'error' ? 'text-red-400' : 'text-slate-500'">
+                  {{ source.status || 'pending' }}
+                </span>
               </span>
             </div>
             <div class="text-slate-500">
-              {{ row.last_sync ? new Date(row.last_sync).toLocaleString() : 'Never' }}
-              <span v-if="row.item_count"> · {{ row.item_count }} items</span>
+              {{ source.last_sync ? new Date(source.last_sync).toLocaleString() : 'Not yet synced' }}
+              <span v-if="source.item_count"> · {{ source.item_count.toLocaleString() }} items</span>
             </div>
           </div>
-        </div>
-        <div v-else class="text-slate-500 text-sm text-center py-4">
-          No sync data yet
         </div>
         <button @click="triggerSync" :disabled="syncing"
           class="mt-3 w-full btn-secondary text-sm py-1.5">
@@ -119,14 +137,27 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
 const router = useRouter()
 const stats = ref(null)
 const histTab = ref('movies')
+const histSource = ref('composite')
 const syncing = ref(false)
+const isSyncing = ref(false)
+const syncStartTime = ref(null)
+const syncStatuses = ref({})
+let pollTimer = null
+
+const histSources = [
+  { value: 'composite', label: 'Composite' },
+  { value: 'imdb', label: 'IMDb' },
+  { value: 'rt', label: 'RT Critics' },
+  { value: 'metacritic', label: 'Metacritic' },
+  { value: 'mdblist', label: 'MDBList' },
+]
 
 const statsCards = computed(() => {
   if (!stats.value) return [
@@ -142,12 +173,14 @@ const statsCards = computed(() => {
     { label: 'Movies', value: s.movies.total.toLocaleString(), sub: `${s.movies.never_watched} never watched` },
     { label: 'TV Shows', value: s.tv_shows.total.toLocaleString(), sub: `${s.tv_shows.never_watched} never watched` },
     { label: 'Below 5.0', value: (s.movies.below_5 + s.tv_shows.below_5).toLocaleString() },
-    { label: 'Storage', value: unit },
+    { label: 'Movie Storage', value: unit, sub: 'TV not tracked' },
   ]
 })
 
 const currentHist = computed(() => {
   if (!stats.value) return []
+  // Future: when backend provides per-source histograms, use histSource.value
+  // For now, composite histogram is what's available
   return histTab.value === 'movies'
     ? stats.value.rating_histogram.movies
     : stats.value.rating_histogram.tv
@@ -176,22 +209,75 @@ const purgeScoreClass = (score) => {
   return 'bg-green-900 text-green-300'
 }
 
+const SYNC_SOURCES = [
+  { key: 'radarr-hd', label: 'Radarr HD' },
+  { key: 'radarr-4k', label: 'Radarr 4K' },
+  { key: 'sonarr-hd', label: 'Sonarr HD' },
+  { key: 'sonarr-4k', label: 'Sonarr 4K' },
+  { key: 'plex-chris', label: 'Plex (Chris)' },
+  { key: 'plex-ali', label: 'Plex (Ali)' },
+  { key: 'tautulli-chris', label: 'Tautulli (Chris)' },
+  { key: 'tautulli-ali', label: 'Tautulli (Ali)' },
+]
+
+const allSyncSources = computed(() => {
+  const map = {}
+  if (stats.value) {
+    for (const row of stats.value.sync_status) {
+      map[row.source] = row
+    }
+  }
+  return SYNC_SOURCES.map(s => ({ ...s, ...(map[s.key] || {}) }))
+})
+
+const hasSyncCompleted = (source) => {
+  if (!syncStartTime.value) return false
+  const ts = syncStatuses.value[source.key]
+  if (!ts) return false
+  return new Date(ts) > syncStartTime.value
+}
+
 const filterByBucket = (bucket) => {
   const [low, high] = bucket.bucket.split('-').map(Number)
   const type = histTab.value === 'movies' ? '/movies' : '/tv'
   router.push(`${type}?composite_min=${low}&composite_max=${high}`)
 }
 
+const pollSyncStatus = async () => {
+  try {
+    const res = await axios.get('/api/sync/status')
+    const map = {}
+    for (const row of res.data) {
+      map[row.source] = row.last_sync
+    }
+    syncStatuses.value = map
+  } catch {}
+}
+
 const triggerSync = async () => {
   syncing.value = true
+  isSyncing.value = true
+  syncStartTime.value = new Date()
+  syncStatuses.value = {}
+
   try {
     await axios.post('/api/sync/trigger', { source: 'all' })
-    setTimeout(loadStats, 3000)
   } catch {
     // ignore
-  } finally {
-    setTimeout(() => { syncing.value = false }, 5000)
   }
+
+  // Poll every 3s for up to 120s
+  let elapsed = 0
+  pollTimer = setInterval(async () => {
+    elapsed += 3
+    await pollSyncStatus()
+    await loadStats()
+    if (elapsed >= 120) {
+      clearInterval(pollTimer)
+      syncing.value = false
+      setTimeout(() => { isSyncing.value = false }, 5000)
+    }
+  }, 3000)
 }
 
 const loadStats = async () => {
@@ -204,4 +290,5 @@ const loadStats = async () => {
 }
 
 onMounted(loadStats)
+onBeforeUnmount(() => { if (pollTimer) clearInterval(pollTimer) })
 </script>

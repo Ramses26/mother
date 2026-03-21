@@ -5,7 +5,7 @@
       <div class="p-4">
         <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">Filters</h2>
 
-        <!-- Presets -->
+        <!-- Presets — clicking active preset clears all filters -->
         <div class="grid grid-cols-2 gap-1.5 mb-4">
           <button v-for="p in presets" :key="p.value" @click="applyPreset(p.value)"
             class="text-xs px-2 py-1.5 rounded transition-colors"
@@ -52,6 +52,11 @@
               <input type="checkbox" v-model="filters.neither_watched" @change="fetchMovies"
                 class="rounded border-slate-600 text-violet-600"/>
               <span class="text-slate-300">Neither watched</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" v-model="filters.both_watched" @change="fetchMovies"
+                class="rounded border-slate-600 text-violet-600"/>
+              <span class="text-slate-300">Both watched</span>
             </label>
             <div class="flex gap-2 items-center">
               <span class="text-slate-500 w-10">Ali</span>
@@ -123,7 +128,6 @@
     <div class="flex-1 overflow-y-auto">
       <!-- Toolbar -->
       <div class="sticky top-0 z-20 flex items-center gap-3 px-4 py-2 border-b" style="background:#0f1117; border-color:#2d3250;">
-        <!-- Total -->
         <span class="text-sm text-slate-400">{{ total.toLocaleString() }} movies</span>
         <div class="flex-1"/>
 
@@ -141,6 +145,22 @@
         <button @click="toggleSortDir" class="text-slate-400 hover:text-white px-2">
           {{ sortDir === 'asc' ? '↑' : '↓' }}
         </button>
+
+        <!-- Column visibility (table mode only) -->
+        <div v-if="viewMode === 'table'" class="relative">
+          <button @click="showColMenu = !showColMenu"
+            class="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+            title="Column visibility">⚙</button>
+          <div v-if="showColMenu" class="absolute right-0 top-full mt-1 z-50 rounded-lg border shadow-xl p-3 w-44"
+            style="background:#1a1d27; border-color:#2d3250;">
+            <div class="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wider">Columns</div>
+            <label v-for="col in optionalCols" :key="col.key" class="flex items-center gap-2 cursor-pointer py-1">
+              <input type="checkbox" v-model="visibleCols[col.key]" @change="saveColPrefs"
+                class="rounded border-slate-600 text-violet-600"/>
+              <span class="text-sm text-slate-300">{{ col.label }}</span>
+            </label>
+          </div>
+        </div>
 
         <!-- View toggle -->
         <div class="flex gap-1">
@@ -166,10 +186,11 @@
           @click="openDetail(m)">
           <!-- Poster -->
           <div class="aspect-[2/3] relative" style="background:#1a1d27;">
-            <img v-if="m.plex_key" :src="`/api/poster?url=/library/metadata/${m.plex_key}/thumb&server=chris`"
+            <img v-if="m.poster_url || m.plex_key"
+              :src="m.poster_url || `/api/poster?url=/library/metadata/${m.plex_key}/thumb&server=chris`"
               class="w-full h-full object-cover" loading="lazy" @error="e => e.target.style.display='none'"/>
             <div class="absolute inset-0 flex items-center justify-center text-slate-600 text-xs"
-              v-if="!m.plex_key">No poster</div>
+              v-if="!m.poster_url && !m.plex_key">No poster</div>
             <!-- Quality badge -->
             <div class="absolute top-1 right-1 px-1.5 py-0.5 rounded text-xs font-medium bg-black/70 text-white">
               {{ m.resolution || '?' }}
@@ -193,7 +214,6 @@
                 <div v-if="m.imdb_rating || m.rt_critics" class="flex gap-1 justify-center text-xs text-slate-300 mb-1">
                   <span v-if="m.imdb_rating">⭐{{ m.imdb_rating }}</span>
                   <span v-if="m.rt_critics">🍅{{ m.rt_critics }}%</span>
-                  <span v-if="m.metacritic">MC:{{ m.metacritic }}</span>
                 </div>
               </div>
             </div>
@@ -205,17 +225,23 @@
         </div>
       </div>
 
-      <!-- Compact Grid / Table / List views -->
-      <div v-else class="p-4">
+      <!-- Table view -->
+      <div v-else class="p-4" @click.self="showColMenu = false">
         <table class="w-full text-sm">
           <thead>
             <tr class="text-left text-slate-500 border-b" style="border-color:#2d3250;">
               <th class="py-2 pr-4 font-medium">Title</th>
-              <th class="py-2 pr-4 font-medium">Year</th>
+              <th v-if="visibleCols.year" class="py-2 pr-4 font-medium">Year</th>
               <th class="py-2 pr-4 font-medium">Rating</th>
-              <th class="py-2 pr-4 font-medium">Resolution</th>
-              <th class="py-2 pr-4 font-medium">Size</th>
-              <th class="py-2 pr-4 font-medium">Watched</th>
+              <th v-if="visibleCols.imdb" class="py-2 pr-4 font-medium">IMDb</th>
+              <th v-if="visibleCols.rt" class="py-2 pr-4 font-medium">RT</th>
+              <th v-if="visibleCols.metacritic" class="py-2 pr-4 font-medium">MC</th>
+              <th v-if="visibleCols.mdblist" class="py-2 pr-4 font-medium">MDB</th>
+              <th v-if="visibleCols.resolution" class="py-2 pr-4 font-medium">Res</th>
+              <th v-if="visibleCols.hdr" class="py-2 pr-4 font-medium">HDR</th>
+              <th v-if="visibleCols.size" class="py-2 pr-4 font-medium">Size</th>
+              <th v-if="visibleCols.watched" class="py-2 pr-4 font-medium">Watched</th>
+              <th v-if="visibleCols.added" class="py-2 pr-4 font-medium">Added</th>
               <th class="py-2 font-medium">Purge</th>
             </tr>
           </thead>
@@ -228,20 +254,28 @@
                 <div class="text-white font-medium truncate max-w-xs">{{ m.title }}</div>
                 <div class="text-xs text-slate-500">{{ m.radarr_instance }}</div>
               </td>
-              <td class="py-2 pr-4 text-slate-400">{{ m.year }}</td>
+              <td v-if="visibleCols.year" class="py-2 pr-4 text-slate-400">{{ m.year }}</td>
               <td class="py-2 pr-4">
                 <span v-if="m.composite_score" class="text-violet-400 font-medium">{{ m.composite_score.toFixed(1) }}</span>
                 <span v-else class="text-slate-600">—</span>
               </td>
-              <td class="py-2 pr-4">
+              <td v-if="visibleCols.imdb" class="py-2 pr-4 text-slate-400 text-xs">{{ m.imdb_rating || '—' }}</td>
+              <td v-if="visibleCols.rt" class="py-2 pr-4 text-slate-400 text-xs">{{ m.rt_critics != null ? m.rt_critics + '%' : '—' }}</td>
+              <td v-if="visibleCols.metacritic" class="py-2 pr-4 text-slate-400 text-xs">{{ m.metacritic || '—' }}</td>
+              <td v-if="visibleCols.mdblist" class="py-2 pr-4 text-slate-400 text-xs">{{ m.mdblist_score || '—' }}</td>
+              <td v-if="visibleCols.resolution" class="py-2 pr-4">
                 <span class="px-1.5 py-0.5 rounded text-xs font-medium bg-slate-700 text-slate-200">
                   {{ m.resolution || '?' }}
                 </span>
               </td>
-              <td class="py-2 pr-4 text-slate-400 text-xs">{{ formatSize(m.file_size_bytes) }}</td>
-              <td class="py-2 pr-4 text-xs">
+              <td v-if="visibleCols.hdr" class="py-2 pr-4 text-xs text-purple-400">{{ m.hdr_format || '—' }}</td>
+              <td v-if="visibleCols.size" class="py-2 pr-4 text-slate-400 text-xs">{{ formatSize(m.file_size_bytes) }}</td>
+              <td v-if="visibleCols.watched" class="py-2 pr-4 text-xs">
                 <span :class="m.ali_play_count > 0 ? 'text-green-400' : 'text-slate-600'">A</span>
                 <span :class="m.chris_play_count > 0 ? 'text-green-400' : 'text-slate-600'"> C</span>
+              </td>
+              <td v-if="visibleCols.added" class="py-2 pr-4 text-slate-500 text-xs">
+                {{ m.radarr_added_at ? new Date(m.radarr_added_at).toLocaleDateString() : '—' }}
               </td>
               <td class="py-2">
                 <span class="px-1.5 py-0.5 rounded text-xs font-medium"
@@ -275,12 +309,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import MediaDetail from '../components/MediaDetail.vue'
 import DeleteConfirm from '../components/DeleteConfirm.vue'
-import RatingBadge from '../components/RatingBadge.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -296,6 +329,7 @@ const viewMode = ref('poster')
 const sortBy = ref('sort_title')
 const sortDir = ref('asc')
 const activePreset = ref('')
+const showColMenu = ref(false)
 let fetchTimer = null
 
 const views = [
@@ -312,6 +346,36 @@ const presets = [
   { value: 'large_files', label: 'Large Files' },
 ]
 
+const optionalCols = [
+  { key: 'year', label: 'Year' },
+  { key: 'imdb', label: 'IMDb' },
+  { key: 'rt', label: 'RT Critics' },
+  { key: 'metacritic', label: 'Metacritic' },
+  { key: 'mdblist', label: 'MDBList' },
+  { key: 'resolution', label: 'Resolution' },
+  { key: 'hdr', label: 'HDR' },
+  { key: 'size', label: 'File Size' },
+  { key: 'watched', label: 'Watched' },
+  { key: 'added', label: 'Date Added' },
+]
+
+const COL_STORAGE_KEY = 'curatorr_movies_cols'
+const defaultCols = { year: true, imdb: false, rt: false, metacritic: false, mdblist: false,
+  resolution: true, hdr: false, size: true, watched: true, added: false }
+
+const visibleCols = reactive({ ...defaultCols })
+
+const loadColPrefs = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COL_STORAGE_KEY) || '{}')
+    Object.assign(visibleCols, defaultCols, saved)
+  } catch {}
+}
+
+const saveColPrefs = () => {
+  localStorage.setItem(COL_STORAGE_KEY, JSON.stringify({ ...visibleCols }))
+}
+
 const filters = reactive({
   title: '',
   composite_min: null, composite_max: null,
@@ -324,7 +388,7 @@ const filters = reactive({
   year_min: null, year_max: null,
   monitored: '',
   ali_watched: '', chris_watched: '',
-  neither_watched: false,
+  neither_watched: false, both_watched: false,
   resolutions: [],
   instance: '',
 })
@@ -352,6 +416,7 @@ const buildParams = () => {
   if (filters.ali_watched) p.ali_watched = filters.ali_watched
   if (filters.chris_watched) p.chris_watched = filters.chris_watched
   if (filters.neither_watched) p.neither_watched = 'true'
+  if (filters.both_watched) p.both_watched = 'true'
   if (filters.resolutions.length) p.resolution = filters.resolutions.join(',')
   if (filters.instance) p.instance = filters.instance
   return p
@@ -377,6 +442,11 @@ const debouncedFetch = () => {
 }
 
 const applyPreset = (preset) => {
+  // Clicking the active preset toggles it off (clears filters)
+  if (activePreset.value === preset) {
+    clearFilters()
+    return
+  }
   clearFilters()
   activePreset.value = preset
   if (preset === 'never_watched') filters.neither_watched = true
@@ -394,7 +464,7 @@ const clearFilters = () => {
     metacritic_min: null, metacritic_max: null, mdblist_min: null, mdblist_max: null,
     purge_score_min: null, purge_score_max: null, file_size_min_gb: null, file_size_max_gb: null,
     year_min: null, year_max: null, monitored: '', ali_watched: '', chris_watched: '',
-    neither_watched: false, resolutions: [], instance: '',
+    neither_watched: false, both_watched: false, resolutions: [], instance: '',
   })
   activePreset.value = ''
   sortBy.value = 'sort_title'
@@ -473,14 +543,24 @@ const formatSize = (bytes) => {
   return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1_048_576).toFixed(0)} MB`
 }
 
-// Apply query params from URL (e.g. from dashboard histogram clicks)
+// Close col menu on outside click
+const onDocClick = (e) => {
+  if (!e.target.closest('.relative')) showColMenu.value = false
+}
+
 onMounted(() => {
+  loadColPrefs()
   const q = route.query
   if (q.composite_min) filters.composite_min = parseFloat(q.composite_min)
   if (q.composite_max) filters.composite_max = parseFloat(q.composite_max)
   if (q.purge_score_min) filters.purge_score_min = parseInt(q.purge_score_min)
   if (q.neither_watched) filters.neither_watched = true
   fetchMovies()
+  document.addEventListener('click', onDocClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
 })
 </script>
 

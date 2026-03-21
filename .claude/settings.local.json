@@ -1,12 +1,5 @@
 {
   "permissions": {
-    "deny": [
-      "Bash(rm -rf *)",
-      "Bash(rm -r *)",
-      "Bash(rmdir *)",
-      "Bash(git push --force *)",
-      "Bash(git reset --hard *)"
-    ],
     "allow": [
       "Read",
       "Edit",
@@ -19,7 +12,15 @@
       "Task",
       "mcp__terminus__remote-ssh",
       "mcp__terminus__ssh-read-lines",
-      "mcp__terminus__ssh-edit-block"
+      "mcp__terminus__ssh-edit-block",
+      "Skill(update-config)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -r *)",
+      "Bash(rmdir *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)"
     ]
   }
 }

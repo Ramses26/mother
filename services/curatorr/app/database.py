@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS movies (
     ali_play_count INTEGER DEFAULT 0, ali_last_watched TIMESTAMP, ali_total_watch_sec INTEGER DEFAULT 0,
     chris_play_count INTEGER DEFAULT 0, chris_last_watched TIMESTAMP, chris_total_watch_sec INTEGER DEFAULT 0,
     purge_score INTEGER DEFAULT 0,
+    poster_url TEXT,
     plex_added_at TIMESTAMP, radarr_added_at TIMESTAMP,
     last_synced TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS tv_shows (
     ali_play_count INTEGER DEFAULT 0, ali_last_watched TIMESTAMP,
     chris_play_count INTEGER DEFAULT 0, chris_last_watched TIMESTAMP,
     purge_score INTEGER DEFAULT 0, season_completion_pct REAL,
+    poster_url TEXT,
     monitored INTEGER DEFAULT 1,
     plex_added_at TIMESTAMP,
     last_synced TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -139,7 +141,42 @@ CREATE INDEX IF NOT EXISTS idx_movies_composite ON movies(composite_score);
 CREATE INDEX IF NOT EXISTS idx_tv_tmdb ON tv_shows(tmdb_id);
 CREATE INDEX IF NOT EXISTS idx_tv_title ON tv_shows(sort_title);
 CREATE INDEX IF NOT EXISTS idx_watch_history_plex ON watch_history(plex_key);
+
+CREATE TABLE IF NOT EXISTS event_log (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_type TEXT,
+    source     TEXT,
+    message    TEXT,
+    detail     TEXT,
+    level      TEXT DEFAULT 'info',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_event_log_type ON event_log(event_type, created_at DESC);
 """
+
+
+async def _migrate_columns():
+    """Add new columns to existing tables without dropping data."""
+    migrations = [
+        ("ALTER TABLE movies ADD COLUMN poster_url TEXT",),
+        ("ALTER TABLE tv_shows ADD COLUMN poster_url TEXT",),
+    ]
+    async with aiosqlite.connect(DB_PATH, timeout=60) as db:
+        for (sql,) in migrations:
+            try:
+                await db.execute(sql)
+                await db.commit()
+            except Exception:
+                pass  # Column already exists
+        # Auto-purge event_log: keep last 2000 rows
+        try:
+            await db.execute(
+                "DELETE FROM event_log WHERE id NOT IN "
+                "(SELECT id FROM event_log ORDER BY id DESC LIMIT 2000)"
+            )
+            await db.commit()
+        except Exception:
+            pass
 
 
 async def init_database():
@@ -149,6 +186,7 @@ async def init_database():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript(CREATE_SQL)
         await db.commit()
+    await _migrate_columns()
     log.info(f"Database initialized at {DB_PATH}")
 
 

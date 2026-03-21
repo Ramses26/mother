@@ -68,14 +68,17 @@ async def sync_all_shows(db):
                 # Extract TVDB ID from alternate IDs if not at top level
                 tvdb_id = s.get('tvdbId')
 
+                # Poster URL: use remotePoster (TMDB) for display without Plex dependency
+                poster_url = s.get('remotePoster', '') or ''
+
                 await db.execute("""
                     INSERT INTO tv_shows (
                         sonarr_id, sonarr_instance, tmdb_id, tvdb_id, imdb_id,
                         title, sort_title, year, genres, runtime_min,
                         content_rating, network, summary, original_language,
                         status, total_seasons, total_episodes,
-                        monitored, last_synced, updated_at
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+                        monitored, poster_url, last_synced, updated_at
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
                     ON CONFLICT(sonarr_id, sonarr_instance) DO UPDATE SET
                         tmdb_id=excluded.tmdb_id, tvdb_id=excluded.tvdb_id,
                         imdb_id=excluded.imdb_id, title=excluded.title,
@@ -85,7 +88,7 @@ async def sync_all_shows(db):
                         summary=excluded.summary, original_language=excluded.original_language,
                         status=excluded.status, total_seasons=excluded.total_seasons,
                         total_episodes=excluded.total_episodes,
-                        monitored=excluded.monitored,
+                        monitored=excluded.monitored, poster_url=excluded.poster_url,
                         last_synced=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
                 """, (
                     s.get('id'), inst['name'],
@@ -96,7 +99,7 @@ async def sync_all_shows(db):
                     s.get('network'), s.get('overview', ''),
                     s.get('originalLanguage', {}).get('name', '') if isinstance(s.get('originalLanguage'), dict) else s.get('originalLanguage', ''),
                     status, total_seasons, total_episodes,
-                    1 if s.get('monitored') else 0,
+                    1 if s.get('monitored') else 0, poster_url,
                 ))
 
                 # Get show DB ID

@@ -76,8 +76,14 @@ def build_tv_query(params: dict) -> tuple[str, list]:
     if params.get('neither_watched') == 'true':
         conditions.append("ali_play_count = 0 AND chris_play_count = 0")
 
+    if params.get('both_watched') == 'true':
+        conditions.append("ali_play_count > 0 AND chris_play_count > 0")
+
     if params.get('cancelled_watched') == 'true':
         conditions.append("status = 'Cancelled' AND (ali_play_count > 0 OR chris_play_count > 0)")
+
+    if params.get('cancelled_never_watched') == 'true':
+        conditions.append("status = 'Cancelled' AND ali_play_count = 0 AND chris_play_count = 0")
 
     for field, col in [
         ('composite_min', 'composite_score'), ('composite_max', 'composite_score'),
@@ -126,7 +132,9 @@ async def list_tv(
     ali_watched: Optional[str] = None,
     chris_watched: Optional[str] = None,
     neither_watched: Optional[str] = None,
+    both_watched: Optional[str] = None,
     cancelled_watched: Optional[str] = None,
+    cancelled_never_watched: Optional[str] = None,
     composite_min: Optional[float] = None,
     composite_max: Optional[float] = None,
     imdb_min: Optional[float] = None,
@@ -150,7 +158,8 @@ async def list_tv(
         'language': language, 'genre': genre, 'status': status,
         'monitored': monitored, 'ali_watched': ali_watched,
         'chris_watched': chris_watched, 'neither_watched': neither_watched,
-        'cancelled_watched': cancelled_watched,
+        'both_watched': both_watched, 'cancelled_watched': cancelled_watched,
+        'cancelled_never_watched': cancelled_never_watched,
         'composite_min': composite_min, 'composite_max': composite_max,
         'imdb_min': imdb_min, 'imdb_max': imdb_max,
         'rt_min': rt_min, 'rt_max': rt_max,

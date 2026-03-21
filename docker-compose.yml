@@ -578,6 +578,11 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - CURATORR_TELEGRAM_CHAT_ID=${CURATORR_TELEGRAM_CHAT_ID}
       - UNRAID_MEDIA_PATH=/mnt/unraid/media
+      - RADARR_HD_PUBLIC_URL=${RADARR_HD_PUBLIC_URL:-}
+      - RADARR_4K_PUBLIC_URL=${RADARR_4K_PUBLIC_URL:-}
+      - SONARR_HD_PUBLIC_URL=${SONARR_HD_PUBLIC_URL:-}
+      - SONARR_4K_PUBLIC_URL=${SONARR_4K_PUBLIC_URL:-}
+      - OVERSEERR_URL=${OVERSEERR_URL:-}
     volumes:
       - /opt/mother/data/curatorr:/data
       - /mnt/unraid/media:/mnt/unraid/media
@@ -655,6 +660,24 @@ services:
       timeout: 30s
       retries: 5
       start_period: 10s
+
+  # Duplicati - Docker volume and config backup client
+  duplicati:
+    image: lscr.io/linuxserver/duplicati:latest
+    container_name: duplicati
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+    ports:
+      - "${DUPLICATI_PORT:-8200}:8200"
+    volumes:
+      - /opt/mother/data/duplicati:/config
+      - /opt/mother:/source/mother:ro
+      - /opt/mother/data:/source/data:ro
+    restart: unless-stopped
+    networks:
+      - mother_network
 
 networks:
   mother_network:

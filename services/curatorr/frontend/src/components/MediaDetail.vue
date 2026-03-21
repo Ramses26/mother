@@ -14,7 +14,15 @@
               <span v-if="item.content_rating"> · {{ item.content_rating }}</span>
             </div>
           </div>
-          <button @click="$emit('close')" class="text-slate-400 hover:text-white p-1 text-2xl leading-none">×</button>
+          <button @click="$emit('close')"
+            class="flex items-center justify-center w-8 h-8 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors text-xl leading-none flex-shrink-0"
+            title="Close">×</button>
+        </div>
+
+        <!-- Poster -->
+        <div v-if="posterSrc" class="mb-4 rounded-lg overflow-hidden" style="max-width:160px;">
+          <img :src="posterSrc" class="w-full object-cover rounded-lg" loading="lazy"
+            @error="posterError = true"/>
         </div>
 
         <!-- Badges -->
@@ -47,9 +55,30 @@
           </div>
         </div>
 
-        <!-- Purge meter -->
-        <div class="mb-4">
+        <!-- Purge meter with tooltip -->
+        <div class="mb-4 relative group">
           <PurgeMeter :score="item.purge_score || 0"/>
+          <!-- Purge tooltip -->
+          <div class="absolute left-0 bottom-full mb-2 z-50 hidden group-hover:block w-72
+            rounded-lg border p-3 text-xs shadow-xl"
+            style="background:#0f1117; border-color:#2d3250;">
+            <div class="font-semibold text-white mb-2">Purge Risk Score (0–100)</div>
+            <div class="text-slate-400 mb-2">Higher = stronger candidate for removal.</div>
+            <div class="space-y-1 text-slate-300">
+              <div>• Composite rating below 5.0 → up to +50 pts</div>
+              <div>• Never watched by either → +20 pts</div>
+              <div>• Watched only once total → +10 pts</div>
+              <div>• Low resolution (720p / SD) → +15 pts</div>
+              <div>• Cancelled show, both watched → +10 pts</div>
+              <div>• High rating (≥8.5) → −20 pts (protected)</div>
+            </div>
+            <div class="mt-2 flex gap-2 text-xs">
+              <span class="text-green-400">Green &lt;30</span>
+              <span class="text-yellow-400">Yellow 30–54</span>
+              <span class="text-orange-400">Orange 55–74</span>
+              <span class="text-red-400">Red 75+</span>
+            </div>
+          </div>
         </div>
 
         <!-- Watch status -->
@@ -132,13 +161,17 @@
         </div>
 
         <!-- External links -->
-        <div class="mt-3 flex gap-2 text-xs">
-          <a v-if="item.radarr_id" :href="radarrUrl" target="_blank"
-            class="text-slate-500 hover:text-slate-300 transition-colors">Open in Radarr</a>
-          <a v-if="item.sonarr_id" :href="sonarrUrl" target="_blank"
-            class="text-slate-500 hover:text-slate-300 transition-colors">Open in Sonarr</a>
+        <div class="mt-3 flex flex-wrap gap-2 text-xs">
+          <a v-if="item.radarr_id && radarrUrl" :href="radarrUrl" target="_blank"
+            class="text-slate-500 hover:text-slate-300 transition-colors">Open in Radarr ↗</a>
+          <a v-if="item.sonarr_id && sonarrUrl" :href="sonarrUrl" target="_blank"
+            class="text-slate-500 hover:text-slate-300 transition-colors">Open in Sonarr ↗</a>
           <a v-if="item.imdb_id" :href="`https://www.imdb.com/title/${item.imdb_id}`" target="_blank"
-            class="text-slate-500 hover:text-slate-300 transition-colors">IMDb</a>
+            class="text-slate-500 hover:text-slate-300 transition-colors">IMDb ↗</a>
+          <a v-if="item.tmdb_id && item.radarr_id" :href="`https://www.themoviedb.org/movie/${item.tmdb_id}`" target="_blank"
+            class="text-slate-500 hover:text-slate-300 transition-colors">TMDB ↗</a>
+          <a v-if="item.tmdb_id && item.sonarr_id" :href="`https://www.themoviedb.org/tv/${item.tmdb_id}`" target="_blank"
+            class="text-slate-500 hover:text-slate-300 transition-colors">TMDB ↗</a>
         </div>
       </div>
     </div>
@@ -146,12 +179,27 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, inject } from 'vue'
 import RatingBadge from './RatingBadge.vue'
 import PurgeMeter from './PurgeMeter.vue'
 
 const props = defineProps({ item: Object })
 defineEmits(['close', 'delete', 'unmonitor'])
+
+// Public URLs injected from parent (or loaded globally)
+const publicUrls = inject('publicUrls', ref({}))
+
+const posterError = ref(false)
+
+const posterSrc = computed(() => {
+  if (posterError.value) return null
+  if (!props.item) return null
+  // TMDB poster preferred (no Plex dependency)
+  if (props.item.poster_url) return props.item.poster_url
+  // Fallback: Plex proxy
+  if (props.item.plex_key) return `/api/poster?url=/library/metadata/${props.item.plex_key}/thumb&server=chris`
+  return null
+})
 
 const statusClass = (status) => ({
   'Continuing': 'bg-green-900 text-green-300',
@@ -167,15 +215,23 @@ const formatSize = (bytes) => {
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : ''
 
 const radarrUrl = computed(() => {
-  if (!props.item?.radarr_id) return '#'
-  const port = props.item.radarr_instance === 'radarr-4k' ? 7879 : 7878
-  return `http://localhost:${port}/movie/${props.item.radarr_id}`
+  if (!props.item?.radarr_id) return null
+  const urls = publicUrls.value || {}
+  const base = props.item.radarr_instance === 'radarr-4k'
+    ? (urls.radarr_4k || '')
+    : (urls.radarr_hd || '')
+  if (!base) return null
+  return `${base}/movie/${props.item.radarr_id}`
 })
 
 const sonarrUrl = computed(() => {
-  if (!props.item?.sonarr_id) return '#'
-  const port = props.item.sonarr_instance === 'sonarr-4k' ? 8990 : 8989
-  return `http://localhost:${port}/series/${props.item.sonarr_id}`
+  if (!props.item?.sonarr_id) return null
+  const urls = publicUrls.value || {}
+  const base = props.item.sonarr_instance === 'sonarr-4k'
+    ? (urls.sonarr_4k || '')
+    : (urls.sonarr_hd || '')
+  if (!base) return null
+  return `${base}/series/${props.item.sonarr_id}`
 })
 </script>
 

@@ -94,4 +94,11 @@ TAUTULLI_INSTANCES = [
     {'name': 'ali',   'url': ALI_TAUTULLI_URL,   'api_key': ALI_TAUTULLI_KEY,   'user': 'ali'},
 ]
 
-VERSION = '1.0.0'
+# ── Public URLs (for deep links in UI) ────────────────────────────────────────
+RADARR_HD_PUBLIC_URL  = os.environ.get('RADARR_HD_PUBLIC_URL',  '')
+RADARR_4K_PUBLIC_URL  = os.environ.get('RADARR_4K_PUBLIC_URL',  '')
+SONARR_HD_PUBLIC_URL  = os.environ.get('SONARR_HD_PUBLIC_URL',  '')
+SONARR_4K_PUBLIC_URL  = os.environ.get('SONARR_4K_PUBLIC_URL',  '')
+OVERSEERR_URL         = os.environ.get('OVERSEERR_URL',         '')
+
+VERSION = '1.1.0'

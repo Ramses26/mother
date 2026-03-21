@@ -40,7 +40,7 @@ check_and_restart() {
     # Count total and completed
     if [ -f "$progress_path" ]; then
         local completed=$(wc -l < "$progress_path")
-        local total=$(grep -c "run_cmd\|do_rsync\|do_move" "$script" 2>/dev/null || echo "0")
+        local total=$(grep -cP "^(run_cmd|do_rsync|do_move) " "$script" 2>/dev/null || echo "0")
 
         if [ "$completed" -ge "$total" ] && [ "$total" -gt 0 ]; then
             log "$screen_name: Sync complete ($completed/$total) - not restarting"
