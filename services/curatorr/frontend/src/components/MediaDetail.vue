@@ -89,7 +89,7 @@
         <!-- Watch status -->
         <div class="mb-4">
           <h3 class="text-sm font-medium text-slate-400 mb-2">Watch Status</h3>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-2 gap-3 mb-2">
             <div class="p-3 rounded-lg" style="background:#0f1117;">
               <div class="text-xs text-slate-500 mb-1">Ali</div>
               <div class="text-white font-medium">{{ item.ali_play_count || 0 }} plays</div>
@@ -104,6 +104,20 @@
                 Last: {{ fmtDate(item.chris_last_watched) }}
               </div>
             </div>
+          </div>
+          <!-- Combined row -->
+          <div class="p-3 rounded-lg flex items-center justify-between" style="background:#0f1117;">
+            <div>
+              <div class="text-xs text-slate-500 mb-0.5">Combined</div>
+              <div class="text-white text-sm">{{ (item.ali_play_count || 0) + (item.chris_play_count || 0) }} total plays</div>
+              <div v-if="combinedLastWatched" class="text-xs text-slate-500 mt-0.5">
+                Last: {{ fmtDate(combinedLastWatched) }}
+              </div>
+            </div>
+            <span class="text-sm font-medium px-2 py-1 rounded"
+              :class="bothWatched ? 'bg-green-900 text-green-300' : 'bg-slate-700 text-slate-400'">
+              {{ bothWatched ? 'Both watched ✓' : (item.ali_play_count > 0 || item.chris_play_count > 0 ? 'Partially watched' : 'Unwatched') }}
+            </span>
           </div>
         </div>
 
@@ -195,6 +209,19 @@ defineEmits(['close', 'delete', 'unmonitor'])
 const publicUrls = inject('publicUrls', ref({}))
 
 const posterError = ref(false)
+
+const bothWatched = computed(() =>
+  (props.item?.ali_play_count || 0) > 0 && (props.item?.chris_play_count || 0) > 0
+)
+
+const combinedLastWatched = computed(() => {
+  const a = props.item?.ali_last_watched
+  const c = props.item?.chris_last_watched
+  if (!a && !c) return null
+  if (!a) return c
+  if (!c) return a
+  return a > c ? a : c
+})
 
 const posterSrc = computed(() => {
   if (posterError.value) return null

@@ -12,7 +12,22 @@ log = logging.getLogger('curatorr.sync.tautulli')
 
 async def sync_watch_history(db):
     """Pull watch history from both Tautulli instances, update play counts."""
-    for tautulli in TAUTULLI_INSTANCES:
+    from app.config import (
+        CHRIS_TAUTULLI_URL, ALI_TAUTULLI_URL,
+        CHRIS_TAUTULLI_KEY, ALI_TAUTULLI_KEY,
+    )
+    instances = []
+    for t in TAUTULLI_INSTANCES:
+        overridden = dict(t)
+        if t['name'] == 'chris':
+            overridden['url']     = await get_config('tautulli_chris_url', CHRIS_TAUTULLI_URL) or t['url']
+            overridden['api_key'] = await get_config('tautulli_chris_key', CHRIS_TAUTULLI_KEY) or t['api_key']
+        elif t['name'] == 'ali':
+            overridden['url']     = await get_config('tautulli_ali_url', ALI_TAUTULLI_URL) or t['url']
+            overridden['api_key'] = await get_config('tautulli_ali_key', ALI_TAUTULLI_KEY) or t['api_key']
+        instances.append(overridden)
+
+    for tautulli in instances:
         source_key = f"tautulli-{tautulli['name']}"
         if not tautulli.get('url') or not tautulli.get('api_key'):
             log.warning(f"[{source_key}] Not configured, skipping")

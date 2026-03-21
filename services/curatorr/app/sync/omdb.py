@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import httpx
 from app.config import OMDB_API_KEY
+from app.database import get_config
 
 log = logging.getLogger('curatorr.sync.omdb')
 
@@ -37,7 +38,7 @@ async def set_cache(db, media_type: str, external_id: str, source: str, data: di
     await db.commit()
 
 
-async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie') -> dict:
+async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: str = None) -> dict:
     """Fetch OMDB ratings for an IMDb ID, using cache."""
     if not imdb_id:
         return {}
@@ -46,13 +47,14 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie') -> dict:
     if cached:
         return cached
 
-    if not OMDB_API_KEY:
+    api_key = _api_key or OMDB_API_KEY
+    if not api_key:
         log.debug("OMDB API key not configured")
         return {}
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(OMDB_URL, params={'i': imdb_id, 'apikey': OMDB_API_KEY})
+            r = await client.get(OMDB_URL, params={'i': imdb_id, 'apikey': api_key})
             r.raise_for_status()
             data = r.json()
     except Exception as e:
@@ -92,6 +94,9 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie') -> dict:
 
 async def sync_all_ratings(db):
     """Fetch OMDB ratings for all movies with imdb_id but missing ratings."""
+    # Pick up API key from config table (editable in Settings UI)
+    _api_key = await get_config('omdb_api_key', OMDB_API_KEY) or OMDB_API_KEY
+
     async with db.execute(
         "SELECT id, imdb_id, title FROM movies WHERE imdb_id IS NOT NULL "
         "AND (imdb_rating IS NULL OR imdb_rating = 0) "
@@ -103,7 +108,7 @@ async def sync_all_ratings(db):
     updated = 0
 
     for movie in movies:
-        data = await fetch_ratings(movie['imdb_id'], db, 'movie')
+        data = await fetch_ratings(movie['imdb_id'], db, 'movie', _api_key=_api_key)
         if data:
             await db.execute("""
                 UPDATE movies SET
@@ -128,6 +133,8 @@ async def sync_all_ratings(db):
 
 async def sync_tv_ratings(db):
     """Fetch OMDB ratings for all TV shows with imdb_id but missing ratings."""
+    _api_key = await get_config('omdb_api_key', OMDB_API_KEY) or OMDB_API_KEY
+
     async with db.execute(
         "SELECT id, imdb_id, title FROM tv_shows WHERE imdb_id IS NOT NULL "
         "AND (imdb_rating IS NULL OR imdb_rating = 0) "
@@ -139,7 +146,7 @@ async def sync_tv_ratings(db):
     updated = 0
 
     for show in shows:
-        data = await fetch_ratings(show['imdb_id'], db, 'tv')
+        data = await fetch_ratings(show['imdb_id'], db, 'tv', _api_key=_api_key)
         if data:
             await db.execute("""
                 UPDATE tv_shows SET

@@ -2,6 +2,7 @@
 import logging
 import os
 import shutil
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,43 +15,65 @@ router = APIRouter()
 log = logging.getLogger('curatorr.routes.settings')
 
 
+def _mask(v):
+    if not v:
+        return ''
+    return v[:4] + '****' + v[-4:] if len(v) > 8 else '****'
+
+
 @router.get('/settings')
 async def get_settings(_auth=Depends(require_auth)):
     """Return safe (non-secret) settings including public URLs."""
     from app.config import (
         TMDB_API_KEY, OMDB_API_KEY, MDBLIST_API_KEY,
         CURATORR_TELEGRAM_CHAT, CHRIS_PLEX_URL, ALI_PLEX_URL,
+        CHRIS_PLEX_TOKEN, ALI_PLEX_TOKEN,
         CHRIS_TAUTULLI_URL, ALI_TAUTULLI_URL,
+        CHRIS_TAUTULLI_KEY, ALI_TAUTULLI_KEY,
         RADARR_HD_PUBLIC_URL, RADARR_4K_PUBLIC_URL,
         SONARR_HD_PUBLIC_URL, SONARR_4K_PUBLIC_URL, OVERSEERR_URL,
     )
 
-    def mask(v):
-        if not v:
-            return ''
-        return v[:4] + '****' + v[-4:] if len(v) > 8 else '****'
-
     # Config-table overrides take priority over env vars
-    radarr_hd_url  = await get_config('public_url_radarr_hd',  RADARR_HD_PUBLIC_URL)
-    radarr_4k_url  = await get_config('public_url_radarr_4k',  RADARR_4K_PUBLIC_URL)
-    sonarr_hd_url  = await get_config('public_url_sonarr_hd',  SONARR_HD_PUBLIC_URL)
-    sonarr_4k_url  = await get_config('public_url_sonarr_4k',  SONARR_4K_PUBLIC_URL)
-    overseerr_url  = await get_config('public_url_overseerr',   OVERSEERR_URL)
+    radarr_hd_url   = await get_config('public_url_radarr_hd',  RADARR_HD_PUBLIC_URL)
+    radarr_4k_url   = await get_config('public_url_radarr_4k',  RADARR_4K_PUBLIC_URL)
+    sonarr_hd_url   = await get_config('public_url_sonarr_hd',  SONARR_HD_PUBLIC_URL)
+    sonarr_4k_url   = await get_config('public_url_sonarr_4k',  SONARR_4K_PUBLIC_URL)
+    overseerr_url   = await get_config('public_url_overseerr',   OVERSEERR_URL)
+
+    # Connection overrides
+    plex_chris_url   = await get_config('plex_chris_url',   CHRIS_PLEX_URL)
+    plex_ali_url     = await get_config('plex_ali_url',     ALI_PLEX_URL)
+    plex_chris_token = await get_config('plex_chris_token', CHRIS_PLEX_TOKEN)
+    plex_ali_token   = await get_config('plex_ali_token',   ALI_PLEX_TOKEN)
+
+    tautulli_chris_url = await get_config('tautulli_chris_url', CHRIS_TAUTULLI_URL)
+    tautulli_ali_url   = await get_config('tautulli_ali_url',   ALI_TAUTULLI_URL)
+    tautulli_chris_key = await get_config('tautulli_chris_key', CHRIS_TAUTULLI_KEY)
+    tautulli_ali_key   = await get_config('tautulli_ali_key',   ALI_TAUTULLI_KEY)
+
+    tmdb_key   = await get_config('tmdb_api_key',    TMDB_API_KEY)
+    omdb_key   = await get_config('omdb_api_key',    OMDB_API_KEY)
+    mdblist_key = await get_config('mdblist_api_key', MDBLIST_API_KEY)
 
     return {
         'api_keys': {
-            'tmdb': mask(TMDB_API_KEY),
-            'omdb': mask(OMDB_API_KEY),
-            'mdblist': mask(MDBLIST_API_KEY),
+            'tmdb':    _mask(tmdb_key),
+            'omdb':    _mask(omdb_key),
+            'mdblist': _mask(mdblist_key),
         },
         'telegram_chat_id': CURATORR_TELEGRAM_CHAT,
         'plex': {
-            'chris_url': CHRIS_PLEX_URL,
-            'ali_url': ALI_PLEX_URL,
+            'chris_url':   plex_chris_url or '',
+            'ali_url':     plex_ali_url or '',
+            'chris_token': _mask(plex_chris_token),
+            'ali_token':   _mask(plex_ali_token),
         },
         'tautulli': {
-            'chris_url': CHRIS_TAUTULLI_URL,
-            'ali_url': ALI_TAUTULLI_URL,
+            'chris_url': tautulli_chris_url or '',
+            'ali_url':   tautulli_ali_url or '',
+            'chris_key': _mask(tautulli_chris_key),
+            'ali_key':   _mask(tautulli_ali_key),
         },
         'public_urls': {
             'radarr_hd': radarr_hd_url or '',
@@ -64,18 +87,113 @@ async def get_settings(_auth=Depends(require_auth)):
 
 @router.patch('/settings/connections')
 async def update_connections(body: dict, _auth=Depends(require_auth)):
-    """Save public URL overrides to config table."""
-    mapping = {
+    """Save connection settings to config table."""
+    # Public URL overrides
+    url_mapping = {
         'radarr_hd': 'public_url_radarr_hd',
         'radarr_4k': 'public_url_radarr_4k',
         'sonarr_hd': 'public_url_sonarr_hd',
         'sonarr_4k': 'public_url_sonarr_4k',
         'overseerr': 'public_url_overseerr',
     }
-    for field, config_key in mapping.items():
+    for field, config_key in url_mapping.items():
         if field in body:
             await set_config(config_key, body[field])
-    return {'ok': True, 'message': 'Public URLs updated'}
+
+    # Plex / Tautulli connection overrides
+    conn_fields = [
+        'plex_chris_url', 'plex_ali_url',
+        'plex_chris_token', 'plex_ali_token',
+        'tautulli_chris_url', 'tautulli_ali_url',
+        'tautulli_chris_key', 'tautulli_ali_key',
+        'tmdb_api_key', 'omdb_api_key', 'mdblist_api_key',
+    ]
+    for field in conn_fields:
+        if field in body and body[field] is not None:
+            await set_config(field, body[field])
+
+    return {'ok': True, 'message': 'Connections updated'}
+
+
+@router.post('/settings/test-connection')
+async def test_connection(body: dict, _auth=Depends(require_auth)):
+    """Test connectivity to a configured service."""
+    import httpx
+    from app.config import (
+        CHRIS_PLEX_URL, ALI_PLEX_URL, CHRIS_PLEX_TOKEN, ALI_PLEX_TOKEN,
+        CHRIS_TAUTULLI_URL, ALI_TAUTULLI_URL, CHRIS_TAUTULLI_KEY, ALI_TAUTULLI_KEY,
+    )
+
+    source = body.get('source', '')
+
+    if source == 'plex-chris':
+        url   = await get_config('plex_chris_url',   CHRIS_PLEX_URL)
+        token = await get_config('plex_chris_token', CHRIS_PLEX_TOKEN)
+        if not url or not token:
+            return {'ok': False, 'message': 'URL or token not configured'}
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                r = await client.get(f"{url}/identity",
+                                     headers={'X-Plex-Token': token, 'Accept': 'application/json'})
+            if r.status_code == 200:
+                name = r.json().get('MediaContainer', {}).get('friendlyName', 'Plex')
+                return {'ok': True, 'message': f'Connected: {name}'}
+            return {'ok': False, 'message': f'HTTP {r.status_code}'}
+        except Exception as e:
+            return {'ok': False, 'message': str(e)[:120]}
+
+    elif source == 'plex-ali':
+        url   = await get_config('plex_ali_url',   ALI_PLEX_URL)
+        token = await get_config('plex_ali_token', ALI_PLEX_TOKEN)
+        if not url or not token:
+            return {'ok': False, 'message': 'URL or token not configured'}
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                r = await client.get(f"{url}/identity",
+                                     headers={'X-Plex-Token': token, 'Accept': 'application/json'})
+            if r.status_code == 200:
+                name = r.json().get('MediaContainer', {}).get('friendlyName', 'Plex')
+                return {'ok': True, 'message': f'Connected: {name}'}
+            return {'ok': False, 'message': f'HTTP {r.status_code}'}
+        except Exception as e:
+            return {'ok': False, 'message': str(e)[:120]}
+
+    elif source == 'tautulli-chris':
+        url = await get_config('tautulli_chris_url', CHRIS_TAUTULLI_URL)
+        key = await get_config('tautulli_chris_key', CHRIS_TAUTULLI_KEY)
+        if not url or not key:
+            return {'ok': False, 'message': 'URL or API key not configured'}
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                r = await client.get(f"{url}/api/v2",
+                                     params={'apikey': key, 'cmd': 'get_server_info'})
+            data = r.json()
+            if data.get('response', {}).get('result') == 'success':
+                name = data['response']['data'].get('pms_name', 'Tautulli')
+                return {'ok': True, 'message': f'Connected: {name}'}
+            return {'ok': False, 'message': data.get('response', {}).get('message', f'HTTP {r.status_code}')}
+        except Exception as e:
+            return {'ok': False, 'message': str(e)[:120]}
+
+    elif source == 'tautulli-ali':
+        url = await get_config('tautulli_ali_url', ALI_TAUTULLI_URL)
+        key = await get_config('tautulli_ali_key', ALI_TAUTULLI_KEY)
+        if not url or not key:
+            return {'ok': False, 'message': 'URL or API key not configured'}
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                r = await client.get(f"{url}/api/v2",
+                                     params={'apikey': key, 'cmd': 'get_server_info'})
+            data = r.json()
+            if data.get('response', {}).get('result') == 'success':
+                name = data['response']['data'].get('pms_name', 'Tautulli')
+                return {'ok': True, 'message': f'Connected: {name}'}
+            return {'ok': False, 'message': data.get('response', {}).get('message', f'HTTP {r.status_code}')}
+        except Exception as e:
+            return {'ok': False, 'message': str(e)[:120]}
+
+    else:
+        raise HTTPException(status_code=400, detail=f'Unknown source: {source}')
 
 
 @router.post('/settings/change-password')
@@ -140,6 +258,45 @@ async def create_backup(_auth=Depends(require_auth)):
         return {'ok': True, 'filename': dest.name, 'size_bytes': dest.stat().st_size}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Backup failed: {e}')
+
+
+@router.get('/settings/backups/integrity')
+async def check_integrity(_auth=Depends(require_auth)):
+    """Run SQLite integrity_check on the live database."""
+    from app.config import DB_PATH
+    try:
+        # Use synchronous sqlite3 — integrity_check doesn't need WAL
+        conn = sqlite3.connect(DB_PATH, timeout=10)
+        rows = conn.execute('PRAGMA integrity_check').fetchall()
+        conn.close()
+        result = rows[0][0] if rows else 'unknown'
+        ok = result == 'ok'
+        return {'ok': ok, 'result': result}
+    except Exception as e:
+        return {'ok': False, 'result': str(e)}
+
+
+@router.post('/settings/backups/{filename}/restore')
+async def restore_backup(filename: str, _auth=Depends(require_auth)):
+    """Restore a backup over the live database."""
+    from app.config import DB_PATH, BACKUP_DIR
+    from app.log_events import log_event
+    # Safety: only allow .db files, no path traversal
+    if '/' in filename or '..' in filename or not filename.endswith('.db'):
+        raise HTTPException(status_code=400, detail='Invalid filename')
+    src = Path(BACKUP_DIR) / filename
+    if not src.exists():
+        raise HTTPException(status_code=404, detail='Backup not found')
+    try:
+        shutil.copy2(str(src), DB_PATH)
+        log.warning(f"Database restored from backup: {filename}")
+        # Log event to the freshly-restored DB
+        async for db in get_db():
+            await log_event(db, 'system', 'settings', f'Database restored from backup: {filename}')
+            await db.commit()
+        return {'ok': True, 'message': f'Restore complete — database replaced with {filename}. Refresh the page.'}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Restore failed: {e}')
 
 
 @router.get('/settings/backups/{filename}')

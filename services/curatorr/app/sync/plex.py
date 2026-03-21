@@ -5,6 +5,7 @@ from datetime import datetime
 
 import httpx
 from app.config import PLEX_INSTANCES
+from app.database import get_config
 from app.log_events import log_event
 
 log = logging.getLogger('curatorr.sync.plex')
@@ -66,7 +67,20 @@ async def get_library_sections(plex_url: str, token: str) -> list[dict]:
 
 async def sync_plex_library(db):
     """Sync Plex metadata into movies/tv_shows tables (updates resolution, codec, plex_key, etc.)."""
+    # Build instances with config-table overrides (editable from Settings UI)
+    from app.config import CHRIS_PLEX_URL, ALI_PLEX_URL, CHRIS_PLEX_TOKEN, ALI_PLEX_TOKEN
+    instances = []
     for plex in PLEX_INSTANCES:
+        overridden = dict(plex)
+        if plex['name'] == 'chris':
+            overridden['url']   = await get_config('plex_chris_url',   CHRIS_PLEX_URL)   or plex['url']
+            overridden['token'] = await get_config('plex_chris_token', CHRIS_PLEX_TOKEN) or plex['token']
+        elif plex['name'] == 'ali':
+            overridden['url']   = await get_config('plex_ali_url',   ALI_PLEX_URL)   or plex['url']
+            overridden['token'] = await get_config('plex_ali_token', ALI_PLEX_TOKEN) or plex['token']
+        instances.append(overridden)
+
+    for plex in instances:
         source_key = f"plex-{plex['name']}"
         if not plex.get('token'):
             log.warning(f"[{source_key}] No token configured, skipping")

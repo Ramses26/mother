@@ -198,6 +198,7 @@
                 </span>
               </th>
               <th v-if="visibleCols.watched" class="py-2 pr-4 font-medium">Watched</th>
+              <th v-if="visibleCols.both" class="py-2 pr-4 font-medium">Both</th>
               <th class="py-2 font-medium">Purge</th>
             </tr>
           </thead>
@@ -238,6 +239,12 @@
               <td v-if="visibleCols.watched" class="py-2 pr-4 text-xs">
                 <span :class="s.ali_play_count > 0 ? 'text-green-400' : 'text-slate-600'">A</span>
                 <span :class="s.chris_play_count > 0 ? 'text-green-400' : 'text-slate-600'"> C</span>
+              </td>
+              <td v-if="visibleCols.both" class="py-2 pr-4 text-xs">
+                <span v-if="s.ali_play_count > 0 && s.chris_play_count > 0" class="text-green-400">✓</span>
+                <span v-else-if="s.ali_play_count > 0" class="text-blue-400">Ali</span>
+                <span v-else-if="s.chris_play_count > 0" class="text-purple-400">Chris</span>
+                <span v-else class="text-slate-600">—</span>
               </td>
               <td class="py-2">
                 <span class="px-1.5 py-0.5 rounded text-xs font-medium" :class="purgeScoreClass(s.purge_score)">
@@ -309,10 +316,11 @@ const optionalCols = [
   { key: 'mdblist', label: 'MDBList' },
   { key: 'seasons', label: 'Seasons' },
   { key: 'watched', label: 'Watched' },
+  { key: 'both', label: 'Both' },
 ]
 
 const COL_STORAGE_KEY = 'curatorr_tv_cols'
-const defaultCols = { year: true, network: false, imdb: false, rt: false, metacritic: false, mdblist: false, seasons: true, watched: true }
+const defaultCols = { year: true, network: false, imdb: false, rt: false, metacritic: false, mdblist: false, seasons: true, watched: true, both: false }
 const visibleCols = reactive({ ...defaultCols })
 
 const loadColPrefs = () => {

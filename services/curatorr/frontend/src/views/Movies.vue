@@ -243,6 +243,7 @@
               <th v-if="visibleCols.audio" class="py-2 pr-4 font-medium">Audio</th>
               <th v-if="visibleCols.size" class="py-2 pr-4 font-medium">Size</th>
               <th v-if="visibleCols.watched" class="py-2 pr-4 font-medium">Watched</th>
+              <th v-if="visibleCols.both" class="py-2 pr-4 font-medium">Both</th>
               <th v-if="visibleCols.added" class="py-2 pr-4 font-medium">Added</th>
               <th class="py-2 font-medium">Purge</th>
             </tr>
@@ -279,6 +280,12 @@
               <td v-if="visibleCols.watched" class="py-2 pr-4 text-xs">
                 <span :class="m.ali_play_count > 0 ? 'text-green-400' : 'text-slate-600'">A</span>
                 <span :class="m.chris_play_count > 0 ? 'text-green-400' : 'text-slate-600'"> C</span>
+              </td>
+              <td v-if="visibleCols.both" class="py-2 pr-4 text-xs">
+                <span v-if="m.ali_play_count > 0 && m.chris_play_count > 0" class="text-green-400">✓</span>
+                <span v-else-if="m.ali_play_count > 0" class="text-blue-400">Ali</span>
+                <span v-else-if="m.chris_play_count > 0" class="text-purple-400">Chris</span>
+                <span v-else class="text-slate-600">—</span>
               </td>
               <td v-if="visibleCols.added" class="py-2 pr-4 text-slate-500 text-xs">
                 {{ m.radarr_added_at ? new Date(m.radarr_added_at).toLocaleDateString() : '—' }}
@@ -364,12 +371,13 @@ const optionalCols = [
   { key: 'audio', label: 'Audio' },
   { key: 'size', label: 'File Size' },
   { key: 'watched', label: 'Watched' },
+  { key: 'both', label: 'Both' },
   { key: 'added', label: 'Date Added' },
 ]
 
 const COL_STORAGE_KEY = 'curatorr_movies_cols'
 const defaultCols = { year: true, imdb: false, rt: false, metacritic: false, mdblist: false,
-  resolution: true, hdr: false, codec: false, audio: false, size: true, watched: true, added: false }
+  resolution: true, hdr: false, codec: false, audio: false, size: true, watched: true, both: false, added: false }
 
 const visibleCols = reactive({ ...defaultCols })
 

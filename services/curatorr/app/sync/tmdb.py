@@ -4,6 +4,7 @@ import logging
 
 import httpx
 from app.config import TMDB_API_KEY
+from app.database import get_config
 from app.sync.omdb import get_cache, set_cache
 
 log = logging.getLogger('curatorr.sync.tmdb')
@@ -12,9 +13,10 @@ TMDB_BASE = 'https://api.themoviedb.org/3'
 CACHE_TTL_DAYS = 7
 
 
-async def fetch_movie_details(tmdb_id: int, db) -> dict:
+async def fetch_movie_details(tmdb_id: int, db, _api_key: str = None) -> dict:
     """Fetch TMDB movie details."""
-    if not tmdb_id or not TMDB_API_KEY:
+    api_key = _api_key or TMDB_API_KEY
+    if not tmdb_id or not api_key:
         return {}
 
     cached = await get_cache(db, 'movie', str(tmdb_id), 'tmdb')
@@ -25,7 +27,7 @@ async def fetch_movie_details(tmdb_id: int, db) -> dict:
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(
                 f"{TMDB_BASE}/movie/{tmdb_id}",
-                params={'api_key': TMDB_API_KEY, 'append_to_response': 'release_dates'},
+                params={'api_key': api_key, 'append_to_response': 'release_dates'},
             )
             r.raise_for_status()
             data = r.json()
@@ -51,9 +53,10 @@ async def fetch_movie_details(tmdb_id: int, db) -> dict:
     return result
 
 
-async def fetch_tv_details(tmdb_id: int, db) -> dict:
+async def fetch_tv_details(tmdb_id: int, db, _api_key: str = None) -> dict:
     """Fetch TMDB TV show details."""
-    if not tmdb_id or not TMDB_API_KEY:
+    api_key = _api_key or TMDB_API_KEY
+    if not tmdb_id or not api_key:
         return {}
 
     cached = await get_cache(db, 'tv', str(tmdb_id), 'tmdb')
@@ -64,7 +67,7 @@ async def fetch_tv_details(tmdb_id: int, db) -> dict:
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(
                 f"{TMDB_BASE}/tv/{tmdb_id}",
-                params={'api_key': TMDB_API_KEY},
+                params={'api_key': api_key},
             )
             r.raise_for_status()
             data = r.json()
@@ -95,7 +98,8 @@ async def fetch_tv_details(tmdb_id: int, db) -> dict:
 
 async def sync_collections(db):
     """Sync collection data for all movies with collection_tmdb_id."""
-    if not TMDB_API_KEY:
+    _api_key = await get_config('tmdb_api_key', TMDB_API_KEY) or TMDB_API_KEY
+    if not _api_key:
         return
 
     async with db.execute(
@@ -110,7 +114,7 @@ async def sync_collections(db):
             async with httpx.AsyncClient(timeout=10) as client:
                 r = await client.get(
                     f"{TMDB_BASE}/collection/{tmdb_id}",
-                    params={'api_key': TMDB_API_KEY},
+                    params={'api_key': _api_key},
                 )
                 if r.status_code != 200:
                     continue
@@ -156,6 +160,8 @@ async def refresh_stale_ratings(db):
     from datetime import timedelta
     from datetime import datetime
 
+    _tmdb_key = await get_config('tmdb_api_key', TMDB_API_KEY) or TMDB_API_KEY
+
     cutoff = (datetime.utcnow() - timedelta(days=7)).isoformat()
 
     async with db.execute(
@@ -176,7 +182,7 @@ async def refresh_stale_ratings(db):
                 "DELETE FROM ratings_cache WHERE media_type='movie' AND external_id=? AND source='tmdb'",
                 (str(tmdb_id),)
             )
-            tmdb_data = await fetch_movie_details(tmdb_id, db)
+            tmdb_data = await fetch_movie_details(tmdb_id, db, _api_key=_tmdb_key)
             if tmdb_data:
                 if tmdb_data.get('tmdb_rating'):
                     await db.execute(
@@ -216,6 +222,8 @@ async def refresh_stale_tv_ratings(db):
     from datetime import timedelta
     from datetime import datetime
 
+    _tmdb_key = await get_config('tmdb_api_key', TMDB_API_KEY) or TMDB_API_KEY
+
     cutoff = (datetime.utcnow() - timedelta(days=7)).isoformat()
 
     async with db.execute(
@@ -235,7 +243,7 @@ async def refresh_stale_tv_ratings(db):
                 "DELETE FROM ratings_cache WHERE media_type='tv' AND external_id=? AND source='tmdb'",
                 (str(tmdb_id),)
             )
-            tmdb_data = await fetch_tv_details(tmdb_id, db)
+            tmdb_data = await fetch_tv_details(tmdb_id, db, _api_key=_tmdb_key)
             if tmdb_data:
                 set_clauses = ['ratings_updated_at=CURRENT_TIMESTAMP']
                 vals = []
