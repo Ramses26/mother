@@ -6,6 +6,7 @@ from datetime import datetime
 import httpx
 from app.config import SONARR_INSTANCES
 from app.scoring import compute_composite_score, compute_purge_score
+from app.log_events import log_event
 
 log = logging.getLogger('curatorr.sync.sonarr')
 
@@ -32,6 +33,7 @@ async def sync_all_shows(db):
                 "INSERT OR REPLACE INTO sync_log (source, status, error_msg, last_sync) VALUES (?,?,?,CURRENT_TIMESTAMP)",
                 (inst['name'], 'error', str(e))
             )
+            await log_event(db, 'sync', inst['name'], f"Sync failed: {str(e)[:200]}", level='error')
             await db.commit()
             continue
 
@@ -68,8 +70,12 @@ async def sync_all_shows(db):
                 # Extract TVDB ID from alternate IDs if not at top level
                 tvdb_id = s.get('tvdbId')
 
-                # Poster URL: use remotePoster (TMDB) for display without Plex dependency
-                poster_url = s.get('remotePoster', '') or ''
+                # Poster URL: use images[] array (coverType='poster', remoteUrl)
+                poster_url = next(
+                    (img.get('remoteUrl', '') for img in s.get('images', [])
+                     if img.get('coverType') == 'poster'),
+                    ''
+                ) or ''
 
                 await db.execute("""
                     INSERT INTO tv_shows (
@@ -153,6 +159,8 @@ async def sync_all_shows(db):
         await db.commit()
 
         log.info(f"[{inst['name']}] Synced {count} shows")
+        await log_event(db, 'sync', inst['name'], f"Synced {count} shows")
+        await db.commit()
         total += count
 
     return total

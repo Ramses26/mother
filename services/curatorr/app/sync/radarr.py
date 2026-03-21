@@ -6,6 +6,7 @@ from datetime import datetime
 import httpx
 from app.config import RADARR_INSTANCES
 from app.scoring import compute_composite_score, compute_purge_score
+from app.log_events import log_event
 
 log = logging.getLogger('curatorr.sync.radarr')
 
@@ -74,6 +75,7 @@ async def sync_all_movies(db):
                 "INSERT OR REPLACE INTO sync_log (source, status, error_msg, last_sync) VALUES (?,?,?,CURRENT_TIMESTAMP)",
                 (inst['name'], 'error', str(e))
             )
+            await log_event(db, 'sync', inst['name'], f"Sync failed: {str(e)[:200]}", level='error')
             await db.commit()
             continue
 
@@ -119,8 +121,12 @@ async def sync_all_movies(db):
                 except Exception:
                     added_at = None
 
-                # Poster URL: use remotePoster (TMDB) for display without Plex dependency
-                poster_url = m.get('remotePoster', '') or ''
+                # Poster URL: use images[] array (coverType='poster', remoteUrl)
+                poster_url = next(
+                    (img.get('remoteUrl', '') for img in m.get('images', [])
+                     if img.get('coverType') == 'poster'),
+                    ''
+                ) or ''
 
                 await db.execute("""
                     INSERT INTO movies (
@@ -179,6 +185,8 @@ async def sync_all_movies(db):
         await db.commit()
 
         log.info(f"[{inst['name']}] Synced {count} movies")
+        await log_event(db, 'sync', inst['name'], f"Synced {count} movies")
+        await db.commit()
         total += count
 
     return total

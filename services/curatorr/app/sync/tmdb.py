@@ -116,7 +116,8 @@ async def sync_collections(db):
                     continue
                 data = r.json()
 
-            movie_count = len(data.get('parts', []))
+            parts = data.get('parts', [])
+            movie_count = len(parts)
             async with db.execute(
                 "SELECT COUNT(*) FROM movies WHERE collection_tmdb_id=?", (tmdb_id,)
             ) as cur:
@@ -130,6 +131,19 @@ async def sync_collections(db):
                 VALUES (?,?,?,?,?)
             """, (tmdb_id, data.get('name', coll_row['collection_name']),
                   poster_url, movie_count, owned_count))
+
+            # Store collection members for offline /missing endpoint
+            for part in parts:
+                part_poster = f"https://image.tmdb.org/t/p/w300{part['poster_path']}" if part.get('poster_path') else None
+                await db.execute("""
+                    INSERT OR REPLACE INTO collection_members
+                        (collection_tmdb_id, movie_tmdb_id, title, year, poster_url, overview, vote_average)
+                    VALUES (?,?,?,?,?,?,?)
+                """, (
+                    tmdb_id, part.get('id'), part.get('title', ''),
+                    (part.get('release_date') or '')[:4],
+                    part_poster, part.get('overview', ''), part.get('vote_average'),
+                ))
         except Exception as e:
             log.warning(f"Collection sync error for {tmdb_id}: {e}")
 
@@ -194,4 +208,73 @@ async def refresh_stale_ratings(db):
 
     await db.commit()
     log.info(f"[tmdb] Refreshed ratings for {updated} items")
+    return updated
+
+
+async def refresh_stale_tv_ratings(db):
+    """Refresh TMDB ratings for TV shows where ratings are stale."""
+    from datetime import timedelta
+    from datetime import datetime
+
+    cutoff = (datetime.utcnow() - timedelta(days=7)).isoformat()
+
+    async with db.execute(
+        "SELECT id, tmdb_id, imdb_id FROM tv_shows WHERE tmdb_id IS NOT NULL "
+        "AND (ratings_updated_at IS NULL OR ratings_updated_at < ?) LIMIT 50",
+        (cutoff,)
+    ) as cur:
+        shows = await cur.fetchall()
+
+    updated = 0
+    for show in shows:
+        tmdb_id = show['tmdb_id']
+        imdb_id = show['imdb_id']
+
+        if tmdb_id:
+            await db.execute(
+                "DELETE FROM ratings_cache WHERE media_type='tv' AND external_id=? AND source='tmdb'",
+                (str(tmdb_id),)
+            )
+            tmdb_data = await fetch_tv_details(tmdb_id, db)
+            if tmdb_data:
+                set_clauses = ['ratings_updated_at=CURRENT_TIMESTAMP']
+                vals = []
+                if tmdb_data.get('tmdb_rating'):
+                    set_clauses.append('tmdb_rating=?')
+                    vals.append(tmdb_data['tmdb_rating'])
+                    set_clauses.append('tmdb_votes=?')
+                    vals.append(tmdb_data.get('tmdb_votes'))
+                # Update status from TMDB — catches shows Sonarr marks "ended" but TMDB marks "Canceled"
+                if tmdb_data.get('status'):
+                    set_clauses.append('status=?')
+                    vals.append(tmdb_data['status'])
+                vals.append(show['id'])
+                await db.execute(
+                    f"UPDATE tv_shows SET {', '.join(set_clauses)} WHERE id=?", vals
+                )
+                updated += 1
+
+        if imdb_id:
+            from app.sync.mdblist import fetch_ratings as mdb_fetch
+            await db.execute(
+                "DELETE FROM ratings_cache WHERE media_type='tv' AND external_id=? AND source='mdblist'",
+                (imdb_id,)
+            )
+            mdb_data = await mdb_fetch(imdb_id, db, 'tv')
+            if mdb_data:
+                await db.execute("""
+                    UPDATE tv_shows SET
+                        mdblist_score = COALESCE(?, mdblist_score),
+                        imdb_rating = COALESCE(?, imdb_rating),
+                        rt_critics = COALESCE(?, rt_critics),
+                        metacritic = COALESCE(?, metacritic),
+                        ratings_updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (
+                    mdb_data.get('mdblist_score'), mdb_data.get('imdb_rating'),
+                    mdb_data.get('rt_critics'), mdb_data.get('metacritic'), show['id']
+                ))
+
+    await db.commit()
+    log.info(f"[tmdb] Refreshed TV ratings for {updated} shows")
     return updated

@@ -41,9 +41,9 @@ ALI_PLEX_TOKEN   = os.environ.get('ALI_PLEX_TOKEN', '')
 
 # ── Tautulli ──────────────────────────────────────────────────────────────────
 CHRIS_TAUTULLI_URL = os.environ.get('CHRIS_TAUTULLI_URL', 'http://tautulli:8181')
-CHRIS_TAUTULLI_KEY = os.environ.get('CHRIS_TAUTULLI_KEY', '')
+CHRIS_TAUTULLI_KEY = os.environ.get('CHRIS_TAUTULLI_KEY', '') or os.environ.get('CHRIS_TAUTULLI_API_KEY', '')
 ALI_TAUTULLI_URL   = os.environ.get('ALI_TAUTULLI_URL', '')
-ALI_TAUTULLI_KEY   = os.environ.get('ALI_TAUTULLI_KEY', '')
+ALI_TAUTULLI_KEY   = os.environ.get('ALI_TAUTULLI_KEY', '') or os.environ.get('ALI_TAUTULLI_API_KEY', '')
 
 # ── *arr ──────────────────────────────────────────────────────────────────────
 RADARR_HD_URL    = os.environ.get('RADARR_HD_URL',    'http://radarr-hd:7878')

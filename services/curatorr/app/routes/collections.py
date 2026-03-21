@@ -53,43 +53,79 @@ async def get_collection(tmdb_id: int, _auth=Depends(require_auth)):
 
 @router.get('/collections/{tmdb_id}/missing')
 async def get_missing_movies(tmdb_id: int, _auth=Depends(require_auth)):
-    """Return movies in this TMDB collection that we don't own."""
-    if not TMDB_API_KEY:
-        raise HTTPException(status_code=503, detail='TMDB API key not configured')
-
-    # Fetch collection from TMDB
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(
-                f'https://api.themoviedb.org/3/collection/{tmdb_id}',
-                params={'api_key': TMDB_API_KEY}
-            )
-            r.raise_for_status()
-            data = r.json()
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f'TMDB error: {e}')
-
-    tmdb_movies = data.get('parts', [])
-
+    """Return movies in this TMDB collection that we don't own. Uses DB cache."""
     async for db in get_db():
+        # Check if we have cached members from sync_collections()
+        async with db.execute(
+            "SELECT COUNT(*) FROM collection_members WHERE collection_tmdb_id=?", (tmdb_id,)
+        ) as cur:
+            cached_count = (await cur.fetchone())[0]
+
+        if cached_count > 0:
+            # Use cached data — no TMDB API call needed
+            async with db.execute(
+                "SELECT cm.movie_tmdb_id AS tmdb_id, cm.title, cm.year, cm.poster_url, cm.overview, cm.vote_average "
+                "FROM collection_members cm "
+                "WHERE cm.collection_tmdb_id=? "
+                "AND cm.movie_tmdb_id NOT IN (SELECT tmdb_id FROM movies WHERE collection_tmdb_id=?)",
+                (tmdb_id, tmdb_id)
+            ) as cur:
+                rows = await cur.fetchall()
+            missing = [dict(r) for r in rows]
+            return {'missing': missing, 'total': len(missing)}
+
+        # No cache yet — fall back to live TMDB call
+        if not TMDB_API_KEY:
+            raise HTTPException(status_code=503, detail='TMDB API key not configured — run a ratings sync first')
+
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                r = await client.get(
+                    f'https://api.themoviedb.org/3/collection/{tmdb_id}',
+                    params={'api_key': TMDB_API_KEY}
+                )
+                r.raise_for_status()
+                data = r.json()
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f'TMDB error: {e}')
+
+        tmdb_movies = data.get('parts', [])
+
+        # Cache members for future use
+        for part in tmdb_movies:
+            part_poster = f"https://image.tmdb.org/t/p/w300{part['poster_path']}" if part.get('poster_path') else None
+            try:
+                await db.execute("""
+                    INSERT OR REPLACE INTO collection_members
+                        (collection_tmdb_id, movie_tmdb_id, title, year, poster_url, overview, vote_average)
+                    VALUES (?,?,?,?,?,?,?)
+                """, (
+                    tmdb_id, part.get('id'), part.get('title', ''),
+                    (part.get('release_date') or '')[:4],
+                    part_poster, part.get('overview', ''), part.get('vote_average'),
+                ))
+            except Exception:
+                pass
+        await db.commit()
+
         async with db.execute(
             "SELECT tmdb_id FROM movies WHERE collection_tmdb_id=?", (tmdb_id,)
         ) as cur:
             owned_ids = {r[0] for r in await cur.fetchall()}
 
-    missing = []
-    for m in tmdb_movies:
-        if m.get('id') not in owned_ids:
-            missing.append({
-                'tmdb_id': m.get('id'),
-                'title': m.get('title', ''),
-                'year': (m.get('release_date') or '')[:4],
-                'poster_url': f"https://image.tmdb.org/t/p/w300{m['poster_path']}" if m.get('poster_path') else None,
-                'overview': m.get('overview', ''),
-                'vote_average': m.get('vote_average'),
-            })
+        missing = []
+        for m in tmdb_movies:
+            if m.get('id') not in owned_ids:
+                missing.append({
+                    'tmdb_id': m.get('id'),
+                    'title': m.get('title', ''),
+                    'year': (m.get('release_date') or '')[:4],
+                    'poster_url': f"https://image.tmdb.org/t/p/w300{m['poster_path']}" if m.get('poster_path') else None,
+                    'overview': m.get('overview', ''),
+                    'vote_average': m.get('vote_average'),
+                })
 
-    return {'missing': missing, 'total': len(missing)}
+        return {'missing': missing, 'total': len(missing)}
 
 
 @router.post('/collections/{tmdb_id}/request/{movie_tmdb_id}')

@@ -58,13 +58,14 @@ async def _refresh_ratings():
     async with aiosqlite.connect(DB_PATH, timeout=60) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("PRAGMA journal_mode=WAL")
-        from app.sync.omdb import sync_all_ratings as omdb_sync
-        from app.sync.mdblist import sync_all_ratings as mdb_sync
-        from app.sync.tmdb import refresh_stale_ratings, sync_collections
+        from app.sync.omdb import sync_all_ratings as omdb_sync, sync_tv_ratings as omdb_tv_sync
+        from app.sync.mdblist import sync_all_ratings as mdb_sync, sync_tv_ratings as mdb_tv_sync
+        from app.sync.tmdb import refresh_stale_ratings, refresh_stale_tv_ratings, sync_collections
         from app.sync.radarr import update_scores
         from app.sync.sonarr import update_tv_scores
-        for fn in [omdb_sync, mdb_sync, refresh_stale_ratings, sync_collections,
-                   update_scores, update_tv_scores]:
+        for fn in [omdb_sync, omdb_tv_sync, mdb_sync, mdb_tv_sync,
+                   refresh_stale_ratings, refresh_stale_tv_ratings,
+                   sync_collections, update_scores, update_tv_scores]:
             try:
                 await fn(db)
             except Exception as e:
@@ -217,13 +218,14 @@ async def trigger_sync_by_source(source: str):
             await sync_watch_history(db)
 
         if source in ('all', 'ratings'):
-            from app.sync.omdb import sync_all_ratings as omdb_sync
-            from app.sync.mdblist import sync_all_ratings as mdb_sync
-            from app.sync.tmdb import refresh_stale_ratings, sync_collections
+            from app.sync.omdb import sync_all_ratings as omdb_sync, sync_tv_ratings as omdb_tv_sync
+            from app.sync.mdblist import sync_all_ratings as mdb_sync, sync_tv_ratings as mdb_tv_sync
+            from app.sync.tmdb import refresh_stale_ratings, refresh_stale_tv_ratings, sync_collections
             from app.sync.radarr import update_scores
             from app.sync.sonarr import update_tv_scores
-            for fn in [omdb_sync, mdb_sync, refresh_stale_ratings, sync_collections,
-                       update_scores, update_tv_scores]:
+            for fn in [omdb_sync, omdb_tv_sync, mdb_sync, mdb_tv_sync,
+                       refresh_stale_ratings, refresh_stale_tv_ratings,
+                       sync_collections, update_scores, update_tv_scores]:
                 try:
                     await fn(db)
                 except Exception as e:

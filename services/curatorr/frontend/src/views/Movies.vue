@@ -239,6 +239,8 @@
               <th v-if="visibleCols.mdblist" class="py-2 pr-4 font-medium">MDB</th>
               <th v-if="visibleCols.resolution" class="py-2 pr-4 font-medium">Res</th>
               <th v-if="visibleCols.hdr" class="py-2 pr-4 font-medium">HDR</th>
+              <th v-if="visibleCols.codec" class="py-2 pr-4 font-medium">Codec</th>
+              <th v-if="visibleCols.audio" class="py-2 pr-4 font-medium">Audio</th>
               <th v-if="visibleCols.size" class="py-2 pr-4 font-medium">Size</th>
               <th v-if="visibleCols.watched" class="py-2 pr-4 font-medium">Watched</th>
               <th v-if="visibleCols.added" class="py-2 pr-4 font-medium">Added</th>
@@ -269,6 +271,10 @@
                 </span>
               </td>
               <td v-if="visibleCols.hdr" class="py-2 pr-4 text-xs text-purple-400">{{ m.hdr_format || '—' }}</td>
+              <td v-if="visibleCols.codec" class="py-2 pr-4 text-xs text-slate-400">{{ m.video_codec || '—' }}</td>
+              <td v-if="visibleCols.audio" class="py-2 pr-4 text-xs text-slate-400">
+                {{ m.audio_codec ? (m.audio_channels ? `${m.audio_codec} ${m.audio_channels}` : m.audio_codec) : '—' }}
+              </td>
               <td v-if="visibleCols.size" class="py-2 pr-4 text-slate-400 text-xs">{{ formatSize(m.file_size_bytes) }}</td>
               <td v-if="visibleCols.watched" class="py-2 pr-4 text-xs">
                 <span :class="m.ali_play_count > 0 ? 'text-green-400' : 'text-slate-600'">A</span>
@@ -354,6 +360,8 @@ const optionalCols = [
   { key: 'mdblist', label: 'MDBList' },
   { key: 'resolution', label: 'Resolution' },
   { key: 'hdr', label: 'HDR' },
+  { key: 'codec', label: 'Codec' },
+  { key: 'audio', label: 'Audio' },
   { key: 'size', label: 'File Size' },
   { key: 'watched', label: 'Watched' },
   { key: 'added', label: 'Date Added' },
@@ -361,7 +369,7 @@ const optionalCols = [
 
 const COL_STORAGE_KEY = 'curatorr_movies_cols'
 const defaultCols = { year: true, imdb: false, rt: false, metacritic: false, mdblist: false,
-  resolution: true, hdr: false, size: true, watched: true, added: false }
+  resolution: true, hdr: false, codec: false, audio: false, size: true, watched: true, added: false }
 
 const visibleCols = reactive({ ...defaultCols })
 

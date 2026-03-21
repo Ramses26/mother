@@ -1,23 +1,28 @@
 <template>
+  <!-- Backdrop (click to close) -->
+  <div v-if="item" class="fixed inset-0 z-30 bg-black/50" @click="$emit('close')"></div>
+
   <!-- Slide-in panel -->
   <transition name="slide">
-    <div v-if="item" class="fixed top-0 right-0 bottom-0 z-40 w-full max-w-xl overflow-y-auto border-l"
+    <div v-if="item" class="fixed top-0 right-0 bottom-0 z-40 w-full max-w-xl flex flex-col border-l"
       style="background:#1a1d27; border-color:#2d3250;">
-      <div class="p-6">
-        <!-- Header -->
-        <div class="flex items-start justify-between mb-4">
-          <div>
-            <h2 class="text-xl font-bold text-white">{{ item.title }}</h2>
-            <div class="text-slate-400 text-sm mt-1">
-              {{ item.year }}
-              <span v-if="item.runtime_min"> · {{ item.runtime_min }} min</span>
-              <span v-if="item.content_rating"> · {{ item.content_rating }}</span>
-            </div>
+      <!-- Sticky header — always visible, never scrolls away -->
+      <div class="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b"
+        style="background:#1a1d27; border-color:#2d3250;">
+        <div>
+          <h2 class="text-xl font-bold text-white">{{ item.title }}</h2>
+          <div class="text-slate-400 text-sm mt-1">
+            {{ item.year }}
+            <span v-if="item.runtime_min"> · {{ item.runtime_min }} min</span>
+            <span v-if="item.content_rating"> · {{ item.content_rating }}</span>
           </div>
-          <button @click="$emit('close')"
-            class="flex items-center justify-center w-8 h-8 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors text-xl leading-none flex-shrink-0"
-            title="Close">×</button>
         </div>
+        <button @click="$emit('close')"
+          class="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-700 hover:bg-slate-600 text-white transition-colors text-2xl leading-none flex-shrink-0 ml-4"
+          title="Close">×</button>
+      </div>
+      <!-- Scrollable content -->
+      <div class="flex-1 overflow-y-auto p-6">
 
         <!-- Poster -->
         <div v-if="posterSrc" class="mb-4 rounded-lg overflow-hidden" style="max-width:160px;">

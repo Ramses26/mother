@@ -88,6 +88,11 @@
           {{ backupCreating ? 'Creating...' : '+ Create Backup' }}
         </button>
       </div>
+      <div class="text-xs text-slate-500 mb-3 flex items-center gap-3">
+        <span>🕐 Auto-backup: <span class="text-slate-400">Daily at 4:30 AM UTC</span></span>
+        <span>·</span>
+        <span>Keeps last 7 backups</span>
+      </div>
       <div v-if="backupMsg" :class="backupError ? 'text-red-400' : 'text-green-400'" class="text-sm mb-3">{{ backupMsg }}</div>
       <div v-if="backups.length === 0" class="text-slate-500 text-sm">No backups yet.</div>
       <div v-else class="space-y-2">

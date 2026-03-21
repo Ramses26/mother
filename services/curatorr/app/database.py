@@ -80,6 +80,16 @@ CREATE TABLE IF NOT EXISTS collections (
     movie_count INTEGER, owned_count INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS collection_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    collection_tmdb_id INTEGER,
+    movie_tmdb_id INTEGER,
+    title TEXT, year TEXT, poster_url TEXT,
+    overview TEXT, vote_average REAL,
+    UNIQUE(collection_tmdb_id, movie_tmdb_id)
+);
+CREATE INDEX IF NOT EXISTS idx_collection_members ON collection_members(collection_tmdb_id);
+
 CREATE TABLE IF NOT EXISTS watch_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     source TEXT,
@@ -160,6 +170,8 @@ async def _migrate_columns():
     migrations = [
         ("ALTER TABLE movies ADD COLUMN poster_url TEXT",),
         ("ALTER TABLE tv_shows ADD COLUMN poster_url TEXT",),
+        ("CREATE TABLE IF NOT EXISTS collection_members (id INTEGER PRIMARY KEY AUTOINCREMENT, collection_tmdb_id INTEGER, movie_tmdb_id INTEGER, title TEXT, year TEXT, poster_url TEXT, overview TEXT, vote_average REAL, UNIQUE(collection_tmdb_id, movie_tmdb_id))",),
+        ("CREATE INDEX IF NOT EXISTS idx_collection_members ON collection_members(collection_tmdb_id)",),
     ]
     async with aiosqlite.connect(DB_PATH, timeout=60) as db:
         for (sql,) in migrations:

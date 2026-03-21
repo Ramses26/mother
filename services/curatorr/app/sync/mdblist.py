@@ -13,12 +13,12 @@ MDBLIST_URL = 'https://mdblist.com/api/'
 CACHE_TTL_DAYS = 7
 
 
-async def fetch_ratings(imdb_id: str, db) -> dict:
+async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie') -> dict:
     """Fetch MDBList aggregated ratings for an IMDb ID."""
     if not imdb_id:
         return {}
 
-    cached = await get_cache(db, 'movie', imdb_id, 'mdblist')
+    cached = await get_cache(db, media_type, imdb_id, 'mdblist')
     if cached:
         return cached
 
@@ -65,7 +65,7 @@ async def fetch_ratings(imdb_id: str, db) -> dict:
     except Exception as e:
         log.warning(f"MDBList parse error for {imdb_id}: {e}")
 
-    await set_cache(db, 'movie', imdb_id, 'mdblist', result, CACHE_TTL_DAYS)
+    await set_cache(db, media_type, imdb_id, 'mdblist', result, CACHE_TTL_DAYS)
     return result
 
 
@@ -74,7 +74,7 @@ async def sync_all_ratings(db):
     async with db.execute(
         "SELECT id, imdb_id, title FROM movies WHERE imdb_id IS NOT NULL "
         "AND (mdblist_score IS NULL OR mdblist_score = 0) "
-        "AND imdb_id != '' LIMIT 100"
+        "AND imdb_id != '' LIMIT 300"
     ) as cur:
         movies = await cur.fetchall()
 
@@ -82,7 +82,7 @@ async def sync_all_ratings(db):
     updated = 0
 
     for movie in movies:
-        data = await fetch_ratings(movie['imdb_id'], db)
+        data = await fetch_ratings(movie['imdb_id'], db, 'movie')
         if data:
             await db.execute("""
                 UPDATE movies SET
@@ -106,4 +106,43 @@ async def sync_all_ratings(db):
 
     await db.commit()
     log.info(f"[mdblist] Updated ratings for {updated} movies")
+    return updated
+
+
+async def sync_tv_ratings(db):
+    """Fetch MDBList ratings for TV shows missing ratings."""
+    async with db.execute(
+        "SELECT id, imdb_id, title FROM tv_shows WHERE imdb_id IS NOT NULL "
+        "AND (mdblist_score IS NULL OR mdblist_score = 0) "
+        "AND imdb_id != '' LIMIT 300"
+    ) as cur:
+        shows = await cur.fetchall()
+
+    log.info(f"[mdblist] Fetching ratings for {len(shows)} TV shows")
+    updated = 0
+
+    for show in shows:
+        data = await fetch_ratings(show['imdb_id'], db, 'tv')
+        if data:
+            await db.execute("""
+                UPDATE tv_shows SET
+                    mdblist_score = COALESCE(?, mdblist_score),
+                    imdb_rating = COALESCE(?, imdb_rating),
+                    rt_critics = COALESCE(?, rt_critics),
+                    metacritic = COALESCE(?, metacritic),
+                    trakt_rating = COALESCE(?, trakt_rating),
+                    tmdb_rating = COALESCE(?, tmdb_rating),
+                    ratings_updated_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (
+                data.get('mdblist_score'), data.get('imdb_rating'),
+                data.get('rt_critics'), data.get('metacritic'),
+                data.get('trakt_rating'),
+                data.get('tmdb_rating'), show['id']
+            ))
+            updated += 1
+
+    await db.commit()
+    log.info(f"[mdblist] Updated ratings for {updated} TV shows")
     return updated
