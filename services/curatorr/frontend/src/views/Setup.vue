@@ -15,16 +15,20 @@
       </div>
 
       <div class="rounded-2xl border p-6" style="background:#1a1d27; border-color:#2d3250;">
-        <h2 class="text-lg font-semibold text-white mb-2">Set Admin Password</h2>
-        <p class="text-slate-400 text-sm mb-6">This is a one-time setup. Choose a strong password.</p>
+        <h2 class="text-lg font-semibold text-white mb-2">Create Admin Account</h2>
+        <p class="text-slate-400 text-sm mb-6">One-time setup. Choose your username and a strong password.</p>
         <form @submit.prevent="setup">
           <div class="mb-4">
+            <label class="label">Username</label>
+            <input v-model="username" type="text" autocomplete="username" class="input" placeholder="Choose a username" autofocus />
+          </div>
+          <div class="mb-4">
             <label class="label">Password</label>
-            <input v-model="password" type="password" class="input" placeholder="Min 8 characters" autofocus />
+            <input v-model="password" type="password" autocomplete="new-password" class="input" placeholder="Min 8 characters" />
           </div>
           <div class="mb-4">
             <label class="label">Confirm Password</label>
-            <input v-model="confirm" type="password" class="input" placeholder="Repeat password" />
+            <input v-model="confirm" type="password" autocomplete="new-password" class="input" placeholder="Repeat password" />
           </div>
           <div v-if="error" class="mb-4 p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-400 text-sm">
             {{ error }}
@@ -46,18 +50,20 @@ import { useAuthStore } from '../stores/auth.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const username = ref('')
 const password = ref('')
 const confirm = ref('')
 const loading = ref(false)
 const error = ref('')
 
 const setup = async () => {
+  if (!username.value || username.value.trim().length < 2) { error.value = 'Username must be at least 2 characters'; return }
   if (password.value.length < 8) { error.value = 'Password must be at least 8 characters'; return }
   if (password.value !== confirm.value) { error.value = 'Passwords do not match'; return }
   loading.value = true
   error.value = ''
   try {
-    await axios.post('/api/setup', { password: password.value })
+    await axios.post('/api/setup', { username: username.value.trim(), password: password.value })
     authStore.setAuthenticated(true)
     authStore.setSetupRequired(false)
     router.push('/')

@@ -110,8 +110,8 @@ async def login(request: Request, body: LoginRequest):
     if setup_required:
         raise HTTPException(status_code=403, detail='Setup required')
 
-    if not await verify_login(body.password):
-        raise HTTPException(status_code=401, detail='Invalid password')
+    if not await verify_login(body.username, body.password):
+        raise HTTPException(status_code=401, detail='Invalid username or password')
 
     access_token = make_access_token()
     refresh_token = make_refresh_token()
@@ -171,14 +171,17 @@ async def auth_status(request: Request):
 
 @app.post('/api/setup')
 async def setup(body: SetupRequest):
-    """First-run: set admin password. Only works if no password configured."""
+    """First-run: set admin username + password. Only works if not yet configured."""
     if not await is_setup_required():
         raise HTTPException(status_code=403, detail='Setup already complete')
+    if not body.username or len(body.username.strip()) < 2:
+        raise HTTPException(status_code=400, detail='Username must be at least 2 characters')
     if len(body.password) < 8:
         raise HTTPException(status_code=400, detail='Password must be at least 8 characters')
     hashed = hash_password(body.password)
+    await set_config('admin_username', body.username.strip().lower())
     await set_config('admin_password_hash', hashed)
-    log.info("Admin password set via /api/setup")
+    log.info(f"Admin credentials set via /api/setup (username: {body.username.strip().lower()})")
 
     access_token = make_access_token()
     refresh_token = make_refresh_token()

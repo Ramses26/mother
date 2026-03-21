@@ -20,6 +20,18 @@
         <h2 class="text-lg font-semibold text-white mb-6">Sign in</h2>
         <form @submit.prevent="login">
           <div class="mb-4">
+            <label class="label">Username</label>
+            <input
+              v-model="username"
+              type="text"
+              autocomplete="username"
+              class="input"
+              placeholder="Enter username"
+              :disabled="loading"
+              autofocus
+            />
+          </div>
+          <div class="mb-4">
             <label class="label">Password</label>
             <input
               v-model="password"
@@ -28,7 +40,6 @@
               class="input"
               placeholder="Enter password"
               :disabled="loading"
-              autofocus
             />
           </div>
           <div v-if="error" class="mb-4 p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-400 text-sm">
@@ -58,16 +69,17 @@ import { useAuthStore } from '../stores/auth.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const username = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
 const login = async () => {
-  if (!password.value) return
+  if (!username.value || !password.value) return
   loading.value = true
   error.value = ''
   try {
-    await axios.post('/api/login', { password: password.value })
+    await axios.post('/api/login', { username: username.value, password: password.value })
     authStore.setAuthenticated(true)
     router.push('/')
   } catch (err) {
@@ -77,7 +89,7 @@ const login = async () => {
     } else if (status === 403) {
       router.push('/setup')
     } else {
-      error.value = 'Invalid password'
+      error.value = 'Invalid username or password'
     }
     password.value = ''
   } finally {

@@ -1,4 +1,5 @@
 """Curatorr auth — JWT dual-token, bcrypt, rate limiting."""
+import os
 import time
 import logging
 import threading
@@ -82,29 +83,39 @@ def check_login_rate(ip: str) -> bool:
         return True
 
 
-# ── Password config ───────────────────────────────────────────────────────────
+# ── Credential config ─────────────────────────────────────────────────────────
 
-async def get_password_hash() -> Optional[str]:
-    """Return stored hash: env password has priority, then DB config."""
-    if ADMIN_PASSWORD:
-        return hash_password(ADMIN_PASSWORD)
-    return await get_config('admin_password_hash')
+async def get_admin_username() -> Optional[str]:
+    """Return configured admin username (env override → DB config)."""
+    env_user = os.environ.get('CURATORR_ADMIN_USERNAME', '').strip()
+    if env_user:
+        return env_user
+    return await get_config('admin_username')
 
 
 async def is_setup_required() -> bool:
-    """True if no password is configured anywhere."""
-    if ADMIN_PASSWORD:
+    """True if username or password is not yet configured."""
+    env_pass = ADMIN_PASSWORD
+    env_user = os.environ.get('CURATORR_ADMIN_USERNAME', '').strip()
+    if env_pass and env_user:
         return False
     h = await get_config('admin_password_hash')
-    return not h
+    u = await get_config('admin_username')
+    return not h or not u
 
 
-async def verify_login(password: str) -> bool:
-    """Verify a login attempt against configured password."""
-    if ADMIN_PASSWORD:
-        return password == ADMIN_PASSWORD
+async def verify_login(username: str, password: str) -> bool:
+    """Verify username + password against configured credentials."""
+    # Env var override path
+    env_user = os.environ.get('CURATORR_ADMIN_USERNAME', '').strip()
+    if ADMIN_PASSWORD and env_user:
+        return username == env_user and password == ADMIN_PASSWORD
+
+    stored_user = await get_config('admin_username')
     h = await get_config('admin_password_hash')
-    if not h:
+    if not stored_user or not h:
+        return False
+    if username.strip().lower() != stored_user.strip().lower():
         return False
     return check_password(password, h)
 
