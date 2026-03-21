@@ -101,6 +101,34 @@ Results cached in `tmdb_cache` for 7 days.
 
 **Volumes**: `/opt/mother/reports` mounted read-only as `/opt/sync_reports` for sync activity detection.
 
+### `services/curatorr/` (FastAPI + Vue 3 SPA)
+Media intelligence and curation service. Comprehensive library browser with scoring, purge analysis, watch history, rules engine, and direct deletion. Handles:
+- Full movie/TV library browser (7,659 movies, 1,660 shows) from Radarr + Sonarr + Plex
+- Composite scoring: IMDb 35%, RT Critics 25%, MDBList 20%, Metacritic 15%, TMDB 5%
+- Purge scoring (0-100): flags deletion candidates based on score, watch history, resolution, status
+- Watch history from both Tautulli instances (Ali + Chris) via delta sync
+- Rules engine: visual condition builder (AND/OR), schedule (daily/weekly/manual), actions (stage/unmonitor/notify/delete)
+- TMDB collection tracking, duplicate detection
+- Direct deletion: calls *arr API + removes file from Unraid NFS path
+- APScheduler: 6h library sync, 02:00 watch history, 03:00 ratings, 04:00 rules, 04:30 backup, Sun 09:00 digest
+- JWT dual-token auth (bcrypt, HttpOnly cookies, 1h access / 7d refresh)
+- Telegram weekly digest via Apprise
+
+**DB tables**: `movies`, `tv_shows`, `tv_seasons`, `ratings_cache`, `collections`, `watch_history`, `rules`, `rule_matches`, `deletion_log`, `config`, `sync_log`
+
+**Sync sources**: Radarr (all instances), Sonarr (all instances), Plex XML API, Tautulli (both instances), OMDB, MDBList, TMDB
+
+**Port**: 9707 (host) → 8000 (container). UI: `http://mother:9707`
+
+**Tech stack**: FastAPI + aiosqlite (WAL, timeout=60) + Vue 3 + Pinia + Tailwind CSS + Vite (multi-stage Docker build)
+
+**Key files**:
+- `app/config.py` — env vars, path mappings (Synology NFS → Unraid), instance configs
+- `app/scoring.py` — composite + purge score computation
+- `app/rules_engine.py` — condition evaluator, AND/OR logic, scheduled rule runner
+- `app/routes/` — stats, movies, tv, collections, duplicates, rules, actions, sync
+- `app/sync/` — radarr, sonarr, plex, tautulli, omdb, mdblist, tmdb modules
+
 ### `reports/daily_report.py`
 Unified status report (sync progress, VPN traffic, errors, Upgraderr queue summary). Sends via Apprise to Telegram. Runs from cron every 2 hours. Auto-discovers the most recent sync scripts by embedded timestamp.
 
@@ -173,6 +201,7 @@ curl http://localhost:9706/health                     # Upgraderr health
 - `sonarr-hd` (8989), `sonarr-4k` (8990) — TV management
 - `sync-webhook` (5001) — Custom Flask sync service (built from `services/sync-webhook/Dockerfile`)
 - `upgraderr` (9706) — Custom quality upgrade automation (built from `services/upgraderr/`); **paused** until 1080p movie sync completes
+- `curatorr` (9707) — Media intelligence & curation service (built from `services/curatorr/`); FastAPI + Vue 3 SPA
 - `prowlarr` (9696) — Indexer management
 - `overseerr` (5055) — Media requests
 - `nginx-proxy-manager` (80/443/81) — Reverse proxy
