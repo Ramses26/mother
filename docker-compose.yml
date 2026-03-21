@@ -661,20 +661,16 @@ services:
       retries: 5
       start_period: 10s
 
-  # Duplicati - Docker volume and config backup client
-  duplicati:
-    image: lscr.io/linuxserver/duplicati:latest
-    container_name: duplicati
-    environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-UTC}
+  # Backrest - Restic web UI for backup management
+  backrest:
+    image: garethgeorge/backrest:latest
+    container_name: backrest
     ports:
-      - "${DUPLICATI_PORT:-8200}:8200"
+      - "${BACKREST_PORT:-9898}:9898"
     volumes:
-      - /opt/mother/data/duplicati:/config
-      - /opt/mother:/source/mother:ro
-      - /opt/mother/data:/source/data:ro
+      - /opt/mother/data/backrest:/data
+      - /opt/mother:/backups/mother:ro
+      - /opt/mother/data:/backups/data:ro
     restart: unless-stopped
     networks:
       - mother_network

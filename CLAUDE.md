@@ -114,7 +114,7 @@ Media intelligence and curation service. Comprehensive library browser with scor
 - JWT dual-token auth (bcrypt, HttpOnly cookies, 1h access / 7d refresh)
 - Telegram weekly digest via Apprise
 
-**DB tables**: `movies`, `tv_shows`, `tv_seasons`, `ratings_cache`, `collections`, `watch_history`, `rules`, `rule_matches`, `deletion_log`, `config`, `sync_log`
+**DB tables**: `movies`, `tv_shows`, `tv_seasons`, `ratings_cache`, `collections`, `watch_history`, `rules`, `rule_matches`, `deletion_log`, `config`, `sync_log`, `event_log`
 
 **Sync sources**: Radarr (all instances), Sonarr (all instances), Plex XML API, Tautulli (both instances), OMDB, MDBList, TMDB
 
@@ -126,7 +126,8 @@ Media intelligence and curation service. Comprehensive library browser with scor
 - `app/config.py` — env vars, path mappings (Synology NFS → Unraid), instance configs
 - `app/scoring.py` — composite + purge score computation
 - `app/rules_engine.py` — condition evaluator, AND/OR logic, scheduled rule runner
-- `app/routes/` — stats, movies, tv, collections, duplicates, rules, actions, sync
+- `app/log_events.py` — standalone `log_event(db, type, source, msg)` helper (no FastAPI imports)
+- `app/routes/` — stats, movies, tv, collections, duplicates, rules, actions, sync, logs
 - `app/sync/` — radarr, sonarr, plex, tautulli, omdb, mdblist, tmdb modules
 
 ### `reports/daily_report.py`
@@ -204,6 +205,7 @@ curl http://localhost:9706/health                     # Upgraderr health
 - `curatorr` (9707) — Media intelligence & curation service (built from `services/curatorr/`); FastAPI + Vue 3 SPA
 - `prowlarr` (9696) — Indexer management
 - `overseerr` (5055) — Media requests
+- `backrest` (9898) — Restic web UI for backup management (replaced Duplicati)
 - `nginx-proxy-manager` (80/443/81) — Reverse proxy
 
 ## Python Dependencies

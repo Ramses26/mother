@@ -116,14 +116,20 @@
                   </svg>
                 </span>
                 <span v-else-if="isSyncing && hasSyncCompleted(source)" class="text-green-400">✓</span>
-                <span :class="source.status === 'ok' ? 'text-green-400' : source.status === 'error' ? 'text-red-400' : 'text-slate-500'">
-                  {{ source.status || 'pending' }}
+                <span :class="syncStatusColor(source.status)">
+                  {{ syncStatusLabel(source.status) }}
                 </span>
               </span>
             </div>
             <div class="text-slate-500">
-              {{ source.last_sync ? new Date(source.last_sync).toLocaleString() : 'Not yet synced' }}
-              <span v-if="source.item_count"> · {{ source.item_count.toLocaleString() }} items</span>
+              <template v-if="source.status === 'not_configured'">Not configured</template>
+              <template v-else-if="source.status === 'error'">
+                <span class="text-red-400/70">{{ (source.error_msg || 'Error').slice(0, 60) }}</span>
+              </template>
+              <template v-else>
+                {{ source.last_sync ? new Date(source.last_sync).toLocaleString() : 'Never synced' }}
+                <span v-if="source.item_count"> · {{ source.item_count.toLocaleString() }} items</span>
+              </template>
             </div>
           </div>
         </div>
@@ -178,12 +184,11 @@ const statsCards = computed(() => {
 })
 
 const currentHist = computed(() => {
-  if (!stats.value) return []
-  // Future: when backend provides per-source histograms, use histSource.value
-  // For now, composite histogram is what's available
-  return histTab.value === 'movies'
-    ? stats.value.rating_histogram.movies
-    : stats.value.rating_histogram.tv
+  if (!stats.value?.rating_histogram) return []
+  const tabHist = stats.value.rating_histogram[histTab.value]
+  if (!tabHist) return []
+  // Use per-source histogram if available, fall back to composite
+  return tabHist[histSource.value] || tabHist.composite || tabHist
 })
 
 const maxCount = computed(() => {
@@ -194,12 +199,32 @@ const maxCount = computed(() => {
 const barHeight = (count) => Math.max(4, Math.round((count / maxCount.value) * 90))
 
 const barColor = (bucket) => {
-  const [low] = bucket.split('-').map(Number)
-  if (low >= 8) return '#22c55e'
-  if (low >= 6) return '#84cc16'
-  if (low >= 4) return '#eab308'
-  if (low >= 2) return '#f97316'
+  const parts = bucket.split('-').map(Number)
+  const [low, high] = parts
+  // Normalize to 0-10 scale (handle 0-100 sources like RT/Metacritic/MDB)
+  const maxVal = (high > 10) ? 100 : 10
+  const pct = low / maxVal
+  if (pct >= 0.8) return '#22c55e'
+  if (pct >= 0.6) return '#84cc16'
+  if (pct >= 0.4) return '#eab308'
+  if (pct >= 0.2) return '#f97316'
   return '#ef4444'
+}
+
+const syncStatusColor = (status) => {
+  if (status === 'ok') return 'text-green-400'
+  if (status === 'error') return 'text-red-400'
+  if (status === 'syncing') return 'text-blue-400'
+  if (status === 'not_configured') return 'text-slate-600'
+  return 'text-slate-500'
+}
+
+const syncStatusLabel = (status) => {
+  if (status === 'ok') return '✓ ok'
+  if (status === 'error') return '✗ error'
+  if (status === 'syncing') return '⟳ syncing'
+  if (status === 'not_configured') return '— n/a'
+  return status || '—'
 }
 
 const purgeScoreClass = (score) => {
@@ -238,6 +263,8 @@ const hasSyncCompleted = (source) => {
 }
 
 const filterByBucket = (bucket) => {
+  // Only composite histogram can filter (UI uses composite_min/max)
+  if (histSource.value !== 'composite') return
   const [low, high] = bucket.bucket.split('-').map(Number)
   const type = histTab.value === 'movies' ? '/movies' : '/tv'
   router.push(`${type}?composite_min=${low}&composite_max=${high}`)

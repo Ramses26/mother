@@ -5,6 +5,7 @@ from datetime import datetime
 import httpx
 from app.config import TAUTULLI_INSTANCES
 from app.database import get_config, set_config
+from app.log_events import log_event
 
 log = logging.getLogger('curatorr.sync.tautulli')
 
@@ -12,17 +13,30 @@ log = logging.getLogger('curatorr.sync.tautulli')
 async def sync_watch_history(db):
     """Pull watch history from both Tautulli instances, update play counts."""
     for tautulli in TAUTULLI_INSTANCES:
+        source_key = f"tautulli-{tautulli['name']}"
         if not tautulli.get('url') or not tautulli.get('api_key'):
-            log.warning(f"[tautulli-{tautulli['name']}] Not configured, skipping")
+            log.warning(f"[{source_key}] Not configured, skipping")
+            await db.execute(
+                "INSERT OR REPLACE INTO sync_log (source, status, error_msg, last_sync) VALUES (?,?,?,CURRENT_TIMESTAMP)",
+                (source_key, 'not_configured', 'URL or API key not set')
+            )
+            await db.commit()
             continue
+        # Mark as syncing
+        await db.execute(
+            "INSERT OR REPLACE INTO sync_log (source, status, last_sync) VALUES (?,?,CURRENT_TIMESTAMP)",
+            (source_key, 'syncing')
+        )
+        await db.commit()
         try:
             await _sync_tautulli_instance(db, tautulli)
         except Exception as e:
-            log.error(f"[tautulli-{tautulli['name']}] Sync error: {e}")
+            log.error(f"[{source_key}] Sync error: {e}")
             await db.execute(
                 "INSERT OR REPLACE INTO sync_log (source, status, error_msg, last_sync) VALUES (?,?,?,CURRENT_TIMESTAMP)",
-                (f"tautulli-{tautulli['name']}", 'error', str(e))
+                (source_key, 'error', str(e))
             )
+            await log_event(db, 'sync', source_key, f"Sync failed: {str(e)[:200]}", level='error')
             await db.commit()
 
 
@@ -150,6 +164,9 @@ async def _sync_tautulli_instance(db, tautulli: dict):
         INSERT OR REPLACE INTO sync_log (source, last_sync, last_delta_sync, item_count, status)
         VALUES (?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?,'ok')
     """, (source_key, len(all_records)))
+    await db.commit()
+
+    await log_event(db, 'sync', source_key, f"Watch history: {len(all_records)} plays synced")
     await db.commit()
 
     log.info(f"[{source_key}] Processed {len(all_records)} history records")

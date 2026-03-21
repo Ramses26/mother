@@ -2,6 +2,7 @@
 import json
 import logging
 from typing import Any
+from app.log_events import log_event
 
 log = logging.getLogger('curatorr.rules_engine')
 
@@ -263,6 +264,7 @@ async def run_all_scheduled_rules(db):
                 "UPDATE rules SET last_run=CURRENT_TIMESTAMP, last_match_count=? WHERE id=?",
                 (len(matches), rule['id'])
             )
+            await log_event(db, 'rule', rule['name'], f"Rule matched {len(matches)} items")
             await db.commit()
 
             if rule.get('notify') and matches:

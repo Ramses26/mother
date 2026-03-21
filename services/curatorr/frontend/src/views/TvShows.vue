@@ -176,21 +176,24 @@
           <thead>
             <tr class="text-left text-slate-500 border-b" style="border-color:#2d3250;">
               <th class="py-2 pr-4 font-medium">Title</th>
+              <th v-if="visibleCols.year" class="py-2 pr-4 font-medium">Year</th>
+              <th v-if="visibleCols.network" class="py-2 pr-4 font-medium">Network</th>
               <th class="py-2 pr-4 font-medium">Status</th>
               <th class="py-2 pr-4 font-medium">Rating</th>
               <th v-if="visibleCols.imdb" class="py-2 pr-4 font-medium">IMDb</th>
               <th v-if="visibleCols.rt" class="py-2 pr-4 font-medium">RT</th>
               <th v-if="visibleCols.metacritic" class="py-2 pr-4 font-medium">MC</th>
               <th v-if="visibleCols.mdblist" class="py-2 pr-4 font-medium">MDB</th>
-              <th class="py-2 pr-4 font-medium">Seasons</th>
+              <th v-if="visibleCols.seasons" class="py-2 pr-4 font-medium">Seasons</th>
               <th class="py-2 pr-4 font-medium">
                 <span class="relative group cursor-help">
-                  Completion
-                  <!-- Completion tooltip -->
-                  <span class="absolute left-0 bottom-full mb-1 z-50 hidden group-hover:block w-48
+                  Done ❓
+                  <span class="absolute left-0 bottom-full mb-1 z-50 hidden group-hover:block w-56
                     rounded border p-2 text-xs shadow-xl"
                     style="background:#0f1117; border-color:#2d3250; white-space:normal;">
-                    % of episodes downloaded vs total in show
+                    <strong class="text-white">Completion %</strong><br/>
+                    Episodes downloaded ÷ total episodes in the show.<br/>
+                    100% = every episode on disk. Does not reflect watch status.
                   </span>
                 </span>
               </th>
@@ -205,8 +208,10 @@
               @click="openDetail(s)">
               <td class="py-2 pr-4">
                 <div class="text-white font-medium">{{ s.title }}</div>
-                <div class="text-xs text-slate-500">{{ s.year }} · {{ s.network }}</div>
+                <div v-if="!visibleCols.year && !visibleCols.network" class="text-xs text-slate-500">{{ s.year }}<span v-if="s.network"> · {{ s.network }}</span></div>
               </td>
+              <td v-if="visibleCols.year" class="py-2 pr-4 text-slate-400 text-sm">{{ s.year || '—' }}</td>
+              <td v-if="visibleCols.network" class="py-2 pr-4 text-slate-400 text-xs">{{ s.network || '—' }}</td>
               <td class="py-2 pr-4">
                 <span class="px-1.5 py-0.5 rounded text-xs font-medium" :class="statusClass(s.status)">
                   {{ s.status || '?' }}
@@ -220,7 +225,7 @@
               <td v-if="visibleCols.rt" class="py-2 pr-4 text-slate-400 text-xs">{{ s.rt_critics != null ? s.rt_critics + '%' : '—' }}</td>
               <td v-if="visibleCols.metacritic" class="py-2 pr-4 text-slate-400 text-xs">{{ s.metacritic || '—' }}</td>
               <td v-if="visibleCols.mdblist" class="py-2 pr-4 text-slate-400 text-xs">{{ s.mdblist_score || '—' }}</td>
-              <td class="py-2 pr-4 text-slate-400">{{ s.total_seasons }}</td>
+              <td v-if="visibleCols.seasons" class="py-2 pr-4 text-slate-400">{{ s.total_seasons }}</td>
               <td class="py-2 pr-4">
                 <div class="flex items-center gap-2">
                   <div class="w-16 h-1.5 rounded-full overflow-hidden" style="background:#2d3250;">
@@ -296,15 +301,18 @@ const presets = [
 ]
 
 const optionalCols = [
+  { key: 'year', label: 'Year' },
+  { key: 'network', label: 'Network' },
   { key: 'imdb', label: 'IMDb' },
   { key: 'rt', label: 'RT Critics' },
   { key: 'metacritic', label: 'Metacritic' },
   { key: 'mdblist', label: 'MDBList' },
+  { key: 'seasons', label: 'Seasons' },
   { key: 'watched', label: 'Watched' },
 ]
 
 const COL_STORAGE_KEY = 'curatorr_tv_cols'
-const defaultCols = { imdb: false, rt: false, metacritic: false, mdblist: false, watched: true }
+const defaultCols = { year: true, network: false, imdb: false, rt: false, metacritic: false, mdblist: false, seasons: true, watched: true }
 const visibleCols = reactive({ ...defaultCols })
 
 const loadColPrefs = () => {

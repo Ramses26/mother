@@ -5,6 +5,7 @@ from datetime import datetime
 
 import httpx
 from app.config import PLEX_INSTANCES
+from app.log_events import log_event
 
 log = logging.getLogger('curatorr.sync.plex')
 
@@ -66,26 +67,60 @@ async def get_library_sections(plex_url: str, token: str) -> list[dict]:
 async def sync_plex_library(db):
     """Sync Plex metadata into movies/tv_shows tables (updates resolution, codec, plex_key, etc.)."""
     for plex in PLEX_INSTANCES:
+        source_key = f"plex-{plex['name']}"
         if not plex.get('token'):
-            log.warning(f"[plex-{plex['name']}] No token configured, skipping")
+            log.warning(f"[{source_key}] No token configured, skipping")
+            await db.execute(
+                "INSERT OR REPLACE INTO sync_log (source, status, error_msg, last_sync) VALUES (?,?,?,CURRENT_TIMESTAMP)",
+                (source_key, 'not_configured', 'No Plex token configured')
+            )
+            await db.commit()
             continue
 
-        sections = await get_library_sections(plex['url'], plex['token'])
-        log.info(f"[plex-{plex['name']}] Found {len(sections)} library sections")
+        if not plex.get('url'):
+            await db.execute(
+                "INSERT OR REPLACE INTO sync_log (source, status, error_msg, last_sync) VALUES (?,?,?,CURRENT_TIMESTAMP)",
+                (source_key, 'not_configured', 'No Plex URL configured')
+            )
+            await db.commit()
+            continue
 
-        for section in sections:
-            if section['type'] not in ('movie', 'show'):
-                continue
-            try:
-                await _sync_section(db, plex, section)
-            except Exception as e:
-                log.error(f"[plex-{plex['name']}] Error syncing section {section['title']}: {e}")
-
-        await db.execute("""
-            INSERT OR REPLACE INTO sync_log (source, last_sync, status)
-            VALUES (?,CURRENT_TIMESTAMP,'ok')
-        """, (f"plex-{plex['name']}",))
+        # Mark as syncing
+        await db.execute(
+            "INSERT OR REPLACE INTO sync_log (source, status, last_sync) VALUES (?,?,CURRENT_TIMESTAMP)",
+            (source_key, 'syncing')
+        )
         await db.commit()
+
+        try:
+            sections = await get_library_sections(plex['url'], plex['token'])
+            log.info(f"[{source_key}] Found {len(sections)} library sections")
+            total_count = 0
+
+            for section in sections:
+                if section['type'] not in ('movie', 'show'):
+                    continue
+                try:
+                    await _sync_section(db, plex, section)
+                    total_count += 1
+                except Exception as e:
+                    log.error(f"[{source_key}] Error syncing section {section['title']}: {e}")
+
+            await db.execute("""
+                INSERT OR REPLACE INTO sync_log (source, last_sync, status, error_msg)
+                VALUES (?,CURRENT_TIMESTAMP,'ok',NULL)
+            """, (source_key,))
+            await db.commit()
+            await log_event(db, 'sync', source_key, f"Plex: {total_count} sections updated")
+            await db.commit()
+        except Exception as e:
+            log.error(f"[{source_key}] Sync failed: {e}")
+            await db.execute(
+                "INSERT OR REPLACE INTO sync_log (source, status, error_msg, last_sync) VALUES (?,?,?,CURRENT_TIMESTAMP)",
+                (source_key, 'error', str(e)[:500])
+            )
+            await log_event(db, 'sync', source_key, f"Sync failed: {str(e)[:200]}", level='error')
+            await db.commit()
 
 
 async def _sync_section(db, plex: dict, section: dict):

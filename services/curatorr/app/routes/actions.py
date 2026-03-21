@@ -5,6 +5,7 @@ import logging
 from app.config import RADARR_INSTANCES, SONARR_INSTANCES, synology_to_unraid_path, UNRAID_MEDIA_PATH
 from app.notifications import send_notification
 from app.database import get_db
+from app.log_events import log_event
 
 router_log = logging.getLogger('curatorr.routes.actions')
 
@@ -81,7 +82,7 @@ async def delete_from_arr_and_disk(item: dict, media_type: str) -> dict:
             except Exception as e:
                 router_log.error(f"Unraid delete error for {title} at {unraid_path}: {e}")
 
-    # ── Log to deletion_log ───────────────────────────────────────────────────
+    # ── Log to deletion_log + event_log ──────────────────────────────────────
     async for db in get_db():
         await db.execute("""
             INSERT INTO deletion_log (
@@ -99,6 +100,13 @@ async def delete_from_arr_and_disk(item: dict, media_type: str) -> dict:
             1 if arr_delete_ok else 0,
             1 if unraid_delete_ok else 0,
         ))
+        instance = item.get('radarr_instance') or item.get('sonarr_instance') or media_type
+        evt_level = 'info' if arr_delete_ok else 'warning'
+        await log_event(db, 'deletion', instance,
+                        f"Deleted: {title} ({year or '?'})",
+                        detail={'arr_ok': arr_delete_ok, 'unraid_ok': unraid_delete_ok,
+                                'size_gb': round((file_size or 0) / 1_073_741_824, 2)},
+                        level=evt_level)
         await db.commit()
 
     # ── Telegram notification ─────────────────────────────────────────────────

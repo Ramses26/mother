@@ -3,9 +3,12 @@ import logging
 from fastapi import APIRouter, Depends, Query
 from app.auth import require_auth
 from app.database import get_db
+from app.log_events import log_event  # re-export for backwards compat
 
 router = APIRouter()
 log = logging.getLogger('curatorr.routes.logs')
+
+__all__ = ['router', 'log_event']
 
 
 @router.get('/logs')
@@ -54,13 +57,3 @@ async def get_logs(
         }
 
 
-async def log_event(db, event_type: str, source: str, message: str,
-                    detail: str = None, level: str = 'info'):
-    """Helper to insert an event log entry (call from sync/action code)."""
-    try:
-        await db.execute(
-            "INSERT INTO event_log (event_type, source, message, detail, level) VALUES (?,?,?,?,?)",
-            (event_type, source, message, detail, level)
-        )
-    except Exception:
-        pass  # Non-fatal

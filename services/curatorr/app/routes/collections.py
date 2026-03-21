@@ -154,6 +154,61 @@ async def request_movie(tmdb_id: int, movie_tmdb_id: int, _auth=Depends(require_
         raise HTTPException(status_code=502, detail=f'Overseerr error: {e}')
 
 
+@router.post('/collections/{tmdb_id}/add-to-radarr/{movie_tmdb_id}')
+async def add_to_radarr(tmdb_id: int, movie_tmdb_id: int, _auth=Depends(require_auth)):
+    """Add a missing collection movie directly to Radarr HD and trigger a search."""
+    from app.config import RADARR_INSTANCES
+    from app.database import get_config
+    from app.config import RADARR_HD_PUBLIC_URL
+
+    inst = RADARR_INSTANCES[0]  # Use Radarr HD by default
+    if not inst.get('api_key'):
+        raise HTTPException(status_code=503, detail='Radarr HD not configured')
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            # Get root folders
+            rf = await client.get(f"{inst['url']}/api/v3/rootfolder",
+                                  headers={'X-Api-Key': inst['api_key']})
+            rf.raise_for_status()
+            root_folders = rf.json()
+            if not root_folders:
+                raise HTTPException(status_code=503, detail='No root folders in Radarr HD')
+            root_path = root_folders[0]['path']
+
+            # Get quality profiles
+            qp = await client.get(f"{inst['url']}/api/v3/qualityprofile",
+                                  headers={'X-Api-Key': inst['api_key']})
+            qp.raise_for_status()
+            profiles = qp.json()
+            if not profiles:
+                raise HTTPException(status_code=503, detail='No quality profiles in Radarr HD')
+            profile_id = profiles[0]['id']
+
+            # Add movie
+            r = await client.post(
+                f"{inst['url']}/api/v3/movie",
+                headers={'X-Api-Key': inst['api_key']},
+                json={
+                    'tmdbId': movie_tmdb_id,
+                    'qualityProfileId': profile_id,
+                    'rootFolderPath': root_path,
+                    'monitored': True,
+                    'addOptions': {'searchForMovie': True},
+                }
+            )
+            if r.status_code in (200, 201):
+                return {'ok': True, 'message': 'Added to Radarr HD — searching now'}
+            elif r.status_code == 400 and 'already' in (r.text or '').lower():
+                return {'ok': True, 'message': 'Already in Radarr'}
+            else:
+                raise HTTPException(status_code=r.status_code, detail=r.text[:200])
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f'Radarr error: {e}')
+
+
 async def _get_overseerr_url() -> str:
     """Get Overseerr URL from config table or env."""
     from app.database import get_config

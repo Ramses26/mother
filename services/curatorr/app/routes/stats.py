@@ -32,30 +32,43 @@ async def dashboard_stats(_auth=Depends(require_auth)):
         async with db.execute("SELECT COALESCE(SUM(file_size_bytes), 0) FROM movies") as cur:
             total_bytes = (await cur.fetchone())[0]
 
-        # Rating histogram for movies
-        movie_hist = []
-        buckets = [
+        # Histogram bucket definitions
+        buckets_10 = [
             ('0-1', 0, 1), ('1-2', 1, 2), ('2-3', 2, 3), ('3-4', 3, 4),
             ('4-5', 4, 5), ('5-6', 5, 6), ('6-7', 6, 7), ('7-8', 7, 8),
             ('8-9', 8, 9), ('9-10', 9, 10),
         ]
-        for label, low, high in buckets:
-            async with db.execute(
-                "SELECT COUNT(*) FROM movies WHERE composite_score >= ? AND composite_score < ?",
-                (low, high)
-            ) as cur:
-                count = (await cur.fetchone())[0]
-            movie_hist.append({'bucket': label, 'count': count})
+        buckets_100 = [
+            ('0-10', 0, 10), ('10-20', 10, 20), ('20-30', 20, 30), ('30-40', 30, 40),
+            ('40-50', 40, 50), ('50-60', 50, 60), ('60-70', 60, 70), ('70-80', 70, 80),
+            ('80-90', 80, 90), ('90-100', 90, 101),
+        ]
 
-        # TV histogram
-        tv_hist = []
-        for label, low, high in buckets:
-            async with db.execute(
-                "SELECT COUNT(*) FROM tv_shows WHERE composite_score >= ? AND composite_score < ?",
-                (low, high)
-            ) as cur:
-                count = (await cur.fetchone())[0]
-            tv_hist.append({'bucket': label, 'count': count})
+        async def build_hist(table, col, buckets):
+            result = []
+            for label, low, high in buckets:
+                async with db.execute(
+                    f"SELECT COUNT(*) FROM {table} WHERE {col} >= ? AND {col} < ? AND {col} > 0",
+                    (low, high)
+                ) as cur:
+                    result.append({'bucket': label, 'count': (await cur.fetchone())[0]})
+            return result
+
+        # Per-source histograms for movies and TV
+        movie_hist = {
+            'composite':  await build_hist('movies', 'composite_score', buckets_10),
+            'imdb':       await build_hist('movies', 'imdb_rating', buckets_10),
+            'rt':         await build_hist('movies', 'rt_critics', buckets_100),
+            'metacritic': await build_hist('movies', 'metacritic', buckets_100),
+            'mdblist':    await build_hist('movies', 'mdblist_score', buckets_100),
+        }
+        tv_hist = {
+            'composite':  await build_hist('tv_shows', 'composite_score', buckets_10),
+            'imdb':       await build_hist('tv_shows', 'imdb_rating', buckets_10),
+            'rt':         await build_hist('tv_shows', 'rt_critics', buckets_100),
+            'metacritic': await build_hist('tv_shows', 'metacritic', buckets_100),
+            'mdblist':    await build_hist('tv_shows', 'mdblist_score', buckets_100),
+        }
 
         # Top purge candidates
         async with db.execute(
@@ -100,3 +113,5 @@ async def dashboard_stats(_auth=Depends(require_auth)):
             'recent_additions': recent,
             'sync_status': sync_status,
         }
+
+

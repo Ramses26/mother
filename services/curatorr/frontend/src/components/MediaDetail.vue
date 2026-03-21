@@ -1,10 +1,10 @@
 <template>
   <!-- Backdrop (click to close) -->
-  <div v-if="item" class="fixed inset-0 z-30 bg-black/50" @click="$emit('close')"></div>
+  <div v-if="item" class="fixed top-14 inset-x-0 bottom-0 z-30 bg-black/50" @click="$emit('close')"></div>
 
   <!-- Slide-in panel -->
   <transition name="slide">
-    <div v-if="item" class="fixed top-0 right-0 bottom-0 z-40 w-full max-w-xl flex flex-col border-l"
+    <div v-if="item" class="fixed top-14 right-0 bottom-0 z-40 w-full max-w-xl flex flex-col border-l"
       style="background:#1a1d27; border-color:#2d3250;">
       <!-- Sticky header — always visible, never scrolls away -->
       <div class="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b"
