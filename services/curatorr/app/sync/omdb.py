@@ -1,0 +1,126 @@
+"""OMDB sync — fetch ratings with cache."""
+import json
+import logging
+from datetime import datetime, timedelta
+
+import httpx
+from app.config import OMDB_API_KEY
+
+log = logging.getLogger('curatorr.sync.omdb')
+
+OMDB_URL = 'http://www.omdbapi.com/'
+CACHE_TTL_DAYS = 7
+
+
+async def get_cache(db, media_type: str, external_id: str, source: str) -> dict | None:
+    async with db.execute(
+        "SELECT data, expires_at FROM ratings_cache WHERE media_type=? AND external_id=? AND source=?",
+        (media_type, external_id, source)
+    ) as cur:
+        row = await cur.fetchone()
+    if not row:
+        return None
+    if row['expires_at'] and row['expires_at'] < datetime.utcnow().isoformat():
+        return None
+    try:
+        return json.loads(row['data'])
+    except Exception:
+        return None
+
+
+async def set_cache(db, media_type: str, external_id: str, source: str, data: dict, ttl_days: int = 7):
+    expires = (datetime.utcnow() + timedelta(days=ttl_days)).isoformat()
+    await db.execute("""
+        INSERT OR REPLACE INTO ratings_cache (media_type, external_id, source, data, fetched_at, expires_at)
+        VALUES (?,?,?,?,CURRENT_TIMESTAMP,?)
+    """, (media_type, external_id, source, json.dumps(data), expires))
+    await db.commit()
+
+
+async def fetch_ratings(imdb_id: str, db) -> dict:
+    """Fetch OMDB ratings for an IMDb ID, using cache."""
+    if not imdb_id:
+        return {}
+
+    cached = await get_cache(db, 'movie', imdb_id, 'omdb')
+    if cached:
+        return cached
+
+    if not OMDB_API_KEY:
+        log.debug("OMDB API key not configured")
+        return {}
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(OMDB_URL, params={'i': imdb_id, 'apikey': OMDB_API_KEY})
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        log.warning(f"OMDB fetch failed for {imdb_id}: {e}")
+        return {}
+
+    if data.get('Response') == 'False':
+        log.debug(f"OMDB: no data for {imdb_id}")
+        return {}
+
+    result = {}
+    try:
+        imdb_rating = float(data.get('imdbRating', 0) or 0)
+        if imdb_rating > 0:
+            result['imdb_rating'] = imdb_rating
+        imdb_votes_str = (data.get('imdbVotes', '') or '').replace(',', '')
+        if imdb_votes_str.isdigit():
+            result['imdb_votes'] = int(imdb_votes_str)
+        metascore = int(data.get('Metascore', 0) or 0)
+        if metascore > 0:
+            result['metacritic'] = metascore
+
+        for rating in data.get('Ratings', []):
+            source = rating.get('Source', '')
+            value = rating.get('Value', '')
+            if 'Rotten Tomatoes' in source:
+                try:
+                    result['rt_critics'] = int(value.replace('%', ''))
+                except Exception:
+                    pass
+    except Exception as e:
+        log.warning(f"OMDB parse error for {imdb_id}: {e}")
+
+    await set_cache(db, 'movie', imdb_id, 'omdb', result, CACHE_TTL_DAYS)
+    return result
+
+
+async def sync_all_ratings(db):
+    """Fetch OMDB ratings for all movies with imdb_id but missing ratings."""
+    async with db.execute(
+        "SELECT id, imdb_id, title FROM movies WHERE imdb_id IS NOT NULL "
+        "AND (imdb_rating IS NULL OR imdb_rating = 0) "
+        "AND imdb_id != '' LIMIT 100"
+    ) as cur:
+        movies = await cur.fetchall()
+
+    log.info(f"[omdb] Fetching ratings for {len(movies)} movies")
+    updated = 0
+
+    for movie in movies:
+        data = await fetch_ratings(movie['imdb_id'], db)
+        if data:
+            await db.execute("""
+                UPDATE movies SET
+                    imdb_rating = COALESCE(?, imdb_rating),
+                    imdb_votes = COALESCE(?, imdb_votes),
+                    rt_critics = COALESCE(?, rt_critics),
+                    metacritic = COALESCE(?, metacritic),
+                    ratings_updated_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (
+                data.get('imdb_rating'), data.get('imdb_votes'),
+                data.get('rt_critics'), data.get('metacritic'),
+                movie['id']
+            ))
+            updated += 1
+
+    await db.commit()
+    log.info(f"[omdb] Updated ratings for {updated} movies")
+    return updated

@@ -545,6 +545,57 @@ services:
       retries: 3
       start_period: 15s
 
+  # Curatorr - Media Intelligence & Curation
+  curatorr:
+    build:
+      context: .
+      dockerfile: services/curatorr/Dockerfile
+    container_name: curatorr
+    ports:
+      - "${CURATORR_PORT:-9707}:8000"
+    environment:
+      - CURATORR_SECRET_KEY=${CURATORR_SECRET_KEY:-}
+      - CURATORR_ADMIN_PASSWORD=${CURATORR_ADMIN_PASSWORD:-}
+      - CHRIS_PLEX_URL=http://10.0.0.250:32400
+      - CHRIS_PLEX_TOKEN=_baJvspRxVjRzaokRoLB
+      - ALI_PLEX_URL=${ALI_PLEX_URL}
+      - ALI_PLEX_TOKEN=${ALI_PLEX_TOKEN}
+      - CHRIS_TAUTULLI_URL=http://tautulli:8181
+      - CHRIS_TAUTULLI_KEY=${CHRIS_TAUTULLI_API_KEY}
+      - ALI_TAUTULLI_URL=${ALI_TAUTULLI_URL}
+      - ALI_TAUTULLI_KEY=${ALI_TAUTULLI_API_KEY}
+      - RADARR_HD_URL=http://radarr-hd:7878
+      - RADARR_HD_API_KEY=${RADARR_HD_API_KEY}
+      - RADARR_4K_URL=http://radarr-4k:7878
+      - RADARR_4K_API_KEY=${RADARR_4K_API_KEY}
+      - SONARR_HD_URL=http://sonarr-hd:8989
+      - SONARR_HD_API_KEY=${SONARR_HD_API_KEY}
+      - SONARR_4K_URL=http://sonarr-4k:8989
+      - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - OMDB_API_KEY=${OMDB_API_KEY}
+      - MDBLIST_API_KEY=${MDBLIST_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - CURATORR_TELEGRAM_CHAT_ID=${CURATORR_TELEGRAM_CHAT_ID}
+      - UNRAID_MEDIA_PATH=/mnt/unraid/media
+    volumes:
+      - /opt/mother/data/curatorr:/data
+      - /mnt/unraid/media:/mnt/unraid/media
+    restart: unless-stopped
+    networks:
+      - mother_network
+    depends_on:
+      - radarr-hd
+      - radarr-4k
+      - sonarr-hd
+      - sonarr-4k
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
   # Sync Webhook - Real-time sync triggered by Radarr/Sonarr
   sync-webhook:
     build:

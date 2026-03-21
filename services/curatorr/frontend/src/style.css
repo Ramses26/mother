@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-2: #22263a;
+  --surface-3: #2d3250;
+  --primary: #7c3aed;
+  --primary-light: #8b5cf6;
+  --primary-dark: #6d28d9;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border: #2d3250;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+.btn-primary {
+  @apply bg-violet-600 hover:bg-violet-700 text-white font-medium px-4 py-2 rounded-lg transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-surface-200 hover:bg-surface-300 text-slate-200 font-medium px-4 py-2 rounded-lg transition-colors;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors;
+}
+
+.card {
+  @apply bg-surface-100 rounded-xl border border-surface-300 p-4;
+}
+
+.input {
+  @apply bg-surface-200 border border-surface-300 text-slate-200 rounded-lg px-3 py-2 w-full
+         focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30
+         placeholder:text-slate-500;
+}
+
+.label {
+  @apply text-sm text-slate-400 mb-1 block;
+}
