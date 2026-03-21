@@ -4,7 +4,15 @@
 version: 1
 
 urls:
-  # Telegram - Primary notification channel
+  # Telegram - Primary notification channel (sync, webhooks, daily report)
   # Format: tgram://bot_token/chat_id/
   - tgram://${TELEGRAM_BOT_TOKEN}/${TELEGRAM_CHAT_ID}/:
       - tag: telegram, all, sync, error, success
+
+  # Telegram - Upgraderr quality upgrade notifications
+  - tgram://${TELEGRAM_BOT_TOKEN}/${UPGRADERR_TELEGRAM_CHAT_ID}/:
+      - tag: upgraderr
+
+  # Telegram - Curatorr media curation notifications
+  - tgram://${TELEGRAM_BOT_TOKEN}/${CURATORR_TELEGRAM_CHAT_ID}/:
+      - tag: curatorr
