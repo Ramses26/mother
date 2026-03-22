@@ -131,20 +131,31 @@
         <span class="text-sm text-slate-400">{{ total.toLocaleString() }} movies</span>
         <div class="flex-1"/>
 
-        <!-- Sort -->
-        <select v-model="sortBy" @change="fetchMovies" class="input text-xs py-1 w-36">
-          <option value="sort_title">Title</option>
-          <option value="year">Year</option>
-          <option value="composite_score">Rating</option>
-          <option value="purge_score">Purge Score</option>
-          <option value="file_size_bytes">File Size</option>
-          <option value="plex_added_at">Date Added</option>
-          <option value="ali_play_count">Ali Plays</option>
-          <option value="chris_play_count">Chris Plays</option>
+        <!-- Sort: primary -->
+        <select :value="sortBy" @change="sortBy = $event.target.value; fetchMovies()" class="input text-xs py-1 w-28">
+          <option v-for="o in movieSortOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
         </select>
-        <button @click="toggleSortDir" class="text-slate-400 hover:text-white px-2">
+        <button @click="toggleSortDir" class="text-slate-400 hover:text-white px-1 text-sm">
           {{ sortDir === 'asc' ? '↑' : '↓' }}
         </button>
+        <!-- Sort: secondary -->
+        <select :value="sortBy2" @change="sortBy2 = $event.target.value; if (!sortBy2) { sortBy3 = ''; sortDir3 = 'asc' } fetchMovies()" class="input text-xs py-1 w-24">
+          <option value="">2nd…</option>
+          <option v-for="o in movieSortOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </select>
+        <button v-if="sortBy2" @click="toggleSortDir2" class="text-slate-400 hover:text-white px-1 text-sm">
+          {{ sortDir2 === 'asc' ? '↑' : '↓' }}
+        </button>
+        <!-- Sort: tertiary (visible only when secondary is set) -->
+        <template v-if="sortBy2">
+          <select :value="sortBy3" @change="sortBy3 = $event.target.value; fetchMovies()" class="input text-xs py-1 w-24">
+            <option value="">3rd…</option>
+            <option v-for="o in movieSortOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+          </select>
+          <button v-if="sortBy3" @click="toggleSortDir3" class="text-slate-400 hover:text-white px-1 text-sm">
+            {{ sortDir3 === 'asc' ? '↑' : '↓' }}
+          </button>
+        </template>
 
         <!-- Column visibility (table mode only) -->
         <div v-if="viewMode === 'table'" class="relative">
@@ -322,7 +333,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import MediaDetail from '../components/MediaDetail.vue'
@@ -341,6 +352,10 @@ const deleteTarget = ref(null)
 const viewMode = ref('poster')
 const sortBy = ref('sort_title')
 const sortDir = ref('asc')
+const sortBy2 = ref('')
+const sortDir2 = ref('asc')
+const sortBy3 = ref('')
+const sortDir3 = ref('asc')
 const activePreset = ref('')
 const showColMenu = ref(false)
 let fetchTimer = null
@@ -349,6 +364,22 @@ const views = [
   { value: 'poster', icon: '⊞' },
   { value: 'table', icon: '☰' },
 ]
+
+const movieSortOptions = [
+  { value: 'sort_title', label: 'Title' },
+  { value: 'year', label: 'Year' },
+  { value: 'composite_score', label: 'Composite' },
+  { value: 'imdb_rating', label: 'IMDb' },
+  { value: 'rt_critics', label: 'RT%' },
+  { value: 'metacritic', label: 'Metacritic' },
+  { value: 'mdblist_score', label: 'MDBList' },
+  { value: 'purge_score', label: 'Purge Score' },
+  { value: 'file_size_bytes', label: 'File Size' },
+  { value: 'plex_added_at', label: 'Date Added' },
+  { value: 'ali_play_count', label: 'Ali Plays' },
+  { value: 'chris_play_count', label: 'Chris Plays' },
+]
+
 
 const resolutions = ['4K', '1080p', '720p', 'SD']
 const presets = [
@@ -411,6 +442,8 @@ const filters = reactive({
 
 const buildParams = () => {
   const p = { page: page.value, per_page: 50, sort_by: sortBy.value, sort_dir: sortDir.value }
+  if (sortBy2.value) { p.sort_by2 = sortBy2.value; p.sort_dir2 = sortDir2.value }
+  if (sortBy2.value && sortBy3.value) { p.sort_by3 = sortBy3.value; p.sort_dir3 = sortDir3.value }
   if (filters.title) p.title = filters.title
   if (filters.composite_min != null) p.composite_min = filters.composite_min
   if (filters.composite_max != null) p.composite_max = filters.composite_max
@@ -485,6 +518,10 @@ const clearFilters = () => {
   activePreset.value = ''
   sortBy.value = 'sort_title'
   sortDir.value = 'asc'
+  sortBy2.value = ''
+  sortDir2.value = 'asc'
+  sortBy3.value = ''
+  sortDir3.value = 'asc'
   page.value = 1
   fetchMovies()
 }
@@ -498,6 +535,16 @@ const toggleRes = (r) => {
 
 const toggleSortDir = () => {
   sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  fetchMovies()
+}
+
+const toggleSortDir2 = () => {
+  sortDir2.value = sortDir2.value === 'asc' ? 'desc' : 'asc'
+  fetchMovies()
+}
+
+const toggleSortDir3 = () => {
+  sortDir3.value = sortDir3.value === 'asc' ? 'desc' : 'asc'
   fetchMovies()
 }
 
@@ -564,14 +611,21 @@ const onDocClick = (e) => {
   if (!e.target.closest('.relative')) showColMenu.value = false
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadColPrefs()
   const q = route.query
   if (q.composite_min) filters.composite_min = parseFloat(q.composite_min)
   if (q.composite_max) filters.composite_max = parseFloat(q.composite_max)
   if (q.purge_score_min) filters.purge_score_min = parseInt(q.purge_score_min)
   if (q.neither_watched) filters.neither_watched = true
-  fetchMovies()
+  await fetchMovies()
+  // Auto-open detail panel for a specific movie (e.g. from Dashboard purge candidates)
+  if (q.open) {
+    try {
+      const res = await axios.get(`/api/movies/${q.open}`)
+      selectedItem.value = res.data
+    } catch {}
+  }
   document.addEventListener('click', onDocClick)
 })
 

@@ -11,12 +11,23 @@ log = logging.getLogger('curatorr.routes.collections')
 
 
 @router.get('/collections')
-async def list_collections(_auth=Depends(require_auth)):
+async def list_collections(
+    has_missing: bool = False,
+    sort_by: str = 'name',
+    sort_dir: str = 'asc',
+    _auth=Depends(require_auth),
+):
+    allowed_sort = {'name', 'completion_pct', 'owned_count', 'movie_count'}
+    sort_col = sort_by if sort_by in allowed_sort else 'name'
+    sort_direction = 'DESC' if sort_dir.upper() == 'DESC' else 'ASC'
+
     async for db in get_db():
+        where = "WHERE c.movie_count > c.owned_count" if has_missing else ""
         async with db.execute(
-            "SELECT c.*, "
-            "(SELECT COUNT(DISTINCT m.tmdb_id) FROM movies m WHERE m.collection_tmdb_id = c.tmdb_id) AS owned_count "
-            "FROM collections c ORDER BY c.name"
+            f"SELECT c.*, "
+            f"(SELECT COUNT(DISTINCT m.tmdb_id) FROM movies m WHERE m.collection_tmdb_id = c.tmdb_id) AS owned_count, "
+            f"CASE WHEN c.movie_count > 0 THEN CAST(c.owned_count AS REAL) / c.movie_count * 100 ELSE 0 END AS completion_pct "
+            f"FROM collections c {where} ORDER BY {sort_col} {sort_direction}"
         ) as cur:
             rows = await cur.fetchall()
         return [dict(r) for r in rows]

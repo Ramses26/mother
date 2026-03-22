@@ -52,3 +52,42 @@ async def list_duplicates(_auth=Depends(require_auth)):
                 })
 
         return result
+
+
+@router.get('/duplicates/tv')
+async def list_tv_duplicates(_auth=Depends(require_auth)):
+    """Find TV shows that exist in multiple Sonarr instances (same TMDB ID)."""
+    async for db in get_db():
+        async with db.execute("""
+            SELECT tmdb_id, COUNT(*) AS instance_count
+            FROM tv_shows
+            WHERE tmdb_id IS NOT NULL
+            GROUP BY tmdb_id
+            HAVING COUNT(*) > 1
+        """) as cur:
+            dup_groups = [row['tmdb_id'] for row in await cur.fetchall()]
+
+        if not dup_groups:
+            return []
+
+        result = []
+        for tmdb_id in dup_groups:
+            async with db.execute(
+                "SELECT id, title, year, sonarr_instance, sonarr_id, total_seasons, total_episodes, "
+                "composite_score, purge_score, poster_url, monitored, imdb_rating "
+                "FROM tv_shows WHERE tmdb_id=? ORDER BY total_episodes DESC NULLS LAST",
+                (tmdb_id,)
+            ) as cur:
+                versions = [dict(r) for r in await cur.fetchall()]
+
+            if len(versions) >= 2:
+                # Recommend keeping the version with most episodes (usually the one with more data)
+                result.append({
+                    'tmdb_id': tmdb_id,
+                    'title': versions[0]['title'],
+                    'year': versions[0]['year'],
+                    'versions': versions,
+                    'recommended_keep_id': versions[0]['id'],
+                })
+
+        return result

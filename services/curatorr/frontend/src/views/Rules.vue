@@ -265,7 +265,7 @@ const actionClass = (a) => ({
   notify: 'bg-green-900 text-green-300',
 }[a] || 'bg-slate-700 text-slate-300')
 
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : ''
+const fmtDate = (d) => d ? new Date(d.includes('Z') ? d : d + 'Z').toLocaleDateString() : ''
 
 onMounted(load)
 </script>

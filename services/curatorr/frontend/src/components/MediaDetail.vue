@@ -244,7 +244,7 @@ const formatSize = (bytes) => {
   return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1_048_576).toFixed(0)} MB`
 }
 
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : ''
+const fmtDate = (d) => d ? new Date(d.includes('Z') ? d : d + 'Z').toLocaleDateString() : ''
 
 const radarrUrl = computed(() => {
   if (!props.item?.radarr_id) return null

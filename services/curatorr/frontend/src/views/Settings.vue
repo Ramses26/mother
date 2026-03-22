@@ -158,6 +158,14 @@
         </button>
       </div>
       <div v-if="syncMsg" class="mt-3 text-sm text-green-400">{{ syncMsg }}</div>
+      <div v-if="syncStatuses.length" class="mt-3 space-y-1">
+        <div v-for="s in syncStatuses" :key="s.source" class="flex items-center justify-between text-xs">
+          <span class="text-slate-400">{{ s.source }}</span>
+          <span :class="s.status === 'ok' ? 'text-green-400' : s.status === 'error' ? 'text-red-400' : s.status === 'syncing' ? 'text-blue-400' : 'text-slate-600'">
+            {{ s.status === 'ok' ? '✓ ok' : s.status === 'error' ? '✗ ' + (s.error_msg || 'error').slice(0, 40) : s.status === 'syncing' ? '⟳ syncing' : '— n/a' }}
+          </span>
+        </div>
+      </div>
     </div>
 
     <!-- DB Backups -->
@@ -228,12 +236,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import axios from 'axios'
 
 const settings = ref(null)
 const syncing = ref('')
 const syncMsg = ref('')
+const syncStatuses = ref([])
+let syncPollTimer = null
 const pwMsg = ref('')
 const pwError = ref(false)
 const urlMsg = ref('')
@@ -294,7 +304,7 @@ const tautulliInstances = [
   {
     key: 'ali', label: 'Ali', source: 'tautulli-ali',
     urlKey: 'tautulli_ali_url', keyKey: 'tautulli_ali_key',
-    urlPlaceholder: 'https://tautulli.example.com', keyDisplay: 'ali_key',
+    urlPlaceholder: 'http://192.168.1.14:8181', keyDisplay: 'ali_key',
   },
 ]
 
@@ -309,7 +319,8 @@ const syncSources = [
   { value: 'radarr', label: 'Radarr' },
   { value: 'sonarr', label: 'Sonarr' },
   { value: 'plex', label: 'Plex' },
-  { value: 'tautulli', label: 'Tautulli' },
+  { value: 'tautulli-chris', label: 'Tautulli (Chris)' },
+  { value: 'tautulli-ali', label: 'Tautulli (Ali)' },
   { value: 'ratings', label: 'Ratings' },
 ]
 
@@ -420,14 +431,42 @@ const saveUrls = async () => {
   }
 }
 
+const pollSyncStatus = async () => {
+  try {
+    const res = await axios.get('/api/sync/status')
+    syncStatuses.value = res.data
+    // Stop polling when all non-configured sources are in terminal state
+    const active = res.data.filter(s => s.status === 'syncing')
+    if (active.length === 0 && syncPollTimer) {
+      clearInterval(syncPollTimer)
+      syncPollTimer = null
+      syncing.value = ''
+    }
+  } catch {}
+}
+
 const triggerSync = async (source) => {
   syncing.value = source
   syncMsg.value = ''
+  if (syncPollTimer) clearInterval(syncPollTimer)
   try {
-    await axios.post('/api/sync/trigger', { source })
-    syncMsg.value = `${source} sync triggered`
-  } catch {} finally {
-    setTimeout(() => { syncing.value = ''; syncMsg.value = '' }, 5000)
+    const res = await axios.post('/api/sync/trigger', { source })
+    if (res.data.ok === false) {
+      syncMsg.value = res.data.message || 'Sync already running'
+      syncing.value = ''
+      return
+    }
+    syncMsg.value = `${source} sync triggered — watching status...`
+    // Poll every 3s for live status
+    syncPollTimer = setInterval(pollSyncStatus, 3000)
+    // Safety: stop after 10 minutes
+    setTimeout(() => {
+      if (syncPollTimer) { clearInterval(syncPollTimer); syncPollTimer = null }
+      syncing.value = ''
+    }, 600_000)
+  } catch {
+    syncMsg.value = 'Trigger failed'
+    syncing.value = ''
   }
 }
 
@@ -497,7 +536,8 @@ const fmtSize = (bytes) => {
   return mb >= 1 ? `${mb.toFixed(1)} MB` : `${bytes} B`
 }
 
-const fmtDate = (d) => d ? new Date(d).toLocaleString() : ''
+const fmtDate = (d) => d ? new Date(d.includes('Z') ? d : d + 'Z').toLocaleString() : ''
 
-onMounted(load)
+onMounted(async () => { await load(); await pollSyncStatus() })
+onBeforeUnmount(() => { if (syncPollTimer) clearInterval(syncPollTimer) })
 </script>

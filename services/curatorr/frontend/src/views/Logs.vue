@@ -111,7 +111,7 @@ const nextPage = () => { if (page.value < pages.value) { page.value++; load() } 
 
 const fmtDate = (d) => {
   if (!d) return '—'
-  const dt = new Date(d)
+  const dt = new Date(d.includes('Z') ? d : d + 'Z')
   return dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString()
 }
 

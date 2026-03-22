@@ -10,14 +10,18 @@ from app.log_events import log_event
 log = logging.getLogger('curatorr.sync.tautulli')
 
 
-async def sync_watch_history(db):
-    """Pull watch history from both Tautulli instances, update play counts."""
+async def sync_watch_history(db, instance_filter: str = None):
+    """Pull watch history from Tautulli instances, update play counts.
+    instance_filter: 'ali' or 'chris' to sync only that instance; None = both.
+    """
     from app.config import (
         CHRIS_TAUTULLI_URL, ALI_TAUTULLI_URL,
         CHRIS_TAUTULLI_KEY, ALI_TAUTULLI_KEY,
     )
     instances = []
     for t in TAUTULLI_INSTANCES:
+        if instance_filter and t['name'] != instance_filter:
+            continue
         overridden = dict(t)
         if t['name'] == 'chris':
             overridden['url']     = await get_config('tautulli_chris_url', CHRIS_TAUTULLI_URL) or t['url']
@@ -94,7 +98,8 @@ async def _sync_tautulli_instance(db, tautulli: dict):
                 if params['start'] >= total:
                     break
     except Exception as e:
-        log.error(f"[{source_key}] HTTP error: {e}")
+        url_safe = tautulli['url'].split('?')[0] if tautulli.get('url') else 'unconfigured'
+        log.error(f"[{source_key}] HTTP error fetching {url_safe}: {e}")
         raise
 
     log.info(f"[{source_key}] Processing {len(all_records)} history records")

@@ -57,7 +57,7 @@
         <div v-if="stats && stats.top_purge_candidates.length > 0" class="space-y-2">
           <div v-for="item in stats.top_purge_candidates" :key="item.id"
             class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-200 transition-colors cursor-pointer"
-            @click="$router.push('/movies?preset=purge_candidates')">
+            @click="$router.push('/movies?open=' + item.id)">
             <div class="flex-1 min-w-0">
               <div class="text-sm text-white truncate">{{ item.title }}</div>
               <div class="text-xs text-slate-500">{{ item.year }} · {{ item.resolution }}</div>

@@ -25,7 +25,9 @@ async def sync_trigger(body: SyncTriggerRequest, _auth=Depends(require_auth)):
     source = body.source
 
     try:
-        from app.scheduler import trigger_sync_by_source
+        from app.scheduler import trigger_sync_by_source, is_sync_running
+        if is_sync_running(source):
+            return {'ok': False, 'message': f'Sync already running: {source}'}
         asyncio.create_task(trigger_sync_by_source(source))
         return {'ok': True, 'message': f'Sync triggered for: {source}'}
     except Exception as e:

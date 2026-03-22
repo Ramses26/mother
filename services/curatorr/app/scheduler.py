@@ -9,6 +9,9 @@ from app.config import DB_PATH
 
 log = logging.getLogger('curatorr.scheduler')
 
+# Tracks which sync sources are currently running (prevents concurrent duplicate syncs)
+_running_syncs: set = set()
+
 _scheduler = BackgroundScheduler(
     executors={'default': ThreadPoolExecutor(3)},
     job_defaults={'coalesce': True, 'max_instances': 1},
@@ -60,10 +63,10 @@ async def _refresh_ratings():
         await db.execute("PRAGMA journal_mode=WAL")
         from app.sync.omdb import sync_all_ratings as omdb_sync, sync_tv_ratings as omdb_tv_sync
         from app.sync.mdblist import sync_all_ratings as mdb_sync, sync_tv_ratings as mdb_tv_sync
-        from app.sync.tmdb import refresh_stale_ratings, refresh_stale_tv_ratings, sync_collections
+        from app.sync.tmdb import refresh_stale_ratings, refresh_stale_tv_ratings, sync_collections, fill_missing_tv_ids
         from app.sync.radarr import update_scores
         from app.sync.sonarr import update_tv_scores
-        for fn in [omdb_sync, omdb_tv_sync, mdb_sync, mdb_tv_sync,
+        for fn in [fill_missing_tv_ids, omdb_sync, omdb_tv_sync, mdb_sync, mdb_tv_sync,
                    refresh_stale_ratings, refresh_stale_tv_ratings,
                    sync_collections, update_scores, update_tv_scores]:
             try:
@@ -196,7 +199,24 @@ async def trigger_initial_sync():
 
 
 async def trigger_sync_by_source(source: str):
-    """Trigger sync for a specific source."""
+    """Trigger sync for a specific source. Returns False if already running."""
+    if source in _running_syncs:
+        log.warning(f"Sync already running for source: {source}")
+        return False
+    _running_syncs.add(source)
+    try:
+        return await _do_sync_by_source(source)
+    finally:
+        _running_syncs.discard(source)
+
+
+def is_sync_running(source: str) -> bool:
+    """Check if a sync is currently running for the given source."""
+    return source in _running_syncs
+
+
+async def _do_sync_by_source(source: str):
+    """Internal: perform the actual sync for a given source."""
     async with aiosqlite.connect(DB_PATH, timeout=60) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("PRAGMA journal_mode=WAL")
@@ -217,16 +237,47 @@ async def trigger_sync_by_source(source: str):
             from app.sync.tautulli import sync_watch_history
             await sync_watch_history(db)
 
+        if source == 'tautulli-ali':
+            from app.sync.tautulli import sync_watch_history
+            await sync_watch_history(db, instance_filter='ali')
+
+        if source == 'tautulli-chris':
+            from app.sync.tautulli import sync_watch_history
+            await sync_watch_history(db, instance_filter='chris')
+
         if source in ('all', 'ratings'):
             from app.sync.omdb import sync_all_ratings as omdb_sync, sync_tv_ratings as omdb_tv_sync
             from app.sync.mdblist import sync_all_ratings as mdb_sync, sync_tv_ratings as mdb_tv_sync
-            from app.sync.tmdb import refresh_stale_ratings, refresh_stale_tv_ratings, sync_collections
+            from app.sync.tmdb import refresh_stale_ratings, refresh_stale_tv_ratings, sync_collections, fill_missing_tv_ids
             from app.sync.radarr import update_scores
             from app.sync.sonarr import update_tv_scores
-            for fn in [omdb_sync, omdb_tv_sync, mdb_sync, mdb_tv_sync,
-                       refresh_stale_ratings, refresh_stale_tv_ratings,
-                       sync_collections, update_scores, update_tv_scores]:
+            # Manual trigger:
+            # - OMDB/MDBList capped at 1000 (OMDB free-tier daily limit)
+            # - TMDB uncapped (40 req/10s, very generous)
+            try:
+                await fill_missing_tv_ids(db)
+            except Exception as e:
+                log.error(f"fill_missing_tv_ids error: {e}")
+            # Clear TMDB cache for Ended shows and reset ratings_updated_at so they get re-fetched
+            try:
+                await db.execute(
+                    "DELETE FROM ratings_cache WHERE media_type='tv' AND source='tmdb' "
+                    "AND external_id IN (SELECT CAST(tmdb_id AS TEXT) FROM tv_shows WHERE status='Ended' AND tmdb_id IS NOT NULL)"
+                )
+                await db.execute(
+                    "UPDATE tv_shows SET ratings_updated_at=NULL WHERE status='Ended' AND tmdb_id IS NOT NULL"
+                )
+                await db.commit()
+                log.info("[ratings] Cleared TMDB cache + reset ratings_updated_at for Ended shows — will re-fetch status")
+            except Exception as e:
+                log.error(f"TMDB cache clear error: {e}")
+            for fn, kwargs in [
+                (omdb_sync, {'limit': 1000}), (omdb_tv_sync, {'limit': 1000}),
+                (mdb_sync, {'limit': 1000}), (mdb_tv_sync, {'limit': 1000}),
+                (refresh_stale_ratings, {'limit': 0}), (refresh_stale_tv_ratings, {'limit': 0}),
+                (sync_collections, {}), (update_scores, {}), (update_tv_scores, {}),
+            ]:
                 try:
-                    await fn(db)
+                    await fn(db, **kwargs)
                 except Exception as e:
                     log.error(f"{fn.__name__} error: {e}")

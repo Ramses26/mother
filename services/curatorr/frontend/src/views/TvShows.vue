@@ -42,6 +42,14 @@
             <option value="Cancelled">Cancelled</option>
           </select>
         </div>
+        <!-- Seasons -->
+        <div class="mb-3">
+          <label class="label">Seasons</label>
+          <div class="flex gap-2">
+            <input type="number" v-model.number="filters.seasons_min" min="1" class="input text-xs py-1" placeholder="Min" @change="fetchShows"/>
+            <input type="number" v-model.number="filters.seasons_max" min="1" class="input text-xs py-1" placeholder="Max" @change="fetchShows"/>
+          </div>
+        </div>
         <!-- Watch -->
         <div class="mb-3">
           <label class="label">Watch Status</label>
@@ -81,17 +89,31 @@
       <div class="sticky top-0 z-20 flex items-center gap-3 px-4 py-2 border-b" style="background:#0f1117; border-color:#2d3250;">
         <span class="text-sm text-slate-400">{{ total.toLocaleString() }} shows</span>
         <div class="flex-1"/>
-        <select v-model="sortBy" @change="fetchShows" class="input text-xs py-1 w-36">
-          <option value="sort_title">Title</option>
-          <option value="year">Year</option>
-          <option value="composite_score">Rating</option>
-          <option value="purge_score">Purge Score</option>
-          <option value="status">Status</option>
-          <option value="season_completion_pct">Completion</option>
+        <!-- Sort: primary -->
+        <select :value="sortBy" @change="sortBy = $event.target.value; fetchShows()" class="input text-xs py-1 w-28">
+          <option v-for="o in sortOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
         </select>
-        <button @click="toggleSortDir" class="text-slate-400 hover:text-white px-2">
+        <button @click="toggleSortDir" class="text-slate-400 hover:text-white px-1 text-sm">
           {{ sortDir === 'asc' ? '↑' : '↓' }}
         </button>
+        <!-- Sort: secondary -->
+        <select :value="sortBy2" @change="sortBy2 = $event.target.value; if (!sortBy2) { sortBy3 = ''; sortDir3 = 'asc' } fetchShows()" class="input text-xs py-1 w-24">
+          <option value="">2nd…</option>
+          <option v-for="o in sortOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </select>
+        <button v-if="sortBy2" @click="toggleSortDir2" class="text-slate-400 hover:text-white px-1 text-sm">
+          {{ sortDir2 === 'asc' ? '↑' : '↓' }}
+        </button>
+        <!-- Sort: tertiary (visible only when secondary is set) -->
+        <template v-if="sortBy2">
+          <select :value="sortBy3" @change="sortBy3 = $event.target.value; fetchShows()" class="input text-xs py-1 w-24">
+            <option value="">3rd…</option>
+            <option v-for="o in sortOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+          </select>
+          <button v-if="sortBy3" @click="toggleSortDir3" class="text-slate-400 hover:text-white px-1 text-sm">
+            {{ sortDir3 === 'asc' ? '↑' : '↓' }}
+          </button>
+        </template>
 
         <!-- Column visibility (table mode only) -->
         <div v-if="viewMode === 'table'" class="relative">
@@ -290,6 +312,10 @@ const deleteTarget = ref(null)
 const viewMode = ref('table')
 const sortBy = ref('sort_title')
 const sortDir = ref('asc')
+const sortBy2 = ref('')
+const sortDir2 = ref('asc')
+const sortBy3 = ref('')
+const sortDir3 = ref('asc')
 const activePreset = ref('')
 const showColMenu = ref(false)
 let fetchTimer = null
@@ -297,6 +323,25 @@ let fetchTimer = null
 const views = [
   { value: 'poster', icon: '⊞' },
   { value: 'table', icon: '☰' },
+]
+
+const sortOptions = [
+  { value: 'sort_title', label: 'Title' },
+  { value: 'year', label: 'Year' },
+  { value: 'composite_score', label: 'Rating' },
+  { value: 'imdb_rating', label: 'IMDb' },
+  { value: 'rt_critics', label: 'RT%' },
+  { value: 'metacritic', label: 'Metacritic' },
+  { value: 'mdblist_score', label: 'MDBList' },
+  { value: 'purge_score', label: 'Purge Score' },
+  { value: 'season_completion_pct', label: 'Completion%' },
+  { value: 'total_seasons', label: 'Seasons' },
+  { value: 'total_episodes', label: 'Episodes' },
+  { value: 'plex_added_at', label: 'Date Added' },
+  { value: 'ali_play_count', label: 'Ali Plays' },
+  { value: 'chris_play_count', label: 'Chris Plays' },
+  { value: 'status', label: 'Status' },
+  { value: 'network', label: 'Network' },
 ]
 
 const presets = [
@@ -339,10 +384,13 @@ const filters = reactive({
   imdb_min: null, imdb_max: null, status: '',
   neither_watched: false, both_watched: false,
   cancelled_watched: false, cancelled_never_watched: false, instance: '',
+  seasons_min: null, seasons_max: null,
 })
 
 const buildParams = () => {
-  const p = { page: page.value, per_page: 50, sort_by: sortBy.value, sort_dir: sortDir.value }
+  const p = { page: page.value, per_page: 100, sort_by: sortBy.value, sort_dir: sortDir.value }
+  if (sortBy2.value) { p.sort_by2 = sortBy2.value; p.sort_dir2 = sortDir2.value }
+  if (sortBy2.value && sortBy3.value) { p.sort_by3 = sortBy3.value; p.sort_dir3 = sortDir3.value }
   if (filters.title) p.title = filters.title
   if (filters.composite_min != null) p.composite_min = filters.composite_min
   if (filters.composite_max != null) p.composite_max = filters.composite_max
@@ -354,6 +402,8 @@ const buildParams = () => {
   if (filters.cancelled_watched) p.cancelled_watched = 'true'
   if (filters.cancelled_never_watched) p.cancelled_never_watched = 'true'
   if (filters.instance) p.instance = filters.instance
+  if (filters.seasons_min != null) p.seasons_min = filters.seasons_min
+  if (filters.seasons_max != null) p.seasons_max = filters.seasons_max
   return p
 }
 
@@ -384,15 +434,22 @@ const applyPreset = (preset) => {
 const clearFilters = () => {
   Object.assign(filters, { title: '', composite_min: null, composite_max: null,
     imdb_min: null, imdb_max: null, status: '', neither_watched: false, both_watched: false,
-    cancelled_watched: false, cancelled_never_watched: false, instance: '' })
+    cancelled_watched: false, cancelled_never_watched: false, instance: '',
+    seasons_min: null, seasons_max: null })
   activePreset.value = ''
   sortBy.value = 'sort_title'
   sortDir.value = 'asc'
+  sortBy2.value = ''
+  sortDir2.value = 'asc'
+  sortBy3.value = ''
+  sortDir3.value = 'asc'
   page.value = 1
   fetchShows()
 }
 
 const toggleSortDir = () => { sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'; fetchShows() }
+const toggleSortDir2 = () => { sortDir2.value = sortDir2.value === 'asc' ? 'desc' : 'asc'; fetchShows() }
+const toggleSortDir3 = () => { sortDir3.value = sortDir3.value === 'asc' ? 'desc' : 'asc'; fetchShows() }
 const prevPage = () => { if (page.value > 1) { page.value--; fetchShows() } }
 const nextPage = () => { if (page.value < pages.value) { page.value++; fetchShows() } }
 

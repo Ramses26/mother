@@ -155,7 +155,47 @@ async def sync_collections(db):
     log.info(f"[tmdb] Synced {len(collections)} collections")
 
 
-async def refresh_stale_ratings(db):
+async def fill_missing_tv_ids(db):
+    """For TV shows with tvdb_id but no tmdb_id, look up TMDB ID via find endpoint."""
+    _api_key = await get_config('tmdb_api_key', TMDB_API_KEY) or TMDB_API_KEY
+    if not _api_key:
+        return 0
+
+    async with db.execute(
+        "SELECT id, tvdb_id, title FROM tv_shows WHERE tvdb_id IS NOT NULL AND tmdb_id IS NULL LIMIT 100"
+    ) as cur:
+        shows = await cur.fetchall()
+
+    found = 0
+    async with httpx.AsyncClient(timeout=10) as client:
+        for show in shows:
+            try:
+                r = await client.get(
+                    f"{TMDB_BASE}/find/{show['tvdb_id']}",
+                    params={'api_key': _api_key, 'external_source': 'tvdb_id'},
+                )
+                if r.status_code != 200:
+                    continue
+                data = r.json()
+                results = data.get('tv_results', [])
+                if not results:
+                    continue
+                tmdb_id = results[0].get('id')
+                if tmdb_id:
+                    await db.execute(
+                        "UPDATE tv_shows SET tmdb_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                        (tmdb_id, show['id'])
+                    )
+                    found += 1
+            except Exception as e:
+                log.debug(f"fill_missing_tv_ids: {show['title']}: {e}")
+
+    await db.commit()
+    log.info(f"[tmdb] Filled missing tmdb_id for {found} TV shows")
+    return found
+
+
+async def refresh_stale_ratings(db, limit: int = 300):
     """Refresh ratings for movies where ratings_updated_at is older than 7 days."""
     from datetime import timedelta
     from datetime import datetime
@@ -164,9 +204,10 @@ async def refresh_stale_ratings(db):
 
     cutoff = (datetime.utcnow() - timedelta(days=7)).isoformat()
 
+    limit_clause = f"LIMIT {limit}" if limit else ""
     async with db.execute(
         "SELECT id, tmdb_id, imdb_id FROM movies WHERE tmdb_id IS NOT NULL "
-        "AND (ratings_updated_at IS NULL OR ratings_updated_at < ?) LIMIT 50",
+        f"AND (ratings_updated_at IS NULL OR ratings_updated_at < ?) {limit_clause}",
         (cutoff,)
     ) as cur:
         movies = await cur.fetchall()
@@ -217,7 +258,7 @@ async def refresh_stale_ratings(db):
     return updated
 
 
-async def refresh_stale_tv_ratings(db):
+async def refresh_stale_tv_ratings(db, limit: int = 300):
     """Refresh TMDB ratings for TV shows where ratings are stale."""
     from datetime import timedelta
     from datetime import datetime
@@ -226,9 +267,12 @@ async def refresh_stale_tv_ratings(db):
 
     cutoff = (datetime.utcnow() - timedelta(days=7)).isoformat()
 
+    limit_clause = f"LIMIT {limit}" if limit else ""
     async with db.execute(
         "SELECT id, tmdb_id, imdb_id FROM tv_shows WHERE tmdb_id IS NOT NULL "
-        "AND (ratings_updated_at IS NULL OR ratings_updated_at < ?) LIMIT 50",
+        "AND (ratings_updated_at IS NULL OR ratings_updated_at < ?) "
+        "ORDER BY CASE WHEN status='Ended' THEN 0 ELSE 1 END, ratings_updated_at ASC NULLS FIRST "
+        f"{limit_clause}",
         (cutoff,)
     ) as cur:
         shows = await cur.fetchall()
@@ -250,8 +294,6 @@ async def refresh_stale_tv_ratings(db):
                 if tmdb_data.get('tmdb_rating'):
                     set_clauses.append('tmdb_rating=?')
                     vals.append(tmdb_data['tmdb_rating'])
-                    set_clauses.append('tmdb_votes=?')
-                    vals.append(tmdb_data.get('tmdb_votes'))
                 # Update status from TMDB — catches shows Sonarr marks "ended" but TMDB marks "Canceled"
                 if tmdb_data.get('status'):
                     set_clauses.append('status=?')

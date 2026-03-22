@@ -126,64 +126,55 @@ async def test_connection(body: dict, _auth=Depends(require_auth)):
 
     source = body.get('source', '')
 
-    if source == 'plex-chris':
-        url   = await get_config('plex_chris_url',   CHRIS_PLEX_URL)
-        token = await get_config('plex_chris_token', CHRIS_PLEX_TOKEN)
+    if source in ('plex-chris', 'plex-ali'):
+        if source == 'plex-chris':
+            url   = await get_config('plex_chris_url',   CHRIS_PLEX_URL)
+            token = await get_config('plex_chris_token', CHRIS_PLEX_TOKEN)
+        else:
+            url   = await get_config('plex_ali_url',   ALI_PLEX_URL)
+            token = await get_config('plex_ali_token', ALI_PLEX_TOKEN)
         if not url or not token:
             return {'ok': False, 'message': 'URL or token not configured'}
         try:
-            async with httpx.AsyncClient(timeout=5) as client:
+            async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
                 r = await client.get(f"{url}/identity",
                                      headers={'X-Plex-Token': token, 'Accept': 'application/json'})
-            if r.status_code == 200:
-                name = r.json().get('MediaContainer', {}).get('friendlyName', 'Plex')
-                return {'ok': True, 'message': f'Connected: {name}'}
-            return {'ok': False, 'message': f'HTTP {r.status_code}'}
+            if r.status_code != 200:
+                return {'ok': False, 'message': f'HTTP {r.status_code}'}
+            content_type = r.headers.get('content-type', '')
+            if 'json' not in content_type:
+                # Plex sometimes returns XML — parse friendly name from XML
+                import xml.etree.ElementTree as ET
+                try:
+                    root = ET.fromstring(r.text)
+                    name = root.get('friendlyName', 'Plex')
+                    return {'ok': True, 'message': f'Connected: {name}'}
+                except Exception:
+                    snippet = r.text[:80].replace('\n', ' ').strip()
+                    return {'ok': False, 'message': f'Non-JSON response: {snippet}'}
+            name = r.json().get('MediaContainer', {}).get('friendlyName', 'Plex')
+            return {'ok': True, 'message': f'Connected: {name}'}
         except Exception as e:
             return {'ok': False, 'message': str(e)[:120]}
 
-    elif source == 'plex-ali':
-        url   = await get_config('plex_ali_url',   ALI_PLEX_URL)
-        token = await get_config('plex_ali_token', ALI_PLEX_TOKEN)
-        if not url or not token:
-            return {'ok': False, 'message': 'URL or token not configured'}
-        try:
-            async with httpx.AsyncClient(timeout=5) as client:
-                r = await client.get(f"{url}/identity",
-                                     headers={'X-Plex-Token': token, 'Accept': 'application/json'})
-            if r.status_code == 200:
-                name = r.json().get('MediaContainer', {}).get('friendlyName', 'Plex')
-                return {'ok': True, 'message': f'Connected: {name}'}
-            return {'ok': False, 'message': f'HTTP {r.status_code}'}
-        except Exception as e:
-            return {'ok': False, 'message': str(e)[:120]}
-
-    elif source == 'tautulli-chris':
-        url = await get_config('tautulli_chris_url', CHRIS_TAUTULLI_URL)
-        key = await get_config('tautulli_chris_key', CHRIS_TAUTULLI_KEY)
+    elif source in ('tautulli-chris', 'tautulli-ali'):
+        if source == 'tautulli-chris':
+            url = await get_config('tautulli_chris_url', CHRIS_TAUTULLI_URL)
+            key = await get_config('tautulli_chris_key', CHRIS_TAUTULLI_KEY)
+        else:
+            url = await get_config('tautulli_ali_url', ALI_TAUTULLI_URL)
+            key = await get_config('tautulli_ali_key', ALI_TAUTULLI_KEY)
         if not url or not key:
             return {'ok': False, 'message': 'URL or API key not configured'}
         try:
-            async with httpx.AsyncClient(timeout=5) as client:
+            async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
                 r = await client.get(f"{url}/api/v2",
                                      params={'apikey': key, 'cmd': 'get_server_info'})
-            data = r.json()
-            if data.get('response', {}).get('result') == 'success':
-                name = data['response']['data'].get('pms_name', 'Tautulli')
-                return {'ok': True, 'message': f'Connected: {name}'}
-            return {'ok': False, 'message': data.get('response', {}).get('message', f'HTTP {r.status_code}')}
-        except Exception as e:
-            return {'ok': False, 'message': str(e)[:120]}
-
-    elif source == 'tautulli-ali':
-        url = await get_config('tautulli_ali_url', ALI_TAUTULLI_URL)
-        key = await get_config('tautulli_ali_key', ALI_TAUTULLI_KEY)
-        if not url or not key:
-            return {'ok': False, 'message': 'URL or API key not configured'}
-        try:
-            async with httpx.AsyncClient(timeout=5) as client:
-                r = await client.get(f"{url}/api/v2",
-                                     params={'apikey': key, 'cmd': 'get_server_info'})
+            # Guard against non-JSON responses (HTML login redirect, proxy page, etc.)
+            content_type = r.headers.get('content-type', '')
+            if 'json' not in content_type:
+                snippet = r.text[:120].replace('\n', ' ').strip()
+                return {'ok': False, 'message': f'HTTP {r.status_code} — non-JSON response: {snippet}'}
             data = r.json()
             if data.get('response', {}).get('result') == 'success':
                 name = data['response']['data'].get('pms_name', 'Tautulli')
@@ -198,7 +189,9 @@ async def test_connection(body: dict, _auth=Depends(require_auth)):
 
 @router.post('/settings/change-password')
 async def change_password(body: ChangePasswordRequest, _auth=Depends(require_auth)):
-    if not await verify_login(body.current_password):
+    from app.database import get_config as _get_config
+    _username = await _get_config('admin_username') or 'admin'
+    if not await verify_login(_username, body.current_password):
         raise HTTPException(status_code=401, detail='Current password incorrect')
     if len(body.new_password) < 8:
         raise HTTPException(status_code=400, detail='Password must be at least 8 characters')

@@ -71,14 +71,15 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: s
     return result
 
 
-async def sync_all_ratings(db):
+async def sync_all_ratings(db, limit: int = 500):
     """Fetch MDBList ratings for movies missing composite scores."""
     _api_key = await get_config('mdblist_api_key', MDBLIST_API_KEY) or MDBLIST_API_KEY
 
+    limit_clause = f"LIMIT {limit}" if limit else ""
     async with db.execute(
         "SELECT id, imdb_id, title FROM movies WHERE imdb_id IS NOT NULL "
-        "AND (mdblist_score IS NULL OR mdblist_score = 0) "
-        "AND imdb_id != '' LIMIT 300"
+        f"AND (mdblist_score IS NULL OR mdblist_score = 0) "
+        f"AND imdb_id != '' {limit_clause}"
     ) as cur:
         movies = await cur.fetchall()
 
@@ -113,14 +114,15 @@ async def sync_all_ratings(db):
     return updated
 
 
-async def sync_tv_ratings(db):
+async def sync_tv_ratings(db, limit: int = 500):
     """Fetch MDBList ratings for TV shows missing ratings."""
     _api_key = await get_config('mdblist_api_key', MDBLIST_API_KEY) or MDBLIST_API_KEY
 
+    limit_clause = f"LIMIT {limit}" if limit else ""
     async with db.execute(
         "SELECT id, imdb_id, title FROM tv_shows WHERE imdb_id IS NOT NULL "
-        "AND (mdblist_score IS NULL OR mdblist_score = 0) "
-        "AND imdb_id != '' LIMIT 300"
+        f"AND (mdblist_score IS NULL OR mdblist_score = 0) "
+        f"AND imdb_id != '' {limit_clause}"
     ) as cur:
         shows = await cur.fetchall()
 

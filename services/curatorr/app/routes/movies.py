@@ -229,7 +229,8 @@ async def list_movies(
                    mdblist_score, composite_score, purge_score,
                    ali_play_count, ali_last_watched,
                    chris_play_count, chris_last_watched,
-                   plex_added_at, genres, collection_name, collection_tmdb_id
+                   plex_added_at, genres, collection_name, collection_tmdb_id,
+                   poster_url, plex_key
             FROM movies {where} {order_by}
             LIMIT ? OFFSET ?
         """

@@ -17,7 +17,8 @@ ALLOWED_SORT_COLS = {
     'sort_title', 'title', 'year', 'composite_score', 'imdb_rating',
     'rt_critics', 'metacritic', 'tmdb_rating', 'mdblist_score',
     'purge_score', 'plex_added_at', 'ali_play_count', 'chris_play_count',
-    'season_completion_pct', 'status', 'total_episodes',
+    'season_completion_pct', 'status', 'total_episodes', 'total_seasons',
+    'network',
 }
 
 
@@ -110,6 +111,13 @@ def build_tv_query(params: dict) -> tuple[str, list]:
         conditions.append("sonarr_instance = ?")
         args.append(params['instance'])
 
+    if params.get('seasons_min') is not None:
+        conditions.append("total_seasons >= ?")
+        args.append(int(params['seasons_min']))
+    if params.get('seasons_max') is not None:
+        conditions.append("total_seasons <= ?")
+        args.append(int(params['seasons_max']))
+
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
     return where, args
 
@@ -122,6 +130,8 @@ async def list_tv(
     sort_dir: str = Query('asc'),
     sort_by2: Optional[str] = None,
     sort_dir2: str = Query('asc'),
+    sort_by3: Optional[str] = None,
+    sort_dir3: str = Query('asc'),
     title: Optional[str] = None,
     year_min: Optional[int] = None,
     year_max: Optional[int] = None,
@@ -151,6 +161,8 @@ async def list_tv(
     purge_score_max: Optional[int] = None,
     instance: Optional[str] = None,
     preset: Optional[str] = None,
+    seasons_min: Optional[int] = None,
+    seasons_max: Optional[int] = None,
     _auth=Depends(require_auth),
 ):
     params = {
@@ -168,6 +180,7 @@ async def list_tv(
         'mdblist_min': mdblist_min, 'mdblist_max': mdblist_max,
         'purge_score_min': purge_score_min, 'purge_score_max': purge_score_max,
         'instance': instance,
+        'seasons_min': seasons_min, 'seasons_max': seasons_max,
     }
 
     if preset == 'never_watched':
@@ -187,6 +200,8 @@ async def list_tv(
     order_parts = [safe_sort(sort_by, sort_dir)]
     if sort_by2:
         order_parts.append(safe_sort(sort_by2, sort_dir2))
+    if sort_by3:
+        order_parts.append(safe_sort(sort_by3, sort_dir3))
     order_by = "ORDER BY " + ", ".join(order_parts)
 
     async for db in get_db():
@@ -203,7 +218,8 @@ async def list_tv(
                    season_completion_pct,
                    ali_play_count, ali_last_watched,
                    chris_play_count, chris_last_watched,
-                   plex_added_at, genres
+                   plex_added_at, genres,
+                   poster_url, plex_key
             FROM tv_shows {where} {order_by}
             LIMIT ? OFFSET ?
         """

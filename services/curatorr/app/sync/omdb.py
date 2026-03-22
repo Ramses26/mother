@@ -55,6 +55,9 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: s
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(OMDB_URL, params={'i': imdb_id, 'apikey': api_key})
+            if r.status_code == 401:
+                log.warning("OMDB API key invalid or daily quota exceeded (401)")
+                return {'_quota_exceeded': True}
             r.raise_for_status()
             data = r.json()
     except Exception as e:
@@ -62,6 +65,9 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: s
         return {}
 
     if data.get('Response') == 'False':
+        if 'Request limit reached' in data.get('Error', ''):
+            log.warning("OMDB daily request limit reached")
+            return {'_quota_exceeded': True}
         log.debug(f"OMDB: no data for {imdb_id}")
         return {}
 
@@ -92,15 +98,16 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: s
     return result
 
 
-async def sync_all_ratings(db):
+async def sync_all_ratings(db, limit: int = 500):
     """Fetch OMDB ratings for all movies with imdb_id but missing ratings."""
     # Pick up API key from config table (editable in Settings UI)
     _api_key = await get_config('omdb_api_key', OMDB_API_KEY) or OMDB_API_KEY
 
+    limit_clause = f"LIMIT {limit}" if limit else ""
     async with db.execute(
         "SELECT id, imdb_id, title FROM movies WHERE imdb_id IS NOT NULL "
-        "AND (imdb_rating IS NULL OR imdb_rating = 0) "
-        "AND imdb_id != '' LIMIT 300"
+        f"AND (imdb_rating IS NULL OR imdb_rating = 0) "
+        f"AND imdb_id != '' {limit_clause}"
     ) as cur:
         movies = await cur.fetchall()
 
@@ -109,6 +116,9 @@ async def sync_all_ratings(db):
 
     for movie in movies:
         data = await fetch_ratings(movie['imdb_id'], db, 'movie', _api_key=_api_key)
+        if data.get('_quota_exceeded'):
+            log.info(f"[omdb] Stopping movies — quota exceeded after {updated} updates")
+            break
         if data:
             await db.execute("""
                 UPDATE movies SET
@@ -131,14 +141,15 @@ async def sync_all_ratings(db):
     return updated
 
 
-async def sync_tv_ratings(db):
+async def sync_tv_ratings(db, limit: int = 500):
     """Fetch OMDB ratings for all TV shows with imdb_id but missing ratings."""
     _api_key = await get_config('omdb_api_key', OMDB_API_KEY) or OMDB_API_KEY
 
+    limit_clause = f"LIMIT {limit}" if limit else ""
     async with db.execute(
         "SELECT id, imdb_id, title FROM tv_shows WHERE imdb_id IS NOT NULL "
-        "AND (imdb_rating IS NULL OR imdb_rating = 0) "
-        "AND imdb_id != '' LIMIT 300"
+        f"AND (imdb_rating IS NULL OR imdb_rating = 0) "
+        f"AND imdb_id != '' {limit_clause}"
     ) as cur:
         shows = await cur.fetchall()
 
@@ -147,6 +158,9 @@ async def sync_tv_ratings(db):
 
     for show in shows:
         data = await fetch_ratings(show['imdb_id'], db, 'tv', _api_key=_api_key)
+        if data.get('_quota_exceeded'):
+            log.info(f"[omdb] Stopping TV shows — quota exceeded after {updated} updates")
+            break
         if data:
             await db.execute("""
                 UPDATE tv_shows SET

@@ -6,27 +6,48 @@
       <div class="animate-spin h-8 w-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full"></div>
     </div>
 
-    <div v-else-if="!selected" class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
-      <div v-for="c in collections" :key="c.tmdb_id"
-        class="card cursor-pointer hover:border-violet-600 transition-colors"
-        @click="loadCollection(c)">
-        <div v-if="c.poster_url" class="w-full aspect-[2/3] rounded-lg overflow-hidden mb-3">
-          <img :src="c.poster_url" class="w-full h-full object-cover"/>
-        </div>
-        <div v-else class="w-full aspect-square rounded-lg mb-3 flex items-center justify-center text-4xl"
-          style="background:#2d3250;">🎬</div>
-        <div class="font-medium text-white text-sm">{{ c.name }}</div>
-        <div class="text-xs text-slate-400 mt-1">{{ c.owned_count || 0 }}/{{ c.movie_count || '?' }} owned</div>
-        <div class="mt-2 w-full h-1.5 rounded-full overflow-hidden" style="background:#2d3250;">
-          <div class="h-full rounded-full bg-violet-600"
-            :style="{ width: c.movie_count > 0 ? ((c.owned_count || 0) / c.movie_count * 100) + '%' : '0%' }"></div>
+    <div v-else-if="!selected">
+      <!-- Filter/sort bar -->
+      <div class="flex items-center gap-3 mb-4">
+        <button @click="hasMissing = !hasMissing; loadCollections()"
+          class="text-xs px-3 py-1.5 rounded transition-colors"
+          :class="hasMissing ? 'bg-violet-600 text-white' : 'bg-surface-200 text-slate-400 hover:text-white'">
+          Has Missing
+        </button>
+        <select v-model="sortBy" @change="loadCollections" class="input text-xs py-1 w-36">
+          <option value="name">Name</option>
+          <option value="completion_pct">Completion</option>
+          <option value="owned_count">Owned Count</option>
+          <option value="movie_count">Total Movies</option>
+        </select>
+        <button @click="toggleSortDir" class="text-slate-400 hover:text-white px-1 text-sm">
+          {{ sortDir === 'asc' ? '↑' : '↓' }}
+        </button>
+        <span class="text-xs text-slate-500">{{ collections.length }} collections</span>
+      </div>
+
+      <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+        <div v-for="c in collections" :key="c.tmdb_id"
+          class="card cursor-pointer hover:border-violet-600 transition-colors"
+          @click="openCollection(c)">
+          <div v-if="c.poster_url" class="w-full aspect-[2/3] rounded-lg overflow-hidden mb-3">
+            <img :src="c.poster_url" class="w-full h-full object-cover"/>
+          </div>
+          <div v-else class="w-full aspect-square rounded-lg mb-3 flex items-center justify-center text-4xl"
+            style="background:#2d3250;">🎬</div>
+          <div class="font-medium text-white text-sm">{{ c.name }}</div>
+          <div class="text-xs text-slate-400 mt-1">{{ c.owned_count || 0 }}/{{ c.movie_count || '?' }} owned</div>
+          <div class="mt-2 w-full h-1.5 rounded-full overflow-hidden" style="background:#2d3250;">
+            <div class="h-full rounded-full bg-violet-600"
+              :style="{ width: c.movie_count > 0 ? ((c.owned_count || 0) / c.movie_count * 100) + '%' : '0%' }"></div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Collection detail -->
     <div v-else>
-      <button @click="selected = null; missing = null" class="btn-secondary text-sm mb-4">← Back</button>
+      <button @click="goBack" class="btn-secondary text-sm mb-4">← Back</button>
       <div class="flex items-center gap-4 mb-6">
         <img v-if="selected.poster_url" :src="selected.poster_url" class="w-20 rounded-lg" loading="lazy"/>
         <div>
@@ -54,6 +75,8 @@
               <div class="text-white text-sm font-medium">{{ m.title }}</div>
               <div class="text-slate-500 text-xs">{{ m.year }}</div>
               <div v-if="m.vote_average" class="text-violet-400 text-xs">★ {{ m.vote_average.toFixed(1) }}</div>
+              <a v-if="m.tmdb_id" :href="`https://www.themoviedb.org/movie/${m.tmdb_id}`" target="_blank"
+                class="text-blue-400 text-xs hover:text-blue-300 transition-colors">TMDB ↗</a>
             </div>
             <button @click="addToRadarr(m)" :disabled="m._adding || m._added"
               class="mt-2 w-full text-xs py-1.5 rounded transition-colors"
@@ -97,7 +120,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import axios from 'axios'
 
 const collections = ref([])
@@ -106,20 +129,39 @@ const loading = ref(false)
 const loadingMissing = ref(false)
 const missing = ref(null)
 const missingError = ref('')
+const hasMissing = ref(false)
+const sortBy = ref('name')
+const sortDir = ref('asc')
+const savedScrollY = ref(0)
 
 const loadCollections = async () => {
   loading.value = true
-  try { const res = await axios.get('/api/collections'); collections.value = res.data }
-  catch {} finally { loading.value = false }
+  try {
+    const res = await axios.get('/api/collections', {
+      params: { has_missing: hasMissing.value, sort_by: sortBy.value, sort_dir: sortDir.value }
+    })
+    collections.value = res.data
+  } catch {} finally { loading.value = false }
 }
 
-const loadCollection = async (c) => {
+const toggleSortDir = () => {
+  sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  loadCollections()
+}
+
+const openCollection = async (c) => {
+  savedScrollY.value = window.scrollY
   missing.value = null
   missingError.value = ''
   try { const res = await axios.get(`/api/collections/${c.tmdb_id}`); selected.value = res.data }
   catch { selected.value = { ...c, movies: [] } }
-  // Auto-load missing after collection loads
   loadMissing()
+}
+
+const goBack = () => {
+  selected.value = null
+  missing.value = null
+  nextTick(() => window.scrollTo(0, savedScrollY.value))
 }
 
 const loadMissing = async () => {

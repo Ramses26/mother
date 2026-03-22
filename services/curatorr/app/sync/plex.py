@@ -144,6 +144,7 @@ async def _sync_section(db, plex: dict, section: dict):
     page_size = 100
     count = 0
 
+    total_size = None
     async with httpx.AsyncClient(timeout=60) as client:
         while True:
             r = await client.get(
@@ -153,6 +154,13 @@ async def _sync_section(db, plex: dict, section: dict):
             )
             r.raise_for_status()
             root = ET.fromstring(r.text)
+
+            # Read total size from first response (Plex returns 'size' attr = total items in section)
+            if total_size is None:
+                try:
+                    total_size = int(root.get('totalSize') or root.get('size') or 0)
+                except (TypeError, ValueError):
+                    total_size = 0
 
             if section['type'] == 'movie':
                 items = root.findall('.//Video')
@@ -174,7 +182,11 @@ async def _sync_section(db, plex: dict, section: dict):
 
             # Commit after each page to release write lock
             await db.commit()
-            offset += page_size
+            offset += len(items)
+
+            # Stop if we've fetched everything or got a short page
+            if total_size and offset >= total_size:
+                break
             if len(items) < page_size:
                 break
     log.info(f"[plex-{plex['name']}] Updated {count} items in {section['title']}")
