@@ -81,7 +81,7 @@ async def _sync_tautulli_instance(db, tautulli: dict):
         'start': 0,
     }
     if last_sync:
-        params['after'] = last_sync
+        params['after'] = int(last_sync)
 
     all_records = []
     try:
@@ -142,7 +142,7 @@ async def _sync_tautulli_instance(db, tautulli: dict):
 
             # Update movie play counts
             if media_type == 'movie' and rating_key:
-                await db.execute(f"""
+                cur = await db.execute(f"""
                     UPDATE movies SET
                         {user_field} = COALESCE({user_field}, 0) + 1,
                         {last_watched_field} = CASE
@@ -152,15 +152,14 @@ async def _sync_tautulli_instance(db, tautulli: dict):
                     WHERE plex_key = ?
                 """, (watched_at, watched_at, rating_key))
 
-                # Fallback: try title match
-                async with db.execute("SELECT id FROM movies WHERE plex_key=?", (rating_key,)) as cur:
-                    if not await cur.fetchone():
-                        await db.execute(f"""
-                            UPDATE movies SET
-                                {user_field} = COALESCE({user_field}, 0) + 1,
-                                updated_at = CURRENT_TIMESTAMP
-                            WHERE title=? AND (year=? OR ? IS NULL)
-                        """, (title, year, year))
+                # Fallback: try title match if plex_key didn't match any row
+                if cur.rowcount == 0 and title:
+                    await db.execute(f"""
+                        UPDATE movies SET
+                            {user_field} = COALESCE({user_field}, 0) + 1,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE title=? AND (year=? OR ? IS NULL)
+                    """, (title, year, year))
 
             elif media_type in ('episode', 'show') and rating_key:
                 # Update TV play counts by grandparent_title or rating_key

@@ -152,16 +152,19 @@ CREATE INDEX IF NOT EXISTS idx_tv_tmdb ON tv_shows(tmdb_id);
 CREATE INDEX IF NOT EXISTS idx_tv_title ON tv_shows(sort_title);
 CREATE INDEX IF NOT EXISTS idx_watch_history_plex ON watch_history(plex_key);
 CREATE INDEX IF NOT EXISTS idx_movies_imdb_rating ON movies(imdb_rating);
-CREATE INDEX IF NOT EXISTS idx_movies_composite_score ON movies(composite_score);
-CREATE INDEX IF NOT EXISTS idx_movies_purge_score ON movies(purge_score);
 CREATE INDEX IF NOT EXISTS idx_movies_ratings_updated ON movies(ratings_updated_at);
-CREATE INDEX IF NOT EXISTS idx_movies_tmdb_id ON movies(tmdb_id);
 CREATE INDEX IF NOT EXISTS idx_tv_shows_status ON tv_shows(status);
 CREATE INDEX IF NOT EXISTS idx_tv_shows_ratings_updated ON tv_shows(ratings_updated_at);
-CREATE INDEX IF NOT EXISTS idx_tv_shows_tmdb_id ON tv_shows(tmdb_id);
 CREATE INDEX IF NOT EXISTS idx_tv_shows_composite_score ON tv_shows(composite_score);
 CREATE INDEX IF NOT EXISTS idx_watch_history_media ON watch_history(media_type, plex_key);
 CREATE INDEX IF NOT EXISTS idx_ratings_cache_lookup ON ratings_cache(media_type, external_id, source);
+CREATE INDEX IF NOT EXISTS idx_movies_monitored ON movies(monitored);
+CREATE INDEX IF NOT EXISTS idx_movies_resolution ON movies(resolution);
+CREATE INDEX IF NOT EXISTS idx_movies_ali_play ON movies(ali_play_count);
+CREATE INDEX IF NOT EXISTS idx_movies_chris_play ON movies(chris_play_count);
+CREATE INDEX IF NOT EXISTS idx_tv_ali_play ON tv_shows(ali_play_count);
+CREATE INDEX IF NOT EXISTS idx_tv_chris_play ON tv_shows(chris_play_count);
+CREATE INDEX IF NOT EXISTS idx_watch_history_user_ts ON watch_history(user_name, watched_at);
 
 CREATE TABLE IF NOT EXISTS event_log (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,

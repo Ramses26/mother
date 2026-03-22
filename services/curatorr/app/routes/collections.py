@@ -25,7 +25,6 @@ async def list_collections(
         where = "WHERE c.movie_count > c.owned_count" if has_missing else ""
         async with db.execute(
             f"SELECT c.*, "
-            f"(SELECT COUNT(DISTINCT m.tmdb_id) FROM movies m WHERE m.collection_tmdb_id = c.tmdb_id) AS owned_count, "
             f"CASE WHEN c.movie_count > 0 THEN CAST(c.owned_count AS REAL) / c.movie_count * 100 ELSE 0 END AS completion_pct "
             f"FROM collections c {where} ORDER BY {sort_col} {sort_direction}"
         ) as cur:

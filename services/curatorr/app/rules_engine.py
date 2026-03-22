@@ -248,18 +248,28 @@ async def run_all_scheduled_rules(db):
         try:
             matches = await evaluate_rule(rule, db, dry_run=False)
             log.info(f"Rule '{rule['name']}' matched {len(matches)} items")
-            # Stage matches
-            await db.execute(
-                "DELETE FROM rule_matches WHERE rule_id=? AND excluded_by_user=0",
+            # Stage matches — preserve matched_at/action_taken for continuing matches
+            new_ids = {m['id'] for m in matches}
+            async with db.execute(
+                "SELECT media_id FROM rule_matches WHERE rule_id=? AND excluded_by_user=0",
                 (rule['id'],)
-            )
+            ) as _cur:
+                existing_ids = {row[0] for row in await _cur.fetchall()}
+            # Remove stale matches no longer in result set
+            for stale_id in existing_ids - new_ids:
+                await db.execute(
+                    "DELETE FROM rule_matches WHERE rule_id=? AND media_id=? AND excluded_by_user=0",
+                    (rule['id'], stale_id)
+                )
+            # Insert only new matches (skip already-tracked ones to preserve history)
             for m in matches:
-                await db.execute("""
-                    INSERT OR IGNORE INTO rule_matches
-                    (rule_id, media_type, media_id, title, match_reason)
-                    VALUES (?,?,?,?,?)
-                """, (rule['id'], m['media_type'], m['id'], m['title'],
-                      json.dumps(m.get('reasons', []))))
+                if m['id'] not in existing_ids:
+                    await db.execute("""
+                        INSERT INTO rule_matches
+                        (rule_id, media_type, media_id, title, match_reason)
+                        VALUES (?,?,?,?,?)
+                    """, (rule['id'], m['media_type'], m['id'], m['title'],
+                          json.dumps(m.get('reasons', []))))
             await db.execute(
                 "UPDATE rules SET last_run=CURRENT_TIMESTAMP, last_match_count=? WHERE id=?",
                 (len(matches), rule['id'])
