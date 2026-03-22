@@ -38,7 +38,7 @@ async def set_cache(db, media_type: str, external_id: str, source: str, data: di
     await db.commit()
 
 
-async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: str = None) -> dict:
+async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: str = None, _client=None) -> dict:
     """Fetch OMDB ratings for an IMDb ID, using cache."""
     if not imdb_id:
         return {}
@@ -52,17 +52,24 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: s
         log.debug("OMDB API key not configured")
         return {}
 
+    _own_client = _client is None
+    if _own_client:
+        client = httpx.AsyncClient(timeout=10)
+    else:
+        client = _client
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(OMDB_URL, params={'i': imdb_id, 'apikey': api_key})
-            if r.status_code == 401:
-                log.warning("OMDB API key invalid or daily quota exceeded (401)")
-                return {'_quota_exceeded': True}
-            r.raise_for_status()
-            data = r.json()
+        r = await client.get(OMDB_URL, params={'i': imdb_id, 'apikey': api_key})
+        if r.status_code == 401:
+            log.warning("OMDB API key invalid or daily quota exceeded (401)")
+            return {'_quota_exceeded': True}
+        r.raise_for_status()
+        data = r.json()
     except Exception as e:
         log.warning(f"OMDB fetch failed for {imdb_id}: {e}")
         return {}
+    finally:
+        if _own_client:
+            await client.aclose()
 
     if data.get('Response') == 'False':
         if 'Request limit reached' in data.get('Error', ''):
@@ -114,27 +121,28 @@ async def sync_all_ratings(db, limit: int = 500):
     log.info(f"[omdb] Fetching ratings for {len(movies)} movies")
     updated = 0
 
-    for movie in movies:
-        data = await fetch_ratings(movie['imdb_id'], db, 'movie', _api_key=_api_key)
-        if data.get('_quota_exceeded'):
-            log.info(f"[omdb] Stopping movies — quota exceeded after {updated} updates")
-            break
-        if data:
-            await db.execute("""
-                UPDATE movies SET
-                    imdb_rating = COALESCE(?, imdb_rating),
-                    imdb_votes = COALESCE(?, imdb_votes),
-                    rt_critics = COALESCE(?, rt_critics),
-                    metacritic = COALESCE(?, metacritic),
-                    ratings_updated_at = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            """, (
-                data.get('imdb_rating'), data.get('imdb_votes'),
-                data.get('rt_critics'), data.get('metacritic'),
-                movie['id']
-            ))
-            updated += 1
+    async with httpx.AsyncClient(timeout=10) as http_client:
+        for movie in movies:
+            data = await fetch_ratings(movie['imdb_id'], db, 'movie', _api_key=_api_key, _client=http_client)
+            if data.get('_quota_exceeded'):
+                log.info(f"[omdb] Stopping movies — quota exceeded after {updated} updates")
+                break
+            if data:
+                await db.execute("""
+                    UPDATE movies SET
+                        imdb_rating = COALESCE(?, imdb_rating),
+                        imdb_votes = COALESCE(?, imdb_votes),
+                        rt_critics = COALESCE(?, rt_critics),
+                        metacritic = COALESCE(?, metacritic),
+                        ratings_updated_at = CURRENT_TIMESTAMP,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (
+                    data.get('imdb_rating'), data.get('imdb_votes'),
+                    data.get('rt_critics'), data.get('metacritic'),
+                    movie['id']
+                ))
+                updated += 1
 
     await db.commit()
     log.info(f"[omdb] Updated ratings for {updated} movies")
@@ -156,26 +164,27 @@ async def sync_tv_ratings(db, limit: int = 500):
     log.info(f"[omdb] Fetching ratings for {len(shows)} TV shows")
     updated = 0
 
-    for show in shows:
-        data = await fetch_ratings(show['imdb_id'], db, 'tv', _api_key=_api_key)
-        if data.get('_quota_exceeded'):
-            log.info(f"[omdb] Stopping TV shows — quota exceeded after {updated} updates")
-            break
-        if data:
-            await db.execute("""
-                UPDATE tv_shows SET
-                    imdb_rating = COALESCE(?, imdb_rating),
-                    rt_critics = COALESCE(?, rt_critics),
-                    metacritic = COALESCE(?, metacritic),
-                    ratings_updated_at = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            """, (
-                data.get('imdb_rating'),
-                data.get('rt_critics'), data.get('metacritic'),
-                show['id']
-            ))
-            updated += 1
+    async with httpx.AsyncClient(timeout=10) as http_client:
+        for show in shows:
+            data = await fetch_ratings(show['imdb_id'], db, 'tv', _api_key=_api_key, _client=http_client)
+            if data.get('_quota_exceeded'):
+                log.info(f"[omdb] Stopping TV shows — quota exceeded after {updated} updates")
+                break
+            if data:
+                await db.execute("""
+                    UPDATE tv_shows SET
+                        imdb_rating = COALESCE(?, imdb_rating),
+                        rt_critics = COALESCE(?, rt_critics),
+                        metacritic = COALESCE(?, metacritic),
+                        ratings_updated_at = CURRENT_TIMESTAMP,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (
+                    data.get('imdb_rating'),
+                    data.get('rt_critics'), data.get('metacritic'),
+                    show['id']
+                ))
+                updated += 1
 
     await db.commit()
     log.info(f"[omdb] Updated ratings for {updated} TV shows")

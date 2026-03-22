@@ -13,7 +13,7 @@ TMDB_BASE = 'https://api.themoviedb.org/3'
 CACHE_TTL_DAYS = 7
 
 
-async def fetch_movie_details(tmdb_id: int, db, _api_key: str = None) -> dict:
+async def fetch_movie_details(tmdb_id: int, db, _api_key: str = None, _client=None) -> dict:
     """Fetch TMDB movie details."""
     api_key = _api_key or TMDB_API_KEY
     if not tmdb_id or not api_key:
@@ -23,17 +23,24 @@ async def fetch_movie_details(tmdb_id: int, db, _api_key: str = None) -> dict:
     if cached:
         return cached
 
+    _own_client = _client is None
+    if _own_client:
+        client = httpx.AsyncClient(timeout=10)
+    else:
+        client = _client
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(
-                f"{TMDB_BASE}/movie/{tmdb_id}",
-                params={'api_key': api_key, 'append_to_response': 'release_dates'},
-            )
-            r.raise_for_status()
-            data = r.json()
+        r = await client.get(
+            f"{TMDB_BASE}/movie/{tmdb_id}",
+            params={'api_key': api_key, 'append_to_response': 'release_dates'},
+        )
+        r.raise_for_status()
+        data = r.json()
     except Exception as e:
         log.warning(f"TMDB fetch failed for tmdb_id={tmdb_id}: {e}")
         return {}
+    finally:
+        if _own_client:
+            await client.aclose()
 
     result = {
         'tmdb_rating': data.get('vote_average'),
@@ -53,7 +60,7 @@ async def fetch_movie_details(tmdb_id: int, db, _api_key: str = None) -> dict:
     return result
 
 
-async def fetch_tv_details(tmdb_id: int, db, _api_key: str = None) -> dict:
+async def fetch_tv_details(tmdb_id: int, db, _api_key: str = None, _client=None) -> dict:
     """Fetch TMDB TV show details."""
     api_key = _api_key or TMDB_API_KEY
     if not tmdb_id or not api_key:
@@ -63,17 +70,24 @@ async def fetch_tv_details(tmdb_id: int, db, _api_key: str = None) -> dict:
     if cached:
         return cached
 
+    _own_client = _client is None
+    if _own_client:
+        client = httpx.AsyncClient(timeout=10)
+    else:
+        client = _client
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(
-                f"{TMDB_BASE}/tv/{tmdb_id}",
-                params={'api_key': api_key},
-            )
-            r.raise_for_status()
-            data = r.json()
+        r = await client.get(
+            f"{TMDB_BASE}/tv/{tmdb_id}",
+            params={'api_key': api_key},
+        )
+        r.raise_for_status()
+        data = r.json()
     except Exception as e:
         log.warning(f"TMDB TV fetch failed for tmdb_id={tmdb_id}: {e}")
         return {}
+    finally:
+        if _own_client:
+            await client.aclose()
 
     status_map = {
         'Returning Series': 'Continuing',
@@ -213,45 +227,46 @@ async def refresh_stale_ratings(db, limit: int = 300):
         movies = await cur.fetchall()
 
     updated = 0
-    for movie in movies:
-        tmdb_id = movie['tmdb_id']
-        imdb_id = movie['imdb_id']
+    from app.sync.mdblist import fetch_ratings as mdb_fetch
+    async with httpx.AsyncClient(timeout=10) as http_client:
+        for movie in movies:
+            tmdb_id = movie['tmdb_id']
+            imdb_id = movie['imdb_id']
 
-        if tmdb_id:
-            # Invalidate cache to force re-fetch
-            await db.execute(
-                "DELETE FROM ratings_cache WHERE media_type='movie' AND external_id=? AND source='tmdb'",
-                (str(tmdb_id),)
-            )
-            tmdb_data = await fetch_movie_details(tmdb_id, db, _api_key=_tmdb_key)
-            if tmdb_data:
-                if tmdb_data.get('tmdb_rating'):
-                    await db.execute(
-                        "UPDATE movies SET tmdb_rating=?, tmdb_votes=?, ratings_updated_at=CURRENT_TIMESTAMP WHERE id=?",
-                        (tmdb_data['tmdb_rating'], tmdb_data.get('tmdb_votes'), movie['id'])
-                    )
-                    updated += 1
+            if tmdb_id:
+                # Invalidate cache to force re-fetch
+                await db.execute(
+                    "DELETE FROM ratings_cache WHERE media_type='movie' AND external_id=? AND source='tmdb'",
+                    (str(tmdb_id),)
+                )
+                tmdb_data = await fetch_movie_details(tmdb_id, db, _api_key=_tmdb_key, _client=http_client)
+                if tmdb_data:
+                    if tmdb_data.get('tmdb_rating'):
+                        await db.execute(
+                            "UPDATE movies SET tmdb_rating=?, tmdb_votes=?, ratings_updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                            (tmdb_data['tmdb_rating'], tmdb_data.get('tmdb_votes'), movie['id'])
+                        )
+                        updated += 1
 
-        if imdb_id:
-            from app.sync.mdblist import fetch_ratings as mdb_fetch
-            await db.execute(
-                "DELETE FROM ratings_cache WHERE media_type='movie' AND external_id=? AND source='mdblist'",
-                (imdb_id,)
-            )
-            mdb_data = await mdb_fetch(imdb_id, db)
-            if mdb_data:
-                await db.execute("""
-                    UPDATE movies SET
-                        mdblist_score = COALESCE(?, mdblist_score),
-                        imdb_rating = COALESCE(?, imdb_rating),
-                        rt_critics = COALESCE(?, rt_critics),
-                        metacritic = COALESCE(?, metacritic),
-                        ratings_updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                """, (
-                    mdb_data.get('mdblist_score'), mdb_data.get('imdb_rating'),
-                    mdb_data.get('rt_critics'), mdb_data.get('metacritic'), movie['id']
-                ))
+            if imdb_id:
+                await db.execute(
+                    "DELETE FROM ratings_cache WHERE media_type='movie' AND external_id=? AND source='mdblist'",
+                    (imdb_id,)
+                )
+                mdb_data = await mdb_fetch(imdb_id, db, _client=http_client)
+                if mdb_data:
+                    await db.execute("""
+                        UPDATE movies SET
+                            mdblist_score = COALESCE(?, mdblist_score),
+                            imdb_rating = COALESCE(?, imdb_rating),
+                            rt_critics = COALESCE(?, rt_critics),
+                            metacritic = COALESCE(?, metacritic),
+                            ratings_updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    """, (
+                        mdb_data.get('mdblist_score'), mdb_data.get('imdb_rating'),
+                        mdb_data.get('rt_critics'), mdb_data.get('metacritic'), movie['id']
+                    ))
 
     await db.commit()
     log.info(f"[tmdb] Refreshed ratings for {updated} items")
@@ -278,51 +293,52 @@ async def refresh_stale_tv_ratings(db, limit: int = 300):
         shows = await cur.fetchall()
 
     updated = 0
-    for show in shows:
-        tmdb_id = show['tmdb_id']
-        imdb_id = show['imdb_id']
+    from app.sync.mdblist import fetch_ratings as mdb_fetch
+    async with httpx.AsyncClient(timeout=10) as http_client:
+        for show in shows:
+            tmdb_id = show['tmdb_id']
+            imdb_id = show['imdb_id']
 
-        if tmdb_id:
-            await db.execute(
-                "DELETE FROM ratings_cache WHERE media_type='tv' AND external_id=? AND source='tmdb'",
-                (str(tmdb_id),)
-            )
-            tmdb_data = await fetch_tv_details(tmdb_id, db, _api_key=_tmdb_key)
-            if tmdb_data:
-                set_clauses = ['ratings_updated_at=CURRENT_TIMESTAMP']
-                vals = []
-                if tmdb_data.get('tmdb_rating'):
-                    set_clauses.append('tmdb_rating=?')
-                    vals.append(tmdb_data['tmdb_rating'])
-                # Update status from TMDB — catches shows Sonarr marks "ended" but TMDB marks "Canceled"
-                if tmdb_data.get('status'):
-                    set_clauses.append('status=?')
-                    vals.append(tmdb_data['status'])
-                vals.append(show['id'])
+            if tmdb_id:
                 await db.execute(
-                    f"UPDATE tv_shows SET {', '.join(set_clauses)} WHERE id=?", vals
+                    "DELETE FROM ratings_cache WHERE media_type='tv' AND external_id=? AND source='tmdb'",
+                    (str(tmdb_id),)
                 )
-                updated += 1
+                tmdb_data = await fetch_tv_details(tmdb_id, db, _api_key=_tmdb_key, _client=http_client)
+                if tmdb_data:
+                    set_clauses = ['ratings_updated_at=CURRENT_TIMESTAMP']
+                    vals = []
+                    if tmdb_data.get('tmdb_rating'):
+                        set_clauses.append('tmdb_rating=?')
+                        vals.append(tmdb_data['tmdb_rating'])
+                    # Update status from TMDB — catches shows Sonarr marks "ended" but TMDB marks "Canceled"
+                    if tmdb_data.get('status'):
+                        set_clauses.append('status=?')
+                        vals.append(tmdb_data['status'])
+                    vals.append(show['id'])
+                    await db.execute(
+                        f"UPDATE tv_shows SET {', '.join(set_clauses)} WHERE id=?", vals
+                    )
+                    updated += 1
 
-        if imdb_id:
-            from app.sync.mdblist import fetch_ratings as mdb_fetch
-            await db.execute(
-                "DELETE FROM ratings_cache WHERE media_type='tv' AND external_id=? AND source='mdblist'",
-                (imdb_id,)
-            )
-            mdb_data = await mdb_fetch(imdb_id, db, 'tv')
-            if mdb_data:
-                await db.execute("""
-                    UPDATE tv_shows SET
-                        mdblist_score = COALESCE(?, mdblist_score),
-                        imdb_rating = COALESCE(?, imdb_rating),
-                        rt_critics = COALESCE(?, rt_critics),
-                        metacritic = COALESCE(?, metacritic),
-                        ratings_updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                """, (
-                    mdb_data.get('mdblist_score'), mdb_data.get('imdb_rating'),
-                    mdb_data.get('rt_critics'), mdb_data.get('metacritic'), show['id']
+            if imdb_id:
+                await db.execute(
+                    "DELETE FROM ratings_cache WHERE media_type='tv' AND external_id=? AND source='mdblist'",
+                    (imdb_id,)
+                )
+                mdb_data = await mdb_fetch(imdb_id, db, 'tv', _client=http_client)
+                if mdb_data:
+                    await db.execute("""
+                        UPDATE tv_shows SET
+                            mdblist_score = COALESCE(?, mdblist_score),
+                            imdb_rating = COALESCE(?, imdb_rating),
+                            rt_critics = COALESCE(?, rt_critics),
+                            metacritic = COALESCE(?, metacritic),
+                            ratings_updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    """, (
+                        mdb_data.get('mdblist_score'), mdb_data.get('imdb_rating'),
+                        mdb_data.get('rt_critics'), mdb_data.get('metacritic'), show['id']
                 ))
 
     await db.commit()

@@ -35,7 +35,7 @@ MDBLIST_API_KEY  = os.environ.get('MDBLIST_API_KEY', '')
 
 # ── Plex ──────────────────────────────────────────────────────────────────────
 CHRIS_PLEX_URL   = os.environ.get('CHRIS_PLEX_URL', 'http://10.0.0.250:32400')
-CHRIS_PLEX_TOKEN = os.environ.get('CHRIS_PLEX_TOKEN', '_baJvspRxVjRzaokRoLB')
+CHRIS_PLEX_TOKEN = os.environ.get('CHRIS_PLEX_TOKEN', '')
 ALI_PLEX_URL     = os.environ.get('ALI_PLEX_URL', 'http://192.168.1.52:32400')
 ALI_PLEX_TOKEN   = os.environ.get('ALI_PLEX_TOKEN', '')
 
@@ -70,10 +70,20 @@ PATH_MAPPINGS = {
 }
 
 def synology_to_unraid_path(synology_path: str) -> str | None:
+    import os
     for container_prefix, (_, unraid_base) in PATH_MAPPINGS.items():
         if synology_path.startswith(container_prefix + '/'):
             relative = synology_path[len(container_prefix):]
-            return unraid_base + relative
+            result = unraid_base + relative
+            # Resolve symlinks and verify path stays within media root
+            try:
+                real = os.path.realpath(result)
+                real_base = os.path.realpath(unraid_base)
+                if not real.startswith(real_base + os.sep) and real != real_base:
+                    return None
+            except Exception:
+                pass
+            return result
     return None
 
 # ── *arr instances list ───────────────────────────────────────────────────────

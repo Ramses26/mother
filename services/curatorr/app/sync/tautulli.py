@@ -24,11 +24,15 @@ async def sync_watch_history(db, instance_filter: str = None):
             continue
         overridden = dict(t)
         if t['name'] == 'chris':
-            overridden['url']     = await get_config('tautulli_chris_url', CHRIS_TAUTULLI_URL) or t['url']
-            overridden['api_key'] = await get_config('tautulli_chris_key', CHRIS_TAUTULLI_KEY) or t['api_key']
+            db_url = await get_config('tautulli_chris_url')
+            db_key = await get_config('tautulli_chris_key')
+            overridden['url']     = db_url or CHRIS_TAUTULLI_URL or t['url']
+            overridden['api_key'] = db_key or CHRIS_TAUTULLI_KEY or t['api_key']
         elif t['name'] == 'ali':
-            overridden['url']     = await get_config('tautulli_ali_url', ALI_TAUTULLI_URL) or t['url']
-            overridden['api_key'] = await get_config('tautulli_ali_key', ALI_TAUTULLI_KEY) or t['api_key']
+            db_url = await get_config('tautulli_ali_url')
+            db_key = await get_config('tautulli_ali_key')
+            overridden['url']     = db_url or ALI_TAUTULLI_URL or t['url']
+            overridden['api_key'] = db_key or ALI_TAUTULLI_KEY or t['api_key']
         instances.append(overridden)
 
     for tautulli in instances:

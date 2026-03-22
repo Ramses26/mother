@@ -71,7 +71,7 @@ app = FastAPI(title='Curatorr', version=VERSION, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=['http://mother:9707', 'http://localhost:9707', 'http://10.0.0.162:9707'],
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
@@ -214,10 +214,15 @@ async def poster_proxy(url: str, server: str = 'chris', _auth=Depends(require_au
         full_url = url
 
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=10, limits=httpx.Limits(max_response_size=5_242_880)) as client:
             r = await client.get(full_url)
             r.raise_for_status()
-            return Response(content=r.content, media_type=r.headers.get('content-type', 'image/jpeg'))
+            content_type = r.headers.get('content-type', 'image/jpeg')
+            if not any(t in content_type for t in ('image/jpeg', 'image/png', 'image/webp', 'image/gif')):
+                raise HTTPException(status_code=400, detail='Invalid image type')
+            return Response(content=r.content, media_type=content_type)
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=404, detail='Poster not found')
 

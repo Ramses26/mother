@@ -14,7 +14,7 @@ MDBLIST_URL = 'https://mdblist.com/api/'
 CACHE_TTL_DAYS = 7
 
 
-async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: str = None) -> dict:
+async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: str = None, _client=None) -> dict:
     """Fetch MDBList aggregated ratings for an IMDb ID."""
     if not imdb_id:
         return {}
@@ -28,14 +28,21 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: s
         log.debug("MDBList API key not configured")
         return {}
 
+    _own_client = _client is None
+    if _own_client:
+        client = httpx.AsyncClient(timeout=10)
+    else:
+        client = _client
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(MDBLIST_URL, params={'apikey': api_key, 'i': imdb_id})
-            r.raise_for_status()
-            data = r.json()
+        r = await client.get(MDBLIST_URL, params={'apikey': api_key, 'i': imdb_id})
+        r.raise_for_status()
+        data = r.json()
     except Exception as e:
         log.warning(f"MDBList fetch failed for {imdb_id}: {e}")
         return {}
+    finally:
+        if _own_client:
+            await client.aclose()
 
     if data.get('error') or not data.get('title'):
         return {}
@@ -86,28 +93,29 @@ async def sync_all_ratings(db, limit: int = 500):
     log.info(f"[mdblist] Fetching ratings for {len(movies)} movies")
     updated = 0
 
-    for movie in movies:
-        data = await fetch_ratings(movie['imdb_id'], db, 'movie', _api_key=_api_key)
-        if data:
-            await db.execute("""
-                UPDATE movies SET
-                    mdblist_score = COALESCE(?, mdblist_score),
-                    imdb_rating = COALESCE(?, imdb_rating),
-                    rt_critics = COALESCE(?, rt_critics),
-                    metacritic = COALESCE(?, metacritic),
-                    trakt_rating = COALESCE(?, trakt_rating),
-                    letterboxd_rating = COALESCE(?, letterboxd_rating),
-                    tmdb_rating = COALESCE(?, tmdb_rating),
-                    ratings_updated_at = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            """, (
-                data.get('mdblist_score'), data.get('imdb_rating'),
-                data.get('rt_critics'), data.get('metacritic'),
-                data.get('trakt_rating'), data.get('letterboxd_rating'),
-                data.get('tmdb_rating'), movie['id']
-            ))
-            updated += 1
+    async with httpx.AsyncClient(timeout=10) as http_client:
+        for movie in movies:
+            data = await fetch_ratings(movie['imdb_id'], db, 'movie', _api_key=_api_key, _client=http_client)
+            if data:
+                await db.execute("""
+                    UPDATE movies SET
+                        mdblist_score = COALESCE(?, mdblist_score),
+                        imdb_rating = COALESCE(?, imdb_rating),
+                        rt_critics = COALESCE(?, rt_critics),
+                        metacritic = COALESCE(?, metacritic),
+                        trakt_rating = COALESCE(?, trakt_rating),
+                        letterboxd_rating = COALESCE(?, letterboxd_rating),
+                        tmdb_rating = COALESCE(?, tmdb_rating),
+                        ratings_updated_at = CURRENT_TIMESTAMP,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (
+                    data.get('mdblist_score'), data.get('imdb_rating'),
+                    data.get('rt_critics'), data.get('metacritic'),
+                    data.get('trakt_rating'), data.get('letterboxd_rating'),
+                    data.get('tmdb_rating'), movie['id']
+                ))
+                updated += 1
 
     await db.commit()
     log.info(f"[mdblist] Updated ratings for {updated} movies")
@@ -129,27 +137,28 @@ async def sync_tv_ratings(db, limit: int = 500):
     log.info(f"[mdblist] Fetching ratings for {len(shows)} TV shows")
     updated = 0
 
-    for show in shows:
-        data = await fetch_ratings(show['imdb_id'], db, 'tv', _api_key=_api_key)
-        if data:
-            await db.execute("""
-                UPDATE tv_shows SET
-                    mdblist_score = COALESCE(?, mdblist_score),
-                    imdb_rating = COALESCE(?, imdb_rating),
-                    rt_critics = COALESCE(?, rt_critics),
-                    metacritic = COALESCE(?, metacritic),
-                    trakt_rating = COALESCE(?, trakt_rating),
-                    tmdb_rating = COALESCE(?, tmdb_rating),
-                    ratings_updated_at = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            """, (
-                data.get('mdblist_score'), data.get('imdb_rating'),
-                data.get('rt_critics'), data.get('metacritic'),
-                data.get('trakt_rating'),
-                data.get('tmdb_rating'), show['id']
-            ))
-            updated += 1
+    async with httpx.AsyncClient(timeout=10) as http_client:
+        for show in shows:
+            data = await fetch_ratings(show['imdb_id'], db, 'tv', _api_key=_api_key, _client=http_client)
+            if data:
+                await db.execute("""
+                    UPDATE tv_shows SET
+                        mdblist_score = COALESCE(?, mdblist_score),
+                        imdb_rating = COALESCE(?, imdb_rating),
+                        rt_critics = COALESCE(?, rt_critics),
+                        metacritic = COALESCE(?, metacritic),
+                        trakt_rating = COALESCE(?, trakt_rating),
+                        tmdb_rating = COALESCE(?, tmdb_rating),
+                        ratings_updated_at = CURRENT_TIMESTAMP,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (
+                    data.get('mdblist_score'), data.get('imdb_rating'),
+                    data.get('rt_critics'), data.get('metacritic'),
+                    data.get('trakt_rating'),
+                    data.get('tmdb_rating'), show['id']
+                ))
+                updated += 1
 
     await db.commit()
     log.info(f"[mdblist] Updated ratings for {updated} TV shows")
