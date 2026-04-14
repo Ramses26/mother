@@ -56,10 +56,25 @@ def build_movie_query(params: dict) -> tuple[str, list]:
         args += lang_list
 
     if params.get('genre'):
-        genre_list = [g.strip() for g in str(params['genre']).split(',')]
-        for g in genre_list:
-            conditions.append("genres LIKE ?")
-            args.append(f"%{g}%")
+        genre_list = [g.strip() for g in str(params['genre']).split(',') if g.strip()]
+        if genre_list:
+            clauses = ' OR '.join(['genres LIKE ?' for _ in genre_list])
+            conditions.append(f"({clauses})")
+            args += [f"%{g}%" for g in genre_list]
+
+    if params.get('content_rating'):
+        cr_list = [c.strip() for c in str(params['content_rating']).split(',') if c.strip()]
+        if cr_list:
+            placeholders = ','.join('?' * len(cr_list))
+            conditions.append(f"content_rating IN ({placeholders})")
+            args += cr_list
+
+    if params.get('runtime_min_filter') is not None:
+        conditions.append("runtime_min >= ?")
+        args.append(int(params['runtime_min_filter']))
+    if params.get('runtime_max_filter') is not None:
+        conditions.append("runtime_min <= ?")
+        args.append(int(params['runtime_max_filter']))
 
     if params.get('monitored') in ('true', 'false'):
         conditions.append("monitored = ?")
@@ -80,6 +95,37 @@ def build_movie_query(params: dict) -> tuple[str, list]:
 
     if params.get('both_watched') == 'true':
         conditions.append("ali_play_count > 0 AND chris_play_count > 0")
+
+    # Time-based last-watched filters (mirrors TV logic)
+    if params.get('ali_not_watched_days') is not None:
+        days = int(params['ali_not_watched_days'])
+        conditions.append(f"(ali_last_watched IS NULL OR ali_last_watched < datetime('now', '-{days} days'))")
+
+    if params.get('chris_not_watched_days') is not None:
+        days = int(params['chris_not_watched_days'])
+        conditions.append(f"(chris_last_watched IS NULL OR chris_last_watched < datetime('now', '-{days} days'))")
+
+    if params.get('either_not_watched_days') is not None:
+        days = int(params['either_not_watched_days'])
+        conditions.append(f"""(
+            (ali_last_watched IS NULL OR ali_last_watched < datetime('now', '-{days} days'))
+            AND (chris_last_watched IS NULL OR chris_last_watched < datetime('now', '-{days} days'))
+        )""")
+
+    if params.get('ali_abandoned_days') is not None:
+        days = int(params['ali_abandoned_days'])
+        conditions.append(f"ali_play_count > 0 AND ali_last_watched IS NOT NULL AND ali_last_watched < datetime('now', '-{days} days')")
+
+    if params.get('chris_abandoned_days') is not None:
+        days = int(params['chris_abandoned_days'])
+        conditions.append(f"chris_play_count > 0 AND chris_last_watched IS NOT NULL AND chris_last_watched < datetime('now', '-{days} days')")
+
+    if params.get('either_abandoned_days') is not None:
+        days = int(params['either_abandoned_days'])
+        conditions.append(f"""(
+            (ali_play_count > 0 AND ali_last_watched IS NOT NULL AND ali_last_watched < datetime('now', '-{days} days'))
+            OR (chris_play_count > 0 AND chris_last_watched IS NOT NULL AND chris_last_watched < datetime('now', '-{days} days'))
+        )""")
 
     for field, col in [
         ('composite_min', 'composite_score'), ('composite_max', 'composite_score'),
@@ -125,7 +171,8 @@ ALLOWED_SORT_COLS = {
     'sort_title', 'title', 'year', 'composite_score', 'imdb_rating',
     'rt_critics', 'metacritic', 'tmdb_rating', 'mdblist_score',
     'purge_score', 'file_size_bytes', 'plex_added_at', 'radarr_added_at',
-    'ali_play_count', 'chris_play_count', 'resolution',
+    'ali_play_count', 'chris_play_count', 'ali_last_watched', 'chris_last_watched',
+    'resolution', 'video_codec', 'audio_codec',
 }
 
 
@@ -151,6 +198,9 @@ async def list_movies(
     resolution: Optional[str] = None,
     language: Optional[str] = None,
     genre: Optional[str] = None,
+    content_rating: Optional[str] = None,
+    runtime_min_filter: Optional[int] = None,
+    runtime_max_filter: Optional[int] = None,
     monitored: Optional[str] = None,
     ali_watched: Optional[str] = None,
     chris_watched: Optional[str] = None,
@@ -175,11 +225,19 @@ async def list_movies(
     instance: Optional[str] = None,
     collection_id: Optional[int] = None,
     preset: Optional[str] = None,
+    ali_not_watched_days: Optional[int] = None,
+    chris_not_watched_days: Optional[int] = None,
+    either_not_watched_days: Optional[int] = None,
+    ali_abandoned_days: Optional[int] = None,
+    chris_abandoned_days: Optional[int] = None,
+    either_abandoned_days: Optional[int] = None,
     _auth=Depends(require_auth),
 ):
     params = {
         'title': title, 'year_min': year_min, 'year_max': year_max,
         'resolution': resolution, 'language': language, 'genre': genre,
+        'content_rating': content_rating,
+        'runtime_min_filter': runtime_min_filter, 'runtime_max_filter': runtime_max_filter,
         'monitored': monitored, 'ali_watched': ali_watched,
         'chris_watched': chris_watched, 'neither_watched': neither_watched,
         'both_watched': both_watched, 'composite_min': composite_min, 'composite_max': composite_max,
@@ -191,6 +249,12 @@ async def list_movies(
         'purge_score_min': purge_score_min, 'purge_score_max': purge_score_max,
         'file_size_min_gb': file_size_min_gb, 'file_size_max_gb': file_size_max_gb,
         'instance': instance, 'collection_id': collection_id,
+        'ali_not_watched_days': ali_not_watched_days,
+        'chris_not_watched_days': chris_not_watched_days,
+        'either_not_watched_days': either_not_watched_days,
+        'ali_abandoned_days': ali_abandoned_days,
+        'chris_abandoned_days': chris_abandoned_days,
+        'either_abandoned_days': either_abandoned_days,
     }
 
     # Apply preset
@@ -222,14 +286,17 @@ async def list_movies(
         offset = (page - 1) * per_page
         query = f"""
             SELECT id, title, sort_title, year, tmdb_id, imdb_id,
-                   resolution, video_codec, audio_codec, hdr_format,
+                   resolution, video_codec, audio_codec, audio_channels, hdr_format,
                    file_size_bytes, file_path, trash_score, quality_profile,
+                   original_language, content_rating, runtime_min,
                    monitored, radarr_id, radarr_instance,
                    imdb_rating, rt_critics, metacritic, tmdb_rating,
-                   mdblist_score, composite_score, purge_score,
+                   mdblist_score, trakt_rating, letterboxd_rating,
+                   composite_score, purge_score,
                    ali_play_count, ali_last_watched,
                    chris_play_count, chris_last_watched,
-                   plex_added_at, genres, collection_name, collection_tmdb_id,
+                   plex_added_at, radarr_added_at, genres,
+                   collection_name, collection_tmdb_id,
                    poster_url, plex_key
             FROM movies {where} {order_by}
             LIMIT ? OFFSET ?
@@ -246,25 +313,70 @@ async def list_movies(
         }
 
 
-@router.get('/movies/export')
-async def export_movies(_auth=Depends(require_auth)):
-    """Export movies as CSV."""
+@router.get('/movies/languages')
+async def movie_languages(_auth=Depends(require_auth)):
+    """Return distinct original_language codes present in movies."""
     async for db in get_db():
         async with db.execute(
-            "SELECT id, title, year, imdb_id, tmdb_id, composite_score, imdb_rating, "
-            "rt_critics, metacritic, resolution, file_size_bytes, ali_play_count, "
-            "chris_play_count, purge_score, monitored, radarr_instance "
-            "FROM movies ORDER BY sort_title"
+            "SELECT DISTINCT original_language FROM movies "
+            "WHERE original_language IS NOT NULL AND original_language != '' ORDER BY original_language"
         ) as cur:
             rows = await cur.fetchall()
+    return [r[0] for r in rows]
+
+
+@router.get('/movies/genres')
+async def movie_genres(_auth=Depends(require_auth)):
+    """Return distinct genre values across all movies."""
+    async for db in get_db():
+        async with db.execute(
+            "SELECT DISTINCT value FROM movies, json_each(movies.genres) "
+            "WHERE movies.genres IS NOT NULL AND movies.genres != '[]' AND movies.genres != 'null' "
+            "ORDER BY value"
+        ) as cur:
+            rows = await cur.fetchall()
+    return [r[0] for r in rows]
+
+
+@router.get('/movies/content-ratings')
+async def movie_content_ratings(_auth=Depends(require_auth)):
+    """Return distinct content_rating values present in movies."""
+    async for db in get_db():
+        async with db.execute(
+            "SELECT DISTINCT content_rating FROM movies "
+            "WHERE content_rating IS NOT NULL AND content_rating != '' ORDER BY content_rating"
+        ) as cur:
+            rows = await cur.fetchall()
+    return [r[0] for r in rows]
+
+
+@router.get('/movies/export')
+async def export_movies(ids: Optional[str] = None, _auth=Depends(require_auth)):
+    """Export movies as CSV. If ids= provided (comma-separated), export only those."""
+    fields = [
+        'id', 'title', 'year', 'original_language', 'content_rating', 'genres',
+        'runtime_min', 'resolution', 'file_size_bytes', 'composite_score',
+        'imdb_rating', 'rt_critics', 'metacritic', 'mdblist_score',
+        'trakt_rating', 'letterboxd_rating',
+        'ali_play_count', 'chris_play_count', 'purge_score', 'monitored', 'radarr_instance',
+    ]
+    async for db in get_db():
+        if ids:
+            id_list = [int(i) for i in ids.split(',') if i.strip().isdigit()]
+            placeholders = ','.join('?' * len(id_list))
+            async with db.execute(
+                f"SELECT {', '.join(fields)} FROM movies WHERE id IN ({placeholders}) ORDER BY sort_title",
+                id_list
+            ) as cur:
+                rows = await cur.fetchall()
+        else:
+            async with db.execute(
+                f"SELECT {', '.join(fields)} FROM movies ORDER BY sort_title"
+            ) as cur:
+                rows = await cur.fetchall()
 
     output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=[
-        'id', 'title', 'year', 'imdb_id', 'tmdb_id', 'composite_score',
-        'imdb_rating', 'rt_critics', 'metacritic', 'resolution',
-        'file_size_bytes', 'ali_play_count', 'chris_play_count',
-        'purge_score', 'monitored', 'radarr_instance',
-    ])
+    writer = csv.DictWriter(output, fieldnames=fields)
     writer.writeheader()
     for row in rows:
         writer.writerow(dict(row))
@@ -274,6 +386,146 @@ async def export_movies(_auth=Depends(require_auth)):
         media_type='text/csv',
         headers={'Content-Disposition': 'attachment; filename=curatorr_movies.csv'},
     )
+
+
+@router.post('/movies/bulk-unmonitor')
+async def bulk_unmonitor_movies(body: dict, _auth=Depends(require_auth)):
+    """Unmonitor multiple movies in Radarr and update DB."""
+    import httpx
+    ids = [int(i) for i in body.get('ids', []) if str(i).isdigit()]
+    if not ids:
+        return {'succeeded': [], 'failed': []}
+
+    succeeded, failed = [], []
+    async for db in get_db():
+        placeholders = ','.join('?' * len(ids))
+        async with db.execute(
+            f"SELECT id, radarr_id, radarr_instance, title FROM movies WHERE id IN ({placeholders})", ids
+        ) as cur:
+            items = [dict(r) for r in await cur.fetchall()]
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        for item in items:
+            inst = next((i for i in RADARR_INSTANCES if i['name'] == item['radarr_instance']), None)
+            ok = False
+            if inst and item['radarr_id']:
+                try:
+                    r = await client.get(
+                        f"{inst['url']}/api/v3/movie/{item['radarr_id']}",
+                        headers={'X-Api-Key': inst['api_key']}
+                    )
+                    if r.status_code == 200:
+                        data = r.json()
+                        data['monitored'] = False
+                        await client.put(
+                            f"{inst['url']}/api/v3/movie/{item['radarr_id']}",
+                            headers={'X-Api-Key': inst['api_key'], 'Content-Type': 'application/json'},
+                            json=data,
+                        )
+                        ok = True
+                except Exception as e:
+                    log.error(f"Bulk unmonitor error for {item['title']}: {e}")
+            if ok:
+                succeeded.append(item['id'])
+            else:
+                failed.append(item['id'])
+
+    if succeeded:
+        async for db in get_db():
+            placeholders = ','.join('?' * len(succeeded))
+            await db.execute(
+                f"UPDATE movies SET monitored=0, updated_at=CURRENT_TIMESTAMP WHERE id IN ({placeholders})",
+                succeeded
+            )
+            await db.commit()
+
+    return {'succeeded': succeeded, 'failed': failed}
+
+
+@router.post('/movies/bulk-monitor')
+async def bulk_monitor_movies(body: dict, _auth=Depends(require_auth)):
+    """Re-monitor multiple movies in Radarr and update DB."""
+    import httpx
+    ids = [int(i) for i in body.get('ids', []) if str(i).isdigit()]
+    if not ids:
+        return {'succeeded': [], 'failed': []}
+
+    succeeded, failed = [], []
+    async for db in get_db():
+        placeholders = ','.join('?' * len(ids))
+        async with db.execute(
+            f"SELECT id, radarr_id, radarr_instance, title FROM movies WHERE id IN ({placeholders})", ids
+        ) as cur:
+            items = [dict(r) for r in await cur.fetchall()]
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        for item in items:
+            inst = next((i for i in RADARR_INSTANCES if i['name'] == item['radarr_instance']), None)
+            ok = False
+            if inst and item['radarr_id']:
+                try:
+                    r = await client.get(
+                        f"{inst['url']}/api/v3/movie/{item['radarr_id']}",
+                        headers={'X-Api-Key': inst['api_key']}
+                    )
+                    if r.status_code == 200:
+                        data = r.json()
+                        data['monitored'] = True
+                        await client.put(
+                            f"{inst['url']}/api/v3/movie/{item['radarr_id']}",
+                            headers={'X-Api-Key': inst['api_key'], 'Content-Type': 'application/json'},
+                            json=data,
+                        )
+                        ok = True
+                except Exception as e:
+                    log.error(f"Bulk monitor error for {item['title']}: {e}")
+            if ok:
+                succeeded.append(item['id'])
+            else:
+                failed.append(item['id'])
+
+    if succeeded:
+        async for db in get_db():
+            placeholders = ','.join('?' * len(succeeded))
+            await db.execute(
+                f"UPDATE movies SET monitored=1, updated_at=CURRENT_TIMESTAMP WHERE id IN ({placeholders})",
+                succeeded
+            )
+            await db.commit()
+
+    return {'succeeded': succeeded, 'failed': failed}
+
+
+@router.post('/movies/bulk-delete')
+async def bulk_delete_movies(body: dict, _auth=Depends(require_auth)):
+    """Delete multiple movies from Radarr + Unraid."""
+    ids = [int(i) for i in body.get('ids', []) if str(i).isdigit()]
+    if not ids:
+        return {'succeeded': [], 'failed': []}
+
+    async for db in get_db():
+        placeholders = ','.join('?' * len(ids))
+        async with db.execute(
+            f"SELECT * FROM movies WHERE id IN ({placeholders})", ids
+        ) as cur:
+            items = [dict(r) for r in await cur.fetchall()]
+
+    from app.routes.actions import delete_from_arr_and_disk
+    succeeded, failed = [], []
+    for item in items:
+        try:
+            result = await delete_from_arr_and_disk(item, 'movie')
+            if result.get('arr_delete_ok'):
+                async for db in get_db():
+                    await db.execute("DELETE FROM movies WHERE id=?", (item['id'],))
+                    await db.commit()
+                succeeded.append({'id': item['id'], 'title': item['title']})
+            else:
+                failed.append({'id': item['id'], 'title': item['title'], 'error': 'arr delete failed'})
+        except Exception as e:
+            failed.append({'id': item['id'], 'title': item['title'], 'error': str(e)})
+
+    return {'succeeded': succeeded, 'failed': failed}
 
 
 @router.get('/movies/{movie_id}')

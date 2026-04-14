@@ -1,7 +1,10 @@
 <template>
   <div class="p-6 max-w-5xl mx-auto">
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-white">Rules Engine</h1>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-bold text-white">Rules Engine</h1>
+        <router-link to="/help#rules" class="text-slate-600 hover:text-slate-300 text-xs px-1 mt-1" title="Help">?</router-link>
+      </div>
       <button @click="openCreate" class="btn-primary text-sm">+ New Rule</button>
     </div>
 

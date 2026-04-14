@@ -62,25 +62,32 @@ async def delete_from_arr_and_disk(item: dict, media_type: str) -> dict:
             except Exception as e:
                 router_log.error(f"Sonarr delete error for {title}: {e}")
 
-    # ── Delete from Unraid NFS (only if arr delete succeeded) ────────────────
-    if arr_delete_ok and file_path:
+    # ── Delete from Unraid NFS (independent of arr result — both must be deleted) ──
+    if file_path:
         unraid_path = synology_to_unraid_path(file_path)
         if unraid_path and unraid_path.startswith(UNRAID_MEDIA_PATH):
-            try:
-                if os.path.isfile(unraid_path):
-                    os.remove(unraid_path)
-                    unraid_delete_ok = True
-                elif os.path.isdir(unraid_path):
-                    shutil.rmtree(unraid_path)
-                    unraid_delete_ok = True
-                else:
-                    # Try parent dir (for movie folder)
-                    parent = os.path.dirname(unraid_path)
-                    if os.path.isdir(parent) and parent.startswith(UNRAID_MEDIA_PATH):
-                        shutil.rmtree(parent)
+            # Try the file itself first, then parent folder (movie folder pattern)
+            candidates = [unraid_path, os.path.dirname(unraid_path)]
+            for candidate in candidates:
+                if not candidate.startswith(UNRAID_MEDIA_PATH):
+                    continue
+                try:
+                    if os.path.isfile(candidate):
+                        os.remove(candidate)
                         unraid_delete_ok = True
-            except Exception as e:
-                router_log.error(f"Unraid delete error for {title} at {unraid_path}: {e}")
+                        break
+                    else:
+                        shutil.rmtree(candidate)
+                        unraid_delete_ok = True
+                        break
+                except FileNotFoundError:
+                    unraid_delete_ok = True  # Already gone — treat as success
+                    break
+                except NotADirectoryError:
+                    continue  # Try next candidate
+                except Exception as e:
+                    router_log.error(f"Unraid delete error for {title} at {candidate}: {e}")
+                    break
 
     # ── Log to deletion_log + event_log ──────────────────────────────────────
     async for db in get_db():

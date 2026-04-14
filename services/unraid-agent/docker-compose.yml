@@ -1,0 +1,12 @@
+services:
+  unraid-agent:
+    image: unraid-agent:latest
+    container_name: unraid-agent
+    restart: unless-stopped
+    ports:
+      - "8100:8100"
+    environment:
+      - AGENT_API_KEY=${AGENT_API_KEY}
+      - MEDIA_ROOT=/mnt/user/Media
+    volumes:
+      - /mnt/user/Media:/mnt/user/Media:ro

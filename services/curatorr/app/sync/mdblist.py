@@ -78,7 +78,7 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: s
     return result
 
 
-async def sync_all_ratings(db, limit: int = 500):
+async def sync_all_ratings(db, limit: int = 1000):
     """Fetch MDBList ratings for movies missing composite scores."""
     _api_key = await get_config('mdblist_api_key', MDBLIST_API_KEY) or MDBLIST_API_KEY
 
@@ -122,7 +122,7 @@ async def sync_all_ratings(db, limit: int = 500):
     return updated
 
 
-async def sync_tv_ratings(db, limit: int = 500):
+async def sync_tv_ratings(db, limit: int = 1000):
     """Fetch MDBList ratings for TV shows missing ratings."""
     _api_key = await get_config('mdblist_api_key', MDBLIST_API_KEY) or MDBLIST_API_KEY
 

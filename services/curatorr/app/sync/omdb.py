@@ -105,7 +105,7 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: s
     return result
 
 
-async def sync_all_ratings(db, limit: int = 500):
+async def sync_all_ratings(db, limit: int = 1000):
     """Fetch OMDB ratings for all movies with imdb_id but missing ratings."""
     # Pick up API key from config table (editable in Settings UI)
     _api_key = await get_config('omdb_api_key', OMDB_API_KEY) or OMDB_API_KEY
@@ -149,7 +149,7 @@ async def sync_all_ratings(db, limit: int = 500):
     return updated
 
 
-async def sync_tv_ratings(db, limit: int = 500):
+async def sync_tv_ratings(db, limit: int = 1000):
     """Fetch OMDB ratings for all TV shows with imdb_id but missing ratings."""
     _api_key = await get_config('omdb_api_key', OMDB_API_KEY) or OMDB_API_KEY
 

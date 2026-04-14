@@ -201,6 +201,56 @@ def is_script_running(script_name: str) -> bool:
         return False
 
 
+_SCREEN_LIST_CACHE: str | None = None
+
+def _get_screen_list() -> str:
+    """Run `screen -list` once and cache the output for this process lifetime."""
+    global _SCREEN_LIST_CACHE
+    if _SCREEN_LIST_CACHE is None:
+        try:
+            result = subprocess.run(['screen', '-list'], capture_output=True, text=True, timeout=10)
+            _SCREEN_LIST_CACHE = result.stdout
+        except Exception:
+            _SCREEN_LIST_CACHE = ''
+    return _SCREEN_LIST_CACHE
+
+
+def is_screen_running(screen_name: str) -> bool:
+    """Check if a named screen session is alive."""
+    return bool(re.search(rf'\.\b{re.escape(screen_name)}\b', _get_screen_list()))
+
+
+_MOVIE_LOOP_PHASE_LABELS = {
+    'syncing': '⚡ syncing', 'inventory': '🔍 inventory',
+    'comparing': '🔄 comparing', 'sleeping': '💤 in-sync/sleeping',
+    'running': '▶ running', 'stopped': '🛑 stopped', 'unknown': '?',
+}
+
+def get_movie_loop_phase() -> str:
+    """Detect current phase of movie_sync_loop.sh from its log."""
+    for name in ('movie_sync.log', 'movie_sync_loop.log'):
+        log_path = Path(f'/opt/mother/logs/{name}')
+        if log_path.exists():
+            break
+    else:
+        return 'unknown'
+    try:
+        with open(log_path, 'r', errors='replace') as f:
+            lines = f.readlines()[-50:]
+        for line in reversed(lines):
+            if 'Starting fresh inventory' in line or 'Running Ali inventory' in line or 'Copying scripts to Terminus' in line:
+                return 'inventory'
+            if 'Syncing:' in line or 'Sync run finished' in line or 'looping immediately' in line:
+                return 'syncing'
+            if 'Libraries appear in sync' in line or 'Sleeping' in line:
+                return 'sleeping'
+            if 'Comparison done' in line:
+                return 'comparing'
+        return 'running'
+    except Exception:
+        return 'unknown'
+
+
 def get_last_activity(progress_path: Path) -> datetime:
     """Get last modification time of progress file"""
     if not progress_path or not progress_path.exists():
@@ -395,12 +445,17 @@ def generate_report(scripts_dir: Path, snapshots_file: Path) -> tuple:
         lines.append("\u2501\u2501\u2501 Sync Progress \u2501\u2501\u2501")
 
         if movie_status:
-            running_icon = "\U0001F7E2" if movie_status['running'] else "\U0001F534"
+            movie_alive = is_screen_running('movie')
+            movie2_alive = is_screen_running('movie2')
+            screen_alive = movie_alive or movie2_alive
+            running_icon = "\U0001F7E2" if screen_alive else "\U0001F534"
+            phase = get_movie_loop_phase() if movie_alive else ('syncing' if movie2_alive else 'stopped')
+            phase_str = _MOVIE_LOOP_PHASE_LABELS.get(phase, phase)
             bar = progress_bar(movie_status['percent'])
             activity = time_ago(movie_status['last_activity']) if movie_status['last_activity'] else "unknown"
 
-            lines.append(f"\U0001F3AC Movies [{bar}] {movie_status['percent']:.1f}%")
-            lines.append(f"   \u2705 {movie_status['completed']:,} / {movie_status['total']:,} | \u23F3 {movie_status['remaining']:,} left | {running_icon}")
+            lines.append(f"\U0001F3AC Movies [{bar}] {movie_status['percent']:.1f}% | {running_icon} {phase_str}")
+            lines.append(f"   \u2705 {movie_status['completed']:,} / {movie_status['total']:,} | \u23F3 {movie_status['remaining']:,} left")
             lines.append(f"   \u23F1\uFE0F Last activity: {activity}")
             total_errors += movie_status['errors_today']
             lines.append("")

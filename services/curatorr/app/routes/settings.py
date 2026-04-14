@@ -31,7 +31,7 @@ async def get_settings(_auth=Depends(require_auth)):
         CHRIS_TAUTULLI_URL, ALI_TAUTULLI_URL,
         CHRIS_TAUTULLI_KEY, ALI_TAUTULLI_KEY,
         RADARR_HD_PUBLIC_URL, RADARR_4K_PUBLIC_URL,
-        SONARR_HD_PUBLIC_URL, SONARR_4K_PUBLIC_URL, OVERSEERR_URL,
+        SONARR_HD_PUBLIC_URL, SONARR_4K_PUBLIC_URL, OVERSEERR_URL, OVERSEERR_API_KEY,
     )
 
     # Config-table overrides take priority over env vars
@@ -55,6 +55,7 @@ async def get_settings(_auth=Depends(require_auth)):
     tmdb_key   = await get_config('tmdb_api_key',    TMDB_API_KEY)
     omdb_key   = await get_config('omdb_api_key',    OMDB_API_KEY)
     mdblist_key = await get_config('mdblist_api_key', MDBLIST_API_KEY)
+    overseerr_api_key = await get_config('overseerr_api_key', OVERSEERR_API_KEY)
 
     return {
         'api_keys': {
@@ -82,6 +83,7 @@ async def get_settings(_auth=Depends(require_auth)):
             'sonarr_4k': sonarr_4k_url or '',
             'overseerr': overseerr_url or '',
         },
+        'overseerr_api_key': _mask(overseerr_api_key),
     }
 
 
@@ -107,6 +109,7 @@ async def update_connections(body: dict, _auth=Depends(require_auth)):
         'tautulli_chris_url', 'tautulli_ali_url',
         'tautulli_chris_key', 'tautulli_ali_key',
         'tmdb_api_key', 'omdb_api_key', 'mdblist_api_key',
+        'overseerr_api_key',
     ]
     for field in conn_fields:
         if field in body and body[field] is not None:

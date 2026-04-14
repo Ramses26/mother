@@ -194,6 +194,12 @@ async def _migrate_columns():
                 await db.commit()
             except Exception:
                 pass  # Column already exists
+        # Add show_title to watch_history if missing
+        try:
+            await db.execute("ALTER TABLE watch_history ADD COLUMN show_title TEXT")
+            await db.commit()
+        except Exception:
+            pass  # Column already exists
         # Auto-purge event_log: keep last 2000 rows
         try:
             await db.execute(

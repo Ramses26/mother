@@ -110,6 +110,7 @@ Media intelligence and curation service. Comprehensive library browser with scor
 - Rules engine: visual condition builder (AND/OR), schedule (daily/weekly/manual), actions (stage/unmonitor/notify/delete)
 - TMDB collection tracking, duplicate detection
 - Direct deletion: calls *arr API + removes file from Unraid NFS path
+- **Filesystem duplicate scanner**: 4-tab UI — Synology Movies, Synology TV, Unraid Movies, Unraid TV. Scans NFS paths directly for Synology; calls Unraid Agent API for Unraid. TRaSH-scored, multi-select bulk delete with Synology `#recycle` purge.
 - APScheduler: 6h library sync, 02:00 watch history, 03:00 ratings, 04:00 rules, 04:30 backup, Sun 09:00 digest
 - JWT dual-token auth (bcrypt, HttpOnly cookies, 1h access / 7d refresh)
 - Telegram weekly digest via Apprise
@@ -123,12 +124,41 @@ Media intelligence and curation service. Comprehensive library browser with scor
 **Tech stack**: FastAPI + aiosqlite (WAL, timeout=60) + Vue 3 + Pinia + Tailwind CSS + Vite (multi-stage Docker build)
 
 **Key files**:
-- `app/config.py` — env vars, path mappings (Synology NFS → Unraid), instance configs
+- `app/config.py` — env vars, path mappings (Synology NFS → Unraid), instance configs, `UNRAID_AGENT_URL`, `UNRAID_AGENT_API_KEY`
 - `app/scoring.py` — composite + purge score computation
 - `app/rules_engine.py` — condition evaluator, AND/OR logic, scheduled rule runner
 - `app/log_events.py` — standalone `log_event(db, type, source, msg)` helper (no FastAPI imports)
 - `app/routes/` — stats, movies, tv, collections, duplicates, rules, actions, sync, logs
+- `app/routes/duplicates.py` — filesystem scanner; `GET /duplicates/scan` (30min cache); `POST /duplicates/bulk-delete` (Synology); `POST /duplicates/unraid-delete` (proxies to Unraid Agent)
 - `app/sync/` — radarr, sonarr, plex, tautulli, omdb, mdblist, tmdb modules
+
+**Duplicate scan details**:
+- Synology scanned directly via NFS (fast). Results: ~514 movie groups, 0 TV groups (Synology is clean after duplicates removed).
+- Unraid scanned via Unraid Agent HTTP API — avoids CIFS scan (200+ sec over VPN). Results: ~59 HD movie, ~1 4K movie, ~216 HD TV, ~12 4K TV groups (~1.1 TB deletable).
+- Episode regex: `[Ss](\d{1,2})[Ee](\d{1,4})` — supports 4-digit episode numbers (One Piece S17E113).
+- **Synology recycle bin**: Synology DSM intercepts NFS `unlink()` and moves files to `#recycle/`. `_purge_synology_recycle()` immediately removes the recycle copy so space is freed at delete time.
+- **Safe route**: each server's cleanup is independent. Synology deletes go to `/duplicates/bulk-delete`. Unraid deletes proxy to the agent via `/duplicates/unraid-delete`.
+
+### `services/unraid-agent/` (FastAPI on Unraid)
+Lightweight FastAPI service deployed **on Unraid** (192.168.1.10:8100). Runs inside Docker with read-only bind mount of `/mnt/user/Media`. Provides fast local filesystem scanning that would be too slow over CIFS from Mother.
+
+**Endpoints**:
+- `GET /health` — liveness check, lists media root paths + existence
+- `GET /scan[?refresh=true]` — full duplicate scan, 30-min cache. Returns `unraid.{hd_movies,4k_movies,hd_tv,4k_tv}` groups
+- `POST /delete` — delete files by path (validates against allowed prefixes, no symlink traversal)
+
+**Auth**: `X-Api-Key` header, shared secret `AGENT_API_KEY` / `UNRAID_AGENT_API_KEY`
+
+**Media roots**: `/mnt/user/Media/Movies`, `/mnt/user/Media/4K Movies`, `/mnt/user/Media/TV Shows`, `/mnt/user/Media/4K TV Shows`
+
+**Deployment** (on Unraid via SSH):
+```bash
+ssh -i ~/.ssh/unraid_key root@192.168.1.10
+cd /boot/config/plugins/compose.manager/projects/unraid-agent
+docker compose up -d
+```
+
+**Port**: 8100. Accessible from Mother at `http://192.168.1.10:8100` over VPN.
 
 ### `reports/daily_report.py`
 Unified status report (sync progress, VPN traffic, errors, Upgraderr queue summary). Sends via Apprise to Telegram. Runs from cron every 2 hours. Auto-discovers the most recent sync scripts by embedded timestamp.
@@ -203,6 +233,7 @@ curl http://localhost:9706/health                     # Upgraderr health
 - `sync-webhook` (5001) — Custom Flask sync service (built from `services/sync-webhook/Dockerfile`)
 - `upgraderr` (9706) — Custom quality upgrade automation (built from `services/upgraderr/`); **paused** until 1080p movie sync completes
 - `curatorr` (9707) — Media intelligence & curation service (built from `services/curatorr/`); FastAPI + Vue 3 SPA
+- `unraid-agent` (8100 on Unraid) — Lightweight FastAPI duplicate scanner deployed on 192.168.1.10; called by Curatorr for Unraid tab scans
 - `prowlarr` (9696) — Indexer management
 - `overseerr` (5055) — Media requests
 - `backrest` (9898) — Restic web UI for backup management (replaced Duplicati)
@@ -219,6 +250,7 @@ Analysis scripts use: `tqdm` (optional, for progress bars). Some scripts use `pa
 | File | Purpose |
 |------|---------|
 | `docs/OPERATIONS.md` | Day-to-day operations, monitoring, troubleshooting |
+| `docs/CURATORR.md` | Curatorr user guide — navigation, scoring, duplicates, rules, deletion |
 | `services/upgraderr/README.md` | Upgraderr service — setup, tiers, webhooks, env vars |
 | `docs/HUNTARR_SYNC_SETUP.md` | Legacy Huntarr notes (replaced by Upgraderr) |
 | `docs/SYNC_AUTOSTART.md` | Boot and health monitoring setup |

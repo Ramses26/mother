@@ -220,6 +220,8 @@ def init_database():
             cursor.execute('ALTER TABLE sync_jobs ADD COLUMN last_progress_at TIMESTAMP')
         if 'stall_killed' not in columns:
             cursor.execute('ALTER TABLE sync_jobs ADD COLUMN stall_killed INTEGER DEFAULT 0')
+        if 'started_at' not in columns:
+            cursor.execute('ALTER TABLE sync_jobs ADD COLUMN started_at TIMESTAMP')
 
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_status ON sync_jobs(status)
@@ -305,7 +307,13 @@ def _update_job_status(job_id: int | None, status: str):
         return
     try:
         conn = sqlite3.connect(DB_PATH)
-        conn.execute('UPDATE sync_jobs SET status = ? WHERE id = ?', (status, job_id))
+        if status == 'in_progress':
+            conn.execute(
+                'UPDATE sync_jobs SET status = ?, started_at = ? WHERE id = ?',
+                (status, datetime.utcnow().isoformat(), job_id)
+            )
+        else:
+            conn.execute('UPDATE sync_jobs SET status = ? WHERE id = ?', (status, job_id))
         conn.commit()
         conn.close()
     except Exception as e:
@@ -461,7 +469,7 @@ def check_stalled_syncs():
         grace_cutoff = (now - timedelta(minutes=30)).isoformat()
         c.execute("""
             SELECT id, title, source_path, rsync_pid,
-                   last_progress_bytes, last_progress_at, created_at
+                   last_progress_bytes, last_progress_at, created_at, started_at
             FROM sync_jobs
             WHERE status = 'in_progress'
               AND rsync_pid IS NOT NULL
@@ -476,7 +484,11 @@ def check_stalled_syncs():
             source_path = job['source_path']
 
             try:
-                started = datetime.fromisoformat(job['created_at'])
+                # Use started_at (when rsync actually began) for runtime, not created_at
+                # (which includes time spent waiting as 'pending'). Fall back to created_at
+                # for rows written before this column was added.
+                ts = job.get('started_at') or job['created_at']
+                started = datetime.fromisoformat(ts)
                 running_minutes = (now - started).total_seconds() / 60
             except (ValueError, TypeError):
                 continue
@@ -848,6 +860,46 @@ def translate_path_to_destination(container_path: str) -> str:
     return None
 
 
+def sweep_old_episode_versions(source_path: str, dest_dir: str) -> list:
+    """
+    After a successful TV episode sync, delete any other files in dest_dir that
+    match the same S##E## pattern but are NOT the newly-synced file.
+
+    This handles two scenarios:
+    1. History-scanner catchup: the scanner only syncs the new file; it has no
+       deletedFiles payload, so old versions accumulate unless we sweep here.
+    2. Batch-sync overlap: the batch sync may have copied an older version at
+       the same time a webhook upgrade arrived.
+
+    Returns list of filenames deleted.
+    """
+    basename = os.path.basename(source_path)
+    ep_match = re.search(r'S(\d+)E(\d+)', basename, re.IGNORECASE)
+    if not ep_match:
+        return []
+
+    ep_pattern = f"S{ep_match.group(1)}E{ep_match.group(2)}"
+    video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v')
+    removed = []
+
+    if not os.path.isdir(dest_dir):
+        return []
+
+    for f in os.listdir(dest_dir):
+        if f == basename:
+            continue  # keep the file we just synced
+        if ep_pattern.upper() in f.upper() and f.lower().endswith(video_exts):
+            old_path = os.path.join(dest_dir, f)
+            try:
+                os.remove(old_path)
+                logger.info(f"Post-sync sweep: removed old version {old_path}")
+                removed.append(f)
+            except OSError as e:
+                logger.warning(f"Post-sync sweep: could not remove {old_path}: {e}")
+
+    return removed
+
+
 def delete_from_destination(container_path: str, title: str = "Unknown") -> tuple:
     """
     Delete a file from the destination (Unraid) based on its container path.
@@ -1035,6 +1087,7 @@ def run_rsync(source: str, dest_dir: str, is_file: bool = True, job_id: int = No
     # /media/TV Shows/Show Name/Season 01/
     try:
         os.makedirs(dest_dir, exist_ok=True)
+        os.chmod(dest_dir, 0o777)
         logger.debug(f"Ensured destination directory exists: {dest_dir}")
     except OSError as e:
         logger.error(f"Failed to create destination directory {dest_dir}: {e}")
@@ -1198,6 +1251,26 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                     body=msg,
                     notify_type=apprise.NotifyType.SUCCESS
                 )
+
+                # For TV episodes, sweep any old versions of the same S##E## from dest.
+                # This handles history-scanner catchups (no deletedFiles payload) and
+                # batch-sync overlap where an older copy arrived before the webhook upgrade.
+                if media_type == "Episode" and not DRY_RUN:
+                    swept = sweep_old_episode_versions(source, dest)
+                    if swept:
+                        logger.info(f"Post-sync sweep removed {len(swept)} old version(s) for {title}: {swept}")
+                        try:
+                            send_notification(
+                                title="Old Versions Removed",
+                                body=(
+                                    f"*{title}*\n"
+                                    f"Swept {len(swept)} old version(s) after upgrade sync:\n"
+                                    + "\n".join(f"- {f}" for f in swept)
+                                ),
+                                notify_type=apprise.NotifyType.INFO
+                            )
+                        except Exception:
+                            pass
 
                 # Trigger Plex library scan for the synced content
                 if not DRY_RUN:

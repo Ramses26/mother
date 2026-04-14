@@ -23,7 +23,7 @@ combined 160TB+ media library with composite ratings, purge analysis, and deleti
 | Movies | Full movie library with filters and sort |
 | TV Shows | Full TV library with filters and sort |
 | Collections | TMDB collection completeness |
-| Duplicates | Detect duplicate media |
+| Duplicates | Filesystem duplicate scanner — Synology + Unraid, bulk delete |
 | Rules | Create automated curation rules |
 | Logs | Event log for sync/deletion/rule activity |
 | Settings | URLs, password, backup, sync controls |
@@ -156,16 +156,64 @@ After a rule runs, matches appear in the rule's match list. You can exclude indi
 
 ---
 
-## Deletion Workflow
+## Duplicates
 
-Deleting from Curatorr does two things:
+The Duplicates page performs a filesystem-level scan for duplicate media files using TRaSH quality scoring. HD and 4K pools are always kept separate — the same title in both an HD and 4K folder is intentional, not a duplicate.
+
+### Four Tabs
+
+| Tab | Source | How scanned |
+|-----|--------|-------------|
+| Synology Movies | `/mnt/synology/rs-movies` + `/mnt/synology/rs-4kmedia/4kmovies` | Direct NFS read (~16s) |
+| Synology TV | `/mnt/synology/rs-tv` + `/mnt/synology/rs-4kmedia/4ktv` | Direct NFS read |
+| Unraid Movies | `/mnt/user/Media/Movies` + `4K Movies` | Via Unraid Agent API (~40s) |
+| Unraid TV | `/mnt/user/Media/TV Shows` + `4K TV Shows` | Via Unraid Agent API |
+
+Results are cached for 30 minutes. Click **force refresh** to re-scan immediately.
+
+### How it works
+
+- Each duplicate group shows all copies ranked by TRaSH score (highest = **Keep**, green border)
+- Lower-scored copies show a checkbox and are marked **Delete**
+- Check individual files, use **Select All** per section, or mix-and-match
+- The sticky toolbar shows total selected + GB to be freed
+- Click **Delete N from Synology/Unraid** to confirm
+
+### Safe Route
+
+Each server's cleanup is **fully independent**. Synology deletes only affect Synology; Unraid deletes only affect Unraid. This preserves the 1-for-1 DR mirror relationship — clean both sides separately when ready.
+
+### Synology Recycle Bin
+
+Synology DSM intercepts NFS `unlink()` calls and moves deleted files to `#recycle/` inside the same share root. Curatorr automatically purges the `#recycle` copy immediately after deletion so disk space is freed at delete time.
+
+### Unraid Agent
+
+The Unraid tab data comes from the **Unraid Agent** — a lightweight FastAPI container running locally on Unraid (192.168.1.10:8100). It scans at local disk speed rather than over CIFS (which would take 200+ seconds over VPN). The agent must be running for the Unraid tabs to work.
+
+Check agent health:
+```bash
+curl http://192.168.1.10:8100/health
+```
+
+Restart agent (from Mother via SSH):
+```bash
+ssh -i ~/.ssh/unraid_key root@192.168.1.10 \
+  "cd /boot/config/plugins/compose.manager/projects/unraid-agent && docker compose restart"
+```
+
+---
+
+## Deletion Workflow (Media Detail)
+
+Deleting from the Movies/TV detail panel does two things:
 1. Calls the *arr API (`DELETE /api/v3/movie/{id}?deleteFiles=true`)
 2. Removes the file/directory from the Unraid NFS mount (`/mnt/unraid/media`)
 
 Both steps are logged in the deletion_log table with success/failure flags.
 A Telegram notification is sent on every deletion.
 
-**Note**: Deletion from Curatorr does NOT automatically remove from the Synology NAS — Radarr/Sonarr handle that via their delete API. The Unraid path deletion removes it from Ali's side.
+**Note**: The detail-panel deletion targets Unraid via NFS. Use the Duplicates page to clean up files on Synology directly.
 
 ---
 

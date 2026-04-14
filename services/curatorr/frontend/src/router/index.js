@@ -6,11 +6,13 @@ const routes = [
   { path: '/', component: () => import('../views/Dashboard.vue') },
   { path: '/movies', component: () => import('../views/Movies.vue') },
   { path: '/tv', component: () => import('../views/TvShows.vue') },
+  { path: '/tv/unwatched-seasons', component: () => import('../views/UnwatchedSeasons.vue') },
   { path: '/collections', component: () => import('../views/Collections.vue') },
   { path: '/duplicates', component: () => import('../views/Duplicates.vue') },
   { path: '/rules', component: () => import('../views/Rules.vue') },
   { path: '/logs', component: () => import('../views/Logs.vue') },
   { path: '/settings', component: () => import('../views/Settings.vue') },
+  { path: '/help', component: () => import('../views/Help.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 

@@ -583,9 +583,14 @@ services:
       - SONARR_HD_PUBLIC_URL=${SONARR_HD_PUBLIC_URL:-}
       - SONARR_4K_PUBLIC_URL=${SONARR_4K_PUBLIC_URL:-}
       - OVERSEERR_URL=${OVERSEERR_URL:-}
+      - UNRAID_AGENT_URL=${UNRAID_AGENT_URL:-http://192.168.1.10:8100}
+      - UNRAID_AGENT_API_KEY=${UNRAID_AGENT_API_KEY:-}
     volumes:
       - /opt/mother/data/curatorr:/data
       - /mnt/unraid/media:/mnt/unraid/media
+      - /mnt/synology/rs-movies:/mnt/synology/rs-movies
+      - /mnt/synology/rs-tv:/mnt/synology/rs-tv
+      - /mnt/synology/rs-4kmedia:/mnt/synology/rs-4kmedia
     restart: unless-stopped
     networks:
       - mother_network

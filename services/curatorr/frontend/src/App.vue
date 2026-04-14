@@ -68,6 +68,7 @@ const navLinks = [
   { to: '/rules', label: 'Rules' },
   { to: '/logs', label: 'Logs' },
   { to: '/settings', label: 'Settings' },
+  { to: '/help', label: 'Help' },
 ]
 
 const isActive = (path) => {

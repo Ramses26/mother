@@ -11,10 +11,14 @@
         style="background:#1a1d27; border-color:#2d3250;">
         <div>
           <h2 class="text-xl font-bold text-white">{{ item.title }}</h2>
-          <div class="text-slate-400 text-sm mt-1">
-            {{ item.year }}
-            <span v-if="item.runtime_min"> · {{ item.runtime_min }} min</span>
-            <span v-if="item.content_rating"> · {{ item.content_rating }}</span>
+          <div class="text-slate-400 text-sm mt-1 flex flex-wrap gap-x-2 gap-y-1 items-center">
+            <span>{{ item.year }}</span>
+            <span v-if="item.runtime_min">· {{ fmtRuntime(item.runtime_min) }}</span>
+            <span v-if="item.content_rating" class="px-1.5 py-0.5 rounded text-xs font-medium bg-slate-700 text-slate-300">{{ item.content_rating }}</span>
+            <span v-if="item.original_language && item.original_language !== 'English'"
+              class="px-1.5 py-0.5 rounded text-xs font-medium bg-blue-900/60 text-blue-300">
+              {{ item.original_language }}
+            </span>
           </div>
         </div>
         <button @click="$emit('close')"
@@ -57,6 +61,8 @@
             <RatingBadge source="metacritic" :value="item.metacritic"/>
             <RatingBadge source="tmdb" :value="item.tmdb_rating"/>
             <RatingBadge source="mdblist" :value="item.mdblist_score"/>
+            <RatingBadge source="trakt" :value="item.trakt_rating"/>
+            <RatingBadge v-if="item.radarr_id" source="letterboxd" :value="item.letterboxd_rating"/>
           </div>
         </div>
 
@@ -86,8 +92,85 @@
           </div>
         </div>
 
-        <!-- Watch status -->
-        <div class="mb-4">
+        <!-- Watch Analytics (TV) -->
+        <div v-if="item.sonarr_id" class="mb-4">
+          <h3 class="text-sm font-medium text-slate-400 mb-2">Watch Analytics</h3>
+
+          <!-- Loading -->
+          <div v-if="analyticsLoading" class="text-xs text-slate-500 py-2">Loading analytics…</div>
+
+          <!-- Analytics loaded -->
+          <div v-else-if="watchAnalytics" class="space-y-2">
+            <!-- Per-person rows -->
+            <div v-for="(person, key) in { Ali: watchAnalytics.ali, Chris: watchAnalytics.chris }" :key="key"
+              class="p-3 rounded-lg" style="background:#0f1117;">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs text-slate-500">{{ key }}</span>
+                <span class="text-xs font-medium px-1.5 py-0.5 rounded" :class="statusClass(person.status)">
+                  {{ person.status }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2 mb-1">
+                <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#2d3250;">
+                  <div class="h-full rounded-full transition-all"
+                    :class="depthBarColor(person.status)"
+                    :style="{ width: Math.min(person.depth_pct || 0, 100) + '%' }"></div>
+                </div>
+                <span class="text-xs text-slate-400 w-10 text-right">{{ (person.depth_pct || 0).toFixed(0) }}%</span>
+              </div>
+              <div class="flex items-center justify-between text-xs text-slate-500">
+                <span>{{ person.plays }} ep{{ person.plays !== 1 ? 's' : '' }} played</span>
+                <span v-if="person.last_watched">Last: {{ fmtRelDate(person.last_watched) }}</span>
+                <span v-else class="text-slate-600">Never</span>
+              </div>
+            </div>
+
+            <!-- Combined summary -->
+            <div class="p-3 rounded-lg flex items-center justify-between" style="background:#0f1117;">
+              <div>
+                <div class="text-xs text-slate-500 mb-0.5">Combined</div>
+                <div class="text-white text-sm">{{ watchAnalytics.combined.plays }} total plays</div>
+                <div class="text-xs text-slate-500">
+                  {{ watchAnalytics.total_episodes }} episodes total
+                  · {{ (watchAnalytics.combined.depth_pct || 0).toFixed(0) }}% coverage
+                </div>
+              </div>
+              <span class="text-sm font-medium px-2 py-1 rounded" :class="statusClass(watchAnalytics.combined.status)">
+                {{ watchAnalytics.combined.status }}
+              </span>
+            </div>
+
+            <!-- Top watchers (if any beyond Ali/Chris) -->
+            <div v-if="watchAnalytics.top_watchers && watchAnalytics.top_watchers.length" class="p-3 rounded-lg" style="background:#0f1117;">
+              <div class="text-xs text-slate-500 mb-1.5">All watchers (Plex)</div>
+              <div class="flex flex-wrap gap-2">
+                <span v-for="w in watchAnalytics.top_watchers.slice(0,6)" :key="w.user"
+                  class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">
+                  {{ w.user }} <span class="text-slate-600">{{ w.plays }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fallback: no analytics data -->
+          <div v-else class="space-y-2">
+            <div class="grid grid-cols-2 gap-3 mb-2">
+              <div class="p-3 rounded-lg" style="background:#0f1117;">
+                <div class="text-xs text-slate-500 mb-1">Ali</div>
+                <div class="text-white font-medium">{{ item.ali_play_count || 0 }} plays</div>
+                <div v-if="item.ali_last_watched" class="text-xs text-slate-500 mt-0.5">Last: {{ fmtDate(item.ali_last_watched) }}</div>
+              </div>
+              <div class="p-3 rounded-lg" style="background:#0f1117;">
+                <div class="text-xs text-slate-500 mb-1">Chris</div>
+                <div class="text-white font-medium">{{ item.chris_play_count || 0 }} plays</div>
+                <div v-if="item.chris_last_watched" class="text-xs text-slate-500 mt-0.5">Last: {{ fmtDate(item.chris_last_watched) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Watch status (Movies) -->
+        <div v-else class="mb-4">
           <h3 class="text-sm font-medium text-slate-400 mb-2">Watch Status</h3>
           <div class="grid grid-cols-2 gap-3 mb-2">
             <div class="p-3 rounded-lg" style="background:#0f1117;">
@@ -105,7 +188,6 @@
               </div>
             </div>
           </div>
-          <!-- Combined row -->
           <div class="p-3 rounded-lg flex items-center justify-between" style="background:#0f1117;">
             <div>
               <div class="text-xs text-slate-500 mb-0.5">Combined</div>
@@ -198,7 +280,7 @@
 </template>
 
 <script setup>
-import { computed, ref, inject } from 'vue'
+import { computed, ref, inject, watch } from 'vue'
 import RatingBadge from './RatingBadge.vue'
 import PurgeMeter from './PurgeMeter.vue'
 
@@ -209,6 +291,24 @@ defineEmits(['close', 'delete', 'unmonitor'])
 const publicUrls = inject('publicUrls', ref({}))
 
 const posterError = ref(false)
+const watchAnalytics = ref(null)
+const analyticsLoading = ref(false)
+
+async function loadAnalytics(item) {
+  if (!item?.sonarr_id || !item?.id) { watchAnalytics.value = null; return }
+  analyticsLoading.value = true
+  try {
+    const r = await fetch(`/api/tv/${item.id}/watch-analytics`)
+    if (r.ok) watchAnalytics.value = await r.json()
+    else watchAnalytics.value = null
+  } catch { watchAnalytics.value = null }
+  finally { analyticsLoading.value = false }
+}
+
+watch(() => props.item, (item) => {
+  posterError.value = false
+  loadAnalytics(item)
+}, { immediate: true })
 
 const bothWatched = computed(() =>
   (props.item?.ali_play_count || 0) > 0 && (props.item?.chris_play_count || 0) > 0
@@ -234,10 +334,35 @@ const posterSrc = computed(() => {
 })
 
 const statusClass = (status) => ({
+  // Show status badges
   'Continuing': 'bg-green-900 text-green-300',
   'Ended': 'bg-slate-700 text-slate-300',
   'Cancelled': 'bg-red-900 text-red-300',
+  // Watch analytics status badges
+  'Never': 'bg-slate-700 text-slate-400',
+  'Abandoned': 'bg-orange-900 text-orange-300',
+  'Stalled': 'bg-yellow-900 text-yellow-300',
+  'Watching': 'bg-blue-900 text-blue-300',
+  'Active': 'bg-green-900 text-green-300',
 }[status] || 'bg-slate-700 text-slate-300')
+
+const depthBarColor = (status) => ({
+  'Never': 'bg-slate-600',
+  'Abandoned': 'bg-orange-500',
+  'Stalled': 'bg-yellow-500',
+  'Watching': 'bg-blue-500',
+  'Active': 'bg-green-500',
+}[status] || 'bg-violet-500')
+
+const fmtRelDate = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso.includes('Z') ? iso : iso + 'Z')
+  const days = Math.floor((Date.now() - d) / 86400000)
+  if (days === 0) return 'Today'
+  if (days < 30) return `${days}d ago`
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`
+  return `${Math.floor(days / 365)}y ago`
+}
 
 const formatSize = (bytes) => {
   const gb = bytes / 1_073_741_824
@@ -245,6 +370,13 @@ const formatSize = (bytes) => {
 }
 
 const fmtDate = (d) => d ? new Date(d.includes('Z') ? d : d + 'Z').toLocaleDateString() : ''
+
+const fmtRuntime = (min) => {
+  if (!min) return ''
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`
+}
 
 const radarrUrl = computed(() => {
   if (!props.item?.radarr_id) return null

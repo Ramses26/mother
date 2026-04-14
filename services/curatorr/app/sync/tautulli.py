@@ -131,11 +131,12 @@ async def _sync_tautulli_instance(db, tautulli: dict):
             # Store in watch_history
             if rating_key and watched_at:
                 try:
+                    _show_title = grandparent_title if media_type in ('episode', 'show') else None
                     await db.execute("""
                         INSERT OR IGNORE INTO watch_history
-                        (source, user_name, media_type, plex_key, title, watched_at, duration_sec, completion_pct, player)
-                        VALUES (?,?,?,?,?,?,?,?,?)
-                    """, (source_key, user_name, media_type, rating_key, title,
+                        (source, user_name, media_type, plex_key, title, show_title, watched_at, duration_sec, completion_pct, player)
+                        VALUES (?,?,?,?,?,?,?,?,?,?)
+                    """, (source_key, user_name, media_type, rating_key, title, _show_title,
                           watched_at, duration, round(watched_pct, 1), player))
                 except Exception:
                     pass
@@ -162,18 +163,36 @@ async def _sync_tautulli_instance(db, tautulli: dict):
                     """, (title, year, year))
 
             elif media_type in ('episode', 'show') and rating_key:
-                # Update TV play counts by grandparent_title or rating_key
+                # Update TV play counts by grandparent_title or title
                 show_title = grandparent_title or title
                 if show_title:
-                    await db.execute(f"""
+                    # Match: exact title OR DB title has year suffix (e.g. "Acapulco (2021)" when Tautulli sends "Acapulco")
+                    # Also match reverse: Tautulli sends "Show (2021)", DB has "Show"
+                    cur = await db.execute(f"""
                         UPDATE tv_shows SET
                             {user_field} = COALESCE({user_field}, 0) + 1,
                             {last_watched_field} = CASE
                                 WHEN {last_watched_field} IS NULL OR {last_watched_field} < ?
                                 THEN ? ELSE {last_watched_field} END,
                             updated_at = CURRENT_TIMESTAMP
-                        WHERE title=?
-                    """, (watched_at, watched_at, show_title))
+                        WHERE lower(title) = lower(?)
+                           OR lower(title) LIKE lower(?) || ' (____)'
+                    """, (watched_at, watched_at, show_title, show_title))
+                    # Fallback: strip trailing year suffix from Tautulli title (e.g. "Lioness (2021)" → "Lioness")
+                    if cur.rowcount == 0 and show_title:
+                        import re as _re
+                        stripped = _re.sub(r'\s*\(\d{4}\)\s*$', '', show_title).strip()
+                        if stripped != show_title:
+                            await db.execute(f"""
+                                UPDATE tv_shows SET
+                                    {user_field} = COALESCE({user_field}, 0) + 1,
+                                    {last_watched_field} = CASE
+                                        WHEN {last_watched_field} IS NULL OR {last_watched_field} < ?
+                                        THEN ? ELSE {last_watched_field} END,
+                                    updated_at = CURRENT_TIMESTAMP
+                                WHERE lower(title) = lower(?)
+                                   OR lower(title) LIKE lower(?) || ' (____)'
+                            """, (watched_at, watched_at, stripped, stripped))
 
         except Exception as e:
             log.debug(f"[{source_key}] Error processing record: {e}")

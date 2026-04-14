@@ -1,10 +1,12 @@
 <template>
   <div class="p-6 max-w-7xl mx-auto">
     <!-- Stats row -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div v-for="card in statsCards" :key="card.label" class="card">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div v-for="card in statsCards" :key="card.label" class="card"
+        :style="card.link ? 'cursor:pointer' : ''"
+        @click="card.link ? $router.push(card.link) : null">
         <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">{{ card.label }}</div>
-        <div class="text-2xl font-bold text-white">{{ card.value }}</div>
+        <div class="text-2xl font-bold" :class="card.valueClass || 'text-white'">{{ card.value }}</div>
         <div v-if="card.sub" class="text-slate-500 text-xs mt-1">{{ card.sub }}</div>
       </div>
     </div>
@@ -71,6 +73,172 @@
         <div v-else class="text-slate-500 text-sm text-center py-4">
           {{ stats ? 'No purge candidates' : 'Loading...' }}
         </div>
+      </div>
+    </div>
+
+    <!-- Resolution Donuts + Codec Bars -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- Resolution Donuts -->
+      <div class="card">
+        <h3 class="font-semibold text-white mb-4">Resolution Distribution</h3>
+        <div class="flex gap-8 justify-around">
+          <!-- Movies donut -->
+          <div class="flex flex-col items-center gap-3">
+            <div class="text-xs text-slate-400 uppercase tracking-wider">Movies</div>
+            <div class="relative">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#1e293b" stroke-width="16"/>
+                <circle v-for="(sl, i) in movieResSlices" :key="i"
+                  cx="60" cy="60" r="50" fill="none"
+                  :stroke="sl.color" stroke-width="16"
+                  :stroke-dasharray="`${sl.dash} ${CIRC - sl.dash}`"
+                  :stroke-dashoffset="-sl.offset"
+                  transform="rotate(-90 60 60)"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+                {{ stats?.movies?.total?.toLocaleString() || '—' }}
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div v-for="sl in movieResSlices" :key="sl.label" class="flex items-center gap-1.5 text-xs">
+                <div class="w-2.5 h-2.5 rounded-sm flex-shrink-0" :style="{background: sl.color}"></div>
+                <span class="text-slate-300">{{ sl.label }}</span>
+                <span class="text-slate-500 ml-auto pl-2">{{ sl.count }}</span>
+              </div>
+            </div>
+          </div>
+          <!-- TV donut -->
+          <div class="flex flex-col items-center gap-3">
+            <div class="text-xs text-slate-400 uppercase tracking-wider">TV Shows</div>
+            <div class="relative">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#1e293b" stroke-width="16"/>
+                <circle v-for="(sl, i) in tvResSlices" :key="i"
+                  cx="60" cy="60" r="50" fill="none"
+                  :stroke="sl.color" stroke-width="16"
+                  :stroke-dasharray="`${sl.dash} ${CIRC - sl.dash}`"
+                  :stroke-dashoffset="-sl.offset"
+                  transform="rotate(-90 60 60)"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+                {{ stats?.tv_shows?.total?.toLocaleString() || '—' }}
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div v-for="sl in tvResSlices" :key="sl.label" class="flex items-center gap-1.5 text-xs">
+                <div class="w-2.5 h-2.5 rounded-sm flex-shrink-0" :style="{background: sl.color}"></div>
+                <span class="text-slate-300">{{ sl.label }}</span>
+                <span class="text-slate-500 ml-auto pl-2">{{ sl.count }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Codec Bars -->
+      <div class="card">
+        <h3 class="font-semibold text-white mb-4">Codec Distribution <span class="text-xs font-normal text-slate-500">(movies)</span></h3>
+        <div class="space-y-4">
+          <!-- Video codec -->
+          <div>
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Video</div>
+            <div v-for="item in stats?.codec_dist?.video || []" :key="item.video_codec" class="flex items-center gap-2 mb-1">
+              <span class="w-14 text-xs text-right text-slate-500 truncate">{{ item.video_codec }}</span>
+              <div class="flex-1 rounded h-2.5" style="background:#1e293b">
+                <div class="h-2.5 rounded" style="background:#7c3aed"
+                  :style="{width: pct(item.count, maxVideoCount) + '%'}"></div>
+              </div>
+              <span class="w-10 text-xs text-slate-500 text-right">{{ item.count.toLocaleString() }}</span>
+            </div>
+          </div>
+          <!-- Audio codec -->
+          <div>
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Audio</div>
+            <div v-for="item in stats?.codec_dist?.audio || []" :key="item.audio_codec" class="flex items-center gap-2 mb-1">
+              <span class="w-14 text-xs text-right text-slate-500 truncate">{{ item.audio_codec }}</span>
+              <div class="flex-1 rounded h-2.5" style="background:#1e293b">
+                <div class="h-2.5 rounded" style="background:#2563eb"
+                  :style="{width: pct(item.count, maxAudioCount) + '%'}"></div>
+              </div>
+              <span class="w-10 text-xs text-slate-500 text-right">{{ item.count.toLocaleString() }}</span>
+            </div>
+          </div>
+          <!-- Channels -->
+          <div>
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Channels</div>
+            <div v-for="item in stats?.codec_dist?.channels || []" :key="item.audio_channels" class="flex items-center gap-2 mb-1">
+              <span class="w-14 text-xs text-right text-slate-500">{{ item.audio_channels }}</span>
+              <div class="flex-1 rounded h-2.5" style="background:#1e293b">
+                <div class="h-2.5 rounded" style="background:#059669"
+                  :style="{width: pct(item.count, maxChannelCount) + '%'}"></div>
+              </div>
+              <span class="w-10 text-xs text-slate-500 text-right">{{ item.count.toLocaleString() }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stale Content Table -->
+    <div class="card mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-white">
+          Stale Content
+          <span class="text-xs font-normal text-slate-500 ml-1">(purge score ≥ 50)</span>
+        </h3>
+        <div class="flex items-center gap-3">
+          <div class="flex gap-1">
+            <button v-for="u in ['Combined','Ali','Chris']" :key="u"
+              @click="watchUser = u.toLowerCase(); stalePage = 1; loadStale()"
+              class="text-xs px-2 py-1 rounded transition-colors"
+              :class="watchUser === u.toLowerCase() ? 'bg-violet-600 text-white' : 'bg-surface-200 text-slate-400 hover:text-white'">
+              {{ u }}
+            </button>
+          </div>
+          <span class="text-xs text-slate-500">{{ staleTotal.toLocaleString() }} total</span>
+        </div>
+      </div>
+      <div v-if="staleItems.length > 0" class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="text-slate-500 border-b" style="border-color:#2d3250;">
+              <th class="text-left py-1.5 pr-4 font-medium">Title</th>
+              <th class="text-left py-1.5 pr-4 font-medium">Year</th>
+              <th class="text-left py-1.5 pr-4 font-medium">Res</th>
+              <th class="text-left py-1.5 pr-4 font-medium">Score</th>
+              <th class="text-left py-1.5 pr-4 font-medium">Purge</th>
+              <th class="text-left py-1.5 pr-4 font-medium">Plays</th>
+              <th class="text-left py-1.5 font-medium">Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in staleItems" :key="item.id"
+              class="border-b hover:bg-surface-100 cursor-pointer transition-colors"
+              style="border-color:#1a1d27;"
+              @click="$router.push('/movies?open=' + item.id)">
+              <td class="py-1.5 pr-4 text-white">{{ item.title }}</td>
+              <td class="py-1.5 pr-4 text-slate-400">{{ item.year }}</td>
+              <td class="py-1.5 pr-4 text-slate-400">{{ item.resolution || '—' }}</td>
+              <td class="py-1.5 pr-4 text-violet-400">{{ item.composite_score?.toFixed(1) || '—' }}</td>
+              <td class="py-1.5 pr-4">
+                <span class="px-1.5 py-0.5 rounded font-bold" :class="purgeScoreClass(item.purge_score)">
+                  {{ item.purge_score }}
+                </span>
+              </td>
+              <td class="py-1.5 pr-4 text-slate-400">{{ item.play_count }}</td>
+              <td class="py-1.5 text-slate-400">{{ fmtSize(item.file_size_bytes) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-else class="text-slate-500 text-sm text-center py-4">No stale content found</div>
+      <!-- Pagination -->
+      <div v-if="staleTotal > 25" class="flex items-center justify-between mt-3">
+        <button @click="stalePage--; loadStale()" :disabled="stalePage === 1"
+          class="btn-secondary text-xs px-2 py-1 disabled:opacity-40">Previous</button>
+        <span class="text-slate-500 text-xs">Page {{ stalePage }} of {{ Math.ceil(staleTotal / 25) }}</span>
+        <button @click="stalePage++; loadStale()" :disabled="stalePage >= Math.ceil(staleTotal / 25)"
+          class="btn-secondary text-xs px-2 py-1 disabled:opacity-40">Next</button>
       </div>
     </div>
 
@@ -157,6 +325,71 @@ const syncStartTime = ref(null)
 const syncStatuses = ref({})
 let pollTimer = null
 
+// Stale content
+const watchUser = ref('combined')
+const staleItems = ref([])
+const staleTotal = ref(0)
+const stalePage = ref(1)
+
+const CIRC = 314.16  // 2 * π * 50
+const RES_COLORS = { '4K': '#8b5cf6', '1080p': '#3b82f6', '720p': '#eab308', 'SD': '#6b7280', 'Unknown': '#374151' }
+
+const movieResSlices = computed(() => {
+  const dist = stats.value?.resolution_dist || {}
+  const total = Object.values(dist).reduce((a, b) => a + b, 0) || 1
+  let offset = 0
+  return Object.entries(dist).map(([res, count]) => {
+    const dash = (count / total) * CIRC
+    const sl = { label: res, count, dash, offset, color: RES_COLORS[res] || '#94a3b8' }
+    offset += dash
+    return sl
+  })
+})
+
+const tvResSlices = computed(() => {
+  const dist = stats.value?.tv_instance_dist || {}
+  const labelMap = { 'sonarr-4k': '~4K', 'sonarr-hd': '~HD' }
+  const colorMap = { 'sonarr-4k': '#8b5cf6', 'sonarr-hd': '#3b82f6' }
+  const total = Object.values(dist).reduce((a, b) => a + b, 0) || 1
+  let offset = 0
+  return Object.entries(dist).map(([inst, count]) => {
+    const label = labelMap[inst] || inst
+    const dash = (count / total) * CIRC
+    const sl = { label, count, dash, offset, color: colorMap[inst] || '#94a3b8' }
+    offset += dash
+    return sl
+  })
+})
+
+const maxVideoCount = computed(() => {
+  const items = stats.value?.codec_dist?.video || []
+  return Math.max(...items.map(i => i.count), 1)
+})
+const maxAudioCount = computed(() => {
+  const items = stats.value?.codec_dist?.audio || []
+  return Math.max(...items.map(i => i.count), 1)
+})
+const maxChannelCount = computed(() => {
+  const items = stats.value?.codec_dist?.channels || []
+  return Math.max(...items.map(i => i.count), 1)
+})
+
+const pct = (val, max) => Math.round((val / max) * 100)
+
+const fmtSize = (bytes) => {
+  if (!bytes) return '—'
+  const gb = bytes / 1_073_741_824
+  return gb > 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1_048_576).toFixed(0)} MB`
+}
+
+const loadStale = async () => {
+  try {
+    const res = await axios.get('/api/stats/stale', { params: { user: watchUser.value, page: stalePage.value } })
+    staleItems.value = res.data.items
+    staleTotal.value = res.data.total
+  } catch {}
+}
+
 const histSources = [
   { value: 'composite', label: 'Composite' },
   { value: 'imdb', label: 'IMDb' },
@@ -171,6 +404,7 @@ const statsCards = computed(() => {
     { label: 'TV Shows', value: '—' },
     { label: 'Never Watched', value: '—' },
     { label: 'Storage', value: '—' },
+    { label: 'Continuing Unwatched', value: '—' },
   ]
   const s = stats.value
   const gb = s.storage.total_bytes / 1_073_741_824
@@ -180,6 +414,11 @@ const statsCards = computed(() => {
     { label: 'TV Shows', value: s.tv_shows.total.toLocaleString(), sub: `${s.tv_shows.never_watched} never watched` },
     { label: 'Below 5.0', value: (s.movies.below_5 + s.tv_shows.below_5).toLocaleString() },
     { label: 'Movie Storage', value: unit, sub: 'TV not tracked' },
+    {
+      label: 'Continuing Unwatched', value: (s.continuing_unwatched || 0).toLocaleString(),
+      sub: 'Still airing, never watched', valueClass: 'text-yellow-400',
+      link: '/tv?unwatched_only=true&status=Continuing',
+    },
   ]
 })
 
@@ -299,6 +538,7 @@ const triggerSync = async () => {
     elapsed += 3
     await pollSyncStatus()
     await loadStats()
+    await loadStale()
     if (elapsed >= 120) {
       clearInterval(pollTimer)
       syncing.value = false
@@ -316,6 +556,9 @@ const loadStats = async () => {
   }
 }
 
-onMounted(loadStats)
+onMounted(async () => {
+  await loadStats()
+  await loadStale()
+})
 onBeforeUnmount(() => { if (pollTimer) clearInterval(pollTimer) })
 </script>

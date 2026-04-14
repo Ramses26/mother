@@ -1,6 +1,9 @@
 <template>
   <div class="p-6 max-w-7xl mx-auto">
-    <h1 class="text-2xl font-bold text-white mb-6">Collections</h1>
+    <div class="flex items-center gap-3 mb-6">
+      <h1 class="text-2xl font-bold text-white">Collections</h1>
+      <router-link to="/help#collections" class="text-slate-600 hover:text-slate-300 text-xs px-1 mt-1" title="Help">?</router-link>
+    </div>
 
     <div v-if="loading" class="flex items-center justify-center py-20">
       <div class="animate-spin h-8 w-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full"></div>

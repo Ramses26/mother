@@ -60,7 +60,9 @@ TELEGRAM_BOT_TOKEN      = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 CURATORR_TELEGRAM_CHAT  = os.environ.get('CURATORR_TELEGRAM_CHAT_ID', '')
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-UNRAID_MEDIA_PATH = os.environ.get('UNRAID_MEDIA_PATH', '/mnt/unraid/media')
+UNRAID_MEDIA_PATH    = os.environ.get('UNRAID_MEDIA_PATH', '/mnt/unraid/media')
+UNRAID_AGENT_URL     = os.environ.get('UNRAID_AGENT_URL', 'http://192.168.1.10:8100')
+UNRAID_AGENT_API_KEY = os.environ.get('UNRAID_AGENT_API_KEY', '')
 
 PATH_MAPPINGS = {
     '/movies':    ('/mnt/synology/rs-movies',            UNRAID_MEDIA_PATH + '/Movies'),
@@ -110,5 +112,6 @@ RADARR_4K_PUBLIC_URL  = os.environ.get('RADARR_4K_PUBLIC_URL',  '')
 SONARR_HD_PUBLIC_URL  = os.environ.get('SONARR_HD_PUBLIC_URL',  '')
 SONARR_4K_PUBLIC_URL  = os.environ.get('SONARR_4K_PUBLIC_URL',  '')
 OVERSEERR_URL         = os.environ.get('OVERSEERR_URL',         '')
+OVERSEERR_API_KEY     = os.environ.get('OVERSEERR_API_KEY',     '')
 
 VERSION = '1.1.0'

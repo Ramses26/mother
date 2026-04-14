@@ -142,6 +142,21 @@
             </button>
           </div>
         </div>
+        <!-- Overseerr API Key inline -->
+        <div>
+          <label class="label">Overseerr API Key <span class="text-slate-500 text-xs">(required for Collections → Request)</span></label>
+          <div class="flex gap-2">
+            <input v-model="connForm.overseerr_api_key"
+              :type="showSecrets.overseerr_api_key ? 'text' : 'password'"
+              class="input text-sm flex-1"
+              :placeholder="settings?.overseerr_api_key || 'Enter Overseerr API key'"/>
+            <button type="button" @click="toggleSecret('overseerr_api_key')"
+              class="px-2 text-slate-400 hover:text-white text-xs">
+              {{ showSecrets.overseerr_api_key ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+          <div class="text-xs text-slate-500 mt-1">Found at Overseerr → Settings → General → API Key</div>
+        </div>
         <div v-if="connMsg.apikeys" :class="connError.apikeys ? 'text-red-400' : 'text-green-400'" class="text-sm">{{ connMsg.apikeys }}</div>
         <button @click="saveConnections('apikeys')" class="btn-primary text-sm">Save API Keys</button>
       </div>
@@ -264,6 +279,7 @@ const connForm = reactive({
   tautulli_chris_url: '', tautulli_ali_url: '',
   tautulli_chris_key: '', tautulli_ali_key: '',
   tmdb_api_key: '', omdb_api_key: '', mdblist_api_key: '',
+  overseerr_api_key: '',
 })
 const connMsg = reactive({ plex: '', tautulli: '', apikeys: '' })
 const connError = reactive({ plex: false, tautulli: false, apikeys: false })
@@ -387,6 +403,7 @@ const saveConnections = async (group) => {
     if (connForm.tmdb_api_key) payload.tmdb_api_key = connForm.tmdb_api_key
     if (connForm.omdb_api_key) payload.omdb_api_key = connForm.omdb_api_key
     if (connForm.mdblist_api_key) payload.mdblist_api_key = connForm.mdblist_api_key
+    if (connForm.overseerr_api_key) payload.overseerr_api_key = connForm.overseerr_api_key
   }
 
   try {
@@ -395,7 +412,7 @@ const saveConnections = async (group) => {
     // Clear secret fields after save
     if (group === 'plex') { connForm.plex_chris_token = ''; connForm.plex_ali_token = '' }
     if (group === 'tautulli') { connForm.tautulli_chris_key = ''; connForm.tautulli_ali_key = '' }
-    if (group === 'apikeys') { connForm.tmdb_api_key = ''; connForm.omdb_api_key = ''; connForm.mdblist_api_key = '' }
+    if (group === 'apikeys') { connForm.tmdb_api_key = ''; connForm.omdb_api_key = ''; connForm.mdblist_api_key = ''; connForm.overseerr_api_key = '' }
     await load()
     setTimeout(() => { connMsg[group] = '' }, 4000)
   } catch (e) {

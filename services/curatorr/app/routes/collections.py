@@ -140,20 +140,37 @@ async def get_missing_movies(tmdb_id: int, _auth=Depends(require_auth)):
 
 @router.post('/collections/{tmdb_id}/request/{movie_tmdb_id}')
 async def request_movie(tmdb_id: int, movie_tmdb_id: int, _auth=Depends(require_auth)):
-    """Request a missing collection movie via Overseerr."""
-    overseerr = await _get_overseerr_url()
-    if not overseerr:
-        raise HTTPException(status_code=503, detail='Overseerr URL not configured')
+    """Request a missing collection movie via Seer."""
+    from app.database import get_config
+    from app.config import OVERSEERR_API_KEY
+    api_key = (await get_config('overseerr_api_key') or OVERSEERR_API_KEY or '').strip()
+    if not api_key:
+        raise HTTPException(status_code=503, detail='Seer API key not configured — add it in Settings → API Keys')
+
+    # Always use the internal Docker URL to avoid nginx stripping headers / CSRF issues.
+    # Falls back to config/env public URL only if internal is overridden.
+    internal_url = (await get_config('overseerr_internal_url') or 'http://seerr:5055').rstrip('/')
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
+            # Seer uses csurf cookie-based CSRF. Fetch any public endpoint to
+            # get _csrf + XSRF-TOKEN cookies, then echo XSRF-TOKEN back as a
+            # header. httpx doesn't auto-send cookies cross-request reliably,
+            # so we build the Cookie header manually.
+            await client.get(f'{internal_url}/api/v1/settings/public')
+            _csrf = client.cookies.get('_csrf', '')
+            xsrf  = client.cookies.get('XSRF-TOKEN', '')
             r = await client.post(
-                f'{overseerr}/api/v1/request',
+                f'{internal_url}/api/v1/request',
                 json={'mediaType': 'movie', 'mediaId': movie_tmdb_id},
-                headers={'X-Api-User': '1'},  # Overseerr admin user
+                headers={
+                    'X-Api-Key': api_key,
+                    'X-XSRF-TOKEN': xsrf,
+                    'Cookie': f'_csrf={_csrf}; XSRF-TOKEN={xsrf}',
+                },
             )
             if r.status_code in (200, 201):
-                return {'ok': True, 'message': 'Request submitted to Overseerr'}
+                return {'ok': True, 'message': 'Request submitted to Seer'}
             elif r.status_code == 409:
                 return {'ok': True, 'message': 'Already requested or in library'}
             else:
@@ -161,7 +178,7 @@ async def request_movie(tmdb_id: int, movie_tmdb_id: int, _auth=Depends(require_
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f'Overseerr error: {e}')
+        raise HTTPException(status_code=502, detail=f'Seer error: {e}')
 
 
 @router.post('/collections/{tmdb_id}/add-to-radarr/{movie_tmdb_id}')
@@ -223,5 +240,5 @@ async def _get_overseerr_url() -> str:
     """Get Overseerr URL from config table or env."""
     from app.database import get_config
     from app.config import OVERSEERR_URL
-    url = await get_config('public_url_overseerr', OVERSEERR_URL)
+    url = await get_config('public_url_overseerr') or OVERSEERR_URL
     return (url or '').rstrip('/')

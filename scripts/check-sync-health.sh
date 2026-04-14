@@ -107,8 +107,41 @@ check_webhook_mount() {
     fi
 }
 
-# Check both syncs
-check_and_restart "movie" "sync_actions_*.sh"
+check_loop_screen() {
+    local screen_name="$1"
+    local loop_script="$2"
+
+    if screen -list | grep -q "\.$screen_name"; then
+        return 0  # Running
+    fi
+
+    log "$screen_name: Loop screen not running — RESTARTING with $loop_script"
+    screen -dmS "$screen_name" bash -c "PARALLEL=8 bash '$loop_script' 2>&1 | tee -a '$LOG_DIR/${screen_name}_sync.log'"
+    sleep 2
+
+    if screen -list | grep -q "\.$screen_name"; then
+        log "$screen_name: Restarted successfully"
+        if command -v curl &>/dev/null && [ -f /opt/mother/.env ]; then
+            source /opt/mother/.env 2>/dev/null
+            if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+                curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                    -d "chat_id=${TELEGRAM_CHAT_ID}" \
+                    -d "text=🔄 Mother: $screen_name loop screen was restarted automatically" \
+                    >/dev/null 2>&1
+            fi
+        fi
+    else
+        log "$screen_name: Failed to restart!"
+    fi
+}
+
+# Movie sync uses the continuous loop script (handles inventory + sync automatically)
+# Skip if movie2 is still running (transitional session using old approach)
+if screen -list | grep -q '\.movie2'; then
+    log "movie: movie2 screen still running — skipping movie loop restart until it completes"
+else
+    check_loop_screen "movie" "/opt/mother/scripts/movie_sync_loop.sh"
+fi
 check_and_restart "tvsync" "tv_sync_actions_*.sh"
 
 # Check webhook mount visibility

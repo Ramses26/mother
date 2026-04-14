@@ -1,6 +1,6 @@
 """Dashboard stats endpoint."""
 import logging
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from app.auth import require_auth
 from app.database import get_db
 
@@ -93,6 +93,51 @@ async def dashboard_stats(_auth=Depends(require_auth)):
         async with db.execute("SELECT * FROM sync_log") as cur:
             sync_status = [dict(r) for r in await cur.fetchall()]
 
+        # Resolution distribution (movies)
+        async with db.execute("""
+            SELECT resolution, COUNT(*) as count FROM movies
+            WHERE resolution IS NOT NULL GROUP BY resolution
+        """) as cur:
+            res_rows = await cur.fetchall()
+        resolution_dist = {r['resolution']: r['count'] for r in res_rows}
+
+        # TV instance distribution (proxy for resolution)
+        async with db.execute("""
+            SELECT sonarr_instance, COUNT(*) as count FROM tv_shows GROUP BY sonarr_instance
+        """) as cur:
+            tv_inst_rows = await cur.fetchall()
+        tv_instance_dist = {r['sonarr_instance']: r['count'] for r in tv_inst_rows}
+
+        # Codec distribution
+        async with db.execute("""
+            SELECT video_codec, COUNT(*) as count FROM movies
+            WHERE video_codec IS NOT NULL GROUP BY video_codec ORDER BY count DESC LIMIT 10
+        """) as cur:
+            vc_rows = await cur.fetchall()
+        async with db.execute("""
+            SELECT audio_codec, COUNT(*) as count FROM movies
+            WHERE audio_codec IS NOT NULL GROUP BY audio_codec ORDER BY count DESC LIMIT 10
+        """) as cur:
+            ac_rows = await cur.fetchall()
+        async with db.execute("""
+            SELECT audio_channels, COUNT(*) as count FROM movies
+            WHERE audio_channels IS NOT NULL GROUP BY audio_channels ORDER BY count DESC LIMIT 8
+        """) as cur:
+            ch_rows = await cur.fetchall()
+        codec_dist = {
+            'video': [dict(r) for r in vc_rows],
+            'audio': [dict(r) for r in ac_rows],
+            'channels': [dict(r) for r in ch_rows],
+        }
+
+        # Continuing unwatched count
+        async with db.execute("""
+            SELECT COUNT(*) FROM tv_shows WHERE status='Continuing'
+            AND (ali_play_count IS NULL OR ali_play_count=0)
+            AND (chris_play_count IS NULL OR chris_play_count=0)
+        """) as cur:
+            continuing_unwatched = (await cur.fetchone())[0]
+
         return {
             'movies': {
                 'total': movie_total,
@@ -112,6 +157,42 @@ async def dashboard_stats(_auth=Depends(require_auth)):
             'top_purge_candidates': top_purge,
             'recent_additions': recent,
             'sync_status': sync_status,
+            'resolution_dist': resolution_dist,
+            'tv_instance_dist': tv_instance_dist,
+            'codec_dist': codec_dist,
+            'continuing_unwatched': continuing_unwatched,
         }
+
+
+@router.get('/stats/stale')
+async def stale_content(
+    user: str = Query('combined'),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=100),
+    _auth=Depends(require_auth),
+):
+    """Paginated stale content: high purge score movies."""
+    offset = (page - 1) * page_size
+    if user == 'ali':
+        play_col = 'COALESCE(ali_play_count,0)'
+    elif user == 'chris':
+        play_col = 'COALESCE(chris_play_count,0)'
+    else:
+        play_col = 'COALESCE(ali_play_count,0) + COALESCE(chris_play_count,0)'
+
+    async for db in get_db():
+        async with db.execute(f"""
+            SELECT id, title, year, resolution, composite_score, purge_score,
+                   ali_play_count, chris_play_count, file_size_bytes,
+                   ({play_col}) as play_count
+            FROM movies
+            WHERE purge_score >= 50
+            ORDER BY purge_score DESC, ({play_col}) ASC
+            LIMIT ? OFFSET ?
+        """, (page_size, offset)) as cur:
+            rows = await cur.fetchall()
+        async with db.execute("SELECT COUNT(*) FROM movies WHERE purge_score >= 50") as cur:
+            total = (await cur.fetchone())[0]
+        return {'items': [dict(r) for r in rows], 'total': total, 'page': page, 'page_size': page_size}
 
 

@@ -22,7 +22,8 @@ const config = {
   tmdb:      { icon: '🎬', label: 'TMDB',  class: 'bg-blue-900/60 text-blue-300',     fmt: v => v.toFixed(1) },
   mdblist:   { icon: '📊', label: 'MDB',   class: 'bg-purple-900/60 text-purple-300', fmt: v => v },
   composite: { icon: '⚡', label: 'Score', class: 'bg-violet-900/60 text-violet-300', fmt: v => v.toFixed(1) },
-  trakt:     { icon: '🔥', label: 'Trakt', class: 'bg-orange-900/60 text-orange-300', fmt: v => v.toFixed(1) },
+  trakt:      { icon: '🔥', label: 'Trakt', class: 'bg-orange-900/60 text-orange-300', fmt: v => v.toFixed(1) },
+  letterboxd: { icon: '🎞', label: 'LBD',   class: 'bg-teal-900/60 text-teal-300',   fmt: v => v.toFixed(1) },
 }
 
 const cfg = computed(() => config[props.source] || config.composite)
