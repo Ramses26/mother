@@ -994,19 +994,32 @@ def delete_from_destination(container_path: str, title: str = "Unknown") -> tupl
             # same directory matching the same S##E## pattern.  Previous code
             # only deleted the first match; if multiple old versions exist (from
             # intermediate upgrades) they all need to go before the new file lands.
+            #
+            # SAFETY: only proceed if there are 2+ matching files.  If only one
+            # file matches the episode pattern, it is the sole remaining copy
+            # (e.g. Curatorr already deleted the lower-quality duplicate, Sonarr
+            # fired EpisodeFileDelete for the deleted file, and the fuzzy search
+            # would otherwise destroy the keeper).
             if ep_pattern and os.path.isdir(parent_dir):
+                candidates = [
+                    f for f in os.listdir(parent_dir)
+                    if ep_pattern.upper() in f.upper() and f.lower().endswith(video_exts)
+                ]
+                if len(candidates) < 2:
+                    msg = f"File not found on destination (already deleted?): {dest_path}"
+                    logger.info(msg + f" — fuzzy fallback skipped (only {len(candidates)} match(es) remain, would delete sole copy)")
+                    return True, msg
                 deleted = []
                 errors = []
-                for f in os.listdir(parent_dir):
-                    if ep_pattern.upper() in f.upper() and f.lower().endswith(video_exts):
-                        alt_path = os.path.join(parent_dir, f)
-                        try:
-                            os.remove(alt_path)
-                            logger.info(f"Fuzzy-deleted (episode match): {alt_path}")
-                            deleted.append(f)
-                        except OSError as e:
-                            logger.error(f"Fuzzy-delete failed for {alt_path}: {e}")
-                            errors.append(f)
+                for f in candidates:
+                    alt_path = os.path.join(parent_dir, f)
+                    try:
+                        os.remove(alt_path)
+                        logger.info(f"Fuzzy-deleted (episode match): {alt_path}")
+                        deleted.append(f)
+                    except OSError as e:
+                        logger.error(f"Fuzzy-delete failed for {alt_path}: {e}")
+                        errors.append(f)
                 if deleted:
                     msg = f"Fuzzy-deleted {len(deleted)} file(s) for {ep_pattern} (expected: {basename}): {', '.join(deleted)}"
                     logger.info(msg)

@@ -527,6 +527,7 @@ services:
       - UPGRADERR_TELEGRAM_CHAT_ID=${UPGRADERR_TELEGRAM_CHAT_ID:-}
     volumes:
       - /opt/mother/data/upgraderr:/data
+      - /opt/mother/data/logs/upgraderr:/logs
       - /opt/mother/reports:/opt/sync_reports:ro
     ports:
       - "${UPGRADERR_PORT:-9706}:5000"
@@ -587,6 +588,7 @@ services:
       - UNRAID_AGENT_API_KEY=${UNRAID_AGENT_API_KEY:-}
     volumes:
       - /opt/mother/data/curatorr:/data
+      - /opt/mother/data/logs/curatorr:/logs
       - /mnt/unraid/media:/mnt/unraid/media
       - /mnt/synology/rs-movies:/mnt/synology/rs-movies
       - /mnt/synology/rs-tv:/mnt/synology/rs-tv
@@ -665,6 +667,116 @@ services:
       timeout: 30s
       retries: 5
       start_period: 10s
+
+  # ── Observability stack ───────────────────────────────────────────────────
+  # Loki: log storage | Promtail: log collector | Grafana: unified UI
+  # Prometheus + Node Exporter + cAdvisor: host + container metrics
+  # Grafana on :3001 (3000 taken by Dockhand)
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - /opt/mother/configs/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - /opt/mother/data/loki:/loki
+    networks:
+      - mother_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  promtail:
+    image: grafana/promtail:3.4.2
+    container_name: promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - /opt/mother/configs/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Host log paths for persistent file logs (survive docker rm)
+      - /opt/mother/data/logs:/opt/mother/data/logs:ro
+      - /opt/mother/configs/sync-webhook/logs:/opt/mother/configs/sync-webhook/logs:ro
+    networks:
+      - mother_network
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - /opt/mother/data/grafana:/var/lib/grafana
+      - /opt/mother/configs/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - mother_network
+    depends_on:
+      - loki
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus:v3.3.1
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --web.console.templates=/etc/prometheus/consoles
+    volumes:
+      - /opt/mother/configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /opt/mother/data/prometheus:/prometheus
+    networks:
+      - mother_network
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    command:
+      - --path.rootfs=/host
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /:/host:ro,rslave
+    network_mode: host
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - mother_network
 
   # Backrest - Restic web UI for backup management
   backrest:

@@ -1,0 +1,56 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # ── Docker container logs (all containers on this host) ───────────────────
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: [__meta_docker_container_name]
+        regex: /(.*)
+        target_label: service
+      - source_labels: [__meta_docker_container_image]
+        target_label: image
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        target_label: compose_service
+      - target_label: host
+        replacement: mother
+      - target_label: job
+        replacement: docker
+
+  # ── Persistent file logs (survive docker rm) ──────────────────────────────
+  - job_name: curatorr_file
+    static_configs:
+      - targets: [localhost]
+        labels:
+          service: curatorr
+          job: file_log
+          host: mother
+          __path__: /opt/mother/data/logs/curatorr/*.log*
+
+  - job_name: sync_webhook_file
+    static_configs:
+      - targets: [localhost]
+        labels:
+          service: sync-webhook
+          job: file_log
+          host: mother
+          __path__: /opt/mother/configs/sync-webhook/logs/*.log*
+
+  - job_name: upgraderr_file
+    static_configs:
+      - targets: [localhost]
+        labels:
+          service: upgraderr
+          job: file_log
+          host: mother
+          __path__: /opt/mother/data/logs/upgraderr/*.log*

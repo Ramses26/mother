@@ -12,11 +12,15 @@ configs/*/*.db
 configs/*/*.db-shm
 configs/*/*.db-wal
 
-# Ignore all configs EXCEPT recyclarr & apprice
+# Ignore all configs EXCEPT recyclarr, apprise, qbitmanage, and observability stack
 configs/*
 !configs/recyclarr/
 !configs/apprise/
 !configs/qbitmanage/
+!configs/loki/
+!configs/promtail/
+!configs/prometheus/
+!configs/grafana/
 
 # Logs
 *.log

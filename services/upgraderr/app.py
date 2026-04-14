@@ -99,6 +99,18 @@ logging.basicConfig(
 )
 log = logging.getLogger('upgraderr')
 
+# Persistent log file (survives container restarts)
+try:
+    from logging.handlers import RotatingFileHandler as _RFH
+    import pathlib as _pl
+    _log_dir = _pl.Path('/logs')
+    _log_dir.mkdir(parents=True, exist_ok=True)
+    _fh = _RFH(_log_dir / 'upgraderr.log', maxBytes=20 * 1024 * 1024, backupCount=10)
+    _fh.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s'))
+    logging.getLogger().addHandler(_fh)
+except Exception as _e:
+    log.warning(f'Could not set up file logging: {_e}')
+
 sys.path.insert(0, '/app')
 try:
     from lib.quality_scoring import parse_quality_from_filename, calculate_quality_score
