@@ -24,7 +24,7 @@ import atexit
 from datetime import datetime, timedelta
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 import apprise
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -35,7 +35,8 @@ TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
 DRY_RUN = os.environ.get('SYNC_DRY_RUN', 'false').lower() == 'true'
 LOG_LEVEL = os.environ.get('SYNC_LOG_LEVEL', 'INFO')
 LOG_PATH = os.environ.get('SYNC_LOG_PATH', '/logs')
-DB_PATH = os.environ.get('SYNC_DB_PATH', '/data/sync_jobs.db')
+DB_PATH   = os.environ.get('SYNC_DB_PATH', '/data/sync_jobs.db')
+BACKUP_DIR = os.environ.get('SYNC_BACKUP_DIR', '/data/backups')
 MAX_CONCURRENT_SYNCS = int(os.environ.get('SYNC_MAX_CONCURRENT', '2'))
 MAX_RETRIES = int(os.environ.get('SYNC_MAX_RETRIES', '20'))
 RETRY_LOOKBACK_DAYS = int(os.environ.get('SYNC_RETRY_LOOKBACK_DAYS', '7'))
@@ -65,6 +66,10 @@ HISTORY_SCAN_INTERVAL = int(os.environ.get('SYNC_HISTORY_SCAN_INTERVAL', '30')) 
 # Stall watchdog settings
 RSYNC_STALL_MINUTES = int(os.environ.get('RSYNC_STALL_MINUTES', '15'))   # No I/O for this long = stalled
 RSYNC_MAX_MINUTES = int(os.environ.get('RSYNC_MAX_MINUTES', '240'))       # Absolute max runtime (4h)
+
+# Unraid Agent (for inventory lookups — avoids slow CIFS listing over VPN)
+UNRAID_AGENT_URL = os.environ.get('UNRAID_AGENT_URL', 'http://192.168.1.10:8100')
+UNRAID_AGENT_API_KEY = os.environ.get('UNRAID_AGENT_API_KEY', '')
 
 # Plex configuration
 PLEX_URL = os.environ.get('PLEX_URL', '')  # e.g., http://10.0.0.50:32400
@@ -164,6 +169,10 @@ stats = {
 }
 stats_lock = threading.Lock()
 
+# History scanner timestamps (in-memory)
+history_scanner_last_ran: datetime | None = None
+history_scanner_last_found: int = 0
+
 # Concurrency limit for rsync operations to prevent overwhelming NFS mounts
 sync_semaphore = threading.Semaphore(MAX_CONCURRENT_SYNCS)
 logger.info(f"Max concurrent syncs: {MAX_CONCURRENT_SYNCS}")
@@ -222,6 +231,8 @@ def init_database():
             cursor.execute('ALTER TABLE sync_jobs ADD COLUMN stall_killed INTEGER DEFAULT 0')
         if 'started_at' not in columns:
             cursor.execute('ALTER TABLE sync_jobs ADD COLUMN started_at TIMESTAMP')
+        if 'priority' not in columns:
+            cursor.execute('ALTER TABLE sync_jobs ADD COLUMN priority INTEGER DEFAULT 0')
 
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_status ON sync_jobs(status)
@@ -555,31 +566,21 @@ def recover_interrupted_jobs():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Delete any 'pending' rows left over from the previous session.
-        # These are threads that were waiting for a semaphore slot when the
-        # container was restarted — they never ran rsync, so there's nothing
-        # to recover.  The history scanner will re-queue them on its next run
-        # (within 30 min), and failed-job retries will re-queue them too.
-        # Clearing them also unblocks _is_already_queued for the same sources.
-        cursor.execute("DELETE FROM sync_jobs WHERE status = 'pending'")
-        deleted_pending = cursor.rowcount
-        if deleted_pending:
-            logger.info(f"Cleared {deleted_pending} orphaned pending job(s) from previous session")
-        conn.commit()
-
-        # Find jobs that were in_progress (interrupted by restart)
+        # Recover both pending and in_progress jobs from the previous session.
+        # Both represent work that was never completed — pending threads were
+        # waiting for a semaphore slot, in_progress threads were actively rsyncing.
+        # Mark all as failed so _is_already_queued is unblocked, then re-queue them.
         cursor.execute('''
             SELECT * FROM sync_jobs
-            WHERE status = 'in_progress'
-            ORDER BY created_at DESC
+            WHERE status IN ('pending', 'in_progress')
+            ORDER BY priority ASC, created_at ASC
         ''')
         interrupted_jobs = [dict(row) for row in cursor.fetchall()]
 
         if interrupted_jobs:
-            logger.warning(f"Found {len(interrupted_jobs)} interrupted jobs from previous run")
+            logger.warning(f"Found {len(interrupted_jobs)} unfinished job(s) from previous session — re-queuing")
 
             for job in interrupted_jobs:
-                # Mark as failed first
                 cursor.execute('''
                     UPDATE sync_jobs
                     SET status = 'failed', error_message = 'Interrupted by restart', completed_at = ?
@@ -588,14 +589,13 @@ def recover_interrupted_jobs():
 
             conn.commit()
 
-            # Track IDs just recovered so we don't double-queue them below
+            # Track IDs just recovered so the unresolved-failed query below doesn't double-queue them
             interrupted_ids = {job['id'] for job in interrupted_jobs}
 
-            # Queue them for retry
             for job in interrupted_jobs:
                 retry_count = (job.get('retry_count') or 0) + 1
                 if retry_count <= MAX_RETRIES:
-                    logger.info(f"Queueing interrupted job for retry: {job['title']} (attempt {retry_count}/{MAX_RETRIES})")
+                    logger.info(f"Re-queuing on startup: {job['title']} (was {job['status']}, attempt {retry_count}/{MAX_RETRIES})")
                     background_sync_with_retry(
                         job['source_path'],
                         job['dest_path'],
@@ -900,6 +900,46 @@ def sweep_old_episode_versions(source_path: str, dest_dir: str) -> list:
     return removed
 
 
+def sweep_old_movie_versions(source_dir: str, dest_dir: str) -> list:
+    """
+    After a successful movie folder sync, delete any video files in dest_dir
+    that are NOT present in source_dir.
+
+    Radarr is authoritative on Synology — if a file is gone from source it was
+    replaced by an upgrade. This catches cases where isUpgrade/deletedFiles are
+    absent from the webhook payload (Radarr doesn't always include them).
+
+    Safety: if source_dir has zero video files, skip — never wipe the Unraid
+    copy if the Synology folder looks empty or unmounted.
+
+    Returns list of filenames deleted.
+    """
+    video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v', '.iso')
+
+    if not os.path.isdir(source_dir) or not os.path.isdir(dest_dir):
+        return []
+
+    source_files = {f for f in os.listdir(source_dir) if f.lower().endswith(video_exts)}
+    if not source_files:
+        logger.debug(f"Movie sweep skipped (source empty): {source_dir}")
+        return []
+
+    dest_files = {f for f in os.listdir(dest_dir) if f.lower().endswith(video_exts)}
+    orphans = dest_files - source_files
+    removed = []
+
+    for orphan in orphans:
+        old_path = os.path.join(dest_dir, orphan)
+        try:
+            os.remove(old_path)
+            logger.info(f"Post-sync movie sweep: removed old version {old_path}")
+            removed.append(orphan)
+        except OSError as e:
+            logger.warning(f"Post-sync movie sweep: could not remove {old_path}: {e}")
+
+    return removed
+
+
 def delete_from_destination(container_path: str, title: str = "Unknown") -> tuple:
     """
     Delete a file from the destination (Unraid) based on its container path.
@@ -1183,7 +1223,7 @@ def format_size(size_bytes: int) -> str:
     return f"{size_bytes:.1f} PB"
 
 
-def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, dest_base: str = None, retry_count: int = 0):
+def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, dest_base: str = None, retry_count: int = 0, deleted_files: list = None):
     """
     Run rsync in background thread and send notification when complete.
     This allows the webhook to return immediately.
@@ -1221,6 +1261,20 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
         logger.info(f"Acquired sync slot: {title}{retry_info}")
 
         try:
+            # Check if job was cancelled while waiting for the semaphore
+            if job_id:
+                try:
+                    _conn = sqlite3.connect(DB_PATH)
+                    _cur = _conn.cursor()
+                    _cur.execute('SELECT status FROM sync_jobs WHERE id = ?', (job_id,))
+                    _row = _cur.fetchone()
+                    _conn.close()
+                    if _row and _row[0] == 'cancelled':
+                        logger.info(f"Job {job_id} was cancelled while queued — skipping: {title}")
+                        return
+                except Exception:
+                    pass
+
             # Promote pending → in_progress now that we hold the semaphore slot
             _update_job_status(job_id, 'in_progress')
 
@@ -1265,6 +1319,23 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                     notify_type=apprise.NotifyType.SUCCESS
                 )
 
+                # Delete old files from Unraid now that new file is safely on Unraid.
+                # deleted_files comes from the Radarr/Sonarr webhook payload and is only
+                # set on the first attempt — retries and history-scanner paths leave it None.
+                if deleted_files and not DRY_RUN:
+                    deletion_results = process_deleted_files(deleted_files, media_type, title)
+                    if deletion_results['fail_count'] > 0:
+                        logger.warning(f"Some deletions failed for {title}: {deletion_results['messages']}")
+                        try:
+                            send_notification(
+                                "UPGRADE WARNING",
+                                f"Failed to delete {deletion_results['fail_count']} old file(s) for {title}. "
+                                f"Orphan duplicates may exist on Unraid.",
+                                apprise.NotifyType.WARNING,
+                            )
+                        except Exception:
+                            pass
+
                 # For TV episodes, sweep any old versions of the same S##E## from dest.
                 # This handles history-scanner catchups (no deletedFiles payload) and
                 # batch-sync overlap where an older copy arrived before the webhook upgrade.
@@ -1275,6 +1346,26 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                         try:
                             send_notification(
                                 title="Old Versions Removed",
+                                body=(
+                                    f"*{title}*\n"
+                                    f"Swept {len(swept)} old version(s) after upgrade sync:\n"
+                                    + "\n".join(f"- {f}" for f in swept)
+                                ),
+                                notify_type=apprise.NotifyType.INFO
+                            )
+                        except Exception:
+                            pass
+
+                # For movies, sweep any video files from dest that no longer exist in
+                # source. Handles upgrades where Radarr omits isUpgrade/deletedFiles.
+                if media_type == "Movie" and not DRY_RUN:
+                    movie_dest_dir = os.path.join(dest, os.path.basename(source))
+                    swept = sweep_old_movie_versions(source, movie_dest_dir)
+                    if swept:
+                        logger.info(f"Post-sync movie sweep removed {len(swept)} old version(s) for {title}: {swept}")
+                        try:
+                            send_notification(
+                                title="Old Movie Version Removed",
                                 body=(
                                     f"*{title}*\n"
                                     f"Swept {len(swept)} old version(s) after upgrade sync:\n"
@@ -1370,6 +1461,42 @@ def get_job_counts():
         return counts
     except Exception:
         return {}
+
+
+def create_backup(label='scheduled'):
+    """Copy the SQLite DB to the backup directory. Keep last 10 backups."""
+    backup_dir = Path(BACKUP_DIR)
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    dest = backup_dir / f"sync_jobs_{label}_{ts}.db"
+    try:
+        import shutil
+        # Checkpoint WAL before copying so backup is consistent
+        conn = sqlite3.connect(DB_PATH, timeout=10)
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        conn.close()
+        shutil.copy2(DB_PATH, dest)
+        # Keep only last 10 backups
+        backups = sorted(backup_dir.glob('sync_jobs_*.db'))
+        for old in backups[:-10]:
+            old.unlink()
+        logger.info(f"DB backup created: {dest.name}")
+        return str(dest)
+    except Exception as e:
+        logger.error(f"DB backup failed: {e}")
+        return None
+
+
+def list_backups():
+    backup_dir = Path(BACKUP_DIR)
+    if not backup_dir.exists():
+        return []
+    files = sorted(backup_dir.glob('sync_jobs_*.db'), reverse=True)
+    result = []
+    for f in files:
+        stat = f.stat()
+        result.append({'filename': f.name, 'size': stat.st_size, 'modified': stat.st_mtime})
+    return result
 
 
 def send_daily_summary():
@@ -1634,6 +1761,8 @@ def scan_arr_history():
     Scan Radarr/Sonarr history for recent downloads and sync any that were missed.
     This catches downloads where the webhook failed (container down, network issue, etc).
     """
+    global history_scanner_last_ran, history_scanner_last_found
+    history_scanner_last_ran = datetime.utcnow()
     logger.info("History scanner: checking for missed downloads...")
 
     missed_count = 0
@@ -1769,6 +1898,8 @@ def scan_arr_history():
         except Exception as e:
             logger.error(f"History scanner: {name} error: {e}")
 
+    history_scanner_last_found = missed_count
+
     if missed_count > 0:
         logger.info(f"History scanner: queued {missed_count} missed downloads for sync")
         titles_list = "\n".join(f"• {t}" for t in missed_titles)
@@ -1781,6 +1912,142 @@ def scan_arr_history():
         logger.info("History scanner: no missed downloads found")
 
 
+def _get_unraid_movie_folders() -> set:
+    """
+    Fetch HD movie folder names from the Unraid Agent API.
+    Returns a set of folder names (e.g. {"Wuthering Heights (2026)", ...}).
+    Raises on failure so the caller can log and skip.
+    """
+    url = f"{UNRAID_AGENT_URL}/inventory"
+    params = {'path': '/mnt/user/Media/Movies', 'refresh': 'true'}
+    headers = {'X-Api-Key': UNRAID_AGENT_API_KEY}
+    resp = requests.get(url, params=params, headers=headers, timeout=120)
+    resp.raise_for_status()
+    data = resp.json()
+    folders = set()
+    for item in data.get('items', []):
+        path = item.get('path', '')
+        if path:
+            # path = /mnt/user/Media/Movies/<folder>/<filename>
+            parts = path.split('/')
+            if len(parts) >= 6:
+                folders.add(parts[5])
+    return folders
+
+
+def scan_library_gaps():
+    """
+    Nightly reconciliation: compare Synology HD-movies source folders vs Unraid destination
+    (fetched via Unraid Agent API, not CIFS). Any folder on Synology but missing from Unraid
+    gets queued as a sync job.
+
+    Skips: system entries (#recycle, .lnk, .txt), items already pending/in_progress,
+    and items successfully synced within the last 7 days.
+    """
+    SKIP_NAMES = {'#recycle', 'testfile'}
+    SKIP_SUFFIXES = ('.lnk', '.txt', '.url')
+
+    src_base = '/mnt/synology/rs-movies'
+
+    if not os.path.isdir(src_base):
+        logger.warning("Gap scanner: Synology movies mount not accessible, skipping")
+        return
+
+    # Synology: direct NFS listing (fast, local mount)
+    try:
+        src_folders = set(os.listdir(src_base))
+    except Exception as e:
+        logger.error(f"Gap scanner: failed to list Synology movies: {e}")
+        return
+
+    # Unraid: fetch via Agent API (avoids slow CIFS listing over VPN)
+    try:
+        dst_folders = _get_unraid_movie_folders()
+        logger.info(f"Gap scanner: Synology={len(src_folders)} folders, Unraid={len(dst_folders)} folders")
+    except Exception as e:
+        logger.error(f"Gap scanner: failed to fetch Unraid inventory from agent: {e}")
+        return
+
+    missing = sorted(src_folders - dst_folders)
+    missing = [m for m in missing
+               if m not in SKIP_NAMES and not any(m.endswith(s) for s in SKIP_SUFFIXES)]
+
+    if not missing:
+        logger.info("Gap scanner: HD movies are in sync — no gaps found")
+        return
+
+    logger.info(f"Gap scanner: {len(missing)} HD movie folder(s) missing from Unraid")
+
+    total_queued = 0
+    queued_titles = []
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    for folder in missing:
+        source = os.path.join(src_base, folder)
+
+        # Skip if already pending or in_progress
+        cursor.execute(
+            "SELECT id FROM sync_jobs WHERE title LIKE ? AND status IN ('pending','in_progress')",
+            (f'%{folder[:40]}%',)
+        )
+        if cursor.fetchone():
+            logger.debug(f"Gap scanner: {folder} already queued, skipping")
+            continue
+
+        # Skip if successfully synced in the last 7 days (avoids re-queuing a just-fixed item)
+        cursor.execute(
+            "SELECT id FROM sync_jobs WHERE title LIKE ? AND status='success' "
+            "AND completed_at > datetime('now', '-7 days')",
+            (f'%{folder[:40]}%',)
+        )
+        if cursor.fetchone():
+            logger.debug(f"Gap scanner: {folder} recently succeeded, skipping")
+            continue
+
+        try:
+            file_size = sum(f.stat().st_size for f in Path(source).rglob('*') if f.is_file())
+        except Exception:
+            file_size = 0
+
+        conn.close()
+        background_sync(source, '/mnt/unraid/media/Movies', folder, 'GapSync', file_size, 'Movie')
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        total_queued += 1
+        queued_titles.append(folder)
+        logger.info(f"Gap scanner: queued {folder}")
+
+    conn.close()
+
+    if total_queued > 0:
+        titles_list = "\n".join(f"• {t}" for t in queued_titles[:20])
+        if len(queued_titles) > 20:
+            titles_list += f"\n... and {len(queued_titles) - 20} more"
+        send_notification(
+            title="Movie Gap Sync",
+            body=f"Found {total_queued} HD movie(s) missing from Unraid — queued for sync:\n{titles_list}",
+            notify_type=apprise.NotifyType.WARNING
+        )
+    else:
+        logger.info("Gap scanner: all HD movies are in sync")
+
+
+# Daily DB backup at 02:00 UTC
+scheduler.add_job(
+    func=lambda: create_backup('scheduled'),
+    trigger='cron',
+    hour=2,
+    minute=0,
+    id='db_backup',
+    name='Daily DB backup',
+    replace_existing=True
+)
+
 # Add history scanner job
 if RADARR_HD_API_KEY or SONARR_HD_API_KEY:
     scheduler.add_job(
@@ -1792,6 +2059,18 @@ if RADARR_HD_API_KEY or SONARR_HD_API_KEY:
         replace_existing=True
     )
     logger.info(f"History scanner enabled - checking every {HISTORY_SCAN_INTERVAL} min, looking back {HISTORY_SCAN_HOURS} hours")
+
+# Movie gap scanner — nightly at 03:30 UTC (after DB backup, before Curatorr tasks)
+scheduler.add_job(
+    func=scan_library_gaps,
+    trigger='cron',
+    hour=3,
+    minute=30,
+    id='library_gap_scanner',
+    name='Nightly HD movie gap scan (Synology vs Unraid via Agent)',
+    replace_existing=True
+)
+logger.info("Library gap scanner enabled - runs nightly at 03:30 UTC")
 
 scheduler.start()
 logger.info("Scheduler started - daily summary at 00:05, auto-retry every 15 min")
@@ -2034,23 +2313,10 @@ def radarr_webhook():
         file_size = movie_file.get('size', 0)
         is_upgrade = data.get('isUpgrade', False)
 
-        # Process deleted files if this is an upgrade
-        deleted_files = data.get('deletedFiles', [])
+        # Collect deleted files — will be processed after rsync succeeds (not before)
+        deleted_files = data.get('deletedFiles', []) or []
         if deleted_files:
-            logger.info(f"Upgrade detected for {display_title} - processing {len(deleted_files)} deleted file(s)")
-            deletion_results = process_deleted_files(deleted_files, "Movie", display_title)
-
-            if deletion_results['fail_count'] > 0:
-                logger.warning(f"Some deletions failed for {display_title}: {deletion_results['messages']}")
-                try:
-                    send_notification(
-                        "UPGRADE WARNING",
-                        f"Failed to delete {deletion_results['fail_count']} old file(s) for {display_title}. "
-                        f"Orphan duplicates may exist on Unraid.",
-                        apprise.NotifyType.WARNING,
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to send deletion warning notification: {e}")
+            logger.info(f"Upgrade detected for {display_title} - will delete {len(deleted_files)} old file(s) after sync")
 
         # Safely extract quality - handle various payload formats
         quality_data = movie_file.get('quality', {})
@@ -2090,7 +2356,8 @@ def radarr_webhook():
             quality=quality,
             file_size=file_size,
             media_type="Movie",
-            dest_base=dest_base
+            dest_base=dest_base,
+            deleted_files=deleted_files or None
         )
 
         # Return immediately - sync happens in background
@@ -2196,23 +2463,10 @@ def sonarr_webhook():
         file_size = episode_file.get('size', 0)
         is_upgrade = data.get('isUpgrade', False)
 
-        # Process deleted files if this is an upgrade
-        deleted_files = data.get('deletedFiles', [])
+        # Collect deleted files — will be processed after rsync succeeds (not before)
+        deleted_files = data.get('deletedFiles', []) or []
         if deleted_files:
-            logger.info(f"Upgrade detected for {series_title} - processing {len(deleted_files)} deleted file(s)")
-            deletion_results = process_deleted_files(deleted_files, "Episode", series_title)
-
-            if deletion_results['fail_count'] > 0:
-                logger.warning(f"Some deletions failed for {series_title}: {deletion_results['messages']}")
-                try:
-                    send_notification(
-                        "UPGRADE WARNING",
-                        f"Failed to delete {deletion_results['fail_count']} old file(s) for {series_title}. "
-                        f"Orphan duplicates may exist on Unraid.",
-                        apprise.NotifyType.WARNING,
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to send deletion warning notification: {e}")
+            logger.info(f"Upgrade detected for {series_title} - will delete {len(deleted_files)} old file(s) after sync")
 
         # Safely extract quality - handle various payload formats
         quality_data = episode_file.get('quality', {})
@@ -2272,7 +2526,8 @@ def sonarr_webhook():
             dest_base=dest_base,
             quality=quality,
             file_size=file_size,
-            media_type="Episode"
+            media_type="Episode",
+            deleted_files=deleted_files or None
         )
 
         # Return immediately - sync happens in background
@@ -2400,11 +2655,15 @@ def retry_all_failed():
 @app.route('/sync/manual', methods=['POST'])
 def manual_sync():
     """
-    Trigger manual sync for a specific path.
+    Queue a manual sync for a specific path.
 
     JSON body:
-        path: Full container path to sync
-        type: "movie" or "tv"
+        path: Full container path to sync (required)
+        type: "movie" or "tv" (default: "movie")
+        title: Display title for notifications (default: last path component)
+        quality: Quality string (default: "unknown")
+
+    Returns 202 immediately; sync runs in background via the job queue.
     """
     try:
         data = request.json
@@ -2412,27 +2671,359 @@ def manual_sync():
             return jsonify({'error': 'Missing path parameter'}), 400
 
         path = data['path']
-        sync_type = data.get('type', 'unknown')
+        sync_type = data.get('type', 'movie')
+        title = data.get('title') or path.rstrip('/').split('/')[-1]
+        quality = data.get('quality', 'unknown')
 
         source, dest, dest_base = translate_path(path)
         if not source:
             return jsonify({'error': f'No path mapping for: {path}'}), 400
 
-        logger.info(f"Manual sync: {source} -> {dest}")
-        success, output, duration = run_rsync(source, dest)
+        try:
+            src_path = Path(source)
+            file_size = sum(f.stat().st_size for f in src_path.rglob('*') if f.is_file()) if src_path.is_dir() else src_path.stat().st_size
+        except Exception:
+            file_size = 0
 
-        if success:
-            send_notification(
-                title=f"Manual Sync Complete",
-                body=f"Path: {path}\nDuration: {duration:.1f}s",
-                notify_type=apprise.NotifyType.SUCCESS
-            )
-            return jsonify({'status': 'success', 'duration': duration})
-        else:
-            return jsonify({'status': 'failed', 'error': output}), 500
+        media_type = 'Movie' if sync_type == 'movie' else 'Episode'
+        logger.info(f"Manual sync queued: {source} -> {dest} ({title})")
+        background_sync(source, dest, title, quality, file_size, media_type, dest_base)
+
+        return jsonify({'status': 'queued', 'source': source, 'dest': dest}), 202
 
     except Exception as e:
         logger.exception("Error in manual sync")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/backup/list')
+def api_backup_list():
+    return jsonify(list_backups())
+
+@app.route('/api/backup/now', methods=['POST'])
+def api_backup_now():
+    path = create_backup('manual')
+    if path:
+        return jsonify({'status': 'ok', 'file': Path(path).name})
+    return jsonify({'error': 'Backup failed — check logs'}), 500
+
+@app.route('/api/backup/restore', methods=['POST'])
+def api_backup_restore():
+    import shutil
+    data = request.get_json(silent=True) or {}
+    filename = data.get('filename', '')
+    if not filename or not filename.endswith('.db'):
+        return jsonify({'error': 'Provide a valid backup filename'}), 400
+    src = Path(BACKUP_DIR) / Path(filename).name  # strip any path traversal
+    if not src.exists():
+        return jsonify({'error': 'Backup file not found'}), 404
+    create_backup('pre-restore')  # safety snapshot of current DB
+    try:
+        shutil.copy2(str(src), DB_PATH)
+        for wal in [DB_PATH + '-shm', DB_PATH + '-wal']:
+            if Path(wal).exists():
+                Path(wal).unlink()
+        logger.info(f"DB restored from backup: {filename}")
+        return jsonify({'status': 'restored', 'message': 'Restored. Restart container to apply.'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/scheduler')
+def api_scheduler():
+    """Return history scanner timing info for the dashboard."""
+    job = scheduler.get_job('history_scanner')
+    next_run = None
+    if job and job.next_run_time:
+        next_run = job.next_run_time.astimezone(tz=None).strftime('%Y-%m-%d %H:%M:%S')
+    return jsonify({
+        'history_scanner': {
+            'interval_minutes': HISTORY_SCAN_INTERVAL,
+            'lookback_hours': HISTORY_SCAN_HOURS,
+            'last_ran': history_scanner_last_ran.strftime('%Y-%m-%d %H:%M:%S') if history_scanner_last_ran else None,
+            'last_found': history_scanner_last_found,
+            'next_run': next_run,
+            'enabled': job is not None,
+        }
+    })
+
+
+# ── Jinja2 template helpers ────────────────────────────────────────────────
+
+def _fmt_size(b):
+    if b is None:
+        return '—'
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if b < 1024:
+            return f'{b:.1f} {unit}'
+        b /= 1024
+    return f'{b:.1f} PB'
+
+def _fmt_dt(s):
+    if not s:
+        return '—'
+    try:
+        return str(s)[:16].replace('T', ' ')
+    except Exception:
+        return str(s)
+
+def _fmt_dur(s):
+    if s is None:
+        return '—'
+    s = int(s)
+    if s < 60:
+        return f'{s}s'
+    if s < 3600:
+        return f'{s//60}m {s%60}s'
+    return f'{s//3600}h {(s%3600)//60}m'
+
+app.jinja_env.globals['fmt_size'] = _fmt_size
+app.jinja_env.globals['fmt_dt'] = _fmt_dt
+app.jinja_env.globals['fmt_dur'] = _fmt_dur
+
+
+# ── UI Routes ──────────────────────────────────────────────────────────────
+
+@app.route('/ui')
+@app.route('/ui/')
+def ui_dashboard():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM sync_jobs WHERE status='pending'")
+    pending_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM sync_jobs WHERE status='in_progress'")
+    active_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM sync_jobs WHERE status='success' AND date(COALESCE(completed_at, created_at))=date('now')")
+    done_today = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM sync_jobs WHERE status='failed' AND date(created_at)=date('now')")
+    failed_today = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM sync_jobs WHERE status='success'")
+    total_success = cur.fetchone()[0]
+    cur.execute("SELECT COALESCE(SUM(file_size),0) FROM sync_jobs WHERE status='success'")
+    total_bytes = cur.fetchone()[0]
+
+    cur.execute("SELECT * FROM sync_jobs WHERE status='in_progress' ORDER BY started_at DESC")
+    active = [dict(r) for r in cur.fetchall()]
+
+    cur.execute("SELECT * FROM sync_jobs WHERE status='pending' ORDER BY priority ASC, created_at ASC LIMIT 15")
+    pending = [dict(r) for r in cur.fetchall()]
+
+    cur.execute("""
+        SELECT * FROM sync_jobs
+        WHERE status IN ('success','failed','cancelled')
+        ORDER BY COALESCE(completed_at, created_at) DESC
+        LIMIT 20
+    """)
+    recent = [dict(r) for r in cur.fetchall()]
+
+    conn.close()
+
+    hs_job = scheduler.get_job('history_scanner')
+    hs_next = None
+    if hs_job and hs_job.next_run_time:
+        hs_next = hs_job.next_run_time.astimezone(tz=None).strftime('%H:%M:%S')
+
+    return render_template('dashboard.html',
+        pending_count=pending_count, active_count=active_count,
+        done_today=done_today, failed_today=failed_today,
+        total_success=total_success, total_bytes=total_bytes,
+        active=active, pending=pending, recent=recent,
+        hs_last_ran=history_scanner_last_ran.strftime('%H:%M:%S') if history_scanner_last_ran else None,
+        hs_last_found=history_scanner_last_found,
+        hs_next=hs_next,
+        hs_interval=HISTORY_SCAN_INTERVAL)
+
+
+@app.route('/ui/queue')
+def ui_queue():
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    sort_col = request.args.get('sort', 'priority')
+    sort_dir = request.args.get('order', 'asc')
+    status_filter = request.args.get('status', 'active')
+    type_filter = request.args.get('type', '')
+    search_q = request.args.get('q', '')
+
+    _allowed_sort = {'title', 'job_type', 'quality', 'file_size', 'status',
+                     'priority', 'created_at', 'retry_count'}
+    if sort_col not in _allowed_sort:
+        sort_col = 'priority'
+    sql_dir = 'DESC' if sort_dir == 'desc' else 'ASC'
+
+    params = []
+    where = []
+    if status_filter == 'active':
+        where.append("status IN ('pending','in_progress')")
+    elif status_filter == 'failed':
+        where.append("status = 'failed'")
+    elif status_filter == 'cancelled':
+        where.append("status = 'cancelled'")
+
+    if type_filter:
+        where.append("job_type = ?")
+        params.append(type_filter)
+    if search_q:
+        where.append("title LIKE ?")
+        params.append(f'%{search_q}%')
+
+    where_sql = ('WHERE ' + ' AND '.join(where)) if where else ''
+    secondary = ', created_at ASC' if sort_col != 'created_at' else ''
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute(f"SELECT COUNT(*) FROM sync_jobs {where_sql}", params)
+        total = cur.fetchone()[0]
+        cur.execute(
+            f"SELECT * FROM sync_jobs {where_sql} ORDER BY {sort_col} {sql_dir}{secondary} LIMIT ? OFFSET ?",
+            params + [per_page, (page - 1) * per_page]
+        )
+        items = [dict(r) for r in cur.fetchall()]
+        conn.close()
+    except Exception as e:
+        logger.error(f"UI queue error: {e}")
+        items, total = [], 0
+
+    return render_template('queue.html',
+        items=items, total=total, page=page, per_page=per_page,
+        sort_col=sort_col, sort_dir=sort_dir,
+        status_filter=status_filter, type_filter=type_filter, search_q=search_q)
+
+
+@app.route('/ui/history')
+def ui_history():
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    sort_col = request.args.get('sort', 'completed_at')
+    sort_dir = request.args.get('order', 'desc')
+    status_filter = request.args.get('status', '')
+    type_filter = request.args.get('type', '')
+    search_q = request.args.get('q', '')
+
+    _allowed_sort = {'title', 'job_type', 'quality', 'file_size', 'status',
+                     'created_at', 'completed_at', 'duration_seconds', 'retry_count'}
+    if sort_col not in _allowed_sort:
+        sort_col = 'completed_at'
+    sql_dir = 'DESC' if sort_dir == 'desc' else 'ASC'
+
+    params = []
+    where = ["status IN ('success','failed','cancelled')"]
+    if status_filter in ('success', 'failed', 'cancelled'):
+        where = [f"status = ?"]
+        params.append(status_filter)
+
+    if type_filter:
+        where.append("job_type = ?")
+        params.append(type_filter)
+    if search_q:
+        where.append("title LIKE ?")
+        params.append(f'%{search_q}%')
+
+    where_sql = 'WHERE ' + ' AND '.join(where)
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute(f"SELECT COUNT(*) FROM sync_jobs {where_sql}", params)
+        total = cur.fetchone()[0]
+        cur.execute(
+            f"SELECT * FROM sync_jobs {where_sql} ORDER BY {sort_col} {sql_dir} LIMIT ? OFFSET ?",
+            params + [per_page, (page - 1) * per_page]
+        )
+        items = [dict(r) for r in cur.fetchall()]
+        conn.close()
+    except Exception as e:
+        logger.error(f"UI history error: {e}")
+        items, total = [], 0
+
+    return render_template('history.html',
+        items=items, total=total, page=page, per_page=per_page,
+        sort_col=sort_col, sort_dir=sort_dir,
+        status_filter=status_filter, type_filter=type_filter, search_q=search_q)
+
+
+@app.route('/api/history-scan/trigger', methods=['POST'])
+def trigger_history_scan():
+    """Manually trigger the history scanner immediately."""
+    try:
+        thread = threading.Thread(target=scan_arr_history, daemon=True)
+        thread.start()
+        return jsonify({'status': 'triggered'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/gap-scan/trigger', methods=['POST'])
+def trigger_gap_scan():
+    """Manually trigger the library gap scanner (Synology vs Unraid folder diff)."""
+    try:
+        thread = threading.Thread(target=scan_library_gaps, daemon=True)
+        thread.start()
+        return jsonify({'status': 'triggered', 'message': 'Gap scan started — check logs for results'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/jobs/<int:job_id>/cancel', methods=['POST'])
+def cancel_job(job_id):
+    """Cancel a pending job. The queued thread will abort after acquiring the semaphore."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("SELECT status FROM sync_jobs WHERE id = ?", (job_id,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'error': 'Job not found'}), 404
+        if row[0] != 'pending':
+            conn.close()
+            return jsonify({'error': f'Job is {row[0]}, only pending jobs can be cancelled'}), 400
+        cur.execute("UPDATE sync_jobs SET status='cancelled', completed_at=CURRENT_TIMESTAMP WHERE id=?", (job_id,))
+        conn.commit()
+        conn.close()
+        logger.info(f"Job {job_id} cancelled via UI")
+        return jsonify({'status': 'cancelled', 'job_id': job_id})
+    except Exception as e:
+        logger.error(f"Error cancelling job {job_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/jobs/<int:job_id>/rush', methods=['POST'])
+def rush_job(job_id):
+    """
+    Mark a pending job as high priority and open an extra semaphore slot so it
+    can start immediately alongside current active syncs rather than waiting.
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("SELECT status, title FROM sync_jobs WHERE id = ?", (job_id,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'error': 'Job not found'}), 404
+        if row[0] != 'pending':
+            conn.close()
+            return jsonify({'error': f'Job is {row[0]}, only pending jobs can be rushed'}), 400
+
+        title = row[1] or 'Unknown'
+        cur.execute("UPDATE sync_jobs SET priority = -1 WHERE id = ?", (job_id,))
+        conn.commit()
+        conn.close()
+
+        # Open one extra semaphore slot so a waiting thread can start immediately
+        sync_semaphore.release()
+        logger.info(f"Job {job_id} ({title}) rushed — extra semaphore slot opened")
+        return jsonify({
+            'status': 'rushed',
+            'job_id': job_id,
+            'message': f'Extra sync slot opened — "{title}" should start within seconds ⚡'
+        })
+    except Exception as e:
+        logger.error(f"Error rushing job {job_id}: {e}")
         return jsonify({'error': str(e)}), 500
 
 

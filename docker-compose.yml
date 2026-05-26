@@ -88,6 +88,50 @@ services:
       - mother_network      
       
 
+  # Unpackerr - Automatic RAR/archive extractor for Radarr/Sonarr
+  unpackerr:
+    image: golift/unpackerr:0.15.2
+    container_name: unpackerr
+    restart: unless-stopped
+    user: ${PUID}:${PGID}
+    volumes:
+      - ${DOWNLOADS_PATH}:/downloads
+    environment:
+      - TZ=${TZ}
+      - UN_LOG_FILE=/downloads/unpackerr.log
+      - UN_INTERVAL=2m
+      - UN_PARALLEL=1
+      - UN_DELETE_DELAY=5m
+      - UN_DELETE_ORIGINAL=true
+      - UN_DELETE_FILES=true
+      # Radarr HD
+      - UN_RADARR_0_URL=http://radarr-hd:7878
+      - UN_RADARR_0_API_KEY=${RADARR_HD_API_KEY}
+      - UN_RADARR_0_PATHS_0=/downloads/radarr-hd
+      - UN_RADARR_0_PROTOCOLS=torrent
+      # Radarr 4K
+      - UN_RADARR_1_URL=http://radarr-4k:7878
+      - UN_RADARR_1_API_KEY=${RADARR_4K_API_KEY}
+      - UN_RADARR_1_PATHS_0=/downloads/radarr-4k
+      - UN_RADARR_1_PROTOCOLS=torrent
+      # Sonarr HD
+      - UN_SONARR_0_URL=http://sonarr-hd:8989
+      - UN_SONARR_0_API_KEY=${SONARR_HD_API_KEY}
+      - UN_SONARR_0_PATHS_0=/downloads/sonarr-hd
+      - UN_SONARR_0_PROTOCOLS=torrent
+      # Sonarr 4K
+      - UN_SONARR_1_URL=http://sonarr-4k:8989
+      - UN_SONARR_1_API_KEY=${SONARR_4K_API_KEY}
+      - UN_SONARR_1_PATHS_0=/downloads/sonarr-4k
+      - UN_SONARR_1_PROTOCOLS=torrent
+      # Telegram notifications
+      - UN_WEBHOOK_0_URL=https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage
+      - UN_WEBHOOK_0_NICKNAME=${TELEGRAM_CHAT_ID}
+      - UN_WEBHOOK_0_TEMPLATE=telegram
+      - UN_WEBHOOK_0_EVENTS_0=0
+    networks:
+      - mother_network
+
   # Radarr HD - 1080p Movie Management
   radarr-hd:
     image: lscr.io/linuxserver/radarr:latest
@@ -100,6 +144,7 @@ services:
       - ${CONFIG_PATH}/radarr-hd:/config
       - ${MOVIES_PATH}:/movies
       - ${DOWNLOADS_PATH}:/downloads
+      - ${DELETED_MOVIES_PATH}:/deleted-movies
     ports:
       - "${RADARR_HD_PORT}:7878"
     restart: unless-stopped
@@ -157,52 +202,6 @@ services:
     ports:
       - "${SONARR_4K_PORT}:8989"
     restart: unless-stopped
-    networks:
-      - mother_network
-
-  # Huntarr - Automated Quality Upgrade Hunter
-  # Triggers searches for content below quality cutoff in *arr apps
-  # Conservative settings to avoid overwhelming indexers
-  huntarr:
-    image: ghcr.io/plexguide/huntarr:latest
-    container_name: huntarr
-    environment:
-      - TZ=${TZ}
-      # Radarr HD (1080p movies)
-      - RADARR_URL=http://radarr-hd:7878
-      - RADARR_API_KEY=${RADARR_HD_API_KEY}
-      # Radarr 4K
-      - RADARR_4K_URL=http://radarr-4k:7878
-      - RADARR_4K_API_KEY=${RADARR_4K_API_KEY}
-      # Sonarr HD (1080p TV)
-      - SONARR_URL=http://sonarr-hd:8989
-      - SONARR_API_KEY=${SONARR_HD_API_KEY}
-      # Sonarr 4K
-      - SONARR_4K_URL=http://sonarr-4k:8989
-      - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}
-      # VERY Conservative settings - minimal batches, long intervals
-      # Movies: 1 per cycle, 90 min interval (max ~16/day)
-      - RADARR_HUNT_MISSING_MOVIES=1
-      - RADARR_HUNT_UPGRADE_MOVIES=1
-      - RADARR_SLEEP_DURATION=90
-      # TV: 1 series per cycle, 90 min interval (max ~16/day)
-      - SONARR_HUNT_MISSING_SHOWS=1
-      - SONARR_HUNT_UPGRADE_SHOWS=1
-      - SONARR_SLEEP_DURATION=90
-      # Queue management - pause if queue gets too large
-      - MAXIMUM_QUEUE_SIZE=10
-      # API rate limiting
-      - API_TIMEOUT=120
-    volumes:
-      - ${CONFIG_PATH}/huntarr:/config
-    ports:
-      - "${HUNTARR_PORT:-9705}:9705"
-    restart: unless-stopped
-    depends_on:
-      - radarr-hd
-      - radarr-4k
-      - sonarr-hd
-      - sonarr-4k
     networks:
       - mother_network
 
@@ -525,6 +524,9 @@ services:
       - TMDB_API_KEY=${TMDB_API_KEY:-}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - UPGRADERR_TELEGRAM_CHAT_ID=${UPGRADERR_TELEGRAM_CHAT_ID:-}
+      - QBITTORRENT_URL=${QBITTORRENT_URL:-http://10.0.1.203:8080}
+      - QBITTORRENT_USER=${QBITMANAGE_QBT_USER:-}
+      - QBITTORRENT_PASS=${QBITMANAGE_QBT_PASS:-}
     volumes:
       - /opt/mother/data/upgraderr:/data
       - /opt/mother/data/logs/upgraderr:/logs
@@ -646,6 +648,9 @@ services:
       - SYNC_HISTORY_SCAN_INTERVAL=${SYNC_HISTORY_SCAN_INTERVAL:-30}
       # Skip list for problematic large files
       - SYNC_SKIP_TITLES=${SYNC_SKIP_TITLES:-}
+      # Unraid Agent — for nightly gap scan (avoids slow CIFS listing)
+      - UNRAID_AGENT_URL=${UNRAID_AGENT_URL:-http://192.168.1.10:8100}
+      - UNRAID_AGENT_API_KEY=${UNRAID_AGENT_API_KEY:-}
     volumes:
       # Synology NFS mounts (source)
       - /mnt/synology/rs-movies:/mnt/synology/rs-movies:ro
