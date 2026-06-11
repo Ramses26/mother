@@ -860,271 +860,12 @@ def translate_path_to_destination(container_path: str) -> str:
     return None
 
 
-def sweep_old_episode_versions(source_path: str, dest_dir: str) -> list:
-    """
-    After a successful TV episode sync, delete any other files in dest_dir that
-    match the same S##E## pattern but are NOT the newly-synced file.
-
-    This handles two scenarios:
-    1. History-scanner catchup: the scanner only syncs the new file; it has no
-       deletedFiles payload, so old versions accumulate unless we sweep here.
-    2. Batch-sync overlap: the batch sync may have copied an older version at
-       the same time a webhook upgrade arrived.
-
-    Returns list of filenames deleted.
-    """
-    basename = os.path.basename(source_path)
-    ep_match = re.search(r'S(\d+)E(\d+)', basename, re.IGNORECASE)
-    if not ep_match:
-        return []
-
-    ep_pattern = f"S{ep_match.group(1)}E{ep_match.group(2)}"
-    video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v')
-    removed = []
-
-    if not os.path.isdir(dest_dir):
-        return []
-
-    for f in os.listdir(dest_dir):
-        if f == basename:
-            continue  # keep the file we just synced
-        if ep_pattern.upper() in f.upper() and f.lower().endswith(video_exts):
-            old_path = os.path.join(dest_dir, f)
-            try:
-                os.remove(old_path)
-                logger.info(f"Post-sync sweep: removed old version {old_path}")
-                removed.append(f)
-            except OSError as e:
-                logger.warning(f"Post-sync sweep: could not remove {old_path}: {e}")
-
-    return removed
 
 
-def sweep_old_movie_versions(source_dir: str, dest_dir: str) -> list:
-    """
-    After a successful movie folder sync, delete any video files in dest_dir
-    that are NOT present in source_dir.
-
-    Radarr is authoritative on Synology — if a file is gone from source it was
-    replaced by an upgrade. This catches cases where isUpgrade/deletedFiles are
-    absent from the webhook payload (Radarr doesn't always include them).
-
-    Safety: if source_dir has zero video files, skip — never wipe the Unraid
-    copy if the Synology folder looks empty or unmounted.
-
-    Returns list of filenames deleted.
-    """
-    video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v', '.iso')
-
-    if not os.path.isdir(source_dir) or not os.path.isdir(dest_dir):
-        return []
-
-    source_files = {f for f in os.listdir(source_dir) if f.lower().endswith(video_exts)}
-    if not source_files:
-        logger.debug(f"Movie sweep skipped (source empty): {source_dir}")
-        return []
-
-    dest_files = {f for f in os.listdir(dest_dir) if f.lower().endswith(video_exts)}
-    orphans = dest_files - source_files
-    removed = []
-
-    for orphan in orphans:
-        old_path = os.path.join(dest_dir, orphan)
-        try:
-            os.remove(old_path)
-            logger.info(f"Post-sync movie sweep: removed old version {old_path}")
-            removed.append(orphan)
-        except OSError as e:
-            logger.warning(f"Post-sync movie sweep: could not remove {old_path}: {e}")
-
-    return removed
 
 
-def delete_from_destination(container_path: str, title: str = "Unknown") -> tuple:
-    """
-    Delete a file from the destination (Unraid) based on its container path.
-
-    Used when Sonarr/Radarr reports deleted files during upgrades or manual deletions.
-
-    Args:
-        container_path: Path as reported by Sonarr/Radarr (e.g., /movies/Title/old.mkv)
-        title: Display title for logging
-
-    Returns:
-        (success: bool, message: str)
-    """
-    dest_path = translate_path_to_destination(container_path)
-
-    if not dest_path:
-        msg = f"No path mapping for deletion: {container_path}"
-        logger.warning(msg)
-        return False, msg
-
-    logger.info(f"Attempting to delete from destination: {dest_path}")
-
-    try:
-        parent_dir = os.path.dirname(dest_path)
-        basename = os.path.basename(dest_path)
-        video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v')
-        ep_match = re.search(r'S(\d+)E(\d+)', basename, re.IGNORECASE)
-        ep_pattern = f"S{ep_match.group(1)}E{ep_match.group(2)}" if ep_match else None
-
-        def _sweep_episode_duplicates(skip_name: str) -> list:
-            """
-            After deleting the primary file, remove any remaining files in the
-            same directory that match the same S##E## pattern.  This catches
-            leftover intermediate upgrade versions (e.g., old -BLOOM and -TORK
-            files sitting alongside a freshly-synced -FLUX file).
-
-            Only runs when we have an episode pattern to match against.
-            skip_name: filename we just deleted (already gone, skip re-deletion).
-            """
-            removed = []
-            if not ep_pattern or not os.path.isdir(parent_dir):
-                return removed
-            for f in os.listdir(parent_dir):
-                if f == skip_name:
-                    continue
-                if ep_pattern.upper() in f.upper() and f.lower().endswith(video_exts):
-                    alt_path = os.path.join(parent_dir, f)
-                    try:
-                        os.remove(alt_path)
-                        logger.info(f"Swept duplicate episode version: {alt_path}")
-                        removed.append(f)
-                    except OSError as e:
-                        logger.warning(f"Could not sweep duplicate {alt_path}: {e}")
-            return removed
-
-        if os.path.exists(dest_path):
-            if os.path.isfile(dest_path):
-                os.remove(dest_path)
-                logger.info(f"Deleted file: {dest_path}")
-
-                # Sweep any other versions of the same episode that may have
-                # accumulated from intermediate upgrades during batch sync.
-                extras = _sweep_episode_duplicates(skip_name=basename)
-                msg = f"Deleted file: {dest_path}"
-                if extras:
-                    msg += f" + swept {len(extras)} duplicate(s): {', '.join(extras)}"
-                    logger.info(f"Swept {len(extras)} leftover episode version(s) alongside {basename}")
-
-                # Also try to clean up empty parent directories
-                try:
-                    base_paths = [dst for _, (_, dst) in PATH_MAPPINGS.items()]
-                    check_dir = parent_dir
-                    while check_dir and check_dir not in base_paths:
-                        if os.path.isdir(check_dir) and not os.listdir(check_dir):
-                            os.rmdir(check_dir)
-                            logger.info(f"Removed empty directory: {check_dir}")
-                            check_dir = os.path.dirname(check_dir)
-                        else:
-                            break
-                except OSError as e:
-                    logger.debug(f"Could not remove parent directory: {e}")
-
-                return True, msg
-            elif os.path.isdir(dest_path):
-                import shutil
-                shutil.rmtree(dest_path)
-                msg = f"Deleted directory: {dest_path}"
-                logger.info(msg)
-                return True, msg
-        else:
-            # Exact file not found — fuzzy fallback: delete ALL files in the
-            # same directory matching the same S##E## pattern.  Previous code
-            # only deleted the first match; if multiple old versions exist (from
-            # intermediate upgrades) they all need to go before the new file lands.
-            #
-            # SAFETY: only proceed if there are 2+ matching files.  If only one
-            # file matches the episode pattern, it is the sole remaining copy
-            # (e.g. Curatorr already deleted the lower-quality duplicate, Sonarr
-            # fired EpisodeFileDelete for the deleted file, and the fuzzy search
-            # would otherwise destroy the keeper).
-            if ep_pattern and os.path.isdir(parent_dir):
-                candidates = [
-                    f for f in os.listdir(parent_dir)
-                    if ep_pattern.upper() in f.upper() and f.lower().endswith(video_exts)
-                ]
-                if len(candidates) < 2:
-                    msg = f"File not found on destination (already deleted?): {dest_path}"
-                    logger.info(msg + f" — fuzzy fallback skipped (only {len(candidates)} match(es) remain, would delete sole copy)")
-                    return True, msg
-                deleted = []
-                errors = []
-                for f in candidates:
-                    alt_path = os.path.join(parent_dir, f)
-                    try:
-                        os.remove(alt_path)
-                        logger.info(f"Fuzzy-deleted (episode match): {alt_path}")
-                        deleted.append(f)
-                    except OSError as e:
-                        logger.error(f"Fuzzy-delete failed for {alt_path}: {e}")
-                        errors.append(f)
-                if deleted:
-                    msg = f"Fuzzy-deleted {len(deleted)} file(s) for {ep_pattern} (expected: {basename}): {', '.join(deleted)}"
-                    logger.info(msg)
-                    return len(errors) == 0, msg
-                if errors:
-                    msg = f"Fuzzy-delete failed for all {len(errors)} candidate(s) for {ep_pattern}"
-                    return False, msg
-
-            msg = f"File not found on destination (already deleted?): {dest_path}"
-            logger.info(msg)
-            return True, msg  # Not an error - file might have been manually deleted
-
-    except PermissionError as e:
-        msg = f"Permission denied deleting {dest_path}: {e}"
-        logger.error(msg)
-        return False, msg
-    except Exception as e:
-        msg = f"Error deleting {dest_path}: {e}"
-        logger.error(msg)
-        return False, msg
 
 
-def process_deleted_files(deleted_files: list, media_type: str, title: str = "Unknown") -> dict:
-    """
-    Process a list of deleted files from Sonarr/Radarr webhook payload.
-
-    Args:
-        deleted_files: List of file objects from deletedFiles in webhook payload
-        media_type: "Movie" or "Episode" for logging
-        title: Display title for notifications
-
-    Returns:
-        dict with 'success_count', 'fail_count', 'messages'
-    """
-    results = {
-        'success_count': 0,
-        'fail_count': 0,
-        'messages': []
-    }
-
-    if not deleted_files:
-        return results
-
-    logger.info(f"Processing {len(deleted_files)} deleted file(s) for {title}")
-
-    for deleted_file in deleted_files:
-        # Radarr uses 'path', Sonarr uses 'path' as well
-        file_path = deleted_file.get('path') or deleted_file.get('relativePath')
-
-        if not file_path:
-            logger.warning(f"No path found in deleted file entry: {deleted_file}")
-            continue
-
-        # If we got a relative path, we need the full path
-        # The webhook should provide the full container path in 'path'
-        success, message = delete_from_destination(file_path, title)
-
-        if success:
-            results['success_count'] += 1
-        else:
-            results['fail_count'] += 1
-        results['messages'].append(message)
-
-    logger.info(f"Deletion results for {title}: {results['success_count']} succeeded, {results['fail_count']} failed")
-    return results
 
 
 def run_rsync(source: str, dest_dir: str, is_file: bool = True, job_id: int = None) -> tuple:
@@ -1223,7 +964,7 @@ def format_size(size_bytes: int) -> str:
     return f"{size_bytes:.1f} PB"
 
 
-def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, dest_base: str = None, retry_count: int = 0, deleted_files: list = None):
+def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, dest_base: str = None, retry_count: int = 0):
     """
     Run rsync in background thread and send notification when complete.
     This allows the webhook to return immediately.
@@ -1313,68 +1054,12 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                 if DRY_RUN:
                     msg += "\n_(DRY RUN - no files copied)_"
 
-                send_notification(
-                    title=f"{media_type} Synced",
-                    body=msg,
-                    notify_type=apprise.NotifyType.SUCCESS
-                )
-
-                # Delete old files from Unraid now that new file is safely on Unraid.
-                # deleted_files comes from the Radarr/Sonarr webhook payload and is only
-                # set on the first attempt — retries and history-scanner paths leave it None.
-                if deleted_files and not DRY_RUN:
-                    deletion_results = process_deleted_files(deleted_files, media_type, title)
-                    if deletion_results['fail_count'] > 0:
-                        logger.warning(f"Some deletions failed for {title}: {deletion_results['messages']}")
-                        try:
-                            send_notification(
-                                "UPGRADE WARNING",
-                                f"Failed to delete {deletion_results['fail_count']} old file(s) for {title}. "
-                                f"Orphan duplicates may exist on Unraid.",
-                                apprise.NotifyType.WARNING,
-                            )
-                        except Exception:
-                            pass
-
-                # For TV episodes, sweep any old versions of the same S##E## from dest.
-                # This handles history-scanner catchups (no deletedFiles payload) and
-                # batch-sync overlap where an older copy arrived before the webhook upgrade.
-                if media_type == "Episode" and not DRY_RUN:
-                    swept = sweep_old_episode_versions(source, dest)
-                    if swept:
-                        logger.info(f"Post-sync sweep removed {len(swept)} old version(s) for {title}: {swept}")
-                        try:
-                            send_notification(
-                                title="Old Versions Removed",
-                                body=(
-                                    f"*{title}*\n"
-                                    f"Swept {len(swept)} old version(s) after upgrade sync:\n"
-                                    + "\n".join(f"- {f}" for f in swept)
-                                ),
-                                notify_type=apprise.NotifyType.INFO
-                            )
-                        except Exception:
-                            pass
-
-                # For movies, sweep any video files from dest that no longer exist in
-                # source. Handles upgrades where Radarr omits isUpgrade/deletedFiles.
-                if media_type == "Movie" and not DRY_RUN:
-                    movie_dest_dir = os.path.join(dest, os.path.basename(source))
-                    swept = sweep_old_movie_versions(source, movie_dest_dir)
-                    if swept:
-                        logger.info(f"Post-sync movie sweep removed {len(swept)} old version(s) for {title}: {swept}")
-                        try:
-                            send_notification(
-                                title="Old Movie Version Removed",
-                                body=(
-                                    f"*{title}*\n"
-                                    f"Swept {len(swept)} old version(s) after upgrade sync:\n"
-                                    + "\n".join(f"- {f}" for f in swept)
-                                ),
-                                notify_type=apprise.NotifyType.INFO
-                            )
-                        except Exception:
-                            pass
+                if media_type != "Episode":
+                    send_notification(
+                        title=f"{media_type} Synced",
+                        body=msg,
+                        notify_type=apprise.NotifyType.SUCCESS
+                    )
 
                 # Trigger Plex library scan for the synced content
                 if not DRY_RUN:
@@ -1935,6 +1620,254 @@ def _get_unraid_movie_folders() -> set:
     return folders
 
 
+def _should_sync_tv_episode(filename: str) -> bool:
+    """Returns False for files that must NOT be synced per sync rules:
+    – 720p/SD content (Upgraderr handles the upgrade first)
+    – x265/HEVC at 1080p without HDR/DV (blocked by Recyclarr quality profile)
+    """
+    name = filename.lower()
+    if re.search(r'\b(480p|576p|720p|sd)\b', name):
+        return False
+    if re.search(r'\b(hdtv|webrip|webdl|bluray|bdrip)[-\[]?720p\b', name):
+        return False
+    is_hevc = bool(re.search(r'\b(x265|h265|hevc|x\.265)\b', name))
+    has_hdr = bool(re.search(r'\b(hdr10\+?|hdr10|hdr|dv|dovi|dolby\.?vision|hlg|pq)\b', name))
+    if is_hevc and not has_hdr:
+        return False
+    return True
+
+
+def scan_tv_gaps():
+    """
+    Nightly TV gap scanner — runs at 03:00 UTC.
+
+    Compares Synology rs-tv NFS listing (per-episode) against the Unraid Agent
+    inventory. Any episode present on Synology but absent on Unraid (and passing
+    the quality filter) is queued for an append-only rsync.
+
+    Uses the Unraid Agent API for Unraid inventory — never CIFS bulk listing.
+    """
+    logger.info("TV gap scanner: starting nightly check...")
+
+    synology_tv_root = '/mnt/synology/rs-tv'
+    if not os.path.isdir(synology_tv_root):
+        logger.error("TV gap scanner: Synology TV mount not accessible")
+        return
+
+    # Fetch Unraid TV inventory via Agent (fast local scan, no CIFS)
+    try:
+        resp = requests.get(
+            f"{UNRAID_AGENT_URL}/inventory",
+            params={'path': '/mnt/user/Media/TV Shows', 'refresh': 'true'},
+            headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
+            timeout=180
+        )
+        resp.raise_for_status()
+        agent_data = resp.json()
+    except Exception as e:
+        logger.error(f"TV gap scanner: Agent inventory failed: {e}")
+        return
+
+    # Build set of (show_folder_name, SxxExx) present on Unraid
+    # path = /mnt/user/Media/TV Shows/<show>/<season>/<file>
+    unraid_eps: set = set()
+    ep_re = re.compile(r'S(\d{1,2})E(\d{1,4})', re.IGNORECASE)
+    for item in agent_data.get('items', []):
+        path = item.get('path', '')
+        parts = path.split('/')
+        if len(parts) < 8:
+            continue
+        show_folder = parts[5]  # index 5 under /mnt/user/Media/TV Shows/
+        fname = parts[-1]
+        m = ep_re.search(fname)
+        if m:
+            ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
+            unraid_eps.add((show_folder, ep_key))
+
+    skip_names = {'#recycle', '@eaDir', '.DS_Store', '.lnk', '.txt'}
+    video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v')
+    to_queue = []  # list of (source_file_path, show_name, ep_key)
+
+    for show_entry in os.scandir(synology_tv_root):
+        if not show_entry.is_dir() or show_entry.name in skip_names:
+            continue
+        show_name = show_entry.name
+        for season_entry in os.scandir(show_entry.path):
+            if not season_entry.is_dir() or season_entry.name in skip_names:
+                continue
+            for f_entry in os.scandir(season_entry.path):
+                if not f_entry.is_file():
+                    continue
+                fname = f_entry.name
+                if not fname.lower().endswith(video_exts):
+                    continue
+                if not _should_sync_tv_episode(fname):
+                    continue
+                m = ep_re.search(fname)
+                if not m:
+                    continue
+                ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
+                if (show_name, ep_key) not in unraid_eps:
+                    to_queue.append((f_entry.path, show_name, ep_key))
+
+    if not to_queue:
+        logger.info("TV gap scanner: all syncable TV episodes are present on Unraid")
+        return
+
+    logger.info(f"TV gap scanner: {len(to_queue)} episode(s) missing from Unraid")
+
+    # Deduplicate: if multiple files for the same (show, ep_key) gap, pick the best
+    # (highest file size as a simple proxy — TRaSH scoring needs the filename parser
+    # which isn't available here; size is a safe heuristic for the same episode)
+    best: dict = {}  # (show, ep_key) -> (path, size)
+    for src_path, show_name, ep_key in to_queue:
+        key = (show_name, ep_key)
+        try:
+            size = os.path.getsize(src_path)
+        except OSError:
+            size = 0
+        if key not in best or size > best[key][1]:
+            best[key] = (src_path, size)
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    total_queued = 0
+    queued_titles = []
+    tv_dest_base = '/mnt/unraid/media/TV Shows'
+
+    for (show_name, ep_key), (src_path, file_size) in sorted(best.items()):
+        fname = os.path.basename(src_path)
+        season_dir = os.path.basename(os.path.dirname(src_path))
+        dest = os.path.join(tv_dest_base, show_name, season_dir)
+        display_title = f"{show_name} - {ep_key}"
+
+        # Skip if already pending/in_progress
+        cursor.execute(
+            "SELECT id FROM sync_jobs WHERE source_path = ? AND status IN ('pending','in_progress')",
+            (src_path,)
+        )
+        if cursor.fetchone():
+            continue
+
+        # Skip if successfully synced in the last 7 days
+        cursor.execute(
+            "SELECT id FROM sync_jobs WHERE source_path = ? AND status = 'success' "
+            "AND completed_at > datetime('now', '-7 days')",
+            (src_path,)
+        )
+        if cursor.fetchone():
+            continue
+
+        conn.close()
+        background_sync(
+            source=src_path,
+            dest=dest,
+            title=display_title,
+            quality='TVGapSync',
+            file_size=file_size,
+            media_type='Episode',
+            dest_base=tv_dest_base,
+        )
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        total_queued += 1
+        queued_titles.append(display_title)
+        logger.info(f"TV gap scanner: queued {display_title}")
+
+    conn.close()
+
+    if total_queued > 0:
+        titles_list = "\n".join(f"• {t}" for t in queued_titles[:20])
+        if len(queued_titles) > 20:
+            titles_list += f"\n... and {len(queued_titles) - 20} more"
+        send_notification(
+            title="TV Gap Sync",
+            body=f"Found {total_queued} TV episode(s) missing from Unraid — queued for sync:\n{titles_list}",
+            notify_type=apprise.NotifyType.WARNING
+        )
+    else:
+        logger.info("TV gap scanner: all identified gaps are already queued or recently synced")
+
+
+def nightly_unraid_dedup():
+    """
+    Nightly Unraid duplicate cleanup — runs at 04:45 UTC.
+
+    Calls the Unraid Agent /scan endpoint (runs locally on Unraid, no CIFS overhead)
+    to find episodes/movies with 2+ copies. Deletes the lower-quality version(s) via
+    the Agent /delete endpoint.
+
+    The Agent's quality scoring (TRaSH-aligned) determines which version to keep.
+    Only deletes versions marked safe_to_delete=True by the Agent (multi-episode
+    files that cover unique content are left alone).
+    """
+    logger.info("Unraid dedup: starting nightly duplicate cleanup via Agent...")
+
+    try:
+        resp = requests.get(
+            f"{UNRAID_AGENT_URL}/scan",
+            params={'refresh': 'true'},
+            headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
+            timeout=300
+        )
+        resp.raise_for_status()
+        scan_data = resp.json()
+    except Exception as e:
+        logger.error(f"Unraid dedup: Agent scan failed: {e}")
+        return
+
+    total_deleted = 0
+    total_freed = 0
+    errors = []
+
+    for ftype, groups in scan_data.get('unraid', {}).items():
+        for group in groups:
+            versions = group.get('versions', [])
+            if len(versions) < 2:
+                continue
+            # versions[0] is best quality (sorted desc by trash_score in Agent)
+            for version in versions[1:]:
+                if not version.get('safe_to_delete', True):
+                    logger.debug(f"Dedup: skipping unsafe {version.get('file_path')}")
+                    continue
+                file_path = version.get('file_path', '')
+                if not file_path:
+                    continue
+                try:
+                    del_resp = requests.post(
+                        f"{UNRAID_AGENT_URL}/delete",
+                        json={'paths': [file_path]},
+                        headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
+                        timeout=30
+                    )
+                    if del_resp.status_code == 200:
+                        total_deleted += 1
+                        total_freed += version.get('file_size_bytes', 0)
+                        logger.info(f"Dedup: removed lower-quality duplicate: {file_path}")
+                    else:
+                        errors.append(file_path)
+                        logger.warning(f"Dedup: Agent delete failed ({del_resp.status_code}): {file_path}")
+                except Exception as e:
+                    errors.append(file_path)
+                    logger.error(f"Dedup: error deleting {file_path}: {e}")
+
+    summary = f"Removed {total_deleted} duplicate(s), freed {format_size(total_freed)}"
+    if errors:
+        summary += f" | {len(errors)} error(s)"
+    logger.info(f"Unraid dedup: {summary}")
+
+    if total_deleted > 0:
+        send_notification(
+            title="Unraid Nightly Dedup",
+            body=summary,
+            notify_type=apprise.NotifyType.INFO
+        )
+
+
 def scan_library_gaps():
     """
     Nightly reconciliation: compare Synology HD-movies source folders vs Unraid destination
@@ -2060,6 +1993,18 @@ if RADARR_HD_API_KEY or SONARR_HD_API_KEY:
     )
     logger.info(f"History scanner enabled - checking every {HISTORY_SCAN_INTERVAL} min, looking back {HISTORY_SCAN_HOURS} hours")
 
+# TV gap scanner — nightly at 03:00 UTC
+scheduler.add_job(
+    func=scan_tv_gaps,
+    trigger='cron',
+    hour=3,
+    minute=0,
+    id='tv_gap_scanner',
+    name='Nightly TV gap scan (Synology vs Unraid via Agent)',
+    replace_existing=True
+)
+logger.info("TV gap scanner enabled - runs nightly at 03:00 UTC")
+
 # Movie gap scanner — nightly at 03:30 UTC (after DB backup, before Curatorr tasks)
 scheduler.add_job(
     func=scan_library_gaps,
@@ -2071,6 +2016,18 @@ scheduler.add_job(
     replace_existing=True
 )
 logger.info("Library gap scanner enabled - runs nightly at 03:30 UTC")
+
+# Unraid dedup — nightly at 04:45 UTC
+scheduler.add_job(
+    func=nightly_unraid_dedup,
+    trigger='cron',
+    hour=4,
+    minute=45,
+    id='unraid_dedup',
+    name='Nightly Unraid duplicate cleanup via Agent',
+    replace_existing=True
+)
+logger.info("Unraid dedup enabled - runs nightly at 04:45 UTC")
 
 scheduler.start()
 logger.info("Scheduler started - daily summary at 00:05, auto-retry every 15 min")
@@ -2279,32 +2236,11 @@ def radarr_webhook():
                     'title': display_title
                 })
 
-        # Handle MovieFileDelete event (manual deletion or cleanup)
+        # Handle MovieFileDelete event (append-only sync — ignore deletions)
         if event_type == 'MovieFileDelete':
-            movie_file = data.get('movieFile', {})
-            file_path = movie_file.get('path', '')
             delete_reason = data.get('deleteReason', 'unknown')
-
-            logger.info(f"Processing movie file deletion: {display_title} - Reason: {delete_reason}")
-
-            if file_path:
-                success, message = delete_from_destination(file_path, display_title)
-
-                if success:
-                    logger.info(f"Successfully processed deletion for {display_title}")
-                    return jsonify({
-                        'status': 'success',
-                        'message': f'Deleted {display_title} from destination',
-                        'details': message
-                    })
-                else:
-                    logger.warning(f"Deletion issue for {display_title}: {message}")
-                    return jsonify({
-                        'status': 'warning',
-                        'message': message
-                    })
-            else:
-                return jsonify({'status': 'ignored', 'reason': 'No file path in payload'})
+            logger.info(f"MovieFileDelete ignored (append-only sync): {display_title} — reason: {delete_reason}")
+            return jsonify({'status': 'ignored', 'reason': 'append-only sync mode'})
 
         # Handle Download/Upgrade events
         movie_file = data.get('movieFile', {})
@@ -2312,11 +2248,6 @@ def radarr_webhook():
         file_path = movie_file.get('path', '')
         file_size = movie_file.get('size', 0)
         is_upgrade = data.get('isUpgrade', False)
-
-        # Collect deleted files — will be processed after rsync succeeds (not before)
-        deleted_files = data.get('deletedFiles', []) or []
-        if deleted_files:
-            logger.info(f"Upgrade detected for {display_title} - will delete {len(deleted_files)} old file(s) after sync")
 
         # Safely extract quality - handle various payload formats
         quality_data = movie_file.get('quality', {})
@@ -2357,7 +2288,6 @@ def radarr_webhook():
             file_size=file_size,
             media_type="Movie",
             dest_base=dest_base,
-            deleted_files=deleted_files or None
         )
 
         # Return immediately - sync happens in background
@@ -2368,9 +2298,6 @@ def radarr_webhook():
             'dest': dest,
             'is_upgrade': is_upgrade
         }
-
-        if deleted_files:
-            response_data['deleted_files_processed'] = len(deleted_files)
 
         return jsonify(response_data)
 
@@ -2419,42 +2346,11 @@ def sonarr_webhook():
         series_title = series.get('title', 'Unknown Series')
         series_path = series.get('path', '')
 
-        # Handle EpisodeFileDelete event (manual deletion or cleanup)
+        # Handle EpisodeFileDelete event (append-only sync — ignore deletions)
         if event_type == 'EpisodeFileDelete':
-            episode_file = data.get('episodeFile', {})
-            file_path = episode_file.get('path', '')
             delete_reason = data.get('deleteReason', 'unknown')
-
-            # Build episode info for logging
-            episodes = data.get('episodes', [{}])
-            ep_codes = []
-            for ep in episodes:
-                season = ep.get('seasonNumber', 0)
-                episode_num = ep.get('episodeNumber', 0)
-                ep_codes.append(f"S{season:02d}E{episode_num:02d}")
-            ep_string = '-'.join(ep_codes) if ep_codes else 'Unknown'
-            display_title = f"{series_title} - {ep_string}"
-
-            logger.info(f"Processing episode file deletion: {display_title} - Reason: {delete_reason}")
-
-            if file_path:
-                success, message = delete_from_destination(file_path, display_title)
-
-                if success:
-                    logger.info(f"Successfully processed deletion for {display_title}")
-                    return jsonify({
-                        'status': 'success',
-                        'message': f'Deleted {display_title} from destination',
-                        'details': message
-                    })
-                else:
-                    logger.warning(f"Deletion issue for {display_title}: {message}")
-                    return jsonify({
-                        'status': 'warning',
-                        'message': message
-                    })
-            else:
-                return jsonify({'status': 'ignored', 'reason': 'No file path in payload'})
+            logger.info(f"EpisodeFileDelete ignored (append-only sync): {series_title} — reason: {delete_reason}")
+            return jsonify({'status': 'ignored', 'reason': 'append-only sync mode'})
 
         # Handle Download/Upgrade events
         episodes = data.get('episodes', [{}])
@@ -2462,11 +2358,6 @@ def sonarr_webhook():
         file_path = episode_file.get('path', '')
         file_size = episode_file.get('size', 0)
         is_upgrade = data.get('isUpgrade', False)
-
-        # Collect deleted files — will be processed after rsync succeeds (not before)
-        deleted_files = data.get('deletedFiles', []) or []
-        if deleted_files:
-            logger.info(f"Upgrade detected for {series_title} - will delete {len(deleted_files)} old file(s) after sync")
 
         # Safely extract quality - handle various payload formats
         quality_data = episode_file.get('quality', {})
@@ -2527,7 +2418,6 @@ def sonarr_webhook():
             quality=quality,
             file_size=file_size,
             media_type="Episode",
-            deleted_files=deleted_files or None
         )
 
         # Return immediately - sync happens in background
@@ -2538,9 +2428,6 @@ def sonarr_webhook():
             'dest': dest,
             'is_upgrade': is_upgrade
         }
-
-        if deleted_files:
-            response_data['deleted_files_processed'] = len(deleted_files)
 
         return jsonify(response_data)
 
