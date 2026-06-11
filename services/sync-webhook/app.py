@@ -1793,6 +1793,150 @@ def scan_tv_gaps():
         logger.info("TV gap scanner: all identified gaps are already queued or recently synced")
 
 
+def nightly_library_report():
+    """
+    Nightly library health report — runs at 04:15 UTC (after both gap scans).
+
+    Sends a single Telegram summary covering:
+    - HD movies: Synology count vs Unraid count, list of any still-missing titles
+    - HD TV: shows + episode counts on each side, missing episodes grouped by show
+
+    Informational only — no queuing, no deletions.
+    """
+    logger.info("Library report: generating nightly summary...")
+
+    from collections import defaultdict
+
+    lines = ["*Nightly Library Report*\n"]
+    missing_movies: list = []
+    missing_by_show: dict = {}
+    total_missing_eps: int = 0
+    ep_re = re.compile(r'S(\d{1,2})E(\d{1,4})', re.IGNORECASE)
+    skip_names = {'#recycle', '@eaDir', '.DS_Store', 'testfile'}
+    skip_suffixes = ('.lnk', '.txt', '.url')
+    video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v')
+
+    # ── Movies ───────────────────────────────────────────────────────────────
+    try:
+        src_base = '/mnt/synology/rs-movies'
+        syn_folders = set(
+            f for f in os.listdir(src_base)
+            if f not in skip_names and not any(f.endswith(s) for s in skip_suffixes)
+        ) if os.path.isdir(src_base) else set()
+
+        unraid_folders = _get_unraid_movie_folders()
+
+        missing_movies = sorted(
+            f for f in (syn_folders - unraid_folders)
+            if f not in skip_names and not any(f.endswith(s) for s in skip_suffixes)
+        )
+
+        lines.append(f"🎬 *HD Movies*")
+        lines.append(f"Synology: {len(syn_folders):,}  |  Unraid: {len(unraid_folders):,}")
+        if not missing_movies:
+            lines.append("✅ All movies present on Unraid")
+        else:
+            lines.append(f"⚠️ {len(missing_movies)} missing from Unraid:")
+            for title in missing_movies[:15]:
+                lines.append(f"  • {title}")
+            if len(missing_movies) > 15:
+                lines.append(f"  … and {len(missing_movies) - 15} more")
+    except Exception as e:
+        logger.error(f"Library report: movie section failed: {e}")
+        lines.append("🎬 *HD Movies* — ❌ error fetching data")
+
+    lines.append("")
+
+    # ── TV ───────────────────────────────────────────────────────────────────
+    try:
+        synology_tv_root = '/mnt/synology/rs-tv'
+
+        # Fetch Unraid TV inventory (Agent cache may still be warm from 03:00 scan)
+        resp = requests.get(
+            f"{UNRAID_AGENT_URL}/inventory",
+            params={'path': '/mnt/user/Media/TV Shows'},
+            headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
+            timeout=180
+        )
+        resp.raise_for_status()
+        agent_data = resp.json()
+
+        unraid_eps: set = set()
+        unraid_shows: set = set()
+        for item in agent_data.get('items', []):
+            path = item.get('path', '')
+            parts = path.split('/')
+            if len(parts) < 6:
+                continue
+            show_folder = parts[5]
+            unraid_shows.add(show_folder)
+            fname = parts[-1]
+            m = ep_re.search(fname)
+            if m:
+                ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
+                unraid_eps.add((show_folder, ep_key))
+
+        # Scan Synology TV — build (show, ep_key) set and per-show counts
+        syn_shows: set = set()
+        missing_by_show: dict = defaultdict(list)
+        syn_ep_total = 0
+
+        if os.path.isdir(synology_tv_root):
+            for show_entry in os.scandir(synology_tv_root):
+                if not show_entry.is_dir() or show_entry.name in skip_names:
+                    continue
+                show_name = show_entry.name
+                syn_shows.add(show_name)
+                for season_entry in os.scandir(show_entry.path):
+                    if not season_entry.is_dir() or season_entry.name in skip_names:
+                        continue
+                    for f_entry in os.scandir(season_entry.path):
+                        if not f_entry.is_file():
+                            continue
+                        fname = f_entry.name
+                        if not fname.lower().endswith(video_exts):
+                            continue
+                        if not _should_sync_tv_episode(fname):
+                            continue
+                        m = ep_re.search(fname)
+                        if not m:
+                            continue
+                        syn_ep_total += 1
+                        ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
+                        if (show_name, ep_key) not in unraid_eps:
+                            missing_by_show[show_name].append(ep_key)
+
+        total_missing_eps = sum(len(v) for v in missing_by_show.values())
+
+        lines.append(f"📺 *HD TV Shows*")
+        lines.append(f"Synology: {len(syn_shows):,} shows, {syn_ep_total:,} syncable eps")
+        lines.append(f"Unraid: {len(unraid_shows):,} shows, {len(unraid_eps):,} eps")
+
+        if not missing_by_show:
+            lines.append("✅ All syncable episodes present on Unraid")
+        else:
+            lines.append(f"⚠️ {total_missing_eps} episode(s) missing across {len(missing_by_show)} show(s):")
+            # Sort by most missing first, show top 12
+            sorted_shows = sorted(missing_by_show.items(), key=lambda x: -len(x[1]))
+            for show, eps in sorted_shows[:12]:
+                # Strip TVDB suffix for readability: "Show Name (Year) {tvdb-12345}" → "Show Name (Year)"
+                display = show.split(' {')[0]
+                lines.append(f"  • {display}: {len(eps)} ep(s)")
+            if len(sorted_shows) > 12:
+                lines.append(f"  … and {len(sorted_shows) - 12} more shows")
+
+    except Exception as e:
+        logger.error(f"Library report: TV section failed: {e}")
+        lines.append("📺 *HD TV* — ❌ error fetching data")
+
+    body = "\n".join(lines)
+    has_gaps = bool(missing_movies) or bool(missing_by_show)
+    notify_type = apprise.NotifyType.WARNING if has_gaps else apprise.NotifyType.SUCCESS
+
+    send_notification(title="Library Health", body=body, notify_type=notify_type)
+    logger.info(f"Library report: sent — {len(missing_movies)} missing movies, {total_missing_eps} missing TV eps")
+
+
 def nightly_unraid_dedup():
     """
     Nightly Unraid duplicate cleanup — runs at 04:45 UTC.
@@ -2016,6 +2160,18 @@ scheduler.add_job(
     replace_existing=True
 )
 logger.info("Library gap scanner enabled - runs nightly at 03:30 UTC")
+
+# Library health report — nightly at 04:15 UTC (after both gap scans, before dedup)
+scheduler.add_job(
+    func=nightly_library_report,
+    trigger='cron',
+    hour=4,
+    minute=15,
+    id='library_report',
+    name='Nightly library health report (movies + TV summary to Telegram)',
+    replace_existing=True
+)
+logger.info("Library report enabled - runs nightly at 04:15 UTC")
 
 # Unraid dedup — nightly at 04:45 UTC
 scheduler.add_job(
@@ -2850,6 +3006,17 @@ def trigger_gap_scan():
         thread = threading.Thread(target=scan_library_gaps, daemon=True)
         thread.start()
         return jsonify({'status': 'triggered', 'message': 'Gap scan started — check logs for results'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/library-report/trigger', methods=['POST'])
+def trigger_library_report():
+    """Manually trigger the nightly library health report (sends Telegram summary)."""
+    try:
+        thread = threading.Thread(target=nightly_library_report, daemon=True)
+        thread.start()
+        return jsonify({'status': 'triggered', 'message': 'Library report generating — Telegram notification will arrive in ~1-2 min'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
