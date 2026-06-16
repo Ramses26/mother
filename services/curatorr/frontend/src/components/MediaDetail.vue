@@ -42,9 +42,9 @@
           <span v-if="item.hdr_format" class="px-2 py-0.5 rounded text-xs font-medium bg-purple-900 text-purple-300">
             {{ item.hdr_format }}
           </span>
-          <span v-if="item.status" class="px-2 py-0.5 rounded text-xs font-medium"
-            :class="statusClass(item.status)">
-            {{ item.status }}
+          <span v-if="item.status || item.tmdb_status" class="px-2 py-0.5 rounded text-xs font-medium"
+            :class="statusClass(item.tmdb_status === 'Cancelled' ? 'Cancelled' : item.status)">
+            {{ item.tmdb_status === 'Cancelled' ? 'Cancelled' : item.status }}
           </span>
           <span v-if="!item.monitored" class="px-2 py-0.5 rounded text-xs font-medium bg-slate-700 text-slate-400">
             Unmonitored

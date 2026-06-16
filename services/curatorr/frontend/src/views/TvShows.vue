@@ -286,8 +286,8 @@
               v-if="!s.poster_url && !s.plex_key">No poster</div>
             <!-- Status badge -->
             <div class="absolute top-1 right-1 px-1.5 py-0.5 rounded text-xs font-medium"
-              :class="statusBadgeClass(s.status)" style="background:rgba(0,0,0,0.7)">
-              {{ s.status?.charAt(0) || '?' }}
+              :class="statusBadgeClass(effectiveStatus(s))" style="background:rgba(0,0,0,0.7)">
+              {{ effectiveStatus(s).charAt(0) }}
             </div>
             <!-- Hover overlay -->
             <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end"
@@ -303,7 +303,11 @@
                     Chris{{ s.chris_play_count > 0 ? '✓' : '✗' }}
                   </span>
                 </div>
-                <!-- Completion bar -->
+                <!-- Disk + Completion -->
+                <div class="flex justify-between text-xs text-slate-400 mb-0.5">
+                  <span>{{ fmtSize(s.size_on_disk) }}</span>
+                  <span>{{ s.season_completion_pct || 0 }}%</span>
+                </div>
                 <div class="w-full h-1 rounded-full overflow-hidden" style="background:#2d3250;">
                   <div class="h-full rounded-full bg-violet-600"
                     :style="{ width: (s.season_completion_pct || 0) + '%' }"></div>
@@ -357,6 +361,7 @@
               </th>
               <th v-if="visibleCols.watched" class="py-2 pr-4 font-medium">Watched</th>
               <th v-if="visibleCols.both" class="py-2 pr-4 font-medium">Both</th>
+              <th v-if="visibleCols.size_on_disk" class="py-2 pr-4 font-medium">Disk</th>
               <th class="py-2 font-medium">Purge</th>
             </tr>
           </thead>
@@ -378,8 +383,8 @@
               <td v-if="visibleCols.year" class="py-2 pr-4 text-slate-400 text-sm">{{ s.year || '—' }}</td>
               <td v-if="visibleCols.network" class="py-2 pr-4 text-slate-400 text-xs">{{ s.network || '—' }}</td>
               <td class="py-2 pr-4">
-                <span class="px-1.5 py-0.5 rounded text-xs font-medium" :class="statusClass(s.status)">
-                  {{ s.status || '?' }}
+                <span class="px-1.5 py-0.5 rounded text-xs font-medium" :class="statusClass(effectiveStatus(s))">
+                  {{ effectiveStatus(s) }}
                 </span>
               </td>
               <td class="py-2 pr-4">
@@ -420,6 +425,7 @@
                 <span v-else-if="s.chris_play_count > 0" class="text-purple-400">Chris</span>
                 <span v-else class="text-slate-600">—</span>
               </td>
+              <td v-if="visibleCols.size_on_disk" class="py-2 pr-4 text-slate-400 text-xs">{{ fmtSize(s.size_on_disk) }}</td>
               <td class="py-2">
                 <span class="px-1.5 py-0.5 rounded text-xs font-medium" :class="purgeScoreClass(s.purge_score)">
                   {{ s.purge_score || 0 }}
@@ -449,12 +455,13 @@
       class="fixed bottom-0 left-0 right-0 z-50 flex items-center gap-3 px-6 py-3 border-t shadow-2xl"
       style="background:#1a1d27; border-color:#7c3aed;">
       <span class="text-white font-medium text-sm">{{ selectedIds.size }} selected</span>
+      <span v-if="selectedTotalSize > 0" class="text-violet-300 text-sm font-medium">· {{ fmtSize(selectedTotalSize) }} total</span>
       <div class="flex-1"/>
       <button @click="doBulkUnmonitor" class="btn-secondary text-sm px-3 py-1.5">Unmonitor</button>
       <button @click="doBulkMonitor" class="btn-secondary text-sm px-3 py-1.5">Monitor</button>
       <button @click="bulkDeleteConfirm = true" class="btn-danger text-sm px-3 py-1.5">Delete</button>
       <button @click="doExportCSV" class="btn-secondary text-sm px-3 py-1.5">Export CSV</button>
-      <button @click="selectedIds = new Set()" class="text-slate-400 hover:text-white text-lg leading-none px-2">✕</button>
+      <button @click="selectedIds.value = new Set(); selectedSizes.clear()" class="text-slate-400 hover:text-white text-lg leading-none px-2">✕</button>
     </div>
 
     <!-- Bulk delete confirmation modal -->
@@ -479,7 +486,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import MediaDetail from '../components/MediaDetail.vue'
@@ -503,6 +510,7 @@ const sortDir3 = ref('asc')
 const activePreset = ref('')
 const showColMenu = ref(false)
 const selectedIds = ref(new Set())
+const selectedSizes = reactive(new Map()) // id -> size_on_disk
 const availableLanguages = ref([])
 const availableGenres = ref([])
 const availableContentRatings = ref([])
@@ -536,6 +544,7 @@ const sortOptions = [
   { value: 'chris_last_watched', label: 'Chris Last Watched' },
   { value: 'status', label: 'Status' },
   { value: 'network', label: 'Network' },
+  { value: 'size_on_disk', label: 'Disk Usage' },
 ]
 
 const presets = [
@@ -563,11 +572,12 @@ const optionalCols = [
   { key: 'ali_last_watched', label: 'Ali Watched' },
   { key: 'chris_last_watched', label: 'Chris Watched' },
   { key: 'watch_status', label: 'Watch Status' },
+  { key: 'size_on_disk', label: 'Disk Usage' },
 ]
 
 const COL_STORAGE_KEY = 'curatorr_tv_cols'
 const defaultCols = { year: true, network: false, imdb: false, rt: false, metacritic: false, mdblist: false, seasons: true, watched: true, both: false,
-  language: false, content_rating: false, trakt: false, ali_last_watched: false, chris_last_watched: false, watch_status: false }
+  language: false, content_rating: false, trakt: false, ali_last_watched: false, chris_last_watched: false, watch_status: false, size_on_disk: true }
 const visibleCols = reactive({ ...defaultCols })
 
 const loadColPrefs = () => {
@@ -701,6 +711,9 @@ const doUnmonitor = async (item) => {
   catch { alert('Unmonitor failed') }
 }
 
+const effectiveStatus = (show) =>
+  show.tmdb_status === 'Cancelled' ? 'Cancelled' : (show.status || 'Ended')
+
 const statusClass = (s) => ({
   'Continuing': 'bg-green-900 text-green-300',
   'Ended': 'bg-slate-700 text-slate-300',
@@ -729,10 +742,20 @@ const purgeScoreClass = (score) => {
   return 'bg-green-900 text-green-300'
 }
 
+const selectedTotalSize = computed(() => {
+  let total = 0
+  for (const size of selectedSizes.values()) total += (size || 0)
+  return total
+})
+
 const toggleSelect = (id) => {
   const s = new Set(selectedIds.value)
-  if (s.has(id)) s.delete(id)
-  else s.add(id)
+  if (s.has(id)) { s.delete(id); selectedSizes.delete(id) }
+  else {
+    s.add(id)
+    const show = shows.value.find(x => x.id === id)
+    if (show) selectedSizes.set(id, show.size_on_disk || 0)
+  }
   selectedIds.value = s
 }
 
@@ -740,8 +763,15 @@ const toggleSelectAll = () => {
   const allIds = shows.value.map(s => s.id)
   const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.value.has(id))
   const s = new Set(selectedIds.value)
-  if (allSelected) allIds.forEach(id => s.delete(id))
-  else allIds.forEach(id => s.add(id))
+  if (allSelected) {
+    allIds.forEach(id => { s.delete(id); selectedSizes.delete(id) })
+  } else {
+    allIds.forEach(id => {
+      s.add(id)
+      const show = shows.value.find(x => x.id === id)
+      if (show) selectedSizes.set(id, show.size_on_disk || 0)
+    })
+  }
   selectedIds.value = s
 }
 
@@ -763,7 +793,7 @@ const doBulkUnmonitor = async () => {
   const ids = [...selectedIds.value]
   try {
     const res = await axios.post('/api/tv/bulk-unmonitor', { ids })
-    selectedIds.value = new Set()
+    selectedIds.value = new Set(); selectedSizes.clear()
     showToast(`${res.data.succeeded.length} unmonitored`)
     fetchShows()
   } catch { showToast('Unmonitor failed') }
@@ -773,7 +803,7 @@ const doBulkMonitor = async () => {
   const ids = [...selectedIds.value]
   try {
     const res = await axios.post('/api/tv/bulk-monitor', { ids })
-    selectedIds.value = new Set()
+    selectedIds.value = new Set(); selectedSizes.clear()
     showToast(`${res.data.succeeded.length} monitored`)
     fetchShows()
   } catch { showToast('Monitor failed') }
@@ -788,7 +818,7 @@ const doBulkDelete = async () => {
     const failed = res.data.failed || []
     const succeededIds = new Set(succeeded.map(s => s.id))
     shows.value = shows.value.filter(s => !succeededIds.has(s.id))
-    selectedIds.value = new Set()
+    selectedIds.value = new Set(); selectedSizes.clear()
     showToast(failed.length > 0 ? `${succeeded.length} deleted, ${failed.length} failed` : `${succeeded.length} deleted`)
     fetchShows()
   } catch { showToast('Delete failed') }
@@ -815,6 +845,14 @@ const lastWatchedOpts = [
 const toggleEitherNotWatched = (days) => {
   filters.either_not_watched_days = filters.either_not_watched_days === days ? null : days
   fetchShows()
+}
+
+const fmtSize = (bytes) => {
+  if (!bytes) return '—'
+  if (bytes >= 1e12) return (bytes / 1e12).toFixed(1) + ' TB'
+  if (bytes >= 1e9) return (bytes / 1e9).toFixed(1) + ' GB'
+  if (bytes >= 1e6) return (bytes / 1e6).toFixed(0) + ' MB'
+  return bytes + ' B'
 }
 
 const fmtDate = (iso) => {

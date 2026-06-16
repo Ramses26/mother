@@ -258,23 +258,25 @@ async def _sync_plex_movie(db, plex: dict, item: ET.Element):
 
     # Try to match by tmdb_id or title+year
     matched = False
+    instance_key_col = f"{plex['name']}_plex_key"
     if tmdb_id:
         cur = await db.execute(
-            "UPDATE movies SET plex_key=?, resolution=COALESCE(NULLIF(?,''), resolution), "
+            f"UPDATE movies SET plex_key=?, {instance_key_col}=?, "
+            "resolution=COALESCE(NULLIF(?,''), resolution), "
             "video_codec=COALESCE(NULLIF(?,''), video_codec), audio_codec=COALESCE(NULLIF(?,''), audio_codec), "
             "audio_channels=COALESCE(?,audio_channels), hdr_format=COALESCE(NULLIF(?,''),hdr_format), "
             "file_path=COALESCE(NULLIF(?,''),file_path), plex_added_at=COALESCE(?,plex_added_at), "
             "updated_at=CURRENT_TIMESTAMP WHERE tmdb_id=?",
-            (plex_key, resolution, video_codec, audio_codec, audio_channels,
+            (plex_key, plex_key, resolution, video_codec, audio_codec, audio_channels,
              hdr_format, file_path, added_at, tmdb_id)
         )
         matched = cur.rowcount > 0
 
     if not matched and title and year:
         await db.execute(
-            "UPDATE movies SET plex_key=?, plex_added_at=COALESCE(?,plex_added_at), "
+            f"UPDATE movies SET plex_key=?, {instance_key_col}=?, plex_added_at=COALESCE(?,plex_added_at), "
             "updated_at=CURRENT_TIMESTAMP WHERE title=? AND year=?",
-            (plex_key, added_at, title, int(year))
+            (plex_key, plex_key, added_at, title, int(year))
         )
 
 
@@ -301,22 +303,24 @@ async def _sync_plex_show(db, plex: dict, item: ET.Element):
         except Exception:
             pass
 
+    # Store per-instance key (preserves both servers) and set plex_key to this instance's value
+    instance_key_col = f"{plex['name']}_plex_key"
     if tmdb_id:
         await db.execute(
-            "UPDATE tv_shows SET plex_key=?, plex_added_at=COALESCE(?,plex_added_at), "
-            "updated_at=CURRENT_TIMESTAMP WHERE tmdb_id=?",
-            (plex_key, added_at, tmdb_id)
+            f"UPDATE tv_shows SET plex_key=?, {instance_key_col}=?, "
+            "plex_added_at=COALESCE(?,plex_added_at), updated_at=CURRENT_TIMESTAMP WHERE tmdb_id=?",
+            (plex_key, plex_key, added_at, tmdb_id)
         )
     elif title:
         if year:
             await db.execute(
-                "UPDATE tv_shows SET plex_key=?, plex_added_at=COALESCE(?,plex_added_at), "
-                "updated_at=CURRENT_TIMESTAMP WHERE title=? AND year=?",
-                (plex_key, added_at, title, int(year))
+                f"UPDATE tv_shows SET plex_key=?, {instance_key_col}=?, "
+                "plex_added_at=COALESCE(?,plex_added_at), updated_at=CURRENT_TIMESTAMP WHERE title=? AND year=?",
+                (plex_key, plex_key, added_at, title, int(year))
             )
         else:
             await db.execute(
-                "UPDATE tv_shows SET plex_key=?, plex_added_at=COALESCE(?,plex_added_at), "
-                "updated_at=CURRENT_TIMESTAMP WHERE title=?",
-                (plex_key, added_at, title)
+                f"UPDATE tv_shows SET plex_key=?, {instance_key_col}=?, "
+                "plex_added_at=COALESCE(?,plex_added_at), updated_at=CURRENT_TIMESTAMP WHERE title=?",
+                (plex_key, plex_key, added_at, title)
             )

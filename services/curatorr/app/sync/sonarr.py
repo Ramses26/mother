@@ -66,6 +66,7 @@ async def sync_all_shows(db):
                 seasons = s.get('seasons') or []
                 total_seasons = len([ss for ss in seasons if ss.get('seasonNumber', 0) > 0])
                 total_episodes = sum(ss.get('statistics', {}).get('totalEpisodeCount', 0) for ss in seasons)
+                size_on_disk = s.get('statistics', {}).get('sizeOnDisk', 0) or 0
 
                 # Extract TVDB ID from alternate IDs if not at top level
                 tvdb_id = s.get('tvdbId')
@@ -82,9 +83,9 @@ async def sync_all_shows(db):
                         sonarr_id, sonarr_instance, tmdb_id, tvdb_id, imdb_id,
                         title, sort_title, year, genres, runtime_min,
                         content_rating, network, summary, original_language,
-                        status, total_seasons, total_episodes,
+                        status, total_seasons, total_episodes, size_on_disk,
                         monitored, poster_url, last_synced, updated_at
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
                     ON CONFLICT(sonarr_id, sonarr_instance) DO UPDATE SET
                         tmdb_id=excluded.tmdb_id, tvdb_id=excluded.tvdb_id,
                         imdb_id=excluded.imdb_id, title=excluded.title,
@@ -93,7 +94,7 @@ async def sync_all_shows(db):
                         content_rating=excluded.content_rating, network=excluded.network,
                         summary=excluded.summary, original_language=excluded.original_language,
                         status=excluded.status, total_seasons=excluded.total_seasons,
-                        total_episodes=excluded.total_episodes,
+                        total_episodes=excluded.total_episodes, size_on_disk=excluded.size_on_disk,
                         monitored=excluded.monitored, poster_url=excluded.poster_url,
                         last_synced=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
                 """, (
@@ -104,7 +105,7 @@ async def sync_all_shows(db):
                     s.get('runtime'), s.get('certification'),
                     s.get('network'), s.get('overview', ''),
                     s.get('originalLanguage', {}).get('name', '') if isinstance(s.get('originalLanguage'), dict) else s.get('originalLanguage', ''),
-                    status, total_seasons, total_episodes,
+                    status, total_seasons, total_episodes, size_on_disk,
                     1 if s.get('monitored') else 0, poster_url,
                 ))
 

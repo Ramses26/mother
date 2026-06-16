@@ -2,6 +2,7 @@
 import logging
 import os
 import re
+import threading
 import time
 import xml.etree.ElementTree as ET
 import httpx
@@ -122,10 +123,51 @@ async def list_duplicates(_auth=Depends(require_auth)):
 # ── Filesystem scan helpers ───────────────────────────────────────────────────
 
 _VIDEO_EXTS = frozenset({'.mkv', '.mp4', '.avi', '.ts', '.m4v', '.mov', '.wmv', '.m2ts'})
-# Allow up to 4-digit episode numbers (One Piece S17E113, etc.)
-_EP_RE = re.compile(r'[Ss](\d{1,2})[Ee](\d{1,4})', re.IGNORECASE)
+
+
+def _parse_episode_keys(filename: str) -> list:
+    """Return all S##E#### group keys for a filename.
+    Handles multi-episode files: S05E01-E02, S05E01E02, S05E01-02.
+    Handles 4-digit year-based seasons (e.g. Looney Tunes S1930E01).
+    Requires the S to follow a non-alphanumeric character so show names like
+    NOS4A2 (which contain 'S4') are not mistaken for a season marker.
+    """
+    # (?<![A-Za-z0-9]) prevents matching S inside show names (NOS4A2 → S4)
+    # \d{1,4} handles year-based seasons like S1930
+    season_match = re.search(r'(?<![A-Za-z0-9])[Ss](\d{1,4})', filename)
+    if not season_match:
+        return []
+    season = int(season_match.group(1))
+    rest = filename[season_match.end():]
+
+    first_ep = re.search(r'[Ee](\d{1,4})', rest)
+    if not first_ep:
+        return []
+    ep_start = int(first_ep.group(1))
+    after = rest[first_ep.end():]
+
+    # Range: E01-E02 or E01-02 (dash/en-dash immediately after first episode)
+    range_match = re.match(r'[-\u2013](?:[Ee])?(\d{1,4})', after)
+    if range_match:
+        ep_end = int(range_match.group(1))
+        return [f"S{season:04d}E{ep:04d}" for ep in range(ep_start, ep_end + 1)]
+
+    # Concatenated: E01E02E03... immediately following with no gap
+    keys = [f"S{season:04d}E{ep_start:04d}"]
+    pos = after
+    while True:
+        nxt = re.match(r'[Ee](\d{1,4})', pos)
+        if nxt:
+            keys.append(f"S{season:04d}E{int(nxt.group(1)):04d}")
+            pos = pos[nxt.end():]
+        else:
+            break
+    return keys
 _scan_cache: dict = {'data': None, 'ts': 0.0}
 SCAN_CACHE_TTL = 1800  # 30 minutes
+
+_scan_lock = threading.Lock()
+_scan_in_progress = False
 
 # (filesystem_path, server_label, folder_type_key, media_kind)
 _SCAN_ROOTS = [
@@ -288,9 +330,7 @@ def _scan_tv_dir(root: str, source_label: str, folder_type: str) -> list:
                         try:
                             for f in os.scandir(sub.path):
                                 if f.is_file() and os.path.splitext(f.name)[1].lower() in _VIDEO_EXTS:
-                                    m = _EP_RE.search(f.name)
-                                    if m:
-                                        key = f"S{m.group(1).zfill(2)}E{m.group(2).zfill(2)}"
+                                    for key in _parse_episode_keys(f.name):
                                         try:
                                             episodes.setdefault(key, []).append(
                                                 _make_file_version(f.path, f.stat().st_size))
@@ -299,9 +339,7 @@ def _scan_tv_dir(root: str, source_label: str, folder_type: str) -> list:
                         except (PermissionError, OSError):
                             pass
                     elif sub.is_file() and os.path.splitext(sub.name)[1].lower() in _VIDEO_EXTS:
-                        m = _EP_RE.search(sub.name)
-                        if m:
-                            key = f"S{m.group(1).zfill(2)}E{m.group(2).zfill(2)}"
+                        for key in _parse_episode_keys(sub.name):
                             try:
                                 episodes.setdefault(key, []).append(
                                     _make_file_version(sub.path, sub.stat().st_size))
@@ -312,6 +350,23 @@ def _scan_tv_dir(root: str, source_label: str, folder_type: str) -> list:
             for ep_key, files in sorted(episodes.items()):
                 if len(files) >= 2:
                     files.sort(key=lambda x: x['trash_score'], reverse=True)
+
+                    # Mark each version as safe or unsafe to delete.
+                    # A multi-episode file (e.g. S09E27-E28) is unsafe to delete if
+                    # any other episode it covers has no other file — deleting it would
+                    # destroy that content.  Standalone files are always safe to delete.
+                    for f in files:
+                        f_keys = _parse_episode_keys(f['filename'])
+                        if len(f_keys) <= 1:
+                            f['safe_to_delete'] = True
+                        else:
+                            other_keys = [k for k in f_keys if k != ep_key]
+                            f['safe_to_delete'] = all(
+                                any(other['file_path'] != f['file_path']
+                                    for other in episodes.get(k, []))
+                                for k in other_keys
+                            )
+
                     results.append({
                         'id': f"{source_label}:{show_entry.path}:{ep_key}",
                         'title': show_entry.name,
@@ -322,7 +377,10 @@ def _scan_tv_dir(root: str, source_label: str, folder_type: str) -> list:
                         'media_type': 'tv',
                         'versions': files,
                         'total_size_bytes': sum(v['file_size_bytes'] for v in files),
-                        'deletable_size_bytes': sum(v['file_size_bytes'] for v in files[1:]),
+                        'deletable_size_bytes': sum(
+                            v['file_size_bytes'] for v in files[1:]
+                            if v.get('safe_to_delete', True)
+                        ),
                     })
     except (PermissionError, OSError) as e:
         log.warning(f"scan_tv_dir error scanning {root}: {e}")
@@ -344,7 +402,7 @@ def _scan_one_root(args: tuple) -> tuple:
         return source, ftype, [], str(e)
 
 
-_PER_ROOT_TIMEOUT = 60   # seconds per individual scan root
+_PER_ROOT_TIMEOUT = 300  # seconds per individual scan root (TV dir has 66k items)
 _SCAN_SKIP_ROOTS  = {
     # All Unraid CIFS paths are too slow to directory-scan (7500+ movie dirs,
     # 100K+ episode files over VPN). Synology NFS results cover these since
@@ -444,27 +502,65 @@ def _do_filesystem_scan(refresh_unraid: bool = False) -> dict:
     return result
 
 
+def _empty_scan_result() -> dict:
+    empty_ftypes = {ft: {'groups': 0, 'deletable_bytes': 0}
+                    for ft in ('hd_movies', '4k_movies', 'hd_tv', '4k_tv')}
+    return {
+        'synology': {'hd_movies': [], '4k_movies': [], 'hd_tv': [], '4k_tv': []},
+        'unraid':   {'hd_movies': [], '4k_movies': [], 'hd_tv': [], '4k_tv': []},
+        'errors': [], 'skipped': [], 'unraid_agent': None,
+        'summary': {'synology': dict(empty_ftypes), 'unraid': dict(empty_ftypes)},
+    }
+
+
+def run_background_scan(refresh_unraid: bool = False) -> bool:
+    """Start a background filesystem scan in a daemon thread.
+    Returns True if scan was started, False if already in progress."""
+    global _scan_in_progress
+    with _scan_lock:
+        if _scan_in_progress:
+            return False
+        _scan_in_progress = True
+
+    def _worker():
+        global _scan_in_progress
+        try:
+            data = _do_filesystem_scan(refresh_unraid=refresh_unraid)
+            _scan_cache['data'] = data
+            _scan_cache['ts'] = time.time()
+            log.info("Background filesystem scan complete")
+        except Exception as e:
+            log.error(f"Background filesystem scan failed: {e}")
+        finally:
+            _scan_in_progress = False
+
+    threading.Thread(target=_worker, daemon=True, name='curatorr-fs-scan').start()
+    return True
+
+
 @router.get('/duplicates/scan')
 async def scan_filesystem_duplicates(refresh: bool = False, _auth=Depends(require_auth)):
     """
     Filesystem-based duplicate scan across Synology and Unraid.
-    HD and 4K folder pools are always separate (same title in both = NOT a duplicate).
-    Results cached 30 min; pass ?refresh=true to force a fresh scan.
+    Returns immediately: cached data if available, otherwise kicks off a background scan
+    and returns scanning=True. Poll again every few seconds until scanning=False.
+    Pass ?refresh=true to force a fresh scan (also returns immediately while scan runs).
     """
-    import asyncio
-    from concurrent.futures import ThreadPoolExecutor
-
     now = time.time()
-    if not refresh and _scan_cache['data'] and (now - _scan_cache['ts']) < SCAN_CACHE_TTL:
-        return {**_scan_cache['data'], 'cached': True, 'cached_age_s': int(now - _scan_cache['ts'])}
+    cache_age = now - _scan_cache['ts']
+    cache_fresh = _scan_cache['data'] is not None and cache_age < SCAN_CACHE_TTL
 
-    loop = asyncio.get_event_loop()
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        data = await loop.run_in_executor(pool, lambda: _do_filesystem_scan(refresh_unraid=refresh))
+    if not refresh and cache_fresh:
+        return {**_scan_cache['data'], 'cached': True,
+                'cached_age_s': int(cache_age), 'scanning': False}
 
-    _scan_cache['data'] = data
-    _scan_cache['ts'] = now
-    return {**data, 'cached': False, 'cached_age_s': 0}
+    # Trigger background scan (no-op if already running)
+    run_background_scan(refresh_unraid=refresh)
+
+    base = _scan_cache['data'] if _scan_cache['data'] else _empty_scan_result()
+    return {**base, 'cached': bool(_scan_cache['data']),
+            'cached_age_s': int(cache_age) if _scan_cache['data'] else 0,
+            'scanning': True}
 
 
 class BulkDeleteItem(BaseModel):

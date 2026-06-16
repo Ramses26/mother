@@ -102,6 +102,7 @@ async def fetch_tv_details(tmdb_id: int, db, _api_key: str = None, _client=None)
         'tmdb_votes': data.get('vote_count'),
         'original_language': data.get('original_language', ''),
         'status': status,
+        'tmdb_status': status,
         'genres': json.dumps([g['name'] for g in data.get('genres', [])]),
         'network': data.get('networks', [{}])[0].get('name', '') if data.get('networks') else '',
     }
@@ -311,10 +312,9 @@ async def refresh_stale_tv_ratings(db, limit: int = 300):
                     if tmdb_data.get('tmdb_rating'):
                         set_clauses.append('tmdb_rating=?')
                         vals.append(tmdb_data['tmdb_rating'])
-                    # Update status from TMDB — catches shows Sonarr marks "ended" but TMDB marks "Canceled"
-                    if tmdb_data.get('status'):
-                        set_clauses.append('status=?')
-                        vals.append(tmdb_data['status'])
+                    if tmdb_data.get('tmdb_status'):
+                        set_clauses.append('tmdb_status=?')
+                        vals.append(tmdb_data['tmdb_status'])
                     vals.append(show['id'])
                     await db.execute(
                         f"UPDATE tv_shows SET {', '.join(set_clauses)} WHERE id=?", vals

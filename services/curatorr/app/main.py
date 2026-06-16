@@ -65,6 +65,14 @@ async def lifespan(app: FastAPI):
                     loop.close()
             t = threading.Thread(target=_initial_sync_thread, daemon=True)
             t.start()
+
+        # Warm the filesystem duplicate scan cache in the background on startup
+        try:
+            from app.routes.duplicates import run_background_scan
+            run_background_scan()
+            log.info("Triggered startup filesystem duplicate scan")
+        except Exception as _e:
+            log.warning(f"Could not trigger startup filesystem scan: {_e}")
     except Exception as e:
         log.error(f"Scheduler startup error: {e}")
 

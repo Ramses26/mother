@@ -18,7 +18,7 @@ ALLOWED_SORT_COLS = {
     'rt_critics', 'metacritic', 'tmdb_rating', 'mdblist_score',
     'purge_score', 'plex_added_at', 'ali_play_count', 'chris_play_count',
     'season_completion_pct', 'status', 'total_episodes', 'total_seasons',
-    'network', 'ali_last_watched', 'chris_last_watched',
+    'network', 'ali_last_watched', 'chris_last_watched', 'size_on_disk',
 }
 
 
@@ -65,8 +65,8 @@ def build_tv_query(params: dict) -> tuple[str, list]:
             args += cr_list
 
     if params.get('status'):
-        conditions.append("status = ?")
-        args.append(params['status'])
+        conditions.append("(status = ? OR tmdb_status = ?)")
+        args += [params['status'], params['status']]
 
     if params.get('monitored') in ('true', 'false'):
         conditions.append("monitored = ?")
@@ -89,10 +89,10 @@ def build_tv_query(params: dict) -> tuple[str, list]:
         conditions.append("ali_play_count > 0 AND chris_play_count > 0")
 
     if params.get('cancelled_watched') == 'true':
-        conditions.append("status = 'Cancelled' AND (ali_play_count > 0 OR chris_play_count > 0)")
+        conditions.append("(status = 'Cancelled' OR tmdb_status = 'Cancelled') AND (ali_play_count > 0 OR chris_play_count > 0)")
 
     if params.get('cancelled_never_watched') == 'true':
-        conditions.append("status = 'Cancelled' AND ali_play_count = 0 AND chris_play_count = 0")
+        conditions.append("(status = 'Cancelled' OR tmdb_status = 'Cancelled') AND ali_play_count = 0 AND chris_play_count = 0")
 
     if params.get('unwatched_only') == 'true':
         conditions.append("(ali_play_count IS NULL OR ali_play_count = 0) AND (chris_play_count IS NULL OR chris_play_count = 0)")
@@ -271,23 +271,52 @@ async def list_tv(
     order_by = "ORDER BY " + ", ".join(order_parts)
 
     async for db in get_db():
-        async with db.execute(f"SELECT COUNT(*) FROM tv_shows {where}", args) as cur:
+        async with db.execute(
+            f"SELECT COUNT(*) FROM (SELECT DISTINCT COALESCE(tmdb_id, id) FROM tv_shows {where})", args
+        ) as cur:
             total = (await cur.fetchone())[0]
 
         offset = (page - 1) * per_page
+        # Use a CTE that picks one representative row per TMDB ID (prefer sonarr-hd,
+        # fall back to lowest id). Scores and watch counts are merged across instances.
+        # Shows with no tmdb_id (NULL) are kept as-is (no dedup).
         query = f"""
+            WITH ranked AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                        ORDER BY CASE sonarr_instance WHEN 'sonarr-hd' THEN 0 ELSE 1 END, id
+                    ) AS rn,
+                    MAX(ali_play_count) OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ) AS merged_ali_plays,
+                    MAX(chris_play_count) OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ) AS merged_chris_plays,
+                    MAX(ali_last_watched) OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ) AS merged_ali_last,
+                    MAX(chris_last_watched) OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ) AS merged_chris_last,
+                    MAX(size_on_disk) OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ) AS merged_size
+                FROM tv_shows {where}
+            )
             SELECT id, title, sort_title, year, tmdb_id, imdb_id, tvdb_id,
-                   status, network, total_seasons, total_episodes,
+                   status, tmdb_status, network, total_seasons, total_episodes,
                    original_language, content_rating, runtime_min,
                    monitored, sonarr_id, sonarr_instance,
                    imdb_rating, rt_critics, metacritic, tmdb_rating,
                    mdblist_score, trakt_rating, composite_score, purge_score,
-                   season_completion_pct,
-                   ali_play_count, ali_last_watched,
-                   chris_play_count, chris_last_watched,
+                   season_completion_pct, merged_size AS size_on_disk,
+                   merged_ali_plays AS ali_play_count, merged_ali_last AS ali_last_watched,
+                   merged_chris_plays AS chris_play_count, merged_chris_last AS chris_last_watched,
                    plex_added_at, genres,
-                   poster_url, plex_key
-            FROM tv_shows {where} {order_by}
+                   poster_url, plex_key, ali_plex_key, chris_plex_key
+            FROM ranked WHERE rn = 1
+            {order_by}
             LIMIT ? OFFSET ?
         """
         async with db.execute(query, args + [per_page, offset]) as cur:
@@ -347,6 +376,7 @@ async def export_tv(ids: Optional[str] = None, _auth=Depends(require_auth)):
         'status', 'network', 'total_seasons', 'total_episodes',
         'composite_score', 'imdb_rating', 'rt_critics', 'metacritic', 'mdblist_score', 'trakt_rating',
         'ali_play_count', 'chris_play_count', 'purge_score', 'monitored', 'sonarr_instance',
+        'size_on_disk',
     ]
     async for db in get_db():
         if ids:
@@ -503,14 +533,15 @@ async def bulk_delete_tv(body: dict, _auth=Depends(require_auth)):
     for item in items:
         try:
             result = await delete_from_arr_and_disk(item, 'tv')
-            if result.get('arr_delete_ok'):
+            if result.get('arr_delete_ok') and result.get('unraid_delete_ok'):
                 async for db in get_db():
                     await db.execute("DELETE FROM tv_seasons WHERE show_id=?", (item['id'],))
                     await db.execute("DELETE FROM tv_shows WHERE id=?", (item['id'],))
                     await db.commit()
                 succeeded.append({'id': item['id'], 'title': item['title']})
             else:
-                failed.append({'id': item['id'], 'title': item['title'], 'error': 'arr delete failed'})
+                failed.append({'id': item['id'], 'title': item['title'],
+                               'error': 'Verification failed — Sonarr or disk deletion could not be confirmed'})
         except Exception as e:
             failed.append({'id': item['id'], 'title': item['title'], 'error': str(e)})
 
@@ -563,22 +594,31 @@ async def tv_watch_analytics(show_id: int, _auth=Depends(require_auth)):
         ) or None
         combined = _analytics(combined_plays, total_eps, combined_last)
 
-        # Episode timeline from watch_history (uses show_title column if populated)
-        import re as _re
-        # Also try without year suffix
-        stripped = _re.sub(r'\s*\(\d{4}\)\s*$', '', show['title']).strip()
-
+        # Episode timeline from watch_history
+        # Use per-instance keys where available (set by Plex sync), fall back to shared plex_key
+        ali_key = show.get('ali_plex_key') or show.get('plex_key') or ''
+        chris_key = show.get('chris_plex_key') or show.get('plex_key') or ''
         async with db.execute(f"""
             SELECT user_name, title as episode_title, watched_at, completion_pct, duration_sec, source
             FROM watch_history
             WHERE media_type = 'episode'
               AND (
-                lower(show_title) = lower(?)
-                OR lower(show_title) LIKE lower(?) || ' (____)'
-                OR lower(show_title) LIKE lower(?) || ' (____)'
+                -- Precise: new records have show_plex_key from Tautulli, matched per-server
+                (show_plex_key IS NOT NULL AND (
+                  (source='tautulli-ali'   AND ? != '' AND show_plex_key = ?)
+                  OR (source='tautulli-chris' AND ? != '' AND show_plex_key = ?)
+                ))
+                -- Fallback: title-based for records without show_plex_key
+                -- Only exact match or "Title (YYYY)" variant — do NOT strip year from DB title
+                -- (stripping causes false positives e.g. "The Continental (2018)" matching John Wick spinoff)
+                OR (show_plex_key IS NULL AND (
+                  lower(show_title) = lower(?)
+                  OR lower(show_title) LIKE lower(?) || ' (____)'
+                ))
               )
-            ORDER BY watched_at DESC LIMIT 100
-        """, (show['title'], show['title'], stripped)) as cur:
+            ORDER BY watched_at DESC LIMIT 200
+        """, (ali_key, ali_key, chris_key, chris_key,
+              show['title'], show['title'])) as cur:
             timeline = [dict(r) for r in await cur.fetchall()]
 
         # User breakdown from timeline
@@ -612,7 +652,7 @@ async def list_unwatched_seasons(
         where_status = "AND t.status = ?" if status else ""
         args = [status] if status else []
         async with db.execute(f"""
-            SELECT t.id, t.title, t.sort_title, t.year, t.status, t.poster_url,
+            SELECT t.id, t.title, t.sort_title, t.year, t.status, t.tmdb_status, t.poster_url,
                    t.total_seasons, t.total_episodes, t.sonarr_instance,
                    t.composite_score, t.imdb_rating,
                    t.ali_play_count, t.chris_play_count
@@ -679,10 +719,13 @@ async def delete_tv_show(show_id: int, body: DeleteRequest, _auth=Depends(requir
     from app.routes.actions import delete_from_arr_and_disk
     result = await delete_from_arr_and_disk(show, 'tv')
 
-    async for db in get_db():
-        await db.execute("DELETE FROM tv_seasons WHERE show_id=?", (show_id,))
-        await db.execute("DELETE FROM tv_shows WHERE id=?", (show_id,))
-        await db.commit()
+    if result.get('arr_delete_ok') and result.get('unraid_delete_ok'):
+        async for db in get_db():
+            await db.execute("DELETE FROM tv_seasons WHERE show_id=?", (show_id,))
+            await db.execute("DELETE FROM tv_shows WHERE id=?", (show_id,))
+            await db.commit()
+    else:
+        result['message'] = 'Verification failed — show NOT removed from Curatorr (Sonarr or disk deletion could not be confirmed)'
 
     return result
 

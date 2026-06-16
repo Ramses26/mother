@@ -154,6 +154,14 @@ def _job_weekly_digest():
     _run_async(_weekly_digest)
 
 
+def _job_filesystem_scan():
+    """Warm the duplicate scan cache in the background every 30 min."""
+    from app.routes.duplicates import run_background_scan
+    started = run_background_scan(refresh_unraid=False)
+    if not started:
+        log.debug("Filesystem scan already in progress — skipped scheduler trigger")
+
+
 def start_scheduler():
     """Start all APScheduler jobs."""
     _scheduler.add_job(_job_sync_libraries, 'interval', hours=6,
@@ -168,6 +176,8 @@ def start_scheduler():
                        id='db_backup', replace_existing=True)
     _scheduler.add_job(_job_weekly_digest, 'cron', day_of_week='sun', hour=9,
                        id='weekly_digest', replace_existing=True)
+    _scheduler.add_job(_job_filesystem_scan, 'interval', minutes=30,
+                       id='filesystem_scan', replace_existing=True)
     _scheduler.start()
     log.info("Scheduler started")
 

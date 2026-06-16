@@ -156,7 +156,7 @@ async def sync_tv_ratings(db, limit: int = 1000):
     limit_clause = f"LIMIT {limit}" if limit else ""
     async with db.execute(
         "SELECT id, imdb_id, title FROM tv_shows WHERE imdb_id IS NOT NULL "
-        f"AND (imdb_rating IS NULL OR imdb_rating = 0) "
+        f"AND (imdb_rating IS NULL OR imdb_rating = 0 OR rt_critics IS NULL) "
         f"AND imdb_id != '' {limit_clause}"
     ) as cur:
         shows = await cur.fetchall()

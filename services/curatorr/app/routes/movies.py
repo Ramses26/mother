@@ -562,9 +562,12 @@ async def delete_movie(movie_id: int, body: DeleteRequest, _auth=Depends(require
     from app.routes.actions import delete_from_arr_and_disk
     result = await delete_from_arr_and_disk(movie, 'movie')
 
-    async for db in get_db():
-        await db.execute("DELETE FROM movies WHERE id=?", (movie_id,))
-        await db.commit()
+    if result.get('arr_delete_ok'):
+        async for db in get_db():
+            await db.execute("DELETE FROM movies WHERE id=?", (movie_id,))
+            await db.commit()
+    else:
+        result['message'] = 'Radarr deletion failed — movie NOT removed from Curatorr or Radarr'
 
     return result
 

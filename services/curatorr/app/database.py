@@ -184,6 +184,8 @@ async def _migrate_columns():
     migrations = [
         ("ALTER TABLE movies ADD COLUMN poster_url TEXT",),
         ("ALTER TABLE tv_shows ADD COLUMN poster_url TEXT",),
+        ("ALTER TABLE tv_shows ADD COLUMN tmdb_status TEXT",),
+        ("ALTER TABLE tv_shows ADD COLUMN size_on_disk INTEGER DEFAULT 0",),
         ("CREATE TABLE IF NOT EXISTS collection_members (id INTEGER PRIMARY KEY AUTOINCREMENT, collection_tmdb_id INTEGER, movie_tmdb_id INTEGER, title TEXT, year TEXT, poster_url TEXT, overview TEXT, vote_average REAL, UNIQUE(collection_tmdb_id, movie_tmdb_id))",),
         ("CREATE INDEX IF NOT EXISTS idx_collection_members ON collection_members(collection_tmdb_id)",),
     ]
@@ -200,6 +202,24 @@ async def _migrate_columns():
             await db.commit()
         except Exception:
             pass  # Column already exists
+        # Add show_plex_key for precise show matching (grandparent_rating_key from Tautulli)
+        try:
+            await db.execute("ALTER TABLE watch_history ADD COLUMN show_plex_key TEXT")
+            await db.commit()
+        except Exception:
+            pass  # Column already exists
+        # Per-instance plex_keys: preserve both Chris's and Ali's keys without overwriting
+        for tbl in ('tv_shows', 'movies'):
+            try:
+                await db.execute(f"ALTER TABLE {tbl} ADD COLUMN chris_plex_key TEXT")
+                await db.commit()
+            except Exception:
+                pass
+            try:
+                await db.execute(f"ALTER TABLE {tbl} ADD COLUMN ali_plex_key TEXT")
+                await db.commit()
+            except Exception:
+                pass
         # Auto-purge event_log: keep last 2000 rows
         try:
             await db.execute(

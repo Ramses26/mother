@@ -40,8 +40,9 @@
             </span>
             <span v-else-if="scanData?.unraid_agent?.ok" class="text-green-500 ml-1">· Agent OK</span>
           </template>
-          <span v-if="scanData?.cached" class="text-slate-500"> · cached {{ scanData.cached_age_s }}s ago</span>
-          <button @click="load(tab, false)" class="ml-2 text-violet-400 hover:text-violet-300 underline">force refresh</button>
+          <span v-if="scanning" class="text-amber-400 ml-1">· scanning...</span>
+          <span v-else-if="scanData?.cached" class="text-slate-500"> · cached {{ scanData.cached_age_s }}s ago</span>
+          <button @click="load(tab, false)" :disabled="scanning" class="ml-2 text-violet-400 hover:text-violet-300 underline disabled:opacity-40">force refresh</button>
         </div>
 
         <!-- Agent unavailable notice for Unraid tabs -->
@@ -181,7 +182,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 
 // ── Tab config ─────────────────────────────────────────────────────────────
@@ -202,11 +203,13 @@ const ftypeMap = {
 // ── State ──────────────────────────────────────────────────────────────────
 const tab = ref('syn-movies')
 const loading = ref(false)
+const scanning = ref(false)
 const scanData = ref(null)
 const scanError = ref('')
 const selected = ref(new Set())
 const showBulkConfirm = ref(false)
 const bulkDeleting = ref(false)
+let _pollTimer = null
 
 // ── Computed ───────────────────────────────────────────────────────────────
 const currentTab = computed(() => tabs.find(t => t.key === tab.value))
@@ -237,22 +240,60 @@ const tabCount = (key) => {
 // ── Load ───────────────────────────────────────────────────────────────────
 const loadCurrentTab = () => load(tab.value, false)
 
+const _stopPoll = () => { if (_pollTimer) { clearTimeout(_pollTimer); _pollTimer = null } }
+
+const _pollOnce = () => {
+  _pollTimer = setTimeout(async () => {
+    _pollTimer = null
+    try {
+      const res = await axios.get('/api/duplicates/scan', { params: { refresh: false } })
+      scanData.value = res.data
+      if (res.data.scanning) {
+        _pollTimer = setTimeout(_pollOnce, 6000)
+      } else {
+        scanning.value = false
+        loading.value = false
+      }
+    } catch {
+      scanning.value = false
+      loading.value = false
+    }
+  }, 6000)
+}
+
 const load = async (tabKey, useCache = true) => {
+  _stopPoll()
   loading.value = true
+  scanning.value = false
   scanError.value = ''
   selected.value = new Set()
   try {
     const res = await axios.get('/api/duplicates/scan', { params: { refresh: !useCache } })
     scanData.value = res.data
+    if (res.data.scanning) {
+      scanning.value = true
+      // Keep loading spinner if we have no real data yet
+      if (!res.data.cached) {
+        // Show scanning banner but keep spinner until first data arrives
+        _pollOnce()
+      } else {
+        // We have stale data to show — stop spinner, show stale data + scanning badge
+        loading.value = false
+        _pollOnce()
+      }
+    } else {
+      loading.value = false
+    }
   } catch (e) {
     scanError.value = e?.response?.data?.detail || 'Scan failed'
-  } finally {
     loading.value = false
+    scanning.value = false
   }
 }
 
 watch(tab, (t) => load(t, true))
 onMounted(() => load('syn-movies', true))
+onUnmounted(() => _stopPoll())
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 const formatSize = (bytes) => {
