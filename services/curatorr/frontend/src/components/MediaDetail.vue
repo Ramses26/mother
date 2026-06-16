@@ -270,13 +270,30 @@
           {{ item.summary }}
         </div>
 
+        <!-- Overseerr requests -->
+        <div v-if="overseerrRequests.length" class="mb-4 p-3 rounded-lg border border-amber-800/40" style="background:#1a1200;">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-amber-400 text-xs font-semibold">⚠ Requested via Overseerr</span>
+          </div>
+          <div v-for="req in overseerrRequests" :key="req.id" class="text-xs text-slate-400 mb-1">
+            <span class="font-medium text-slate-300">{{ req.requested_by }}</span>
+            <span class="text-slate-600"> · {{ req.status_label }}</span>
+            <span v-if="req.season_numbers" class="text-slate-600"> · Seasons {{ req.season_numbers }}</span>
+            <span class="text-slate-600"> · {{ fmtRelDate(req.requested_at) }}</span>
+          </div>
+        </div>
+
         <!-- Actions -->
         <div class="flex gap-3 pt-4 border-t" style="border-color:#2d3250;">
           <button @click="$emit('unmonitor', item)" class="flex-1 btn-secondary text-sm">
             Unmonitor
           </button>
-          <button @click="$emit('delete', item)" class="flex-1 btn-danger text-sm">
-            Delete
+          <button @click="$emit('delete', item)"
+            class="flex-1 text-sm font-medium rounded-lg px-4 py-2 transition-colors"
+            :class="overseerrRequests.length
+              ? 'bg-amber-700 hover:bg-amber-600 text-white'
+              : 'btn-danger'">
+            {{ overseerrRequests.length ? '⚠ Delete (requested)' : 'Delete' }}
           </button>
         </div>
 
@@ -310,6 +327,8 @@ import PurgeMeter from './PurgeMeter.vue'
 const props = defineProps({ item: Object })
 defineEmits(['close', 'delete', 'unmonitor'])
 
+const overseerrRequests = ref([])
+
 // Public URLs injected from parent (or loaded globally)
 const publicUrls = inject('publicUrls', ref({}))
 
@@ -331,9 +350,19 @@ async function loadAnalytics(item) {
   finally { analyticsLoading.value = false }
 }
 
+async function loadOverseerr(item) {
+  overseerrRequests.value = []
+  if (!item?.tmdb_id) return
+  try {
+    const r = await fetch(`/api/overseerr/requests?tmdb_id=${item.tmdb_id}`)
+    if (r.ok) overseerrRequests.value = await r.json()
+  } catch {}
+}
+
 watch(() => props.item, (item) => {
   posterError.value = false
   loadAnalytics(item)
+  loadOverseerr(item)
 }, { immediate: true })
 
 const bothWatched = computed(() =>

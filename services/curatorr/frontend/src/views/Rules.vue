@@ -167,6 +167,7 @@ const conditionFields = [
   { value: 'days_since_last_watched', label: 'Days Since Last Watched',   hint: 'days (null = never)' },
   { value: 'never_watched',           label: 'Never Watched',             hint: '1 = yes, 0 = no' },
   { value: 'total_plays',             label: 'Total Plays (Ali + Chris)', hint: 'number' },
+  { value: 'has_overseerr_request',   label: 'Has Overseerr Request',     hint: '1 = yes (pending/approved), 0 = no' },
   { value: '', label: '── Ratings ──', disabled: true },
   { value: 'composite_score', label: 'Composite Score' },
   { value: 'imdb_rating',     label: 'IMDb Rating' },

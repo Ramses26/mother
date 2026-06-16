@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "3"
+
 services:
   # qBittorrent - MIGRATED TO SYNOLOGY RS2821RP+ (10.0.1.203:8080)
   # Moved for better performance - eliminates NFS write overhead
@@ -35,7 +41,7 @@ services:
   #   restart: unless-stopped
   #   networks:
   #     - mother_network
-  
+
   # qbit_manage - MIGRATED TO SYNOLOGY RS2821RP+ (10.0.1.203)
   # Moved to run locally with qBittorrent for proper hardlink detection
   # See: synology-qbittorrent/docker-compose.yml
@@ -67,7 +73,7 @@ services:
   #   networks:
   #     - mother_network
 
-  # Dockhand - Docker Management 
+  # Dockhand - Docker Management
   dockhand:
     image: fnsys/dockhand:latest
     container_name: dockhand
@@ -75,24 +81,26 @@ services:
       - PUID=${PUID}
       - PGID=${DOCKER_GID}
       - TZ=${TZ}
-      
+
     group_add:
-      - "${DOCKER_GID}"       
+      - "${DOCKER_GID}"
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "3000:3000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${CONFIG_PATH}/dockhand:/app/data
     networks:
-      - mother_network      
-      
+      - mother_network
+
 
   # Unpackerr - Automatic RAR/archive extractor for Radarr/Sonarr
   unpackerr:
     image: golift/unpackerr:0.15.2
     container_name: unpackerr
     restart: unless-stopped
+    logging: *default-logging
     user: ${PUID}:${PGID}
     volumes:
       - ${DOWNLOADS_PATH}:/downloads
@@ -148,6 +156,7 @@ services:
     ports:
       - "${RADARR_HD_PORT}:7878"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -166,6 +175,7 @@ services:
     ports:
       - "${RADARR_4K_PORT}:7878"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -184,6 +194,7 @@ services:
     ports:
       - "${SONARR_HD_PORT}:8989"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -202,6 +213,7 @@ services:
     ports:
       - "${SONARR_4K_PORT}:8989"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -212,7 +224,7 @@ services:
     init: true
     environment:
       - LOG_LEVEL=debug
-      - TZ=${TZ}  
+      - TZ=${TZ}
       - PORT=5055 #optional
     ports:
       - 5055:5055
@@ -225,8 +237,9 @@ services:
       interval: 15s
       retries: 3
     restart: unless-stopped
+    logging: *default-logging
     networks:
-      - mother_network        
+      - mother_network
 
   # Prowlarr - Indexer Manager (Alternative to Jackett)
   prowlarr:
@@ -241,6 +254,7 @@ services:
     ports:
       - "${PROWLARR_PORT}:9696"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -274,6 +288,7 @@ services:
     ports:
      - "${FLARESOLVERR_PORT}:8191"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -287,10 +302,11 @@ services:
       - RADARR_HD_API_KEY=${RADARR_HD_API_KEY}
       - RADARR_4K_API_KEY=${RADARR_4K_API_KEY}
       - SONARR_HD_API_KEY=${SONARR_HD_API_KEY}
-      - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}      
+      - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}
     volumes:
       - ${CONFIG_PATH}/recyclarr:/config
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -326,6 +342,7 @@ services:
       - ${CONFIG_PATH}/nginx/data:/data
       - ${CONFIG_PATH}/nginx/letsencrypt:/etc/letsencrypt
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -364,6 +381,7 @@ services:
     ports:
       - "${TAUTULLI_PORT}:8181"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -380,6 +398,7 @@ services:
       - DOZZLE_TAILSIZE=300
       - DOZZLE_FILTER=status=running
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -392,6 +411,7 @@ services:
     ports:
       - "${UPTIME_KUMA_PORT:-3001}:3001"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -408,6 +428,7 @@ services:
     ports:
       - "${APPRISE_PORT:-8000}:8000"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -424,8 +445,9 @@ services:
       - "${PORTAINER_PORT}:9000"
       - "${PORTAINER_HTTPS_PORT}:9443"
     restart: unless-stopped
+    logging: *default-logging
     networks:
-      - mother_network      
+      - mother_network
 
   # Tracearr - Media Server Monitoring (Plex/Jellyfin/Emby)
   # Stream tracking, library analytics, account sharing detection
@@ -451,6 +473,7 @@ services:
       tracearr-redis:
         condition: service_healthy
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -476,6 +499,7 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -492,6 +516,7 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 
@@ -534,6 +559,7 @@ services:
     ports:
       - "${UPGRADERR_PORT:-9706}:5000"
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       - radarr-hd
       - radarr-4k
@@ -575,6 +601,10 @@ services:
       - SONARR_HD_API_KEY=${SONARR_HD_API_KEY}
       - SONARR_4K_URL=http://sonarr-4k:8989
       - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}
+      - ALI_RADARR_URL=${ALI_RADARR_URL:-}
+      - ALI_RADARR_API_KEY=${ALI_RADARR_API_KEY:-}
+      - ALI_SONARR_URL=${ALI_SONARR_URL:-}
+      - ALI_SONARR_API_KEY=${ALI_SONARR_API_KEY:-}
       - TMDB_API_KEY=${TMDB_API_KEY}
       - OMDB_API_KEY=${OMDB_API_KEY}
       - MDBLIST_API_KEY=${MDBLIST_API_KEY}
@@ -586,8 +616,11 @@ services:
       - SONARR_HD_PUBLIC_URL=${SONARR_HD_PUBLIC_URL:-}
       - SONARR_4K_PUBLIC_URL=${SONARR_4K_PUBLIC_URL:-}
       - OVERSEERR_URL=${OVERSEERR_URL:-}
+      - OVERSEERR_API_KEY=${OVERSEERR_API_KEY:-}
       - UNRAID_AGENT_URL=${UNRAID_AGENT_URL:-http://192.168.1.10:8100}
       - UNRAID_AGENT_API_KEY=${UNRAID_AGENT_API_KEY:-}
+      - ALI_PLEX_USERNAME=${ALI_PLEX_USERNAME:-}
+      - CHRIS_PLEX_USERNAME=${CHRIS_PLEX_USERNAME:-}
     volumes:
       - /opt/mother/data/curatorr:/data
       - /opt/mother/data/logs/curatorr:/logs
@@ -596,6 +629,7 @@ services:
       - /mnt/synology/rs-tv:/mnt/synology/rs-tv
       - /mnt/synology/rs-4kmedia:/mnt/synology/rs-4kmedia
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
     depends_on:
@@ -664,6 +698,7 @@ services:
     ports:
       - "${SYNC_WEBHOOK_PORT:-5001}:5000"
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
     healthcheck:
@@ -682,6 +717,7 @@ services:
     image: grafana/loki:3.4.2
     container_name: loki
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "3100:3100"
     command: -config.file=/etc/loki/loki-config.yml
@@ -701,6 +737,7 @@ services:
     image: grafana/promtail:3.4.2
     container_name: promtail
     restart: unless-stopped
+    logging: *default-logging
     command: -config.file=/etc/promtail/promtail-config.yml
     volumes:
       - /opt/mother/configs/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
@@ -717,6 +754,7 @@ services:
     image: grafana/grafana:11.6.0
     container_name: grafana
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "3003:3000"
     environment:
@@ -736,6 +774,7 @@ services:
     image: prom/prometheus:v3.3.1
     container_name: prometheus
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "9090:9090"
     command:
@@ -754,6 +793,7 @@ services:
     image: prom/node-exporter:v1.9.1
     container_name: node-exporter
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "9100:9100"
     command:
@@ -769,6 +809,7 @@ services:
     image: gcr.io/cadvisor/cadvisor:v0.52.1
     container_name: cadvisor
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "8090:8080"
     volumes:
@@ -794,6 +835,7 @@ services:
       - /opt/mother:/backups/mother:ro
       - /opt/mother/data:/backups/data:ro
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - mother_network
 

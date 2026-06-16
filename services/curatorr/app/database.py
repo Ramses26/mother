@@ -166,6 +166,23 @@ CREATE INDEX IF NOT EXISTS idx_tv_ali_play ON tv_shows(ali_play_count);
 CREATE INDEX IF NOT EXISTS idx_tv_chris_play ON tv_shows(chris_play_count);
 CREATE INDEX IF NOT EXISTS idx_watch_history_user_ts ON watch_history(user_name, watched_at);
 
+CREATE TABLE IF NOT EXISTS overseerr_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    overseerr_id INTEGER UNIQUE,
+    media_type TEXT,
+    tmdb_id INTEGER,
+    tvdb_id INTEGER,
+    status INTEGER DEFAULT 1,
+    is_4k INTEGER DEFAULT 0,
+    requested_by TEXT,
+    requested_at TIMESTAMP,
+    season_numbers TEXT,
+    last_synced TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_overseerr_tmdb ON overseerr_requests(tmdb_id);
+CREATE INDEX IF NOT EXISTS idx_overseerr_tvdb ON overseerr_requests(tvdb_id);
+CREATE INDEX IF NOT EXISTS idx_overseerr_status ON overseerr_requests(status);
+
 CREATE TABLE IF NOT EXISTS event_log (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     event_type TEXT,

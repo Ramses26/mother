@@ -175,3 +175,58 @@ async def recompute_play_counts(_auth=Depends(require_auth)):
     asyncio.create_task(_run())
     return {'ok': True, 'message': 'Play count recompute started in background'}
 
+
+@router.get('/overseerr/requests')
+async def get_overseerr_requests(
+    tmdb_id: int = None,
+    tvdb_id: int = None,
+    _auth=Depends(require_auth),
+):
+    """Get Overseerr requests for a specific item by TMDB or TVDB ID."""
+    async for db in get_db():
+        if tmdb_id:
+            async with db.execute(
+                "SELECT * FROM overseerr_requests WHERE tmdb_id=? ORDER BY requested_at DESC",
+                (tmdb_id,)
+            ) as cur:
+                rows = [dict(r) for r in await cur.fetchall()]
+        elif tvdb_id:
+            async with db.execute(
+                "SELECT * FROM overseerr_requests WHERE tvdb_id=? ORDER BY requested_at DESC",
+                (tvdb_id,)
+            ) as cur:
+                rows = [dict(r) for r in await cur.fetchall()]
+        else:
+            rows = []
+
+        # Add human-readable status label
+        status_labels = {1: 'Pending', 2: 'Approved', 3: 'Declined', 4: 'Available', 5: 'Processing'}
+        for r in rows:
+            r['status_label'] = status_labels.get(r.get('status', 1), 'Unknown')
+
+        return rows
+
+
+@router.get('/overseerr/stats')
+async def overseerr_stats(_auth=Depends(require_auth)):
+    """Summary stats about Overseerr requests."""
+    async for db in get_db():
+        async with db.execute("SELECT COUNT(*) FROM overseerr_requests") as cur:
+            total = (await cur.fetchone())[0]
+        async with db.execute(
+            "SELECT status, COUNT(*) as cnt FROM overseerr_requests GROUP BY status"
+        ) as cur:
+            by_status = {r[0]: r[1] for r in await cur.fetchall()}
+        async with db.execute(
+            "SELECT requested_by, COUNT(*) as cnt FROM overseerr_requests "
+            "GROUP BY requested_by ORDER BY cnt DESC LIMIT 10"
+        ) as cur:
+            top_requesters = [{'user': r[0], 'count': r[1]} for r in await cur.fetchall()]
+
+        labels = {1: 'Pending', 2: 'Approved', 3: 'Declined', 4: 'Available', 5: 'Processing'}
+        return {
+            'total': total,
+            'by_status': {labels.get(k, str(k)): v for k, v in by_status.items()},
+            'top_requesters': top_requesters,
+        }
+

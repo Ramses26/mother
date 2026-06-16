@@ -50,6 +50,7 @@ COMPUTED_FIELDS = {
     'days_since_last_watched',
     'never_watched',
     'total_plays',
+    'has_overseerr_request',   # populated externally by evaluate_rule
 }
 
 
@@ -241,10 +242,22 @@ async def evaluate_rule(rule: dict, db, dry_run: bool = True) -> list[dict]:
         async with db.execute(f"SELECT {cols} FROM {table} LIMIT 10000") as cur:
             items = await cur.fetchall()
 
+        # Build Overseerr tmdb_id lookup for this table
+        overseerr_tmdb_ids: set = set()
+        try:
+            async with db.execute(
+                "SELECT DISTINCT tmdb_id FROM overseerr_requests "
+                "WHERE tmdb_id IS NOT NULL AND status IN (1,2,5)"  # pending/approved/processing
+            ) as cur:
+                overseerr_tmdb_ids = {r[0] for r in await cur.fetchall()}
+        except Exception:
+            pass
+
         for row in items:
             item = dict(row)
             item['media_type'] = mt
             _enrich_item(item, mt)   # add computed fields
+            item['has_overseerr_request'] = 1 if item.get('tmdb_id') in overseerr_tmdb_ids else 0
             matched, reasons = _item_matches_rule(item, rule, mt)
             if matched:
                 item['reasons'] = reasons

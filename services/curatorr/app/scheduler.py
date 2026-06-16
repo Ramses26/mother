@@ -168,6 +168,8 @@ def start_scheduler():
                        id='library_sync', replace_existing=True)
     _scheduler.add_job(_job_sync_watch_history, 'cron', hour=2, minute=0,
                        id='tautulli_sync', replace_existing=True)
+    _scheduler.add_job(lambda: _run_async(_do_overseerr_sync), 'cron', hour=1, minute=0,
+                       id='overseerr_sync', replace_existing=True)
     _scheduler.add_job(_job_refresh_ratings, 'cron', hour=3, minute=0,
                        id='ratings_refresh', replace_existing=True)
     _scheduler.add_job(_job_run_rules, 'cron', hour=4, minute=0,
@@ -208,6 +210,14 @@ async def trigger_initial_sync():
     log.info("Initial *arr sync complete")
 
 
+async def _do_overseerr_sync():
+    async with aiosqlite.connect(DB_PATH, timeout=60) as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute("PRAGMA journal_mode=WAL")
+        from app.sync.overseerr import sync_overseerr_requests
+        await sync_overseerr_requests(db)
+
+
 async def trigger_sync_by_source(source: str):
     """Trigger sync for a specific source. Returns False if already running."""
     if source in _running_syncs:
@@ -246,6 +256,10 @@ async def _do_sync_by_source(source: str):
         if source in ('all', 'tautulli'):
             from app.sync.tautulli import sync_watch_history
             await sync_watch_history(db)
+
+        if source in ('all', 'overseerr'):
+            from app.sync.overseerr import sync_overseerr_requests
+            await sync_overseerr_requests(db)
 
         if source == 'tautulli-ali':
             from app.sync.tautulli import sync_watch_history
