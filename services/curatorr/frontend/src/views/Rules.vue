@@ -113,15 +113,19 @@
                 <label class="label mb-0">Conditions</label>
                 <button @click="addCondition" class="text-violet-400 hover:text-violet-300 text-sm">+ Add</button>
               </div>
-              <div v-for="(c, i) in form.conditions" :key="i" class="flex gap-2 mb-2">
+              <div v-for="(c, i) in form.conditions" :key="i" class="flex gap-2 mb-2 items-center">
                 <select v-model="c.field" class="input text-sm flex-1">
-                  <option v-for="f in conditionFields" :key="f.value" :value="f.value">{{ f.label }}</option>
+                  <option v-for="f in conditionFields" :key="f.value + f.label" :value="f.value" :disabled="f.disabled">{{ f.label }}</option>
                 </select>
-                <select v-model="c.operator" class="input text-sm w-28">
+                <select v-model="c.operator" class="input text-sm w-40">
                   <option v-for="o in operators" :key="o.value" :value="o.value">{{ o.label }}</option>
                 </select>
-                <input v-model="c.value" class="input text-sm w-24" placeholder="Value"/>
-                <button @click="removeCondition(i)" class="text-red-400 hover:text-red-300 px-1">✕</button>
+                <div class="relative w-28">
+                  <input v-model="c.value" class="input text-sm w-full"
+                    :placeholder="fieldHint(c.field) || 'Value'"
+                    :disabled="['is_null','is_not_null'].includes(c.operator)"/>
+                </div>
+                <button @click="removeCondition(i)" class="text-red-400 hover:text-red-300 px-1 shrink-0">✕</button>
               </div>
               <div v-if="form.conditions.length === 0" class="text-slate-500 text-xs">
                 No conditions — add at least one
@@ -158,29 +162,45 @@ const form = reactive({
 })
 
 const conditionFields = [
+  { value: '', label: '── Time-based ──', disabled: true },
+  { value: 'days_since_added',        label: 'Days Since Added',          hint: 'days' },
+  { value: 'days_since_last_watched', label: 'Days Since Last Watched',   hint: 'days (null = never)' },
+  { value: 'never_watched',           label: 'Never Watched',             hint: '1 = yes, 0 = no' },
+  { value: 'total_plays',             label: 'Total Plays (Ali + Chris)', hint: 'number' },
+  { value: '', label: '── Ratings ──', disabled: true },
   { value: 'composite_score', label: 'Composite Score' },
-  { value: 'imdb_rating', label: 'IMDb Rating' },
-  { value: 'rt_critics', label: 'RT Critics' },
-  { value: 'metacritic', label: 'Metacritic' },
-  { value: 'mdblist_score', label: 'MDBList Score' },
-  { value: 'purge_score', label: 'Purge Score' },
-  { value: 'ali_play_count', label: 'Ali Play Count' },
+  { value: 'imdb_rating',     label: 'IMDb Rating' },
+  { value: 'rt_critics',      label: 'RT Critics %' },
+  { value: 'metacritic',      label: 'Metacritic' },
+  { value: 'mdblist_score',   label: 'MDBList Score' },
+  { value: 'purge_score',     label: 'Purge Score' },
+  { value: '', label: '── Watch history ──', disabled: true },
+  { value: 'ali_play_count',   label: 'Ali Play Count' },
   { value: 'chris_play_count', label: 'Chris Play Count' },
+  { value: '', label: '── Media ──', disabled: true },
   { value: 'file_size_gb', label: 'File Size (GB)' },
-  { value: 'resolution', label: 'Resolution' },
-  { value: 'year', label: 'Year' },
-  { value: 'status', label: 'TV Status' },
+  { value: 'resolution',   label: 'Resolution' },
+  { value: 'year',         label: 'Year' },
+  { value: 'status',       label: 'TV Status (Continuing/Ended/Cancelled)' },
+  { value: 'genre',        label: 'Genre (contains text)' },
+  { value: 'hdr_format',   label: 'HDR Format' },
+  { value: 'audio_codec',  label: 'Audio Codec' },
 ]
 
 const operators = [
-  { value: 'eq', label: '= equals' },
-  { value: 'ne', label: '≠ not equals' },
-  { value: 'gt', label: '> greater' },
-  { value: 'gte', label: '>= greater/equal' },
-  { value: 'lt', label: '< less' },
-  { value: 'lte', label: '<= less/equal' },
-  { value: 'contains', label: 'contains' },
+  { value: 'eq',           label: '= equals' },
+  { value: 'ne',           label: '≠ not equals' },
+  { value: 'gt',           label: '> greater than' },
+  { value: 'gte',          label: '>= greater or equal' },
+  { value: 'lt',           label: '< less than' },
+  { value: 'lte',          label: '<= less or equal' },
+  { value: 'contains',     label: 'contains' },
+  { value: 'not_contains', label: 'does not contain' },
+  { value: 'is_null',      label: 'is empty / never' },
+  { value: 'is_not_null',  label: 'is set / has value' },
 ]
+
+const fieldHint = (fieldVal) => conditionFields.find(f => f.value === fieldVal)?.hint || ''
 
 const load = async () => {
   try { const res = await axios.get('/api/rules'); rules.value = res.data }

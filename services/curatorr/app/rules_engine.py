@@ -1,45 +1,96 @@
 """Curatorr rules engine — evaluate conditions and execute actions."""
 import json
 import logging
+from datetime import datetime, timezone
 from typing import Any
 from app.log_events import log_event
 
 log = logging.getLogger('curatorr.rules_engine')
 
+# Direct DB column fields — (column_name, python_type)
 FIELD_MAP_MOVIES = {
-    'composite_score': ('composite_score', float),
-    'imdb_rating': ('imdb_rating', float),
-    'rt_critics': ('rt_critics', int),
-    'metacritic': ('metacritic', int),
-    'tmdb_rating': ('tmdb_rating', float),
-    'mdblist_score': ('mdblist_score', int),
-    'purge_score': ('purge_score', int),
-    'ali_play_count': ('ali_play_count', int),
-    'chris_play_count': ('chris_play_count', int),
-    'file_size_gb': ('file_size_bytes', float),  # special: convert
-    'resolution': ('resolution', str),
-    'year': ('year', int),
-    'monitored': ('monitored', int),
-    'hdr_format': ('hdr_format', str),
-    'audio_codec': ('audio_codec', str),
-    'genre': ('genres', str),  # JSON contains check
+    'composite_score':      ('composite_score', float),
+    'imdb_rating':          ('imdb_rating', float),
+    'rt_critics':           ('rt_critics', int),
+    'metacritic':           ('metacritic', int),
+    'tmdb_rating':          ('tmdb_rating', float),
+    'mdblist_score':        ('mdblist_score', int),
+    'purge_score':          ('purge_score', int),
+    'ali_play_count':       ('ali_play_count', int),
+    'chris_play_count':     ('chris_play_count', int),
+    'file_size_gb':         ('file_size_bytes', float),   # converted below
+    'resolution':           ('resolution', str),
+    'year':                 ('year', int),
+    'monitored':            ('monitored', int),
+    'hdr_format':           ('hdr_format', str),
+    'audio_codec':          ('audio_codec', str),
+    'genre':                ('genres', str),              # JSON contains check
 }
 
 FIELD_MAP_TV = {
-    'composite_score': ('composite_score', float),
-    'imdb_rating': ('imdb_rating', float),
-    'rt_critics': ('rt_critics', int),
-    'metacritic': ('metacritic', int),
-    'tmdb_rating': ('tmdb_rating', float),
-    'mdblist_score': ('mdblist_score', int),
-    'purge_score': ('purge_score', int),
-    'ali_play_count': ('ali_play_count', int),
-    'chris_play_count': ('chris_play_count', int),
-    'year': ('year', int),
-    'monitored': ('monitored', int),
-    'status': ('status', str),
+    'composite_score':      ('composite_score', float),
+    'imdb_rating':          ('imdb_rating', float),
+    'rt_critics':           ('rt_critics', int),
+    'metacritic':           ('metacritic', int),
+    'tmdb_rating':          ('tmdb_rating', float),
+    'mdblist_score':        ('mdblist_score', int),
+    'purge_score':          ('purge_score', int),
+    'ali_play_count':       ('ali_play_count', int),
+    'chris_play_count':     ('chris_play_count', int),
+    'year':                 ('year', int),
+    'monitored':            ('monitored', int),
+    'status':               ('status', str),
     'season_completion_pct': ('season_completion_pct', float),
 }
+
+# Computed fields — derived at evaluation time (not direct DB columns)
+# These are handled separately in _evaluate_condition before the field_map lookup.
+COMPUTED_FIELDS = {
+    'days_since_added',
+    'days_since_last_watched',
+    'never_watched',
+    'total_plays',
+}
+
+
+def _days_ago(date_str: str | None) -> int | None:
+    """Return integer days since a date string, or None if not parseable."""
+    if not date_str:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(date_str).replace('Z', '+00:00'))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - dt).days
+    except Exception:
+        return None
+
+
+def _enrich_item(item: dict, media_type: str) -> dict:
+    """Add computed fields to an item dict before condition evaluation."""
+    # days_since_added — plex_added_at first, then radarr/sonarr added_at, then last_synced
+    added_at = (item.get('plex_added_at') or
+                item.get('radarr_added_at') or
+                item.get('last_synced'))
+    item['days_since_added'] = _days_ago(added_at)
+
+    # days_since_last_watched — max of ali + chris last_watched
+    ali_lw = item.get('ali_last_watched')
+    chris_lw = item.get('chris_last_watched')
+    last_watched = max(
+        ali_lw or '', chris_lw or ''
+    ) or None  # empty string if both None
+    item['days_since_last_watched'] = _days_ago(last_watched) if last_watched else None
+
+    # never_watched — True when both play counts are 0
+    ali = item.get('ali_play_count') or 0
+    chris = item.get('chris_play_count') or 0
+    item['never_watched'] = 1 if (ali == 0 and chris == 0) else 0
+
+    # total_plays — combined
+    item['total_plays'] = ali + chris
+
+    return item
 
 
 def _evaluate_condition(item: dict, condition: dict, media_type: str) -> tuple[bool, str]:
@@ -48,6 +99,47 @@ def _evaluate_condition(item: dict, condition: dict, media_type: str) -> tuple[b
     operator = condition.get('operator', 'eq')
     value = condition.get('value')
 
+    # --- Computed fields (not in field_map) ---
+    if field in COMPUTED_FIELDS:
+        item_val = item.get(field)
+
+        if operator == 'is_null':
+            return item_val is None, f"{field} is null (actual: {item_val})"
+        if operator == 'is_not_null':
+            return item_val is not None, f"{field} is not null (actual: {item_val})"
+
+        # never_watched is boolean — eq/ne with 1/0
+        if field == 'never_watched':
+            try:
+                cmp = int(value) if value is not None else 1
+            except (ValueError, TypeError):
+                cmp = 1
+            if operator in ('eq', 'is_true'):
+                result = item_val == cmp
+            elif operator in ('ne', 'is_false'):
+                result = item_val != cmp
+            else:
+                result = False
+            return result, f"{field} {operator} {cmp} (actual: {item_val})"
+
+        # days_since_* and total_plays — numeric
+        if item_val is None:
+            return False, f"{field} is null (no date)"
+        try:
+            cmp = int(value) if value is not None else 0
+        except (ValueError, TypeError):
+            return False, f"Invalid value for {field}: {value}"
+
+        if operator == 'eq':    result = item_val == cmp
+        elif operator == 'ne':  result = item_val != cmp
+        elif operator == 'gt':  result = item_val > cmp
+        elif operator == 'gte': result = item_val >= cmp
+        elif operator == 'lt':  result = item_val < cmp
+        elif operator == 'lte': result = item_val <= cmp
+        else:                   result = False
+        return result, f"{field} {operator} {cmp} (actual: {item_val})"
+
+    # --- Standard DB column fields ---
     field_map = FIELD_MAP_MOVIES if media_type == 'movie' else FIELD_MAP_TV
     if field not in field_map:
         return False, f"Unknown field: {field}"
@@ -55,11 +147,11 @@ def _evaluate_condition(item: dict, condition: dict, media_type: str) -> tuple[b
     col_name, col_type = field_map[field]
     item_val = item.get(col_name)
 
-    # Special case: file_size_gb
+    # file_size_gb: convert bytes → GB
     if field == 'file_size_gb' and item_val is not None:
         item_val = item_val / 1_073_741_824.0
 
-    # Convert value to expected type
+    # Type-coerce the rule value
     try:
         if col_type == float and value is not None:
             value = float(value)
@@ -75,29 +167,17 @@ def _evaluate_condition(item: dict, condition: dict, media_type: str) -> tuple[b
             return True, f"{field} is null"
         return False, f"{field} is null"
 
-    # Evaluate operator
-    if operator == 'eq':
-        result = item_val == value
-    elif operator == 'ne':
-        result = item_val != value
-    elif operator == 'gt':
-        result = item_val > value
-    elif operator == 'gte':
-        result = item_val >= value
-    elif operator == 'lt':
-        result = item_val < value
-    elif operator == 'lte':
-        result = item_val <= value
-    elif operator == 'contains':
-        result = str(value).lower() in str(item_val).lower()
-    elif operator == 'not_contains':
-        result = str(value).lower() not in str(item_val).lower()
-    elif operator == 'is_null':
-        result = item_val is None
-    elif operator == 'is_not_null':
-        result = item_val is not None
-    else:
-        result = False
+    if operator == 'eq':            result = item_val == value
+    elif operator == 'ne':          result = item_val != value
+    elif operator == 'gt':          result = item_val > value
+    elif operator == 'gte':         result = item_val >= value
+    elif operator == 'lt':          result = item_val < value
+    elif operator == 'lte':         result = item_val <= value
+    elif operator == 'contains':    result = str(value).lower() in str(item_val).lower()
+    elif operator == 'not_contains': result = str(value).lower() not in str(item_val).lower()
+    elif operator == 'is_null':     result = False  # item_val is not None here
+    elif operator == 'is_not_null': result = True
+    else:                           result = False
 
     reason = f"{field} {operator} {value} (actual: {item_val})"
     return result, reason
@@ -148,20 +228,23 @@ async def evaluate_rule(rule: dict, db, dry_run: bool = True) -> list[dict]:
 
     for mt, table in types_to_check:
         if table == 'movies':
-            cols = "id, title, year, composite_score, imdb_rating, rt_critics, metacritic, " \
-                   "tmdb_rating, mdblist_score, purge_score, ali_play_count, chris_play_count, " \
-                   "file_size_bytes, resolution, monitored, hdr_format, audio_codec, genres"
+            cols = ("id, title, year, composite_score, imdb_rating, rt_critics, metacritic, "
+                    "tmdb_rating, mdblist_score, purge_score, ali_play_count, chris_play_count, "
+                    "file_size_bytes, resolution, monitored, hdr_format, audio_codec, genres, "
+                    "plex_added_at, radarr_added_at, last_synced, ali_last_watched, chris_last_watched")
         else:
-            cols = "id, title, year, composite_score, imdb_rating, rt_critics, metacritic, " \
-                   "tmdb_rating, mdblist_score, purge_score, ali_play_count, chris_play_count, " \
-                   "monitored, status, season_completion_pct"
+            cols = ("id, title, year, composite_score, imdb_rating, rt_critics, metacritic, "
+                    "tmdb_rating, mdblist_score, purge_score, ali_play_count, chris_play_count, "
+                    "monitored, status, season_completion_pct, "
+                    "plex_added_at, last_synced, ali_last_watched, chris_last_watched")
 
-        async with db.execute(f"SELECT {cols} FROM {table} LIMIT 5000") as cur:
+        async with db.execute(f"SELECT {cols} FROM {table} LIMIT 10000") as cur:
             items = await cur.fetchall()
 
         for row in items:
             item = dict(row)
             item['media_type'] = mt
+            _enrich_item(item, mt)   # add computed fields
             matched, reasons = _item_matches_rule(item, rule, mt)
             if matched:
                 item['reasons'] = reasons
@@ -186,7 +269,6 @@ async def execute_rule_matches(rule: dict, db) -> dict:
         match = dict(match)
         try:
             if action == 'stage':
-                # Already staged, nothing more to do
                 await db.execute(
                     "UPDATE rule_matches SET action_taken='staged', acted_at=CURRENT_TIMESTAMP WHERE id=?",
                     (match['id'],)
@@ -195,15 +277,10 @@ async def execute_rule_matches(rule: dict, db) -> dict:
                 media_type = match['media_type']
                 media_id = match['media_id']
                 if media_type == 'movie':
-                    async with db.execute("SELECT radarr_id, radarr_instance FROM movies WHERE id=?", (media_id,)) as cur:
-                        row = await cur.fetchone()
-                    if row:
-                        from app.routes.movies import unmonitor_movie
-                        # Direct DB update
-                        await db.execute(
-                            "UPDATE movies SET monitored=0, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-                            (media_id,)
-                        )
+                    await db.execute(
+                        "UPDATE movies SET monitored=0, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                        (media_id,)
+                    )
                 else:
                     await db.execute(
                         "UPDATE tv_shows SET monitored=0, updated_at=CURRENT_TIMESTAMP WHERE id=?",
@@ -214,7 +291,6 @@ async def execute_rule_matches(rule: dict, db) -> dict:
                     (match['id'],)
                 )
             elif action in ('delete', 'notify'):
-                # For delete/notify, require separate manual confirmation via UI
                 await db.execute(
                     "UPDATE rule_matches SET action_taken='staged_for_delete', acted_at=CURRENT_TIMESTAMP WHERE id=?",
                     (match['id'],)
@@ -248,20 +324,17 @@ async def run_all_scheduled_rules(db):
         try:
             matches = await evaluate_rule(rule, db, dry_run=False)
             log.info(f"Rule '{rule['name']}' matched {len(matches)} items")
-            # Stage matches — preserve matched_at/action_taken for continuing matches
             new_ids = {m['id'] for m in matches}
             async with db.execute(
                 "SELECT media_id FROM rule_matches WHERE rule_id=? AND excluded_by_user=0",
                 (rule['id'],)
             ) as _cur:
                 existing_ids = {row[0] for row in await _cur.fetchall()}
-            # Remove stale matches no longer in result set
             for stale_id in existing_ids - new_ids:
                 await db.execute(
                     "DELETE FROM rule_matches WHERE rule_id=? AND media_id=? AND excluded_by_user=0",
                     (rule['id'], stale_id)
                 )
-            # Insert only new matches (skip already-tracked ones to preserve history)
             for m in matches:
                 if m['id'] not in existing_ids:
                     await db.execute("""
