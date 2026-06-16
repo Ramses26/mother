@@ -556,6 +556,80 @@ async def bulk_delete_movies(body: dict, _auth=Depends(require_auth)):
     return {'succeeded': succeeded, 'failed': failed}
 
 
+@router.get('/movies/{movie_id}/watch-analytics')
+async def movie_watch_analytics(movie_id: int, _auth=Depends(require_auth)):
+    """Watch analytics for a movie — per-server play counts, timeline, top watchers."""
+    from datetime import datetime, timezone
+
+    def _analytics(plays, last_watched_iso):
+        days_since = None
+        if last_watched_iso:
+            try:
+                dt = datetime.fromisoformat(last_watched_iso)
+                days_since = (datetime.now(timezone.utc) - dt.replace(tzinfo=timezone.utc)).days
+            except Exception:
+                pass
+        if plays == 0:
+            status = 'Never'
+        elif days_since is not None and days_since > 90:
+            status = 'Abandoned'
+        elif days_since is not None and days_since > 30:
+            status = 'Stalled'
+        elif days_since is not None and days_since <= 14:
+            status = 'Active'
+        else:
+            status = 'Watching'
+        return {'plays': plays, 'days_since': days_since, 'status': status,
+                'last_watched': last_watched_iso}
+
+    async for db in get_db():
+        async with db.execute("SELECT * FROM movies WHERE id=?", (movie_id,)) as cur:
+            row = await cur.fetchone()
+        if not row:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail='Movie not found')
+        movie = dict(row)
+
+        ali = _analytics(movie.get('ali_play_count') or 0, movie.get('ali_last_watched'))
+        chris = _analytics(movie.get('chris_play_count') or 0, movie.get('chris_last_watched'))
+        combined_plays = (movie.get('ali_play_count') or 0) + (movie.get('chris_play_count') or 0)
+        combined_last = max(movie.get('ali_last_watched') or '', movie.get('chris_last_watched') or '') or None
+        combined = _analytics(combined_plays, combined_last)
+
+        # Timeline — Ali by ali_plex_key, Chris by title (different key spaces)
+        ali_key = movie.get('ali_plex_key') or movie.get('plex_key') or ''
+        chris_key = movie.get('chris_plex_key') or movie.get('plex_key') or ''
+        title = movie.get('title', '')
+
+        async with db.execute("""
+            SELECT user_name, title as episode_title, watched_at, completion_pct, duration_sec, source
+            FROM watch_history
+            WHERE media_type = 'movie'
+              AND (
+                (source='tautulli-ali'   AND ? != '' AND plex_key = ?)
+                OR (source='tautulli-chris' AND lower(title) = lower(?))
+              )
+            ORDER BY watched_at DESC LIMIT 200
+        """, (ali_key, ali_key, title)) as cur:
+            timeline = [dict(r) for r in await cur.fetchall()]
+
+        user_counts = {}
+        for t in timeline:
+            u = t['user_name']
+            user_counts[u] = user_counts.get(u, 0) + 1
+        top_watchers = sorted(user_counts.items(), key=lambda x: -x[1])[:10]
+
+        return {
+            'movie_id': movie_id,
+            'title': title,
+            'ali': ali,
+            'chris': chris,
+            'combined': combined,
+            'timeline': timeline,
+            'top_watchers': [{'user': u, 'plays': c} for u, c in top_watchers],
+        }
+
+
 @router.get('/movies/{movie_id}')
 async def get_movie(movie_id: int, _auth=Depends(require_auth)):
     async for db in get_db():

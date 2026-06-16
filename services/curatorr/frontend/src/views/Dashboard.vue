@@ -328,6 +328,26 @@
           {{ syncing ? 'Syncing...' : 'Sync Now' }}
         </button>
       </div>
+
+      <!-- Ratings Coverage -->
+      <div v-if="coverage" class="card mt-6">
+        <h3 class="font-semibold text-white mb-3">Ratings Coverage</h3>
+        <div class="space-y-2">
+          <div v-for="(data, source) in coverage" :key="source">
+            <div class="flex items-center justify-between text-xs mb-0.5">
+              <span class="text-slate-400">{{ source }}</span>
+              <span :class="data.pct >= 90 ? 'text-green-400' : data.pct >= 70 ? 'text-yellow-400' : 'text-red-400'">
+                {{ data.have.toLocaleString() }} / {{ data.total.toLocaleString() }} ({{ data.pct }}%)
+              </span>
+            </div>
+            <div class="h-1.5 rounded-full overflow-hidden" style="background:#2d3250;">
+              <div class="h-full rounded-full transition-all"
+                :class="data.pct >= 90 ? 'bg-green-500' : data.pct >= 70 ? 'bg-yellow-500' : 'bg-red-500'"
+                :style="{ width: data.pct + '%' }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -339,6 +359,7 @@ import axios from 'axios'
 
 const router = useRouter()
 const stats = ref(null)
+const coverage = ref(null)
 const histTab = ref('movies')
 const histSource = ref('composite')
 const syncing = ref(false)
@@ -581,6 +602,7 @@ const loadStats = async () => {
 onMounted(async () => {
   await loadStats()
   await loadStale()
+  try { const r = await axios.get('/api/stats/ratings-coverage'); coverage.value = r.data } catch {}
 })
 onBeforeUnmount(() => { if (pollTimer) clearInterval(pollTimer) })
 </script>

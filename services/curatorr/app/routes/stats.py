@@ -190,6 +190,41 @@ async def dashboard_stats(_auth=Depends(require_auth)):
         }
 
 
+@router.get('/stats/ratings-coverage')
+async def ratings_coverage(_auth=Depends(require_auth)):
+    """How complete ratings data is across movies and TV shows."""
+    async for db in get_db():
+        def pct(have, total):
+            return round(have / total * 100, 1) if total else 0
+
+        async with db.execute("SELECT COUNT(*) FROM movies") as c:
+            m_total = (await c.fetchone())[0]
+        async with db.execute("SELECT COUNT(*) FROM tv_shows WHERE sonarr_instance='sonarr-hd'") as c:
+            tv_total = (await c.fetchone())[0]
+
+        stats = {}
+        for source, col, tbl, filt in [
+            ('Movies IMDb',     'imdb_rating',   'movies',   ''),
+            ('Movies RT',       'rt_critics',    'movies',   ''),
+            ('Movies Metacritic','metacritic',   'movies',   ''),
+            ('Movies MDBList',  'mdblist_score', 'movies',   ''),
+            ('Movies TMDB',     'tmdb_rating',   'movies',   ''),
+            ('TV IMDb',         'imdb_rating',   'tv_shows', "AND sonarr_instance='sonarr-hd'"),
+            ('TV RT',           'rt_critics',    'tv_shows', "AND sonarr_instance='sonarr-hd'"),
+            ('TV Metacritic',   'metacritic',    'tv_shows', "AND sonarr_instance='sonarr-hd'"),
+            ('TV MDBList',      'mdblist_score', 'tv_shows', "AND sonarr_instance='sonarr-hd'"),
+        ]:
+            total = m_total if tbl == 'movies' else tv_total
+            async with db.execute(
+                f"SELECT COUNT(*) FROM {tbl} WHERE {col} IS NOT NULL AND {col} > 0 {filt}"
+            ) as c:
+                have = (await c.fetchone())[0]
+            missing = total - have
+            stats[source] = {'have': have, 'missing': missing, 'total': total, 'pct': pct(have, total)}
+
+        return stats
+
+
 @router.get('/stats/stale')
 async def stale_content(
     user: str = Query('combined'),

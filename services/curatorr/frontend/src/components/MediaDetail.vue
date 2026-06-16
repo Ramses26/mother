@@ -169,37 +169,56 @@
           </div>
         </div>
 
-        <!-- Watch status (Movies) -->
+        <!-- Watch Analytics (Movies) -->
         <div v-else class="mb-4">
-          <h3 class="text-sm font-medium text-slate-400 mb-2">Watch Status</h3>
-          <div class="grid grid-cols-2 gap-3 mb-2">
+          <h3 class="text-sm font-medium text-slate-400 mb-2">Watch Analytics</h3>
+          <div v-if="analyticsLoading" class="text-xs text-slate-500 py-2">Loading analytics…</div>
+          <div v-else-if="watchAnalytics" class="space-y-2">
+            <div v-for="(person, key) in { Ali: watchAnalytics.ali, Chris: watchAnalytics.chris }" :key="key"
+              class="p-3 rounded-lg" style="background:#0f1117;">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-slate-500">{{ key }}</span>
+                <span class="text-xs font-medium px-1.5 py-0.5 rounded" :class="statusClass(person.status)">
+                  {{ person.status }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between text-xs text-slate-500">
+                <span>{{ person.plays }} play{{ person.plays !== 1 ? 's' : '' }}</span>
+                <span v-if="person.last_watched">Last: {{ fmtRelDate(person.last_watched) }}</span>
+                <span v-else class="text-slate-600">Never</span>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg flex items-center justify-between" style="background:#0f1117;">
+              <div>
+                <div class="text-xs text-slate-500 mb-0.5">Combined</div>
+                <div class="text-white text-sm">{{ watchAnalytics.combined.plays }} total plays</div>
+              </div>
+              <span class="text-sm font-medium px-2 py-1 rounded" :class="statusClass(watchAnalytics.combined.status)">
+                {{ watchAnalytics.combined.status }}
+              </span>
+            </div>
+            <div v-if="watchAnalytics.top_watchers && watchAnalytics.top_watchers.length" class="p-3 rounded-lg" style="background:#0f1117;">
+              <div class="text-xs text-slate-500 mb-1.5">All watchers (Plex)</div>
+              <div class="flex flex-wrap gap-2">
+                <span v-for="w in watchAnalytics.top_watchers.slice(0,6)" :key="w.user"
+                  class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">
+                  {{ w.user }} <span class="text-slate-600">{{ w.plays }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <!-- Fallback when analytics not yet loaded -->
+          <div v-else class="grid grid-cols-2 gap-3">
             <div class="p-3 rounded-lg" style="background:#0f1117;">
               <div class="text-xs text-slate-500 mb-1">Ali</div>
               <div class="text-white font-medium">{{ item.ali_play_count || 0 }} plays</div>
-              <div v-if="item.ali_last_watched" class="text-xs text-slate-500 mt-0.5">
-                Last: {{ fmtDate(item.ali_last_watched) }}
-              </div>
+              <div v-if="item.ali_last_watched" class="text-xs text-slate-500 mt-0.5">Last: {{ fmtDate(item.ali_last_watched) }}</div>
             </div>
             <div class="p-3 rounded-lg" style="background:#0f1117;">
               <div class="text-xs text-slate-500 mb-1">Chris</div>
               <div class="text-white font-medium">{{ item.chris_play_count || 0 }} plays</div>
-              <div v-if="item.chris_last_watched" class="text-xs text-slate-500 mt-0.5">
-                Last: {{ fmtDate(item.chris_last_watched) }}
-              </div>
+              <div v-if="item.chris_last_watched" class="text-xs text-slate-500 mt-0.5">Last: {{ fmtDate(item.chris_last_watched) }}</div>
             </div>
-          </div>
-          <div class="p-3 rounded-lg flex items-center justify-between" style="background:#0f1117;">
-            <div>
-              <div class="text-xs text-slate-500 mb-0.5">Combined</div>
-              <div class="text-white text-sm">{{ (item.ali_play_count || 0) + (item.chris_play_count || 0) }} total plays</div>
-              <div v-if="combinedLastWatched" class="text-xs text-slate-500 mt-0.5">
-                Last: {{ fmtDate(combinedLastWatched) }}
-              </div>
-            </div>
-            <span class="text-sm font-medium px-2 py-1 rounded"
-              :class="bothWatched ? 'bg-green-900 text-green-300' : 'bg-slate-700 text-slate-400'">
-              {{ bothWatched ? 'Both watched ✓' : (item.ali_play_count > 0 || item.chris_play_count > 0 ? 'Partially watched' : 'Unwatched') }}
-            </span>
           </div>
         </div>
 
@@ -264,9 +283,13 @@
         <!-- External links -->
         <div class="mt-3 flex flex-wrap gap-2 text-xs">
           <a v-if="item.radarr_id && radarrUrl" :href="radarrUrl" target="_blank"
-            class="text-slate-500 hover:text-slate-300 transition-colors">Open in Radarr ↗</a>
+            class="text-slate-500 hover:text-slate-300 transition-colors">Radarr ↗</a>
           <a v-if="item.sonarr_id && sonarrUrl" :href="sonarrUrl" target="_blank"
-            class="text-slate-500 hover:text-slate-300 transition-colors">Open in Sonarr ↗</a>
+            class="text-slate-500 hover:text-slate-300 transition-colors">Sonarr ↗</a>
+          <a v-if="plexChrisUrl" :href="plexChrisUrl" target="_blank"
+            class="text-slate-500 hover:text-slate-300 transition-colors">Plex (Chris) ↗</a>
+          <a v-if="plexAliUrl" :href="plexAliUrl" target="_blank"
+            class="text-slate-500 hover:text-slate-300 transition-colors">Plex (Ali) ↗</a>
           <a v-if="item.imdb_id" :href="`https://www.imdb.com/title/${item.imdb_id}`" target="_blank"
             class="text-slate-500 hover:text-slate-300 transition-colors">IMDb ↗</a>
           <a v-if="item.tmdb_id && item.radarr_id" :href="`https://www.themoviedb.org/movie/${item.tmdb_id}`" target="_blank"
@@ -295,10 +318,13 @@ const watchAnalytics = ref(null)
 const analyticsLoading = ref(false)
 
 async function loadAnalytics(item) {
-  if (!item?.sonarr_id || !item?.id) { watchAnalytics.value = null; return }
+  if (!item?.id) { watchAnalytics.value = null; return }
   analyticsLoading.value = true
   try {
-    const r = await fetch(`/api/tv/${item.id}/watch-analytics`)
+    const url = item.sonarr_id
+      ? `/api/tv/${item.id}/watch-analytics`
+      : `/api/movies/${item.id}/watch-analytics`
+    const r = await fetch(url)
     if (r.ok) watchAnalytics.value = await r.json()
     else watchAnalytics.value = null
   } catch { watchAnalytics.value = null }
@@ -386,6 +412,22 @@ const radarrUrl = computed(() => {
     : (urls.radarr_hd || '')
   if (!base) return null
   return `${base}/movie/${props.item.radarr_id}`
+})
+
+const plexChrisUrl = computed(() => {
+  const urls = publicUrls.value || {}
+  const machineId = urls.plex_chris_machine_id
+  const key = props.item?.chris_plex_key || props.item?.plex_key
+  if (!machineId || !key) return null
+  return `https://app.plex.tv/desktop/#!/server/${machineId}/details?key=%2Flibrary%2Fmetadata%2F${key}`
+})
+
+const plexAliUrl = computed(() => {
+  const urls = publicUrls.value || {}
+  const machineId = urls.plex_ali_machine_id
+  const key = props.item?.ali_plex_key || props.item?.plex_key
+  if (!machineId || !key) return null
+  return `https://app.plex.tv/desktop/#!/server/${machineId}/details?key=%2Flibrary%2Fmetadata%2F${key}`
 })
 
 const sonarrUrl = computed(() => {

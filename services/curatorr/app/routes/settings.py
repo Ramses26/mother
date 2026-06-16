@@ -14,6 +14,31 @@ from app.models import ChangePasswordRequest
 router = APIRouter()
 log = logging.getLogger('curatorr.routes.settings')
 
+_plex_machine_cache: dict[str, str] = {}
+
+
+async def _get_plex_machine_id(plex_url: str, token: str) -> str:
+    """Fetch Plex server machine identifier (cached per URL)."""
+    if not plex_url or not token:
+        return ''
+    key = plex_url
+    if key in _plex_machine_cache:
+        return _plex_machine_cache[key]
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.get(
+                f"{plex_url.rstrip('/')}/",
+                headers={'X-Plex-Token': token, 'Accept': 'application/json'},
+            )
+        data = r.json()
+        machine_id = (data.get('MediaContainer') or {}).get('machineIdentifier', '')
+        if machine_id:
+            _plex_machine_cache[key] = machine_id
+        return machine_id
+    except Exception:
+        return ''
+
 
 def _mask(v):
     if not v:
@@ -82,6 +107,10 @@ async def get_settings(_auth=Depends(require_auth)):
             'sonarr_hd': sonarr_hd_url or '',
             'sonarr_4k': sonarr_4k_url or '',
             'overseerr': overseerr_url or '',
+            'plex_chris_url': plex_chris_url or '',
+            'plex_ali_url': plex_ali_url or '',
+            'plex_chris_machine_id': await _get_plex_machine_id(plex_chris_url, plex_chris_token),
+            'plex_ali_machine_id': await _get_plex_machine_id(plex_ali_url, plex_ali_token),
         },
         'overseerr_api_key': _mask(overseerr_api_key),
     }
