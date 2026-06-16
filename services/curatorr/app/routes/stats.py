@@ -70,13 +70,38 @@ async def dashboard_stats(_auth=Depends(require_auth)):
             'mdblist':    await build_hist('tv_shows', 'mdblist_score', buckets_100),
         }
 
-        # Top purge candidates
-        async with db.execute(
-            "SELECT id, title, year, composite_score, purge_score, imdb_rating, "
-            "ali_play_count, chris_play_count, resolution, file_size_bytes, file_path "
-            "FROM movies ORDER BY purge_score DESC LIMIT 5"
-        ) as cur:
+        # Top purge candidates — movies (deduplicated by tmdb_id)
+        async with db.execute("""
+            WITH ranked AS (
+                SELECT *, ROW_NUMBER() OVER (
+                    PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ORDER BY CASE radarr_instance WHEN 'radarr-hd' THEN 0 ELSE 1 END, id
+                ) AS rn
+                FROM movies
+            )
+            SELECT id, title, year, composite_score, purge_score, imdb_rating,
+                   ali_play_count, chris_play_count, resolution, file_size_bytes, file_path
+            FROM ranked WHERE rn=1 ORDER BY purge_score DESC LIMIT 5
+        """) as cur:
             top_purge = [dict(r) for r in await cur.fetchall()]
+
+        # Top purge candidates — TV shows (deduplicated by tmdb_id)
+        async with db.execute("""
+            WITH ranked AS (
+                SELECT *, ROW_NUMBER() OVER (
+                    PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ORDER BY CASE sonarr_instance WHEN 'sonarr-hd' THEN 0 ELSE 1 END, id
+                ) AS rn,
+                MAX(size_on_disk) OVER (
+                    PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                ) AS merged_size
+            FROM tv_shows
+            )
+            SELECT id, title, year, composite_score, purge_score, imdb_rating,
+                   ali_play_count, chris_play_count, status, merged_size AS size_on_disk
+            FROM ranked WHERE rn=1 ORDER BY purge_score DESC LIMIT 5
+        """) as cur:
+            top_purge_tv = [dict(r) for r in await cur.fetchall()]
 
         # Recent additions (use radarr_added_at for movies, last_synced for TV)
         async with db.execute(
@@ -155,6 +180,7 @@ async def dashboard_stats(_auth=Depends(require_auth)):
                 'tv': tv_hist,
             },
             'top_purge_candidates': top_purge,
+            'top_purge_tv': top_purge_tv,
             'recent_additions': recent,
             'sync_status': sync_status,
             'resolution_dist': resolution_dist,

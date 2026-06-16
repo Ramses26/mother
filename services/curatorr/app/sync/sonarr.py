@@ -174,7 +174,7 @@ async def update_tv_scores(db, instance_name: str = None):
 
     async with db.execute(
         f"SELECT id, imdb_rating, rt_critics, metacritic, tmdb_rating, mdblist_score, "
-        f"ali_play_count, chris_play_count, status FROM tv_shows {where}", args
+        f"ali_play_count, chris_play_count, status, plex_added_at, last_synced FROM tv_shows {where}", args
     ) as cur:
         rows = await cur.fetchall()
 

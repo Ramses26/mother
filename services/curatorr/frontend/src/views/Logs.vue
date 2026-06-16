@@ -47,23 +47,35 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in items" :key="row.id"
-            class="border-b transition-colors"
-            :class="row.level === 'error' ? 'bg-red-950/20' : 'hover:bg-surface-100'"
-            style="border-color:#1a1d27;">
-            <td class="py-2 pr-4 text-slate-500 text-xs font-mono whitespace-nowrap">
-              {{ fmtDate(row.created_at) }}
-            </td>
-            <td class="py-2 pr-4">
-              <span class="px-1.5 py-0.5 rounded text-xs font-medium"
-                :class="typeClass(row.event_type)">{{ row.event_type }}</span>
-            </td>
-            <td class="py-2 pr-4 text-slate-400 text-xs">{{ row.source || '—' }}</td>
-            <td class="py-2 pr-4 text-slate-300 text-xs">{{ row.message }}</td>
-            <td class="py-2">
-              <span class="text-xs" :class="levelClass(row.level)">{{ row.level }}</span>
-            </td>
-          </tr>
+          <template v-for="row in items" :key="row.id">
+            <tr class="border-b transition-colors cursor-pointer"
+              :class="rowBg(row.level)"
+              style="border-color:#1a1d27;"
+              @click="toggle(row.id)">
+              <td class="py-2 pr-4 text-slate-500 text-xs font-mono whitespace-nowrap">
+                {{ fmtDate(row.created_at) }}
+              </td>
+              <td class="py-2 pr-4">
+                <span class="px-1.5 py-0.5 rounded text-xs font-medium"
+                  :class="typeClass(row.event_type)">{{ row.event_type }}</span>
+              </td>
+              <td class="py-2 pr-4 text-slate-400 text-xs">{{ row.source || '—' }}</td>
+              <td class="py-2 pr-4 text-xs" :class="levelClass(row.level)">
+                {{ row.message }}
+                <span v-if="row.detail && !expanded.has(row.id)" class="ml-1 text-slate-600">▶</span>
+                <span v-if="row.detail && expanded.has(row.id)" class="ml-1 text-slate-400">▼</span>
+              </td>
+              <td class="py-2">
+                <span class="text-xs font-medium" :class="levelClass(row.level)">{{ row.level }}</span>
+              </td>
+            </tr>
+            <!-- Expandable detail row -->
+            <tr v-if="expanded.has(row.id) && row.detail" class="border-b" style="border-color:#1a1d27;">
+              <td colspan="5" class="pb-3 pt-1 pl-4">
+                <pre class="text-xs text-slate-300 bg-surface-200 rounded p-3 overflow-x-auto whitespace-pre-wrap break-all">{{ fmtDetail(row.detail) }}</pre>
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
 
@@ -89,7 +101,26 @@ const loading = ref(false)
 const filterType = ref('')
 const filterLevel = ref('')
 const filterSource = ref('')
+const expanded = ref(new Set())
 let debTimer = null
+
+const toggle = (id) => {
+  const s = new Set(expanded.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  expanded.value = s
+}
+
+const fmtDetail = (detail) => {
+  if (!detail) return ''
+  try { return JSON.stringify(typeof detail === 'string' ? JSON.parse(detail) : detail, null, 2) }
+  catch { return String(detail) }
+}
+
+const rowBg = (level) => ({
+  error: 'bg-red-950/20 hover:bg-red-950/30',
+  warning: 'bg-yellow-950/20 hover:bg-yellow-950/30',
+  info: 'hover:bg-surface-100',
+}[level] || 'hover:bg-surface-100')
 
 const load = async () => {
   loading.value = true

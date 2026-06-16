@@ -533,15 +533,25 @@ async def bulk_delete_tv(body: dict, _auth=Depends(require_auth)):
     for item in items:
         try:
             result = await delete_from_arr_and_disk(item, 'tv')
-            if result.get('arr_delete_ok') and result.get('unraid_delete_ok'):
+            if result.get('arr_delete_ok'):
                 async for db in get_db():
-                    await db.execute("DELETE FROM tv_seasons WHERE show_id=?", (item['id'],))
-                    await db.execute("DELETE FROM tv_shows WHERE id=?", (item['id'],))
+                    # Remove all DB rows across all instances (same tvdb_id)
+                    tvdb_id = item.get('tvdb_id')
+                    if tvdb_id:
+                        async with db.execute(
+                            "SELECT id FROM tv_shows WHERE tvdb_id=?", (tvdb_id,)
+                        ) as cur:
+                            all_ids = [r[0] for r in await cur.fetchall()]
+                    else:
+                        all_ids = [item['id']]
+                    for sid in all_ids:
+                        await db.execute("DELETE FROM tv_seasons WHERE show_id=?", (sid,))
+                        await db.execute("DELETE FROM tv_shows WHERE id=?", (sid,))
                     await db.commit()
                 succeeded.append({'id': item['id'], 'title': item['title']})
             else:
                 failed.append({'id': item['id'], 'title': item['title'],
-                               'error': 'Verification failed — Sonarr or disk deletion could not be confirmed'})
+                               'error': 'Sonarr deletion failed — not removed from Curatorr'})
         except Exception as e:
             failed.append({'id': item['id'], 'title': item['title'], 'error': str(e)})
 
@@ -719,13 +729,25 @@ async def delete_tv_show(show_id: int, body: DeleteRequest, _auth=Depends(requir
     from app.routes.actions import delete_from_arr_and_disk
     result = await delete_from_arr_and_disk(show, 'tv')
 
-    if result.get('arr_delete_ok') and result.get('unraid_delete_ok'):
+    if result.get('arr_delete_ok'):
         async for db in get_db():
-            await db.execute("DELETE FROM tv_seasons WHERE show_id=?", (show_id,))
-            await db.execute("DELETE FROM tv_shows WHERE id=?", (show_id,))
+            # Remove all DB rows for this show across all instances (same tvdb_id)
+            tvdb_id = show.get('tvdb_id')
+            if tvdb_id:
+                async with db.execute(
+                    "SELECT id FROM tv_shows WHERE tvdb_id=?", (tvdb_id,)
+                ) as cur:
+                    all_ids = [r[0] for r in await cur.fetchall()]
+            else:
+                all_ids = [show_id]
+            for sid in all_ids:
+                await db.execute("DELETE FROM tv_seasons WHERE show_id=?", (sid,))
+                await db.execute("DELETE FROM tv_shows WHERE id=?", (sid,))
             await db.commit()
+        if not result.get('unraid_delete_ok'):
+            result['message'] = f"Deleted {show['title']} from Sonarr (Unraid delete skipped — may not exist there)')"
     else:
-        result['message'] = 'Verification failed — show NOT removed from Curatorr (Sonarr or disk deletion could not be confirmed)'
+        result['message'] = 'Arr deletion failed — show NOT removed from Curatorr'
 
     return result
 

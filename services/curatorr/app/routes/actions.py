@@ -202,7 +202,20 @@ async def delete_from_arr_and_disk(item: dict, media_type: str) -> dict:
                         headers={'X-Api-Key': inst['api_key']},
                         params={'deleteFiles': 'true'},
                     )
-                    arr_delete_ok = r.status_code in (200, 204, 404)  # 404 = already deleted, treat as success
+                    if r.status_code in (200, 204, 404):
+                        arr_delete_ok = True
+                    elif r.status_code == 500:
+                        # Sonarr returns 500 (not 404) for DELETE on non-existent series.
+                        # Verify with GET — if it's gone, treat as success.
+                        chk = await client.get(
+                            f"{inst['url']}/api/v3/series/{sonarr_id}",
+                            headers={'X-Api-Key': inst['api_key']},
+                        )
+                        arr_delete_ok = chk.status_code == 404
+                        if arr_delete_ok:
+                            router_log.info(f"Sonarr series/{sonarr_id} already absent — treating as deleted: {title}")
+                        else:
+                            router_log.error(f"Sonarr delete failed (500) and series still exists for {title}")
             except Exception as e:
                 router_log.error(f"Sonarr delete error for {title}: {e}")
 

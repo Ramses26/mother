@@ -280,25 +280,53 @@ async def list_movies(
     order_by = "ORDER BY " + ", ".join(order_parts)
 
     async for db in get_db():
-        async with db.execute(f"SELECT COUNT(*) FROM movies {where}", args) as cur:
+        # Count deduplicated by TMDB ID (same movie in radarr-hd + radarr-4k counts once)
+        async with db.execute(
+            f"SELECT COUNT(DISTINCT COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))) FROM movies {where}", args
+        ) as cur:
             total = (await cur.fetchone())[0]
 
         offset = (page - 1) * per_page
+        # Dedup CTE: one row per TMDB ID, prefer radarr-hd, merge play counts and sizes
         query = f"""
+            WITH ranked AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                        ORDER BY CASE radarr_instance WHEN 'radarr-hd' THEN 0 ELSE 1 END, id
+                    ) AS rn,
+                    MAX(ali_play_count) OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ) AS merged_ali_plays,
+                    MAX(chris_play_count) OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ) AS merged_chris_plays,
+                    MAX(ali_last_watched) OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ) AS merged_ali_last,
+                    MAX(chris_last_watched) OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ) AS merged_chris_last,
+                    MAX(file_size_bytes) OVER (
+                        PARTITION BY COALESCE(CAST(tmdb_id AS TEXT), 'null_' || CAST(id AS TEXT))
+                    ) AS merged_size
+                FROM movies {where}
+            )
             SELECT id, title, sort_title, year, tmdb_id, imdb_id,
                    resolution, video_codec, audio_codec, audio_channels, hdr_format,
-                   file_size_bytes, file_path, trash_score, quality_profile,
+                   merged_size AS file_size_bytes, file_path, trash_score, quality_profile,
                    original_language, content_rating, runtime_min,
                    monitored, radarr_id, radarr_instance,
                    imdb_rating, rt_critics, metacritic, tmdb_rating,
                    mdblist_score, trakt_rating, letterboxd_rating,
                    composite_score, purge_score,
-                   ali_play_count, ali_last_watched,
-                   chris_play_count, chris_last_watched,
+                   merged_ali_plays AS ali_play_count, merged_ali_last AS ali_last_watched,
+                   merged_chris_plays AS chris_play_count, merged_chris_last AS chris_last_watched,
                    plex_added_at, radarr_added_at, genres,
                    collection_name, collection_tmdb_id,
-                   poster_url, plex_key
-            FROM movies {where} {order_by}
+                   poster_url, plex_key, ali_plex_key, chris_plex_key
+            FROM ranked WHERE rn = 1
+            {order_by}
             LIMIT ? OFFSET ?
         """
         async with db.execute(query, args + [per_page, offset]) as cur:

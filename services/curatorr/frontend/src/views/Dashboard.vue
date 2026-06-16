@@ -53,9 +53,9 @@
         </div>
       </div>
 
-      <!-- Top Purge Candidates -->
+      <!-- Top Purge Candidates — Movies -->
       <div class="card">
-        <h3 class="font-semibold text-white mb-3">Top Purge Candidates</h3>
+        <h3 class="font-semibold text-white mb-3">Top Purge Candidates <span class="text-slate-400 font-normal text-sm ml-1">Movies</span></h3>
         <div v-if="stats && stats.top_purge_candidates.length > 0" class="space-y-2">
           <div v-for="item in stats.top_purge_candidates" :key="item.id"
             class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-200 transition-colors cursor-pointer"
@@ -63,6 +63,28 @@
             <div class="flex-1 min-w-0">
               <div class="text-sm text-white truncate">{{ item.title }}</div>
               <div class="text-xs text-slate-500">{{ item.year }} · {{ item.resolution }}</div>
+            </div>
+            <div class="ml-2 px-2 py-0.5 rounded text-xs font-bold"
+              :class="purgeScoreClass(item.purge_score)">
+              {{ item.purge_score }}
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-slate-500 text-sm text-center py-4">
+          {{ stats ? 'No purge candidates' : 'Loading...' }}
+        </div>
+      </div>
+
+      <!-- Top Purge Candidates — TV -->
+      <div class="card">
+        <h3 class="font-semibold text-white mb-3">Top Purge Candidates <span class="text-slate-400 font-normal text-sm ml-1">TV Shows</span></h3>
+        <div v-if="stats && stats.top_purge_tv && stats.top_purge_tv.length > 0" class="space-y-2">
+          <div v-for="item in stats.top_purge_tv" :key="item.id"
+            class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-200 transition-colors cursor-pointer"
+            @click="$router.push('/tv?open=' + item.id)">
+            <div class="flex-1 min-w-0">
+              <div class="text-sm text-white truncate">{{ item.title }}</div>
+              <div class="text-xs text-slate-500">{{ item.year }} · {{ item.status }}</div>
             </div>
             <div class="ml-2 px-2 py-0.5 rounded text-xs font-bold"
               :class="purgeScoreClass(item.purge_score)">

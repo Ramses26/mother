@@ -39,6 +39,7 @@ def compute_composite_score(
 
 def compute_purge_score(item: dict) -> int:
     """Returns 0-100. Higher = stronger purge candidate."""
+    from datetime import datetime, timezone
     score = 0
     composite = item.get('composite_score') or 0
 
@@ -62,7 +63,23 @@ def compute_purge_score(item: dict) -> int:
     if tv_status == 'Cancelled' and ali_plays > 0 and chris_plays > 0:
         score += 10
 
-    # Protect high-rated content
+    # Time-decay: content sitting unwatched for a long time is a stronger purge candidate.
+    # Only applies when there are no plays (watched content shouldn't be penalised for age).
+    added_at_str = item.get('plex_added_at') or item.get('radarr_added_at') or item.get('last_synced')
+    if added_at_str and total_plays == 0:
+        try:
+            added_at = datetime.fromisoformat(str(added_at_str).replace('Z', '+00:00'))
+            if added_at.tzinfo is None:
+                added_at = added_at.replace(tzinfo=timezone.utc)
+            days_old = (datetime.now(timezone.utc) - added_at).days
+            if days_old > 365:
+                score += 20   # > 1 year unwatched
+            elif days_old > 180:
+                score += 10   # > 6 months unwatched
+        except Exception:
+            pass
+
+    # Protect high-rated content and recently added items
     if composite >= 8.5:
         score -= 20
 
