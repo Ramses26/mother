@@ -385,8 +385,7 @@ def _do_scan() -> dict:
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.get('/health')
-def health(x_api_key: str = Header(...)):
-    _check_key(x_api_key)
+def health():
     return {
         'ok': True,
         'media_root': MEDIA_ROOT,
