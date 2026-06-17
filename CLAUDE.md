@@ -91,11 +91,13 @@ The nightly dedup (`nightly_unraid_dedup` in `app.py`) caused a mass-deletion in
 | Safety | Env var / file | Default | Purpose |
 |---|---|---|---|
 | Pause sentinel | `/opt/mother/PAUSE_DEDUP` | (create file) | Blocks dedup entirely when file exists. Create during active batch sync. |
+| Pre-run warning | `DEDUP_WARN_MINUTES` | 10 | Sends Telegram N min before deletions; re-checks sentinel after wait so you can abort. |
 | Safety limit | `DEDUP_SAFETY_LIMIT` | 200 | Aborts + alerts if more than N deletable files found. Prevents runaway. |
-| Per-run cap | `DEDUP_MAX_PER_RUN` | 50 | Max deletions per run. Remaining deferred to next day. |
+| Per-run cap | `DEDUP_MAX_PER_RUN` | 50 | Max deletions per run (enforced across all library types via flat loop). Remaining deferred. |
 | Dry-run mode | `DEDUP_DRY_RUN` | false | Set `true` to preview deletions without executing. |
-| Min age | `DEDUP_MIN_AGE_HOURS` | 24 | Skip if gap-sync jobs ran in last N hours (prevents dedup→sync churn). |
-| Active job check | (code) | always | Skips dedup if any TVGapSync/GapSync jobs are currently in_progress. |
+| Min age | `DEDUP_MIN_AGE_HOURS` | 24 | Skips dedup if any gap-sync job completed in last N hours OR is still in_progress/pending. |
+| Active job check | (code) | always | Skips dedup if any TVGapSync/GapSync jobs are `in_progress` OR `pending`. |
+| Agent confirm | (code) | always | Counts deletion as success only if path appears in Agent `deleted[]` — not just HTTP 200. |
 
 **PAUSE_DEDUP should exist while the batch sync screen is running.** Remove it only once the batch sync is complete and verified.
 

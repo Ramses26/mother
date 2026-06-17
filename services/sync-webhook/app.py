@@ -353,7 +353,7 @@ def complete_sync_job(job_id, status, duration=None, error=None):
             UPDATE sync_jobs
             SET status = ?, completed_at = ?, duration_seconds = ?, error_message = ?
             WHERE id = ?
-        ''', (status, datetime.now().isoformat(), duration, error, job_id))
+        ''', (status, datetime.utcnow().isoformat(), duration, error, job_id))
         conn.commit()
         conn.close()
         logger.debug(f"Completed job {job_id}: {status}")
@@ -1974,8 +1974,9 @@ def nightly_unraid_dedup():
       DEDUP_SAFETY_LIMIT  abort threshold (default 200)
       DEDUP_MAX_PER_RUN   max deletions per run (default 50)
       DEDUP_DRY_RUN       'true' to preview without deleting (default false)
-      DEDUP_MIN_AGE_HOURS only delete duplicates whose dest path has not been synced
-                          in the last N hours (default 24 — gives rsync jobs time to complete)
+      DEDUP_MIN_AGE_HOURS block dedup if any gap-sync job completed in the last N hours
+                          (default 24); dedup is already separated from gap scan by scheduling
+                          (03:00 scan → 12:00 dedup), so this adds a second layer of protection
     """
     # ── 1. PAUSE_DEDUP sentinel ────────────────────────────────────────────────
     pause_file = os.environ.get('PAUSE_DEDUP_FILE', '/opt/mother/PAUSE_DEDUP')
@@ -1986,18 +1987,22 @@ def nightly_unraid_dedup():
                           notify_type=apprise.NotifyType.WARNING)
         return
 
-    # ── 2. Skip if gap-sync jobs are actively running ─────────────────────────
-    # Gap sync jobs create new files on Unraid. Running dedup immediately after
-    # would delete the just-synced copies before the queue drains.
+    # ── 2. Skip if gap-sync jobs are running OR recently completed ───────────
+    # Gap sync jobs create new files on Unraid. Dedup must not run while the
+    # queue is draining. Two conditions both trigger a skip:
+    #   a) Any gap job currently in_progress OR pending (not yet dispatched)
+    #   b) Any gap job completed within DEDUP_MIN_AGE_HOURS (default 24h)
     DEDUP_MIN_AGE_HOURS = int(os.environ.get('DEDUP_MIN_AGE_HOURS', '24'))
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
+        # Issue 3 fix: include 'pending' — jobs waiting for semaphore count as active
         cursor.execute(
-            "SELECT COUNT(*) FROM sync_jobs WHERE status = 'in_progress' "
+            "SELECT COUNT(*) FROM sync_jobs WHERE status IN ('in_progress','pending') "
             "AND quality IN ('TVGapSync','GapSync')"
         )
         active_gap_jobs = cursor.fetchone()[0]
+        # Use UTC-aware comparison (completed_at now stored as UTC via datetime.utcnow)
         cursor.execute(
             "SELECT COUNT(*) FROM sync_jobs WHERE quality IN ('TVGapSync','GapSync') "
             "AND completed_at > datetime('now', ?)",
@@ -2011,7 +2016,7 @@ def nightly_unraid_dedup():
         recent_gap_jobs = 0
 
     if active_gap_jobs > 0:
-        msg = (f"Skipping dedup: {active_gap_jobs} gap-sync job(s) currently in progress. "
+        msg = (f"Skipping dedup: {active_gap_jobs} gap-sync job(s) currently in progress/pending. "
                f"Dedup will run tomorrow once the queue drains.")
         logger.warning(f"Unraid dedup: {msg}")
         send_notification(title="Unraid Dedup DEFERRED", body=msg,
@@ -2019,14 +2024,34 @@ def nightly_unraid_dedup():
         return
 
     if recent_gap_jobs > 0:
-        logger.info(f"Unraid dedup: {recent_gap_jobs} gap-sync job(s) completed in last "
-                    f"{DEDUP_MIN_AGE_HOURS}h — proceeding with dedup (all settled)")
+        msg = (f"Skipping dedup: {recent_gap_jobs} gap-sync job(s) completed in the last "
+               f"{DEDUP_MIN_AGE_HOURS}h — waiting for rsync queue to fully settle.")
+        logger.warning(f"Unraid dedup: {msg}")
+        send_notification(title="Unraid Dedup DEFERRED", body=msg,
+                          notify_type=apprise.NotifyType.WARNING)
+        return
 
     DRY_RUN = os.environ.get('DEDUP_DRY_RUN', 'false').lower() == 'true'
-    if DRY_RUN:
+    # R3: Pre-dedup notification with pause window.
+    # Send a "dedup starting in 10 min" alert so operator can create PAUSE_DEDUP
+    # if needed. Pause file is re-checked after the wait.
+    DEDUP_WARN_MINUTES = int(os.environ.get('DEDUP_WARN_MINUTES', '10'))
+    if not DRY_RUN and DEDUP_WARN_MINUTES > 0:
+        send_notification(
+            title="Unraid Dedup Starting",
+            body=f"Duplicate cleanup begins in {DEDUP_WARN_MINUTES} minute(s). "
+                 f"Create /opt/mother/PAUSE_DEDUP to abort.",
+            notify_type=apprise.NotifyType.INFO
+        )
+        import time as _time
+        _time.sleep(DEDUP_WARN_MINUTES * 60)
+        # Re-check sentinel after wait window
+        if os.path.exists(pause_file):
+            logger.warning("Unraid dedup: PAUSE_DEDUP created during warn window — aborting.")
+            return
+        logger.info("Unraid dedup: warn window passed, starting duplicate cleanup...")
+    elif DRY_RUN:
         logger.info("Unraid dedup: DRY RUN mode — will log but not delete")
-    else:
-        logger.info("Unraid dedup: starting nightly duplicate cleanup via Agent...")
 
     # ── 3. Fetch scan data ─────────────────────────────────────────────────────
     try:
@@ -2066,51 +2091,59 @@ def nightly_unraid_dedup():
 
     # ── 5. Per-run cap ────────────────────────────────────────────────────────
     DEDUP_MAX_PER_RUN = int(os.environ.get('DEDUP_MAX_PER_RUN', '50'))
-
-    for ftype, groups in scan_data.get('unraid', {}).items():
-        for group in groups:
-            versions = group.get('versions', [])
-            if len(versions) < 2:
+    # Flatten all groups for clean cap enforcement across all ftypes (Issue 1 fix:
+    # iterating dict directly had no break at the ftype level, allowing overflow).
+    for _, group in all_groups:
+        if total_deleted >= DEDUP_MAX_PER_RUN:
+            break
+        versions = group.get('versions', [])
+        if len(versions) < 2:
+            continue
+        # versions[0] is best quality (sorted desc by trash_score in Agent)
+        for version in versions[1:]:
+            if not version.get('safe_to_delete', True):
+                logger.debug(f"Dedup: skipping unsafe {version.get('file_path')}")
                 continue
-            # versions[0] is best quality (sorted desc by trash_score in Agent)
-            for version in versions[1:]:
-                if not version.get('safe_to_delete', True):
-                    logger.debug(f"Dedup: skipping unsafe {version.get('file_path')}")
-                    continue
-                if total_deleted >= DEDUP_MAX_PER_RUN:
-                    break
-                file_path = version.get('file_path', '')
-                if not file_path:
-                    continue
-                freed = version.get('file_size_bytes', 0)
+            if total_deleted >= DEDUP_MAX_PER_RUN:
+                break
+            file_path = version.get('file_path', '')
+            if not file_path:
+                continue
+            freed = version.get('file_size_bytes', 0)
 
-                if DRY_RUN:
-                    logger.info(f"Dedup [DRY RUN]: would delete: {file_path} ({format_size(freed)})")
-                    total_deleted += 1
-                    total_freed += freed
-                    top_freed.append((freed, file_path))
-                    continue
+            if DRY_RUN:
+                logger.info(f"Dedup [DRY RUN]: would delete: {file_path} ({format_size(freed)})")
+                total_deleted += 1
+                total_freed += freed
+                top_freed.append((freed, file_path))
+                continue
 
-                try:
-                    del_resp = requests.post(
-                        f"{UNRAID_AGENT_URL}/delete",
-                        json={'paths': [file_path]},
-                        headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
-                        timeout=30
-                    )
-                    if del_resp.status_code == 200:
+            try:
+                del_resp = requests.post(
+                    f"{UNRAID_AGENT_URL}/delete",
+                    json={'paths': [file_path]},
+                    headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
+                    timeout=30
+                )
+                if del_resp.status_code == 200:
+                    # Issue 7 fix: Agent returns 200 even on partial failure.
+                    # Confirm the path appears in 'deleted' list before counting.
+                    result = del_resp.json()
+                    if file_path in result.get('deleted', []):
                         total_deleted += 1
                         total_freed += freed
                         top_freed.append((freed, file_path))
                         logger.info(f"Dedup: removed lower-quality duplicate: {file_path}")
                     else:
                         errors.append(file_path)
-                        logger.warning(f"Dedup: Agent delete failed ({del_resp.status_code}): {file_path}")
-                except Exception as e:
+                        logger.warning(f"Dedup: Agent reported error for {file_path}: "
+                                       f"{result.get('errors', 'unknown')}")
+                else:
                     errors.append(file_path)
-                    logger.error(f"Dedup: error deleting {file_path}: {e}")
-            if total_deleted >= DEDUP_MAX_PER_RUN:
-                break
+                    logger.warning(f"Dedup: Agent delete failed ({del_resp.status_code}): {file_path}")
+            except Exception as e:
+                errors.append(file_path)
+                logger.error(f"Dedup: error deleting {file_path}: {e}")
 
     # Remaining duplicates deferred to next run
     remaining = total_deletable - total_deleted
@@ -2145,8 +2178,8 @@ def scan_library_gaps():
     (fetched via Unraid Agent API, not CIFS). Any folder on Synology but missing from Unraid
     gets queued as a sync job.
 
-    Skips: system entries (#recycle, .lnk, .txt), items already pending/in_progress,
-    and items successfully synced within the last 7 days.
+    Skips: system entries (#recycle, .lnk, .txt), items already pending/in_progress.
+    Note: the 7-day skip was removed 2026-06-17 — missing files are always re-queued.
     """
     SKIP_NAMES = {'#recycle', 'testfile'}
     SKIP_SUFFIXES = ('.lnk', '.txt', '.url')

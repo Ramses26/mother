@@ -590,11 +590,17 @@ async def bulk_delete_duplicates(body: BulkDeleteRequest, _auth=Depends(require_
     for item in body.items:
         path = item.file_path
 
-        # Validate path is within an allowed scan root
-        if not any(path.startswith(p) for p in _ALLOWED_DELETE_PREFIXES):
-            results.append({'file_path': path, 'ok': False,
-                             'error': 'Path not in allowed media directories'})
-            log.warning(f"Bulk delete rejected: {path}")
+        # Issue 5 fix: bulk_delete only handles Synology paths.
+        # Unraid deletions must go through /duplicates/unraid-delete (via Agent),
+        # which provides audit logging and path safety checks.
+        if not any(path.startswith(p) for p in _SYNOLOGY_DELETE_PREFIXES):
+            if any(path.startswith(p) for p in _UNRAID_DELETE_PREFIXES):
+                results.append({'file_path': path, 'ok': False,
+                                 'error': 'Use /duplicates/unraid-delete for Unraid paths'})
+            else:
+                results.append({'file_path': path, 'ok': False,
+                                 'error': 'Path not in allowed Synology media directories'})
+            log.warning(f"Bulk delete rejected (not Synology path): {path}")
             continue
 
         # Symlink safety
@@ -602,7 +608,7 @@ async def bulk_delete_duplicates(body: BulkDeleteRequest, _auth=Depends(require_
             real = os.path.realpath(path)
         except Exception:
             real = path
-        if not any(real.startswith(p.rstrip('/')) for p in _ALLOWED_DELETE_PREFIXES):
+        if not any(real.startswith(p.rstrip('/')) for p in _SYNOLOGY_DELETE_PREFIXES):
             results.append({'file_path': path, 'ok': False,
                              'error': 'Symlink resolves outside allowed directories'})
             log.warning(f"Bulk delete symlink escape: {path} -> {real}")
@@ -853,22 +859,33 @@ async def delete_plex_version(body: PlexDeleteRequest, _auth=Depends(require_aut
             except Exception as e:
                 log.warning(f"Radarr moviefile delete failed: {e}")
 
-    # ── 3. Fallback: direct disk delete for orphaned files ───────────────────
+    # ── 3. Fallback: use Unraid Agent for orphaned files (Issue 6 fix) ───────
+    # Previously used os.remove() on CIFS, bypassing audit log and Agent safety
+    # checks. Now always routes through Agent for Unraid paths.
     disk_deleted = False
     if not radarr_deleted:
         unraid_path = synology_to_unraid_path(file_path)
-        # For Ali's Plex: paths may already be Unraid-native
         if not unraid_path and file_path.startswith(UNRAID_MEDIA_PATH):
             unraid_path = file_path
         if unraid_path and unraid_path.startswith(UNRAID_MEDIA_PATH):
             try:
-                os.remove(unraid_path)
-                disk_deleted = True
-                log.info(f"Direct disk delete: {unraid_path}")
-            except FileNotFoundError:
-                pass  # Already gone — treat as success
+                import httpx
+                agent_resp = await httpx.AsyncClient(timeout=30).post(
+                    f"{UNRAID_AGENT_URL.rstrip('/')}/delete",
+                    json={'paths': [unraid_path]},
+                    headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
+                )
+                result = agent_resp.json()
+                disk_deleted = unraid_path in result.get('deleted', [])
+                if disk_deleted:
+                    log.info(f"Agent deleted orphaned Plex file: {unraid_path}")
+                elif result.get('errors'):
+                    log.error(f"Agent delete failed for {unraid_path}: {result['errors']}")
+                    raise HTTPException(500, f'Agent delete failed: {result["errors"]}')
+            except HTTPException:
+                raise
             except Exception as e:
-                log.error(f"Direct disk delete failed for {unraid_path}: {e}")
+                log.error(f"Agent delete failed for {unraid_path}: {e}")
                 raise HTTPException(500, f'Delete failed: {e}')
 
     if not radarr_deleted and not disk_deleted:
