@@ -103,3 +103,5 @@ configs/recyclarr/state/
 
 # Sync plan CSVs (auto-generated)
 reports/*.csv
+data/curatorr/curatorr.db
+data/upgraderr*.db
