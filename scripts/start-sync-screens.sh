@@ -59,8 +59,10 @@ else
     fi
 fi
 
-# Start TV sync if not already running
-if check_screen "tvsync"; then
+# TV sync loop disabled — batch sync complete Jun 17 2026; nightly gap scanner handles ongoing TV sync
+if [ -f /opt/mother/DISABLE_TV_SYNC ]; then
+    log "TV sync: DISABLE_TV_SYNC sentinel present — not starting tvsync screen"
+elif check_screen "tvsync"; then
     log "TV sync screen already running, skipping"
 else
     log "Starting TV sync screen..."

@@ -116,7 +116,7 @@ check_loop_screen() {
     fi
 
     log "$screen_name: Loop screen not running — RESTARTING with $loop_script"
-    screen -dmS "$screen_name" bash -c "PARALLEL=8 bash '$loop_script' 2>&1 | tee -a '$LOG_DIR/${screen_name}_sync.log'"
+    screen -dmS "$screen_name" bash -c "PARALLEL=${PARALLEL:-16} bash '$loop_script' 2>&1 | tee -a '$LOG_DIR/${screen_name}_sync.log'"
     sleep 2
 
     if screen -list | grep -q "\.$screen_name"; then
@@ -135,14 +135,24 @@ check_loop_screen() {
     fi
 }
 
-# Movie sync uses the continuous loop script (handles inventory + sync automatically)
-# Skip if movie2 is still running (transitional session using old approach)
-if screen -list | grep -q '\.movie2'; then
-    log "movie: movie2 screen still running — skipping movie loop restart until it completes"
+# Movie sync loop disabled — initial sync complete, Upgraderr+webhook handle ongoing movie syncs
+# Re-enable by removing /opt/mother/DISABLE_MOVIE_SYNC sentinel file
+if [ ! -f /opt/mother/DISABLE_MOVIE_SYNC ]; then
+    if screen -list | grep -q '\.movie2'; then
+        log "movie: movie2 screen still running — skipping movie loop restart until it completes"
+    else
+        check_loop_screen "movie" "/opt/mother/scripts/movie_sync_loop.sh"
+    fi
 else
-    check_loop_screen "movie" "/opt/mother/scripts/movie_sync_loop.sh"
+    log "movie: DISABLE_MOVIE_SYNC sentinel present — skipping movie loop restart"
 fi
-check_and_restart "tvsync" "tv_sync_actions_*.sh"
+# TV sync loop disabled — batch sync complete Jun 17 2026; nightly gap scanner handles ongoing TV sync
+# Re-enable by removing /opt/mother/DISABLE_TV_SYNC sentinel file
+if [ ! -f /opt/mother/DISABLE_TV_SYNC ]; then
+    check_loop_screen "tvsync" "/opt/mother/scripts/tv_sync_loop.sh"
+else
+    log "tvsync: DISABLE_TV_SYNC sentinel present — skipping TV loop restart"
+fi
 
 # Check webhook mount visibility
 check_webhook_mount
