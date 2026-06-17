@@ -592,21 +592,34 @@ def recover_interrupted_jobs():
             # Track IDs just recovered so the unresolved-failed query below doesn't double-queue them
             interrupted_ids = {job['id'] for job in interrupted_jobs}
 
+            # Only spawn up to MAX_CONCURRENT_SYNCS * 10 threads at startup.
+            # With thousands of pending jobs, spawning one thread per job causes
+            # severe GIL contention and health-check timeouts. The auto-retry
+            # scheduler (15-min interval) will drain the rest from DB.
+            STARTUP_THREAD_LIMIT = MAX_CONCURRENT_SYNCS * 10
+            startup_queued = 0
             for job in interrupted_jobs:
                 retry_count = (job.get('retry_count') or 0) + 1
                 if retry_count <= MAX_RETRIES:
-                    logger.info(f"Re-queuing on startup: {job['title']} (was {job['status']}, attempt {retry_count}/{MAX_RETRIES})")
-                    background_sync_with_retry(
-                        job['source_path'],
-                        job['dest_path'],
-                        job['title'],
-                        job.get('quality', 'Unknown'),
-                        job.get('file_size', 0),
-                        "Movie" if job['job_type'] == 'movie' else "Episode",
-                        retry_count
-                    )
+                    if startup_queued < STARTUP_THREAD_LIMIT:
+                        logger.info(f"Re-queuing on startup: {job['title']} (was {job['status']}, attempt {retry_count}/{MAX_RETRIES})")
+                        background_sync_with_retry(
+                            job['source_path'],
+                            job['dest_path'],
+                            job['title'],
+                            job.get('quality', 'Unknown'),
+                            job.get('file_size', 0),
+                            "Movie" if job['job_type'] == 'movie' else "Episode",
+                            retry_count
+                        )
+                        startup_queued += 1
+                    # Remaining jobs stay as 'failed' and will be picked up
+                    # by the auto-retry scheduler within 15 minutes.
                 else:
                     logger.warning(f"Job exceeded max retries, not retrying: {job['title']}")
+            if startup_queued < len([j for j in interrupted_jobs if (j.get('retry_count') or 0) + 1 <= MAX_RETRIES]):
+                deferred = len(interrupted_jobs) - startup_queued
+                logger.info(f"Deferred {deferred} startup re-queues to auto-retry scheduler (thread limit={STARTUP_THREAD_LIMIT})")
         else:
             interrupted_ids = set()
 
@@ -1751,14 +1764,9 @@ def scan_tv_gaps():
         if cursor.fetchone():
             continue
 
-        # Skip if successfully synced in the last 7 days
-        cursor.execute(
-            "SELECT id FROM sync_jobs WHERE source_path = ? AND status = 'success' "
-            "AND completed_at > datetime('now', '-7 days')",
-            (src_path,)
-        )
-        if cursor.fetchone():
-            continue
+        # NOTE: Do NOT skip based on "recently synced" — if the file is missing from Unraid
+        # right now (verified by fresh Agent inventory above), we must re-queue it even if
+        # it was synced recently. The nightly dedup may have deleted it after the last sync.
 
         conn.close()
         background_sync(
@@ -1819,10 +1827,15 @@ def nightly_library_report():
     # ── Movies ───────────────────────────────────────────────────────────────
     try:
         src_base = '/mnt/synology/rs-movies'
-        syn_folders = set(
-            f for f in os.listdir(src_base)
-            if f not in skip_names and not any(f.endswith(s) for s in skip_suffixes)
-        ) if os.path.isdir(src_base) else set()
+        syn_folders = set()
+        if os.path.isdir(src_base):
+            for f in os.listdir(src_base):
+                if f in skip_names or any(f.endswith(s) for s in skip_suffixes):
+                    continue
+                folder_path = os.path.join(src_base, f)
+                if os.path.isdir(folder_path) and not any(True for _ in Path(folder_path).iterdir()):
+                    continue  # skip empty folders — nothing to sync
+                syn_folders.add(f)
 
         unraid_folders = _get_unraid_movie_folders()
 
@@ -1968,6 +1981,26 @@ def nightly_unraid_dedup():
     total_freed = 0
     errors = []
 
+    # Safety limit: abort if Agent reports an unusually large number of duplicates.
+    # A legitimate nightly dedup should find at most a few hundred duplicates.
+    # If we see thousands, something is likely wrong (scoring bug, stale cache, etc.)
+    # and we should not proceed — alert instead.
+    DEDUP_SAFETY_LIMIT = int(os.environ.get('DEDUP_SAFETY_LIMIT', '500'))
+    all_groups = [(ftype, group) for ftype, groups in scan_data.get('unraid', {}).items()
+                  for group in groups if len(group.get('versions', [])) >= 2]
+    total_deletable = sum(
+        len([v for v in g.get('versions', [])[1:] if v.get('safe_to_delete', True)])
+        for _, g in all_groups
+    )
+    if total_deletable > DEDUP_SAFETY_LIMIT:
+        msg = (f"Dedup safety limit hit: {total_deletable} duplicates found "
+               f"(limit={DEDUP_SAFETY_LIMIT}). Skipping all deletions to prevent mass data loss. "
+               f"Investigate manually or raise DEDUP_SAFETY_LIMIT env var.")
+        logger.error(f"Unraid dedup: {msg}")
+        send_notification(title="Unraid Dedup BLOCKED", body=msg,
+                          notify_type=apprise.NotifyType.FAILURE)
+        return
+
     for ftype, groups in scan_data.get('unraid', {}).items():
         for group in groups:
             versions = group.get('versions', [])
@@ -2046,8 +2079,16 @@ def scan_library_gaps():
         return
 
     missing = sorted(src_folders - dst_folders)
-    missing = [m for m in missing
-               if m not in SKIP_NAMES and not any(m.endswith(s) for s in SKIP_SUFFIXES)]
+    filtered = []
+    for m in missing:
+        if m in SKIP_NAMES or any(m.endswith(s) for s in SKIP_SUFFIXES):
+            continue
+        folder_path = os.path.join(src_base, m)
+        if os.path.isdir(folder_path) and not any(True for _ in Path(folder_path).iterdir()):
+            logger.debug(f"Gap scanner: skipping empty source folder: {m}")
+            continue
+        filtered.append(m)
+    missing = filtered
 
     if not missing:
         logger.info("Gap scanner: HD movies are in sync — no gaps found")
@@ -2074,15 +2115,8 @@ def scan_library_gaps():
             logger.debug(f"Gap scanner: {folder} already queued, skipping")
             continue
 
-        # Skip if successfully synced in the last 7 days (avoids re-queuing a just-fixed item)
-        cursor.execute(
-            "SELECT id FROM sync_jobs WHERE title LIKE ? AND status='success' "
-            "AND completed_at > datetime('now', '-7 days')",
-            (f'%{folder[:40]}%',)
-        )
-        if cursor.fetchone():
-            logger.debug(f"Gap scanner: {folder} recently succeeded, skipping")
-            continue
+        # NOTE: Do NOT skip based on "recently synced" — the folder is missing from Unraid
+        # (verified by fresh Agent inventory above). Dedup may have deleted it after last sync.
 
         try:
             file_size = sum(f.stat().st_size for f in Path(source).rglob('*') if f.is_file())
@@ -2188,10 +2222,14 @@ logger.info("Unraid dedup enabled - runs nightly at 04:45 UTC")
 scheduler.start()
 logger.info("Scheduler started - daily summary at 00:05, auto-retry every 15 min")
 
-# Recover any jobs that were interrupted by a restart
-interrupted_count = recover_interrupted_jobs()
-if interrupted_count > 0:
-    logger.info(f"Recovered {interrupted_count} interrupted jobs from previous run")
+# Recover interrupted jobs in background so gunicorn serves health checks
+# immediately after startup (recovery of 10k+ jobs can take 1-2 minutes).
+def _deferred_recovery():
+    interrupted_count = recover_interrupted_jobs()
+    if interrupted_count > 0:
+        logger.info(f"Recovered {interrupted_count} interrupted jobs from previous run")
+
+threading.Thread(target=_deferred_recovery, name="startup-recovery", daemon=True).start()
 
 # Shut down scheduler on exit
 atexit.register(lambda: scheduler.shutdown())
