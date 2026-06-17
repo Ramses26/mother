@@ -1,5 +1,6 @@
 services:
   unraid-agent:
+    build: .
     image: unraid-agent:latest
     container_name: unraid-agent
     restart: unless-stopped
@@ -8,5 +9,10 @@ services:
     environment:
       - AGENT_API_KEY=${AGENT_API_KEY}
       - MEDIA_ROOT=/mnt/user/Media
+      - LOG_DIR=/logs
+      # Point to Mother's Loki for deletion audit events
+      - LOKI_URL=${LOKI_URL:-http://10.0.0.162:3100}
     volumes:
-      - /mnt/user/Media:/mnt/user/Media:ro
+      - /mnt/user/Media:/mnt/user/Media:rw
+      # Persistent logs on Unraid appdata — survives container restarts
+      - /mnt/user/appdata/unraid-agent/logs:/logs

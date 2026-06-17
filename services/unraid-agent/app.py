@@ -3,16 +3,87 @@ Unraid Agent — lightweight FastAPI service for local duplicate scanning + dele
 Runs ON Unraid (192.168.1.10) so it has fast local disk access (no CIFS).
 Called by Curatorr on Mother instead of slow CIFS directory scan.
 """
+import json
 import os
 import re
+import shutil
+import threading
 import time
 import logging
-from fastapi import FastAPI, HTTPException, Header
+import logging.handlers
+from datetime import datetime, timezone
+from fastapi import FastAPI, HTTPException, Header, Request
 from pydantic import BaseModel
 from typing import List
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+# ── Logging setup ─────────────────────────────────────────────────────────────
+LOG_DIR = os.environ.get('LOG_DIR', '/logs')
+os.makedirs(LOG_DIR, exist_ok=True)
+
+_fmt = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+
+_console = logging.StreamHandler()
+_console.setFormatter(_fmt)
+
+# Rotating file log — persisted to Unraid storage via volume mount
+_file = logging.handlers.RotatingFileHandler(
+    os.path.join(LOG_DIR, 'unraid-agent.log'),
+    maxBytes=10 * 1024 * 1024,  # 10 MB
+    backupCount=5,
+)
+_file.setFormatter(_fmt)
+
+logging.basicConfig(level=logging.INFO, handlers=[_console, _file])
 log = logging.getLogger('unraid-agent')
+
+# ── Loki forwarding for audit events ─────────────────────────────────────────
+LOKI_URL = os.environ.get('LOKI_URL', '')  # e.g. http://10.0.0.162:3100
+
+def _send_loki(level: str, message: str, labels: dict | None = None):
+    """Fire-and-forget push to Loki. Fails silently — never blocks main path."""
+    if not LOKI_URL:
+        return
+    import urllib.request
+    labels = labels or {}
+    labels.update({'job': 'unraid-agent', 'level': level})
+    label_str = '{' + ','.join(f'{k}="{v}"' for k, v in labels.items()) + '}'
+    payload = {
+        'streams': [{
+            'stream': labels,
+            'values': [[str(int(time.time() * 1e9)), message]]
+        }]
+    }
+    try:
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(
+            f'{LOKI_URL}/loki/api/v1/push',
+            data=data,
+            headers={'Content-Type': 'application/json'},
+        )
+        urllib.request.urlopen(req, timeout=3)
+    except Exception:
+        pass  # Loki unavailable — log locally, don't crash
+
+def _loki_async(level: str, message: str, labels: dict | None = None):
+    threading.Thread(target=_send_loki, args=(level, message, labels), daemon=True).start()
+
+# ── Structured deletion audit log ─────────────────────────────────────────────
+_audit_log_path = os.path.join(LOG_DIR, 'deletions.jsonl')
+
+def _audit_deletion(paths: list, freed_bytes: int, caller_ip: str = ''):
+    """Append a structured record to the deletion audit log."""
+    record = {
+        'ts': datetime.now(timezone.utc).isoformat(),
+        'event': 'delete',
+        'paths': paths,
+        'freed_bytes': freed_bytes,
+        'caller_ip': caller_ip,
+    }
+    try:
+        with open(_audit_log_path, 'a') as f:
+            f.write(json.dumps(record) + '\n')
+    except Exception as e:
+        log.warning(f'Audit log write failed: {e}')
 
 app = FastAPI(title='Unraid Agent', version='1.0.0')
 
@@ -38,8 +109,47 @@ _ALLOWED_DELETE_PREFIXES = [f'{MEDIA_ROOT}/Movies/', f'{MEDIA_ROOT}/4K Movies/',
                              f'{MEDIA_ROOT}/TV Shows/', f'{MEDIA_ROOT}/4K TV Shows/']
 
 # ── TRaSH scoring (same as duplicates.py) ────────────────────────────────────
-_VIDEO_EXTS = frozenset({'.mkv', '.mp4', '.avi', '.ts', '.m4v', '.mov', '.wmv', '.m2ts'})
-_EP_RE = re.compile(r'[Ss](\d{1,2})[Ee](\d{1,4})', re.IGNORECASE)
+_VIDEO_EXTS = frozenset({'.mkv', '.mp4', '.avi', '.ts', '.m4v', '.mov', '.wmv', '.m2ts', '.webm', '.flv', '.iso'})
+
+
+def _parse_episode_keys(filename: str) -> list:
+    """Return all S##E#### group keys for a filename.
+    Handles multi-episode files: S05E01-E02, S05E01E02, S05E01-02.
+    Handles 4-digit year-based seasons (e.g. Looney Tunes S1930E01).
+    Requires the S to follow a non-alphanumeric character so show names like
+    NOS4A2 (which contain 'S4') are not mistaken for a season marker.
+    """
+    # (?<![A-Za-z0-9]) prevents matching S inside show names (NOS4A2 → S4)
+    # \d{1,4} handles year-based seasons like S1930
+    season_match = re.search(r'(?<![A-Za-z0-9])[Ss](\d{1,4})', filename)
+    if not season_match:
+        return []
+    season = int(season_match.group(1))
+    rest = filename[season_match.end():]
+
+    first_ep = re.search(r'[Ee](\d{1,4})', rest)
+    if not first_ep:
+        return []
+    ep_start = int(first_ep.group(1))
+    after = rest[first_ep.end():]
+
+    # Range: E01-E02 or E01-02 (dash/en-dash immediately after first episode)
+    range_match = re.match(r'[-\u2013](?:[Ee])?(\d{1,4})', after)
+    if range_match:
+        ep_end = int(range_match.group(1))
+        return [f"S{season:04d}E{ep:04d}" for ep in range(ep_start, ep_end + 1)]
+
+    # Concatenated: E01E02E03... immediately following with no gap
+    keys = [f"S{season:04d}E{ep_start:04d}"]
+    pos = after
+    while True:
+        nxt = re.match(r'[Ee](\d{1,4})', pos)
+        if nxt:
+            keys.append(f"S{season:04d}E{int(nxt.group(1)):04d}")
+            pos = pos[nxt.end():]
+        else:
+            break
+    return keys
 
 _RES   = {'4K': 4000, '1080p': 2000, '720p': 0, 'SD': -500}
 _SRC   = {'Remux': 2000, 'BluRay': 1500, 'Bluray': 1500, 'WEB-DL': 1000,
@@ -168,9 +278,7 @@ def _scan_tv_dir(root: str, ftype: str) -> list:
                     try:
                         for f in os.scandir(sub.path):
                             if f.is_file() and os.path.splitext(f.name)[1].lower() in _VIDEO_EXTS:
-                                m = _EP_RE.search(f.name)
-                                if m:
-                                    key = f"S{m.group(1).zfill(2)}E{m.group(2).zfill(4)}"
+                                for key in _parse_episode_keys(f.name):
                                     try:
                                         episodes.setdefault(key, []).append(
                                             _make_file_version(f.path, f.stat().st_size))
@@ -179,9 +287,7 @@ def _scan_tv_dir(root: str, ftype: str) -> list:
                     except (PermissionError, OSError):
                         pass
                 elif sub.is_file() and os.path.splitext(sub.name)[1].lower() in _VIDEO_EXTS:
-                    m = _EP_RE.search(sub.name)
-                    if m:
-                        key = f"S{m.group(1).zfill(2)}E{m.group(2).zfill(4)}"
+                    for key in _parse_episode_keys(sub.name):
                         try:
                             episodes.setdefault(key, []).append(
                                 _make_file_version(sub.path, sub.stat().st_size))
@@ -192,6 +298,23 @@ def _scan_tv_dir(root: str, ftype: str) -> list:
         for ep_key, files in sorted(episodes.items()):
             if len(files) >= 2:
                 files.sort(key=lambda x: x['trash_score'], reverse=True)
+
+                # Mark each version as safe or unsafe to delete.
+                # A multi-episode file (e.g. S09E27-E28) is unsafe to delete if
+                # any other episode it covers has no other file — deleting it would
+                # destroy that content.  Standalone files are always safe to delete.
+                for f in files:
+                    f_keys = _parse_episode_keys(f['filename'])
+                    if len(f_keys) <= 1:
+                        f['safe_to_delete'] = True
+                    else:
+                        other_keys = [k for k in f_keys if k != ep_key]
+                        f['safe_to_delete'] = all(
+                            any(other['file_path'] != f['file_path']
+                                for other in episodes.get(k, []))
+                            for k in other_keys
+                        )
+
                 results.append({
                     'id': f"unraid:{show_entry.path}:{ep_key}",
                     'title': show_entry.name,
@@ -202,7 +325,10 @@ def _scan_tv_dir(root: str, ftype: str) -> list:
                     'media_type': 'tv',
                     'versions': files,
                     'total_size_bytes': sum(v['file_size_bytes'] for v in files),
-                    'deletable_size_bytes': sum(v['file_size_bytes'] for v in files[1:]),
+                    'deletable_size_bytes': sum(
+                        v['file_size_bytes'] for v in files[1:]
+                        if v.get('safe_to_delete', True)
+                    ),
                 })
     return results
 
@@ -259,7 +385,8 @@ def _do_scan() -> dict:
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.get('/health')
-def health():
+def health(x_api_key: str = Header(...)):
+    _check_key(x_api_key)
     return {
         'ok': True,
         'media_root': MEDIA_ROOT,
@@ -282,19 +409,98 @@ def scan(refresh: bool = False, x_api_key: str = Header(...)):
     return data
 
 
+def _scan_inventory_dir(root: str) -> list:
+    """Scan a media root and return one entry per video file (all files, not just duplicates).
+    Output format matches what compare_libraries.py expects from generate_inventory.py."""
+    results = []
+    if not os.path.isdir(root):
+        return results
+    for title_entry in os.scandir(root):
+        if not title_entry.is_dir():
+            continue
+        title = title_entry.name
+        # Walk up to two levels deep (movie folder / optional subfolder)
+        def _collect(dirpath: str):
+            try:
+                for f in os.scandir(dirpath):
+                    ext = os.path.splitext(f.name)[1].lower()
+                    if f.is_file() and ext in _VIDEO_EXTS:
+                        try:
+                            size = f.stat().st_size
+                            parsed = _parse_brackets(f.path)
+                            results.append({
+                                'title': title,
+                                'filename': f.name,
+                                'path': f.path,
+                                'size_bytes': size,
+                                'size_gb': round(size / (1024 ** 3), 2),
+                                'resolution': _detect_resolution(f.name),
+                                'source': parsed['source'],
+                                'hdr': parsed['hdr'],
+                                'audio_codec': parsed['audio'],
+                                'video_codec': _detect_video_codec(f.name),
+                            })
+                        except OSError:
+                            pass
+                    elif f.is_dir():
+                        _collect(f.path)
+            except (PermissionError, OSError):
+                pass
+        _collect(title_entry.path)
+    return results
+
+
+_inv_cache: dict = {'data': None, 'path': '', 'ts': 0.0}
+INV_CACHE_TTL = 1800
+
+
 class DeleteRequest(BaseModel):
     paths: List[str]
 
 
+@app.get('/inventory')
+def inventory(path: str, refresh: bool = False, x_api_key: str = Header(...)):
+    """Return a flat inventory of all video files under path (same format as generate_inventory.py).
+    path must be under MEDIA_ROOT. Results are cached for 30 minutes."""
+    _check_key(x_api_key)
+    # Validate path is under MEDIA_ROOT
+    real_root = os.path.realpath(MEDIA_ROOT)
+    real_path = os.path.realpath(path)
+    if not real_path.startswith(real_root + os.sep) and real_path != real_root:
+        raise HTTPException(400, f'Path must be under {MEDIA_ROOT}')
+    now = time.time()
+    if (not refresh
+            and _inv_cache['data'] is not None
+            and _inv_cache['path'] == path
+            and (now - _inv_cache['ts']) < INV_CACHE_TTL):
+        log.info(f'Returning cached inventory for {path}')
+        return _inv_cache['data']
+    log.info(f'Scanning inventory for {path}...')
+    t0 = time.time()
+    items = _scan_inventory_dir(path)
+    result = {
+        'path': path,
+        'count': len(items),
+        'scan_time_seconds': round(time.time() - t0, 1),
+        'items': items,
+    }
+    _inv_cache['data'] = result
+    _inv_cache['path'] = path
+    _inv_cache['ts'] = now
+    log.info(f'Inventory done: {len(items)} files in {result["scan_time_seconds"]}s')
+    return result
+
+
 @app.post('/delete')
-def delete_files(body: DeleteRequest, x_api_key: str = Header(...)):
+def delete_files(body: DeleteRequest, request: Request, x_api_key: str = Header(...)):
     _check_key(x_api_key)
     deleted = []
     errors = []
     freed_bytes = 0
+    caller_ip = request.client.host if request.client else ''
 
     for path in body.paths:
-        # Safety: must be under an allowed media prefix
+        # Safety: must be under an allowed media prefix (not the root itself)
         safe = any(path.startswith(p) for p in _ALLOWED_DELETE_PREFIXES)
         if not safe:
             errors.append({'path': path, 'error': 'Path outside allowed media roots'})
@@ -304,11 +510,22 @@ def delete_files(body: DeleteRequest, x_api_key: str = Header(...)):
             errors.append({'path': path, 'error': 'Refusing to delete symlink'})
             continue
         try:
-            size = os.path.getsize(path)
-            os.remove(path)
+            if os.path.isdir(path):
+                size = 0
+                for dirpath, _, filenames in os.walk(path):
+                    for fname in filenames:
+                        try:
+                            size += os.path.getsize(os.path.join(dirpath, fname))
+                        except OSError:
+                            pass
+                shutil.rmtree(path)
+                log.info(f"Deleted dir: {path} ({size} bytes)")
+            else:
+                size = os.path.getsize(path)
+                os.remove(path)
+                log.info(f"Deleted: {path} ({size} bytes)")
             freed_bytes += size
             deleted.append(path)
-            log.info(f"Deleted: {path} ({size} bytes)")
             # Invalidate cache
             _scan_cache['data'] = None
         except FileNotFoundError:
@@ -317,6 +534,13 @@ def delete_files(body: DeleteRequest, x_api_key: str = Header(...)):
         except Exception as e:
             errors.append({'path': path, 'error': str(e)})
             log.error(f"Delete error {path}: {e}")
+
+    if deleted:
+        freed_gb = freed_bytes / 1_073_741_824
+        audit_msg = f"Deleted {len(deleted)} file(s), freed {freed_gb:.2f} GB"
+        log.info(f"AUDIT: {audit_msg} | paths: {deleted[:5]}{'...' if len(deleted) > 5 else ''}")
+        _audit_deletion(deleted, freed_bytes, caller_ip)
+        _loki_async('info', audit_msg, {'event': 'delete', 'count': str(len(deleted))})
 
     return {
         'ok': len(errors) == 0,

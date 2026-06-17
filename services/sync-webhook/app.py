@@ -1749,8 +1749,15 @@ def scan_tv_gaps():
     total_queued = 0
     queued_titles = []
     tv_dest_base = '/mnt/unraid/media/TV Shows'
+    # Cap how many jobs we queue per run to avoid overwhelming the system.
+    # Remaining gaps will be picked up in subsequent nightly runs.
+    GAP_SCAN_MAX_QUEUE = int(os.environ.get('GAP_SCAN_MAX_QUEUE', '500'))
 
     for (show_name, ep_key), (src_path, file_size) in sorted(best.items()):
+        if total_queued >= GAP_SCAN_MAX_QUEUE:
+            logger.info(f"TV gap scanner: capped at {GAP_SCAN_MAX_QUEUE} queued items — "
+                        f"{len(best) - total_queued} gaps deferred to tomorrow's run")
+            break
         fname = os.path.basename(src_path)
         season_dir = os.path.basename(os.path.dirname(src_path))
         dest = os.path.join(tv_dest_base, show_name, season_dir)
@@ -1952,18 +1959,76 @@ def nightly_library_report():
 
 def nightly_unraid_dedup():
     """
-    Nightly Unraid duplicate cleanup — runs at 04:45 UTC.
+    Nightly Unraid duplicate cleanup.
 
-    Calls the Unraid Agent /scan endpoint (runs locally on Unraid, no CIFS overhead)
-    to find episodes/movies with 2+ copies. Deletes the lower-quality version(s) via
-    the Agent /delete endpoint.
+    Safety checks (in order):
+    1. PAUSE_DEDUP sentinel file — operator-controlled pause (e.g. during active batch sync)
+    2. In-progress sync jobs — skip if active gap-sync jobs are running (those jobs may create
+       the "duplicates" we'd otherwise delete before they finish)
+    3. DEDUP_SAFETY_LIMIT — abort if too many duplicates found (scoring bug / stale cache)
+    4. DEDUP_MAX_PER_RUN — cap deletions per run to rate-limit in recovery scenarios
+    5. DEDUP_DRY_RUN — log would-be deletions without executing them
 
-    The Agent's quality scoring (TRaSH-aligned) determines which version to keep.
-    Only deletes versions marked safe_to_delete=True by the Agent (multi-episode
-    files that cover unique content are left alone).
+    Env vars:
+      PAUSE_DEDUP_FILE  path to sentinel (default /opt/mother/PAUSE_DEDUP)
+      DEDUP_SAFETY_LIMIT  abort threshold (default 200)
+      DEDUP_MAX_PER_RUN   max deletions per run (default 50)
+      DEDUP_DRY_RUN       'true' to preview without deleting (default false)
+      DEDUP_MIN_AGE_HOURS only delete duplicates whose dest path has not been synced
+                          in the last N hours (default 24 — gives rsync jobs time to complete)
     """
-    logger.info("Unraid dedup: starting nightly duplicate cleanup via Agent...")
+    # ── 1. PAUSE_DEDUP sentinel ────────────────────────────────────────────────
+    pause_file = os.environ.get('PAUSE_DEDUP_FILE', '/opt/mother/PAUSE_DEDUP')
+    if os.path.exists(pause_file):
+        msg = f"PAUSE_DEDUP sentinel exists ({pause_file}) — skipping dedup. Remove the file to re-enable."
+        logger.warning(f"Unraid dedup: {msg}")
+        send_notification(title="Unraid Dedup PAUSED", body=msg,
+                          notify_type=apprise.NotifyType.WARNING)
+        return
 
+    # ── 2. Skip if gap-sync jobs are actively running ─────────────────────────
+    # Gap sync jobs create new files on Unraid. Running dedup immediately after
+    # would delete the just-synced copies before the queue drains.
+    DEDUP_MIN_AGE_HOURS = int(os.environ.get('DEDUP_MIN_AGE_HOURS', '24'))
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT COUNT(*) FROM sync_jobs WHERE status = 'in_progress' "
+            "AND quality IN ('TVGapSync','GapSync')"
+        )
+        active_gap_jobs = cursor.fetchone()[0]
+        cursor.execute(
+            "SELECT COUNT(*) FROM sync_jobs WHERE quality IN ('TVGapSync','GapSync') "
+            "AND completed_at > datetime('now', ?)",
+            (f'-{DEDUP_MIN_AGE_HOURS} hours',)
+        )
+        recent_gap_jobs = cursor.fetchone()[0]
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Unraid dedup: could not check gap job status: {e}")
+        active_gap_jobs = 0
+        recent_gap_jobs = 0
+
+    if active_gap_jobs > 0:
+        msg = (f"Skipping dedup: {active_gap_jobs} gap-sync job(s) currently in progress. "
+               f"Dedup will run tomorrow once the queue drains.")
+        logger.warning(f"Unraid dedup: {msg}")
+        send_notification(title="Unraid Dedup DEFERRED", body=msg,
+                          notify_type=apprise.NotifyType.WARNING)
+        return
+
+    if recent_gap_jobs > 0:
+        logger.info(f"Unraid dedup: {recent_gap_jobs} gap-sync job(s) completed in last "
+                    f"{DEDUP_MIN_AGE_HOURS}h — proceeding with dedup (all settled)")
+
+    DRY_RUN = os.environ.get('DEDUP_DRY_RUN', 'false').lower() == 'true'
+    if DRY_RUN:
+        logger.info("Unraid dedup: DRY RUN mode — will log but not delete")
+    else:
+        logger.info("Unraid dedup: starting nightly duplicate cleanup via Agent...")
+
+    # ── 3. Fetch scan data ─────────────────────────────────────────────────────
     try:
         resp = requests.get(
             f"{UNRAID_AGENT_URL}/scan",
@@ -1980,12 +2045,10 @@ def nightly_unraid_dedup():
     total_deleted = 0
     total_freed = 0
     errors = []
+    top_freed: list = []  # (bytes, path) for Telegram sample
 
-    # Safety limit: abort if Agent reports an unusually large number of duplicates.
-    # A legitimate nightly dedup should find at most a few hundred duplicates.
-    # If we see thousands, something is likely wrong (scoring bug, stale cache, etc.)
-    # and we should not proceed — alert instead.
-    DEDUP_SAFETY_LIMIT = int(os.environ.get('DEDUP_SAFETY_LIMIT', '500'))
+    # ── 4. Safety limit: abort if too many duplicates ─────────────────────────
+    DEDUP_SAFETY_LIMIT = int(os.environ.get('DEDUP_SAFETY_LIMIT', '200'))
     all_groups = [(ftype, group) for ftype, groups in scan_data.get('unraid', {}).items()
                   for group in groups if len(group.get('versions', [])) >= 2]
     total_deletable = sum(
@@ -1993,13 +2056,16 @@ def nightly_unraid_dedup():
         for _, g in all_groups
     )
     if total_deletable > DEDUP_SAFETY_LIMIT:
-        msg = (f"Dedup safety limit hit: {total_deletable} duplicates found "
-               f"(limit={DEDUP_SAFETY_LIMIT}). Skipping all deletions to prevent mass data loss. "
-               f"Investigate manually or raise DEDUP_SAFETY_LIMIT env var.")
+        msg = (f"Dedup safety limit hit: {total_deletable} deletable duplicates found "
+               f"(limit={DEDUP_SAFETY_LIMIT}). Skipping all deletions. "
+               f"Raise DEDUP_SAFETY_LIMIT or investigate — may indicate ongoing batch sync.")
         logger.error(f"Unraid dedup: {msg}")
         send_notification(title="Unraid Dedup BLOCKED", body=msg,
                           notify_type=apprise.NotifyType.FAILURE)
         return
+
+    # ── 5. Per-run cap ────────────────────────────────────────────────────────
+    DEDUP_MAX_PER_RUN = int(os.environ.get('DEDUP_MAX_PER_RUN', '50'))
 
     for ftype, groups in scan_data.get('unraid', {}).items():
         for group in groups:
@@ -2011,9 +2077,20 @@ def nightly_unraid_dedup():
                 if not version.get('safe_to_delete', True):
                     logger.debug(f"Dedup: skipping unsafe {version.get('file_path')}")
                     continue
+                if total_deleted >= DEDUP_MAX_PER_RUN:
+                    break
                 file_path = version.get('file_path', '')
                 if not file_path:
                     continue
+                freed = version.get('file_size_bytes', 0)
+
+                if DRY_RUN:
+                    logger.info(f"Dedup [DRY RUN]: would delete: {file_path} ({format_size(freed)})")
+                    total_deleted += 1
+                    total_freed += freed
+                    top_freed.append((freed, file_path))
+                    continue
+
                 try:
                     del_resp = requests.post(
                         f"{UNRAID_AGENT_URL}/delete",
@@ -2023,7 +2100,8 @@ def nightly_unraid_dedup():
                     )
                     if del_resp.status_code == 200:
                         total_deleted += 1
-                        total_freed += version.get('file_size_bytes', 0)
+                        total_freed += freed
+                        top_freed.append((freed, file_path))
                         logger.info(f"Dedup: removed lower-quality duplicate: {file_path}")
                     else:
                         errors.append(file_path)
@@ -2031,17 +2109,33 @@ def nightly_unraid_dedup():
                 except Exception as e:
                     errors.append(file_path)
                     logger.error(f"Dedup: error deleting {file_path}: {e}")
+            if total_deleted >= DEDUP_MAX_PER_RUN:
+                break
 
-    summary = f"Removed {total_deleted} duplicate(s), freed {format_size(total_freed)}"
+    # Remaining duplicates deferred to next run
+    remaining = total_deletable - total_deleted
+    prefix = "[DRY RUN] " if DRY_RUN else ""
+    summary = f"{prefix}Removed {total_deleted} duplicate(s), freed {format_size(total_freed)}"
+    if remaining > 0:
+        summary += f" | {remaining} more deferred to next run"
     if errors:
         summary += f" | {len(errors)} error(s)"
     logger.info(f"Unraid dedup: {summary}")
 
-    if total_deleted > 0:
+    if total_deleted > 0 or DRY_RUN:
+        # Include up to 10 largest deletions in the notification for visibility
+        top_freed.sort(reverse=True)
+        sample = "\n".join(
+            f"  {format_size(b)} — {os.path.basename(p)}"
+            for b, p in top_freed[:10]
+        )
+        body = summary
+        if sample:
+            body += f"\n\nLargest removed:\n{sample}"
         send_notification(
-            title="Unraid Nightly Dedup",
-            body=summary,
-            notify_type=apprise.NotifyType.INFO
+            title=f"Unraid Nightly Dedup{' (DRY RUN)' if DRY_RUN else ''}",
+            body=body,
+            notify_type=apprise.NotifyType.WARNING if DRY_RUN else apprise.NotifyType.INFO
         )
 
 
@@ -2098,12 +2192,18 @@ def scan_library_gaps():
 
     total_queued = 0
     queued_titles = []
+    MOVIE_GAP_SCAN_MAX_QUEUE = int(os.environ.get('GAP_SCAN_MAX_QUEUE', '500'))
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
     for folder in missing:
+        if total_queued >= MOVIE_GAP_SCAN_MAX_QUEUE:
+            logger.info(f"Gap scanner: capped at {MOVIE_GAP_SCAN_MAX_QUEUE} queued — "
+                        f"{len(missing) - total_queued} movie gaps deferred to tomorrow")
+            break
+
         source = os.path.join(src_base, folder)
 
         # Skip if already pending or in_progress
@@ -2207,17 +2307,21 @@ scheduler.add_job(
 )
 logger.info("Library report enabled - runs nightly at 04:15 UTC")
 
-# Unraid dedup — nightly at 04:45 UTC
+# Unraid dedup — daily at 12:00 UTC (noon).
+# Moved from 04:45 UTC: gap scanners run at 03:00/03:30 UTC and queue rsync jobs;
+# running dedup immediately after (04:45) created a churn cycle where newly-synced
+# files were immediately deleted as "duplicates". 12:00 UTC gives the 12-concurrent
+# rsync queue ~8 hours to drain before dedup evaluates what remains.
 scheduler.add_job(
     func=nightly_unraid_dedup,
     trigger='cron',
-    hour=4,
-    minute=45,
+    hour=12,
+    minute=0,
     id='unraid_dedup',
-    name='Nightly Unraid duplicate cleanup via Agent',
+    name='Daily Unraid duplicate cleanup via Agent',
     replace_existing=True
 )
-logger.info("Unraid dedup enabled - runs nightly at 04:45 UTC")
+logger.info("Unraid dedup enabled - runs daily at 12:00 UTC")
 
 scheduler.start()
 logger.info("Scheduler started - daily summary at 00:05, auto-retry every 15 min")
