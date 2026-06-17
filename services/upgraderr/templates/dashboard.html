@@ -15,25 +15,77 @@
 
 <!-- Stats Cards -->
 <div class="stats-grid">
-  <div class="stat-card">
+  <a href="/history?date={{ today_date }}" class="stat-card stat-card-link">
     <div class="stat-value" id="stat-searches">{{ searches_today }}</div>
     <div class="stat-label">Searches Today
-      <span class="tooltip" title="Search commands sent to Radarr/Sonarr. Radarr then queries indexers — results appear in Radarr's activity log.">ⓘ</span>
+      {% if max_searches_per_day > 0 %}
+      <span style="font-size:0.75rem;color:var(--text-muted)"> / {{ max_searches_per_day }} cap</span>
+      {% endif %}
     </div>
-  </div>
-  <div class="stat-card">
+    {% if max_searches_per_day > 0 %}
+    <div style="margin-top:0.5rem;background:var(--surface2);border-radius:4px;height:4px;overflow:hidden">
+      <div style="height:100%;border-radius:4px;background:{% if searches_today >= max_searches_per_day %}var(--danger){% elif searches_today > max_searches_per_day * 0.8 %}var(--warning){% else %}var(--primary){% endif %};width:{{ [[(searches_today / max_searches_per_day * 100)|int, 0]|max, 100]|min }}%"></div>
+    </div>
+    {% endif %}
+    <div class="stat-hint">click to view ↗</div>
+  </a>
+  <a href="/upgrades?date={{ today_date }}" class="stat-card stat-card-link">
     <div class="stat-value" id="stat-upgrades">{{ upgrades_today }}</div>
-    <div class="stat-label">Upgrades Found Today</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-value" id="stat-queue">{{ tier_counts.values()|sum }}</div>
-    <div class="stat-label">Items Identified for Upgrade
-      <span class="tooltip" title="Items discovered below quality thresholds. 'Pending' means they haven't been searched yet (or are in cooldown).">ⓘ</span>
+    <div class="stat-label">Upgrades Grabbed Today</div>
+    <div class="stat-hint">click to view ↗</div>
+  </a>
+  <a href="/history?date={{ today_date }}&result=triggered" class="stat-card stat-card-link {% if no_grab_today > 0 %}stat-card-warn{% endif %}">
+    <div class="stat-value">{{ no_grab_today }}</div>
+    <div class="stat-label">Searched, No Grab
+      <span class="tooltip" title="Searches sent to Radarr/Sonarr today with no upgrade recorded — either nothing better was available, or the download is still in progress.">ⓘ</span>
     </div>
-  </div>
+    <div class="stat-hint">click to view ↗</div>
+  </a>
+  <a href="/queue?status=pending" class="stat-card stat-card-link">
+    <div class="stat-value" id="stat-queue">{{ tier_counts.values()|sum }}</div>
+    <div class="stat-label">Pending in Queue</div>
+    {% if searching_count > 0 %}
+    <div class="stat-hint"><a href="/queue?status=searching" style="color:var(--warning)">{{ searching_count }} searching…</a></div>
+    {% else %}
+    <div class="stat-hint">click to view ↗</div>
+    {% endif %}
+  </a>
   <div class="stat-card">
-    <div class="stat-value">{{ next_sweep or '—' }}</div>
+    <div class="stat-value" style="font-size:1.1rem">{{ next_sweep or '—' }}</div>
     <div class="stat-label">Next Sweep</div>
+  </div>
+</div>
+
+<!-- 5-Day History -->
+<div class="section">
+  <h2>Activity — Last 5 Days</h2>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr><th>Date</th><th>Searches</th><th>Upgrades Grabbed</th><th>Search Bar</th></tr>
+      </thead>
+      <tbody>
+        {% set max_searches_hist = history|map(attribute='searches')|max or 1 %}
+        {% for day in history %}
+        <tr {% if loop.last %}style="font-weight:600"{% endif %}>
+          <td class="mono">{{ day.date }}{% if loop.last %} (today){% endif %}</td>
+          <td><a href="/history?date={{ day.date }}" class="table-link">{{ day.searches }}</a></td>
+          <td><a href="/upgrades?date={{ day.date }}" class="table-link">{{ day.upgrades }}</a></td>
+          <td style="width:200px">
+            <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">
+              <div style="height:100%;border-radius:4px;background:var(--primary);width:{{ ((day.searches / max_searches_hist) * 100)|int }}%"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        <tr style="border-top:2px solid var(--border);color:var(--text-muted)">
+          <td><strong>5-day total</strong></td>
+          <td><strong>{{ history|map(attribute='searches')|sum }}</strong></td>
+          <td><strong>{{ history|map(attribute='upgrades')|sum }}</strong></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -67,14 +119,16 @@
 <!-- Tier Breakdown -->
 <div class="section">
   <h2>Items Identified by Tier</h2>
+  <p class="help-text">Click a tier to view its items and trigger manual upgrades.</p>
   {% set tier_labels = {1: 'm2ts Legacy', 2: 'Non-MKV Container', 3: '720p or Lower', 4: 'BluRay Available', 5: 'No Surround Audio', 6: 'Low TRaSH Score'} %}
   <div class="tier-grid">
     {% for t in range(1, 7) %}
-    <div class="tier-card tier-{{ t }}">
+    <a href="/queue?tier={{ t }}&status=pending" class="tier-card tier-{{ t }} tier-card-link">
       <div class="tier-num">Tier {{ t }}</div>
       <div class="tier-label">{{ tier_labels[t] }}</div>
       <div class="tier-count">{{ tier_counts.get(t, 0) }}</div>
-    </div>
+      {% if tier_counts.get(t, 0) > 0 %}<div class="tier-cta">View &amp; Upgrade →</div>{% endif %}
+    </a>
     {% endfor %}
   </div>
 </div>

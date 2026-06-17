@@ -14,6 +14,9 @@
 </p>
 
 <form class="filter-bar" method="get">
+  <input type="hidden" name="sort" value="{{ sort_col }}">
+  <input type="hidden" name="order" value="{{ sort_dir }}">
+  <input type="text" name="q" value="{{ search_query }}" placeholder="Search title…" class="form-control" style="max-width:220px">
   <select name="instance" class="form-select">
     <option value="">All Instances</option>
     {% for iname in instances %}
@@ -33,20 +36,29 @@
     <option value=""          {% if not status_filter %}selected{% endif %}>All</option>
   </select>
   <button type="submit" class="btn btn-primary">Filter</button>
+  {% if search_query %}<a href="?status={{ status_filter }}&tier={{ tier_filter }}&instance={{ instance_filter }}" class="btn btn-secondary">Clear</a>{% endif %}
 </form>
+
+{% macro sort_link(col, label) %}
+  {% set next_order = 'desc' if sort_col == col and sort_dir == 'asc' else 'asc' %}
+  <a href="?sort={{ col }}&order={{ next_order }}&tier={{ tier_filter }}&instance={{ instance_filter }}&status={{ status_filter }}&q={{ search_query }}&page=1"
+     class="sort-link {% if sort_col == col %}sort-active{% endif %}">
+    {{ label }}{% if sort_col == col %} {{ '▲' if sort_dir == 'asc' else '▼' }}{% else %} ⇅{% endif %}
+  </a>
+{% endmacro %}
 
 <div class="table-wrapper">
   <table class="table">
     <thead>
       <tr>
-        <th>Title</th>
-        <th>Instance</th>
-        <th>Tier</th>
-        <th>Reason</th>
-        <th>Score</th>
-        <th>Searches</th>
-        <th>Status</th>
-        <th>Cooldown Until</th>
+        <th>{{ sort_link('title', 'Title') }}</th>
+        <th>{{ sort_link('instance', 'Instance') }}</th>
+        <th>{{ sort_link('priority_tier', 'Tier') }}</th>
+        <th>{{ sort_link('upgrade_reason', 'Reason') }}</th>
+        <th>{{ sort_link('current_score', 'Score') }}</th>
+        <th>{{ sort_link('search_count', 'Searches') }}</th>
+        <th>{{ sort_link('status', 'Status') }}</th>
+        <th>{{ sort_link('cooldown_until', 'Cooldown Until') }}</th>
         <th></th>
       </tr>
     </thead>
@@ -61,8 +73,9 @@
         <td>{{ item.search_count }}</td>
         <td><span class="result-badge result-{{ item.status }}">{{ item.status }}</span></td>
         <td class="mono small">{{ fmt_dt(item.cooldown_until) }}</td>
-        <td>
+        <td style="white-space:nowrap">
           <button class="btn btn-sm btn-ghost" onclick="searchNow({{ item.id }})">Search</button>
+          <button class="btn btn-sm btn-ghost" onclick="resetCooldown({{ item.id }}, this)" title="Clear cooldown — item will be picked up on next sweep">↺</button>
         </td>
       </tr>
       {% else %}
@@ -75,12 +88,12 @@
 {% if total > per_page %}
 <div class="pagination">
   {% if page > 1 %}
-  <a href="?page={{ page-1 }}&instance={{ instance_filter }}&tier={{ tier_filter }}&status={{ status_filter }}"
+  <a href="?page={{ page-1 }}&instance={{ instance_filter }}&tier={{ tier_filter }}&status={{ status_filter }}&sort={{ sort_col }}&order={{ sort_dir }}&q={{ search_query }}"
      class="btn btn-sm btn-ghost">← Prev</a>
   {% endif %}
   <span>Page {{ page }} of {{ ((total-1)//per_page)+1 }}</span>
   {% if page * per_page < total %}
-  <a href="?page={{ page+1 }}&instance={{ instance_filter }}&tier={{ tier_filter }}&status={{ status_filter }}"
+  <a href="?page={{ page+1 }}&instance={{ instance_filter }}&tier={{ tier_filter }}&status={{ status_filter }}&sort={{ sort_col }}&order={{ sort_dir }}&q={{ search_query }}"
      class="btn btn-sm btn-ghost">Next →</a>
   {% endif %}
 </div>

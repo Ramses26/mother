@@ -3,7 +3,7 @@
 #
 # Cycle:
 #   1. Run the most recent sync_actions_*.sh at PARALLEL=8
-#   2. When complete, run fresh inventory (via Terminus for Ali side) + compare
+#   2. When complete, run fresh inventory (Unraid Agent for Ali, local for Chris) + compare
 #   3. If new tasks found, loop back to 1
 #   4. If libraries are in sync, sleep and re-check periodically
 #
@@ -19,9 +19,7 @@ REPORTS_DIR="$PROJECT_DIR/reports"
 INVENTORIES_DIR="$PROJECT_DIR/inventories"
 LOG_FILE="$PROJECT_DIR/logs/movie_sync_loop.log"
 PARALLEL="${PARALLEL:-8}"
-TERMINUS="terminus"
-REMOTE_TMP="/tmp/mother_inventory"
-ALI_MOVIES_PATH="/mnt/unraid/media/Movies"
+ALI_MOVIES_PATH="/mnt/user/Media/Movies"   # path as seen by Unraid Agent
 CHRIS_MOVIES_PATH="/mnt/synology/rs-movies"
 RECHECK_INTERVAL=3600   # seconds to wait between checks when in-sync
 
@@ -32,6 +30,8 @@ set +e; set -a; source "$PROJECT_DIR/.env" 2>/dev/null; set +a; set -e
 
 BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 CHAT_ID="${TELEGRAM_CHAT_ID:-}"
+UNRAID_AGENT_URL="${UNRAID_AGENT_URL:-http://192.168.1.10:8100}"
+UNRAID_AGENT_API_KEY="${UNRAID_AGENT_API_KEY:-}"
 
 log() {
     local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $1"
@@ -72,7 +72,7 @@ sync_is_complete() {
 }
 
 run_inventory_and_compare() {
-    tg "Starting fresh inventory (Terminus for Ali, local for Chris)..."
+    tg "Starting fresh inventory (Unraid Agent for Ali, local for Chris)..."
 
     # ── Chris inventory (local) ───────────────────────────────────────────────
     log "Scanning Chris side (${CHRIS_MOVIES_PATH})..."
@@ -85,24 +85,34 @@ run_inventory_and_compare() {
         return 1
     fi
 
-    # ── Ali inventory via Terminus ────────────────────────────────────────────
-    log "Copying scripts to Terminus..."
-    ssh "$TERMINUS" "mkdir -p ${REMOTE_TMP}/lib" 2>/dev/null
-    scp -q "$SCRIPT_DIR/generate_inventory.py" "${TERMINUS}:${REMOTE_TMP}/"
-    scp -q "$SCRIPT_DIR/lib/quality_scoring.py" "${TERMINUS}:${REMOTE_TMP}/lib/"
-    ssh "$TERMINUS" "touch ${REMOTE_TMP}/lib/__init__.py" 2>/dev/null
+    # ── Ali inventory via Unraid Agent ────────────────────────────────────────
+    log "Fetching Ali inventory from Unraid Agent (${UNRAID_AGENT_URL})..."
+    local inv_response inv_http_code inv_tmp
+    inv_tmp=$(mktemp)
+    inv_http_code=$(curl -s -o "$inv_tmp" -w '%{http_code}' \
+        -H "X-Api-Key: ${UNRAID_AGENT_API_KEY}" \
+        "${UNRAID_AGENT_URL}/inventory?path=${ALI_MOVIES_PATH}&refresh=true" 2>/dev/null)
 
-    log "Running Ali inventory on Terminus..."
-    if ssh "$TERMINUS" "cd ${REMOTE_TMP} && python3 generate_inventory.py '${ALI_MOVIES_PATH}' -o '${REMOTE_TMP}/ali_movies_1080p' --fast" 2>&1; then
-        scp -q "${TERMINUS}:${REMOTE_TMP}/ali_movies_1080p.json" "${INVENTORIES_DIR}/ali_movies_1080p.json"
-        scp -q "${TERMINUS}:${REMOTE_TMP}/ali_movies_1080p.csv"  "${INVENTORIES_DIR}/ali_movies_1080p.csv" 2>/dev/null || true
-        ssh "$TERMINUS" "rm -rf ${REMOTE_TMP}" 2>/dev/null || true
-        log "Ali inventory done — $(python3 -c "import json; d=json.load(open('${INVENTORIES_DIR}/ali_movies_1080p.json')); print(len(d.get('movies',d) if isinstance(d,dict) else d))" 2>/dev/null || echo '?') movies"
-    else
-        tg "⚠️ Ali inventory on Terminus failed — skipping compare this cycle"
-        ssh "$TERMINUS" "rm -rf ${REMOTE_TMP}" 2>/dev/null || true
+    if [ "$inv_http_code" != "200" ]; then
+        tg "⚠️ Unraid Agent inventory failed (HTTP ${inv_http_code}) — skipping compare this cycle"
+        rm -f "$inv_tmp"
         return 1
     fi
+
+    # Agent returns {path, count, items:[...]}; extract items array into the inventory JSON list
+    python3 -c "
+import json, sys
+data = json.load(open('$inv_tmp'))
+items = data.get('items', data) if isinstance(data, dict) else data
+# Remap 'audio_codec' → same key (compare_libraries reads it directly)
+json.dump(items, open('${INVENTORIES_DIR}/ali_movies_1080p.json', 'w'), indent=2)
+print(len(items))
+" 2>/dev/null && log "Ali inventory done — $(python3 -c "import json; print(len(json.load(open('${INVENTORIES_DIR}/ali_movies_1080p.json'))))" 2>/dev/null || echo '?') movies" || {
+        tg "⚠️ Failed to parse Unraid Agent response — skipping compare this cycle"
+        rm -f "$inv_tmp"
+        return 1
+    }
+    rm -f "$inv_tmp"
 
     # ── Compare ───────────────────────────────────────────────────────────────
     log "Running comparison..."
@@ -115,10 +125,14 @@ run_inventory_and_compare() {
     local new_script
     new_script=$(find_latest_sync_script)
     local task_count=0
-    [ -n "$new_script" ] && task_count=$(grep -cP '^run_cmd ' "$new_script" 2>/dev/null || echo 0)
+    # grep -c exits 1 when count=0, triggering || fallback even though it already printed "0".
+    # Use "; true" to force subshell exit 0 so the || branch never fires.
+    if [ -n "$new_script" ]; then
+        task_count=$(grep -cP '^run_cmd ' "$new_script" 2>/dev/null; true)
+        task_count=${task_count:-0}
+    fi
     tg "Comparison done — new script: $(basename "${new_script:-none}") | Tasks: ${task_count}"
-    # Write count to file so callers can read it cleanly (avoids log output polluting $() capture)
-    echo "$task_count" > /tmp/movie_sync_task_count
+    printf '%s\n' "$task_count" > /tmp/movie_sync_task_count
 }
 
 # ═════════════════════════════════════════════════════════════
@@ -141,7 +155,8 @@ while true; do
         continue
     fi
 
-    TASK_COUNT=$(grep -cP '^run_cmd ' "$SYNC_SCRIPT" 2>/dev/null || echo 0)
+    TASK_COUNT=$(grep -cP '^run_cmd ' "$SYNC_SCRIPT" 2>/dev/null; true)
+    TASK_COUNT=${TASK_COUNT:-0}
     PROGRESS_FILE_NAME=$(grep -oP 'PROGRESS_FILE="\$\{PROGRESS_FILE:-\K[^}]+' "$SYNC_SCRIPT" 2>/dev/null | head -1)
     COMPLETED=$(wc -l < "$REPORTS_DIR/$PROGRESS_FILE_NAME" 2>/dev/null || echo 0)
 

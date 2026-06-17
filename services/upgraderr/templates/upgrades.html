@@ -7,7 +7,37 @@
   <span class="stat-badge">{{ total }} upgrades</span>
 </div>
 
-{% if total == 0 %}
+<form class="filter-bar" method="get">
+  <input type="hidden" name="sort" value="{{ sort_col }}">
+  <input type="hidden" name="order" value="{{ sort_dir }}">
+  <input type="text" name="q" value="{{ search_query }}" placeholder="Search title…" class="form-control" style="max-width:200px">
+  <input type="date" name="date" value="{{ date_filter }}" class="form-control" style="max-width:150px" title="Filter by date">
+  <select name="instance" class="form-select">
+    <option value="">All Instances</option>
+    {% for iname in instances %}
+    <option value="{{ iname }}" {% if instance_filter == iname %}selected{% endif %}>{{ iname }}</option>
+    {% endfor %}
+  </select>
+  <select name="tier" class="form-select">
+    <option value="">All Tiers</option>
+    {% for t in range(1, 7) %}
+    <option value="{{ t }}" {% if tier_filter == t|string %}selected{% endif %}>Tier {{ t }}</option>
+    {% endfor %}
+    <option value="" {% if tier_filter == 'none' %}selected{% endif %}>No Tier (RSS/auto)</option>
+  </select>
+  <button type="submit" class="btn btn-primary">Filter</button>
+  <a href="?sort={{ sort_col }}&order={{ sort_dir }}" class="btn btn-secondary">Clear</a>
+</form>
+
+{% macro sort_link(col, label) %}
+  {% set next_order = 'desc' if sort_col == col and sort_dir == 'asc' else 'asc' %}
+  <a href="?sort={{ col }}&order={{ next_order }}&instance={{ instance_filter }}&tier={{ tier_filter }}&q={{ search_query }}&date={{ date_filter }}&page=1"
+     class="sort-link {% if sort_col == col %}sort-active{% endif %}">
+    {{ label }}{% if sort_col == col %} {{ '▲' if sort_dir == 'asc' else '▼' }}{% else %} ⇅{% endif %}
+  </a>
+{% endmacro %}
+
+{% if total == 0 and not search_query and not instance_filter %}
 <div style="text-align:center;padding:3rem;color:var(--text-muted)">
   <div style="font-size:3rem;margin-bottom:.5rem">🔍</div>
   <p>No upgrades recorded yet.</p>
@@ -18,13 +48,13 @@
   <table class="table">
     <thead>
       <tr>
-        <th>Time</th>
-        <th>Instance</th>
-        <th>Title</th>
-        <th>Tier</th>
-        <th>Before</th>
-        <th>After</th>
-        <th>Score &Delta;</th>
+        <th>{{ sort_link('imported_at', 'Time') }}</th>
+        <th>{{ sort_link('instance', 'Instance') }}</th>
+        <th>{{ sort_link('title', 'Title') }}</th>
+        <th>{{ sort_link('tier', 'Tier') }}</th>
+        <th>{{ sort_link('before_quality', 'Before') }}</th>
+        <th>{{ sort_link('after_quality', 'After') }}</th>
+        <th>{{ sort_link('score_delta', 'Score Δ') }}</th>
       </tr>
     </thead>
     <tbody>
@@ -54,6 +84,9 @@
         </td>
       </tr>
       {% endfor %}
+      {% if not items %}
+      <tr><td colspan="7" class="empty">No upgrades match the current filter.</td></tr>
+      {% endif %}
     </tbody>
   </table>
 </div>
@@ -61,11 +94,13 @@
 {% if total > per_page %}
 <div class="pagination">
   {% if page > 1 %}
-  <a href="?page={{ page-1 }}" class="btn btn-sm btn-ghost">&larr; Prev</a>
+  <a href="?page={{ page-1 }}&instance={{ instance_filter }}&tier={{ tier_filter }}&sort={{ sort_col }}&order={{ sort_dir }}&q={{ search_query }}&date={{ date_filter }}"
+     class="btn btn-sm btn-ghost">&larr; Prev</a>
   {% endif %}
   <span>Page {{ page }} of {{ ((total-1)//per_page)+1 }}</span>
   {% if page * per_page < total %}
-  <a href="?page={{ page+1 }}" class="btn btn-sm btn-ghost">Next &rarr;</a>
+  <a href="?page={{ page+1 }}&instance={{ instance_filter }}&tier={{ tier_filter }}&sort={{ sort_col }}&order={{ sort_dir }}&q={{ search_query }}&date={{ date_filter }}"
+     class="btn btn-sm btn-ghost">Next &rarr;</a>
   {% endif %}
 </div>
 {% endif %}

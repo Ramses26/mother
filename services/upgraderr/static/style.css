@@ -138,7 +138,32 @@ body {
   border-radius: 8px;
   padding: 1.25rem;
   text-align: center;
+  text-decoration: none;
+  display: block;
+  color: inherit;
 }
+.stat-card-link {
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.stat-card-link:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+  text-decoration: none;
+  color: inherit;
+}
+.stat-card-warn {
+  border-color: var(--warning);
+}
+.stat-card-warn .stat-value { color: var(--warning); }
+.stat-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.stat-card-link:hover .stat-hint { opacity: 1; }
 .stat-value {
   font-size: 2rem;
   font-weight: 700;
@@ -150,6 +175,12 @@ body {
   color: var(--text-muted);
   margin-top: 0.25rem;
 }
+.table-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.table-link:hover { text-decoration: underline; }
 .stat-badge {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -211,6 +242,30 @@ body {
 .tier-4 .tier-count { color: var(--tier4); }
 .tier-5 .tier-count { color: var(--tier5); }
 .tier-6 .tier-count { color: var(--tier6); }
+.tier-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.tier-card-link:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  text-decoration: none;
+  color: inherit;
+}
+.tier-cta { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.35rem; opacity: 0.7; }
+
+/* Sortable column headers */
+.sort-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.sort-link:hover { color: var(--text); }
+.sort-link.sort-active { color: var(--primary); }
 
 /* Badges */
 .badge {

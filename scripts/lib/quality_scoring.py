@@ -295,6 +295,9 @@ def parse_quality_from_filename(filename: str) -> Dict[str, str]:
         if content_upper == 'AV1':
             result['codec'] = 'AV1'
             continue
+        if content_upper in ('VC-1', 'VC1'):
+            result['codec'] = 'VC-1'
+            continue
 
     # Extract release group (after last hyphen)
     group_match = re.search(r'-([A-Za-z0-9]+)(?:\.[a-z]{3})?$', filename)

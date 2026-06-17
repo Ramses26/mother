@@ -282,12 +282,14 @@ class MediaInventory:
         # Get MediaInfo data (skip in fast mode)
         media_info = None if self.fast else self._get_mediainfo(file_path)
 
-        # Extract from filename
+        # Extract from filename — for HDR use only bracket content to avoid
+        # false positives from release group tags like "-HDV" matching "DV".
+        bracket_text = ' '.join(re.findall(r'\[([^\]]+)\]', filename))
         resolution = self._extract_pattern(filename, self.PATTERNS['resolution'])
         source = self._extract_pattern(filename, self.PATTERNS['source'])
         video_codec_fn = self._extract_pattern(filename, self.PATTERNS['video_codec'])
         audio_codec_fn = self._extract_pattern(filename, self.PATTERNS['audio_codec'])
-        hdr = self._extract_pattern(filename, self.PATTERNS['hdr'])
+        hdr = self._extract_pattern(bracket_text, self.PATTERNS['hdr'])
         group = self._extract_pattern(filename, self.PATTERNS['group'])
 
         # Extract TVDB ID from show folder (for TV shows)

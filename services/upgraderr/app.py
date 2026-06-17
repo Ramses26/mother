@@ -76,12 +76,18 @@ COOLDOWN_HOURS     = int(os.environ.get('UPGRADERR_COOLDOWN_HOURS', '24'))
 SWEEP_MINUTES      = int(os.environ.get('UPGRADERR_SWEEP_MINUTES', '30'))
 JITTER_MAX         = int(os.environ.get('UPGRADERR_JITTER_MAX_SECONDS', '30'))
 MIN_SCORE          = int(os.environ.get('UPGRADERR_MIN_SCORE', '200'))
-SEASON_THRESHOLD   = int(os.environ.get('UPGRADERR_SEASON_THRESHOLD', '50'))
+SEASON_THRESHOLD       = int(os.environ.get('UPGRADERR_SEASON_THRESHOLD', '50'))
+NO_SOURCE_SYNC_THRESHOLD = int(os.environ.get('UPGRADERR_NO_SOURCE_SYNC_THRESHOLD', '2'))
+SYNC_WEBHOOK_URL       = os.environ.get('SYNC_WEBHOOK_URL', 'http://sync-webhook:5001')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 UPGRADERR_TG_CHAT  = os.environ.get('UPGRADERR_TELEGRAM_CHAT_ID', '')
 TMDB_BASE          = 'https://api.themoviedb.org/3'
 BLURAY_WAIT_DAYS   = int(os.environ.get('UPGRADERR_BLURAY_WAIT_DAYS', '90'))
 SYNC_REPORTS_DIR   = '/opt/sync_reports'
+QB_URL             = os.environ.get('QBITTORRENT_URL', 'http://10.0.1.203:8080')
+QB_USER            = os.environ.get('QBITTORRENT_USER', '')
+QB_PASS            = os.environ.get('QBITTORRENT_PASS', '')
+QB_TAG             = 'upgraderr'
 
 JWT_ACCESS_TTL  = 3600
 JWT_REFRESH_TTL = 604800
@@ -426,6 +432,48 @@ def send_telegram(message, category='notify_sweep_summary'):
         log.error(f"Telegram failed: {e}")
 
 # ---------------------------------------------------------------------------
+# qBittorrent helper
+# ---------------------------------------------------------------------------
+
+_QB_CIRCUIT_KEY = 'qbt_circuit_open_until'
+_QB_CIRCUIT_MINUTES = 90  # back off for 90 min after a ban/failure
+
+def _qb_tag_torrent(infohash: str, tag: str = QB_TAG) -> bool:
+    """Login to qBittorrent and add a tag to the torrent identified by infohash."""
+    if not QB_USER or not infohash:
+        return False
+
+    # Circuit breaker: stop hammering qBit if it recently banned or rejected us
+    circuit_until = get_config(_QB_CIRCUIT_KEY, '')
+    if circuit_until and datetime.utcnow().isoformat() < circuit_until:
+        log.debug(f"[qbt] circuit open until {circuit_until}, skipping tag")
+        return False
+
+    try:
+        s = requests.Session()
+        r = s.post(f"{QB_URL}/api/v2/auth/login",
+                   data={'username': QB_USER, 'password': QB_PASS}, timeout=10)
+        resp = r.text.strip()
+        if resp not in ('Ok.', 'Ok'):
+            log.warning(f"[qbt] login failed: {resp!r}")
+            # Open circuit: don't retry for 90 min
+            open_until = (datetime.utcnow() + timedelta(minutes=_QB_CIRCUIT_MINUTES)).isoformat()
+            set_config(_QB_CIRCUIT_KEY, open_until)
+            return False
+
+        # Successful login — clear any open circuit
+        set_config(_QB_CIRCUIT_KEY, '')
+
+        r2 = s.post(f"{QB_URL}/api/v2/torrents/addTags",
+                    data={'hashes': infohash.lower(), 'tags': tag}, timeout=10)
+        r2.raise_for_status()
+        log.info(f"[qbt] tagged {infohash[:8]}… with '{tag}'")
+        return True
+    except Exception as e:
+        log.warning(f"[qbt] tag failed for {infohash}: {e}")
+        return False
+
+# ---------------------------------------------------------------------------
 # *arr API Client
 # ---------------------------------------------------------------------------
 
@@ -538,10 +586,17 @@ def classify_tiers(filename, year=None, is_4k=False, media_type='movie', tmdb_id
 
     if not get_pre_era_skip_tier5(year):
         import re
-        if audio and audio not in SURROUND_AUDIO:
+        # True if filename explicitly shows multi-channel audio (5.1, 6.1, 7.1, 7.2)
+        has_surround_channels = bool(re.search(r'\b(5\.1|6\.1|7\.1|7\.2)\b', fn_lower))
+        if audio in SURROUND_AUDIO:
+            pass  # confirmed surround codec
+        elif audio == 'DD' and has_surround_channels:
+            pass  # AC3/DD with explicit 5.1+ channels in filename — is surround
+        elif audio:
+            # DD without explicit surround channels (AC3 2.0, bare DD), AAC, etc.
             tiers.append((5, 'tier5_audio'))
-        elif not audio and not re.search(
-                r'\b(5\.1|6\.1|7\.1|7\.2|atmos|truehd|dts|dd\+|eac3)\b', fn_lower):
+        elif not has_surround_channels and not re.search(
+                r'\b(atmos|truehd|dts|dd\+|eac3)\b', fn_lower):
             tiers.append((5, 'tier5_audio'))
 
     score = calculate_quality_score(
@@ -730,7 +785,8 @@ def _db_upsert_queue(instance, media_id, media_type, title, score, tier, reason,
                      season=None, current_filename=None):
     db = get_db()
     with _db_lock:
-        # Only set before_quality/before_score on INSERT (first time), not on subsequent sweeps
+        # Only set before_quality/before_score on INSERT (first time), not on subsequent sweeps.
+        # Preserve 'searching'/'found' status — only reset to 'pending' if currently pending/new.
         db.execute(
             """INSERT INTO upgrade_queue
                (instance,media_id,media_type,title,current_score,priority_tier,upgrade_reason,
@@ -739,7 +795,9 @@ def _db_upsert_queue(instance, media_id, media_type, title, score, tier, reason,
                ON CONFLICT(instance,media_id,media_type) DO UPDATE SET
                  title=excluded.title, current_score=excluded.current_score,
                  priority_tier=excluded.priority_tier, upgrade_reason=excluded.upgrade_reason,
-                 search_type=excluded.search_type, status='pending'""",
+                 search_type=excluded.search_type,
+                 status=CASE WHEN upgrade_queue.status IN ('searching','found')
+                             THEN upgrade_queue.status ELSE 'pending' END""",
             (instance, media_id, media_type, title, score, tier, reason, search_type, season,
              current_filename, score)
         )
@@ -785,12 +843,62 @@ def do_sweep(trigger='scheduled'):
     finally:
         _sweep_lock.release()
 
+def _cleanup_stale_queue(inst):
+    """Remove queue entries for movies/seasons that no longer qualify for any tier.
+    Called for disabled instances so stale entries don't linger indefinitely."""
+    inst_name = inst['name']
+    inst_type = inst.get('type', 'radarr')
+    db = get_db()
+
+    if inst_type == 'radarr':
+        pending = db.execute(
+            "SELECT media_id FROM upgrade_queue WHERE instance=? AND media_type='movie' AND status IN ('pending','searching')",
+            (inst_name,)
+        ).fetchall()
+        is_4k = '4k' in inst_name.lower()
+        removed = 0
+        for row in pending:
+            mid = row['media_id'] if isinstance(row, sqlite3.Row) else row[0]
+            movie = arr_get(inst, f'/movie/{mid}')
+            if not movie:
+                continue
+            mfile = movie.get('movieFile')
+            if not mfile:
+                continue
+            filename = mfile.get('relativePath', '') or mfile.get('path', '')
+            year = movie.get('year')
+            tmdb_id = movie.get('tmdbId')
+            tiers = classify_tiers(filename, year=year, is_4k=is_4k, media_type='movie', tmdb_id=tmdb_id)
+            if not tiers:
+                with _db_lock:
+                    db.execute("DELETE FROM upgrade_queue WHERE instance=? AND media_id=? AND media_type='movie'",
+                               (inst_name, mid))
+                    db.commit()
+                removed += 1
+        if removed:
+            log.info(f"[{inst_name}] Stale queue cleanup: removed {removed} resolved entries")
+    # Sonarr cleanup is handled per-series during the enabled sweep; skip here for performance
+
+
 def _run_sweep(trigger):
     if _sync_is_active():
         log.info("Batch sync is active — deferring sweep to avoid conflicts")
         return
 
     _reload_config()
+
+    # Check daily search cap before doing any work
+    max_per_day = int(get_cfg('max_searches_per_day', '0'))
+    if max_per_day > 0:
+        today = datetime.utcnow().strftime('%Y-%m-%d')
+        db = get_db()
+        done_today = db.execute(
+            "SELECT COALESCE(searches_total,0) FROM daily_stats WHERE date=?", (today,)
+        ).fetchone()
+        searches_done = done_today[0] if done_today else 0
+        if searches_done >= max_per_day:
+            log.info(f"Daily search cap reached ({searches_done}/{max_per_day}) — skipping sweep")
+            return
 
     per_inst  = int(get_cfg('searches_per_hour', str(SEARCHES_PER_HOUR)))
     global_lim = int(get_cfg('downloads_per_day', str(DOWNLOADS_PER_DAY)))
@@ -799,19 +907,24 @@ def _run_sweep(trigger):
 
     instances = get_instances_from_db()
     for inst_name, inst in instances.items():
-        if not inst['enabled']:
-            continue
         if not inst.get('api_key'):
             log.debug(f"[{inst_name}] no API key, skipping")
             continue
         inst['name'] = inst_name
-        try:
-            if inst['type'] == 'radarr':
-                _sweep_radarr(inst, budget, trigger, tier_counts)
-            else:
-                _sweep_sonarr(inst, budget, trigger, tier_counts)
-        except Exception as e:
-            log.error(f"[{inst_name}] Sweep error: {e}", exc_info=True)
+        if inst['enabled']:
+            try:
+                if inst['type'] == 'radarr':
+                    _sweep_radarr(inst, budget, trigger, tier_counts)
+                else:
+                    _sweep_sonarr(inst, budget, trigger, tier_counts)
+            except Exception as e:
+                log.error(f"[{inst_name}] Sweep error: {e}", exc_info=True)
+        else:
+            # Disabled instances: still clean up stale queue entries
+            try:
+                _cleanup_stale_queue(inst)
+            except Exception as e:
+                log.debug(f"[{inst_name}] Stale cleanup error: {e}")
 
     if budget.total > 0:
         tier_summary = ', '.join(f"T{k}:{v}" for k, v in sorted(tier_counts.items()) if v > 0)
@@ -826,6 +939,20 @@ def _is_paused():
 
 def _tier_enabled(t):
     return get_cfg(f'tier_enabled_{t}', 'true') == 'true'
+
+
+def _trigger_fallback_sync(container_path: str, title: str, media_type: str, quality: str = 'unknown'):
+    """Queue a sync of the current (pre-upgrade) file when no upgrade has been found
+    after no_source_sync_threshold searches. Fires async so the sweep is not blocked."""
+    url = f"{SYNC_WEBHOOK_URL}/sync/manual"
+    payload = {'path': container_path, 'type': media_type, 'title': title, 'quality': quality}
+    def _post():
+        try:
+            r = requests.post(url, json=payload, timeout=15)
+            log.info(f"[fallback-sync] Queued {title} ({container_path}) — {r.status_code}")
+        except Exception as exc:
+            log.warning(f"[fallback-sync] Failed to queue {title}: {exc}")
+    threading.Thread(target=_post, daemon=True).start()
 
 
 def _sweep_radarr(inst, budget, trigger, tier_counts):
@@ -859,6 +986,14 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
         tiers = classify_tiers(filename, year=year, is_4k=is_4k, media_type='movie', tmdb_id=tmdb_id)
         tiers = [(t, r) for (t, r) in tiers if _tier_enabled(t)]
         if not tiers:
+            row = _db_get_queue_entry(inst_name, mid, 'movie')
+            if row and row['status'] in ('pending', 'searching'):
+                db = get_db()
+                with _db_lock:
+                    db.execute("DELETE FROM upgrade_queue WHERE instance=? AND media_id=? AND media_type='movie'",
+                               (inst_name, mid))
+                    db.commit()
+                log.debug(f"[{inst_name}] Cleared resolved queue entry: {title}")
             continue
 
         top_tier, top_reason = min(tiers, key=lambda x: x[0])
@@ -876,7 +1011,6 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
                          current_filename=filename)
 
         if _is_paused():
-            _db_log_search(inst_name, full_title, trigger, 'skipped_paused', top_tier, 'movie')
             continue
 
         jitter = random.randint(0, min(JITTER_MAX, 10))
@@ -889,6 +1023,18 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
         cooldown_until = (datetime.utcnow() + timedelta(hours=cooldown_h)).isoformat()
 
         _db_mark_searching(inst_name, mid, 'movie', search_count, cooldown_until)
+
+        # After N failed searches, sync current quality so Ali isn't permanently missing content
+        threshold = int(get_cfg('no_source_sync_threshold', str(NO_SOURCE_SYNC_THRESHOLD)))
+        if search_count >= threshold and top_tier == 3:
+            movie_path = movie.get('path', '')
+            if movie_path:
+                _trigger_fallback_sync(movie_path, full_title, 'movie', score)
+                send_telegram(
+                    f"📦 Upgraderr: Syncing current quality for {full_title} "
+                    f"(no upgrade after {search_count} searches) | {inst_name}",
+                    category='notify_each_search'
+                )
 
         if result:
             budget.record(inst_name)
@@ -955,6 +1101,22 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
                 seasons[snum]['top_tier'] = top_tier
                 seasons[snum]['top_reason'] = top_reason
 
+        # Clean up stale season entries for this series (seasons that no longer qualify)
+        db = get_db()
+        stale_rows = db.execute(
+            "SELECT media_id FROM upgrade_queue WHERE instance=? AND media_id BETWEEN ? AND ? "
+            "AND media_type='season' AND status IN ('pending','searching')",
+            (inst_name, sid * 10000 + 1, sid * 10000 + 9999)
+        ).fetchall()
+        for stale_row in stale_rows:
+            snum_queued = stale_row['media_id'] % 10000
+            if snum_queued not in seasons:
+                with _db_lock:
+                    db.execute("DELETE FROM upgrade_queue WHERE instance=? AND media_id=? AND media_type='season'",
+                               (inst_name, stale_row['media_id']))
+                    db.commit()
+                log.debug(f"[{inst_name}] Cleared resolved queue entry: {stitle} S{snum_queued:02d}")
+
         for snum, sdata in seasons.items():
             if not budget.can_search(inst_name) and not _is_paused():
                 break
@@ -993,7 +1155,6 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
                              current_filename=sdata['fn'])
 
             if _is_paused():
-                _db_log_search(inst_name, title, trigger, 'skipped_paused', top_tier, search_type)
                 continue
 
             jitter = random.randint(0, min(JITTER_MAX, 10))
@@ -1014,6 +1175,19 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
             cooldown_h    = _adaptive_cooldown(search_count)
             cooldown_until = (datetime.utcnow() + timedelta(hours=cooldown_h)).isoformat()
             _db_mark_searching(inst_name, composite_id, 'season', search_count, cooldown_until)
+
+            # After N failed searches, sync current quality so Ali isn't permanently missing content
+            threshold = int(get_cfg('no_source_sync_threshold', str(NO_SOURCE_SYNC_THRESHOLD)))
+            if search_count >= threshold and top_tier == 3:
+                series_path = series.get('path', '')
+                if series_path:
+                    season_score = get_current_score(sdata['fn'], is_4k=is_4k, media_type='tv')
+                    _trigger_fallback_sync(series_path, f"{stitle} ({year})", 'tv', season_score)
+                    send_telegram(
+                        f"📦 Upgraderr: Syncing current quality for {title} "
+                        f"(no upgrade after {search_count} searches) | {inst_name}",
+                        category='notify_each_search'
+                    )
 
             if result:
                 budget.record(inst_name)
@@ -1049,6 +1223,19 @@ def list_backups():
         key=lambda x: x['name'], reverse=True
     )
 
+def _prune_search_log():
+    """Keep search_log to last 90 days to prevent unbounded growth."""
+    try:
+        db = get_db()
+        result = db.execute(
+            "DELETE FROM search_log WHERE searched_at < datetime('now', '-90 days')"
+        )
+        deleted = result.rowcount
+        db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        log.info(f"[prune] Pruned {deleted} old search_log rows")
+    except Exception as exc:
+        log.warning(f"[prune] search_log prune failed: {exc}")
+
 # ---------------------------------------------------------------------------
 # APScheduler
 # ---------------------------------------------------------------------------
@@ -1075,6 +1262,12 @@ def start_scheduler():
         lambda: _scan_tmdb_releases(),
         'cron', hour=2, minute=30,
         id='tmdb_scan', replace_existing=True,
+    )
+
+    scheduler.add_job(
+        _prune_search_log,
+        'cron', hour=4, minute=0,
+        id='prune_search_log', replace_existing=True,
     )
 
     scheduler.start()
@@ -1138,6 +1331,32 @@ def dashboard():
 
     today_stats = db.execute("SELECT * FROM daily_stats WHERE date=?", (today,)).fetchone()
 
+    # Real upgrade count from upgrade_history
+    upgrades_today = db.execute(
+        "SELECT COUNT(*) FROM upgrade_history WHERE date(imported_at)=?", (today,)
+    ).fetchone()[0]
+
+    # 5-day rolling history for chart
+    history_rows = db.execute("""
+        SELECT d.date,
+               COALESCE(s.searches_total, 0) as searches,
+               COALESCE(u.upgrades, 0) as upgrades
+        FROM (
+            SELECT date('now', '-' || n || ' days') as date
+            FROM (SELECT 0 n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4)
+        ) d
+        LEFT JOIN daily_stats s ON s.date = d.date
+        LEFT JOIN (
+            SELECT date(imported_at) as date, COUNT(*) as upgrades
+            FROM upgrade_history GROUP BY date(imported_at)
+        ) u ON u.date = d.date
+        ORDER BY d.date ASC
+    """).fetchall()
+    history = [{'date': r[0], 'searches': r[1], 'upgrades': r[2]} for r in history_rows]
+
+    max_searches_per_day = int(get_config('max_searches_per_day', '0'))
+    searches_today = today_stats['searches_total'] if today_stats else 0
+
     tier_counts = {}
     for row in db.execute(
             "SELECT priority_tier, COUNT(*) as cnt FROM upgrade_queue "
@@ -1147,6 +1366,20 @@ def dashboard():
     activity = db.execute(
         "SELECT * FROM search_log ORDER BY searched_at DESC LIMIT 50"
     ).fetchall()
+
+    # Searches triggered today that have no matching upgrade imported today or tomorrow
+    no_grab_today = db.execute("""
+        SELECT COUNT(DISTINCT sl.title) FROM search_log sl
+        WHERE date(sl.searched_at)=? AND sl.result='triggered'
+          AND sl.title NOT IN (
+              SELECT uh.title FROM upgrade_history uh
+              WHERE date(uh.imported_at) BETWEEN ? AND date(?, '+1 day')
+          )
+    """, (today, today, today)).fetchone()[0]
+
+    searching_count = db.execute(
+        "SELECT COUNT(*) FROM upgrade_queue WHERE status='searching'"
+    ).fetchone()[0]
 
     instances = get_instances_request()
     instance_status = {}
@@ -1172,13 +1405,18 @@ def dashboard():
 
     return render_template('dashboard.html',
         paused=paused,
-        searches_today=today_stats['searches_total'] if today_stats else 0,
-        upgrades_today=today_stats['upgrades_found'] if today_stats else 0,
+        searches_today=searches_today,
+        upgrades_today=upgrades_today,
+        no_grab_today=no_grab_today,
+        searching_count=searching_count,
+        max_searches_per_day=max_searches_per_day,
+        history=history,
         tier_counts=tier_counts,
         activity=activity,
         instance_status=instance_status,
         instance_health=instance_health,
         next_sweep=next_sweep,
+        today_date=today,
     )
 
 @app.route('/queue')
@@ -1190,23 +1428,35 @@ def queue_page():
     inst_f = request.args.get('instance', '')
     stat_f = request.args.get('status', 'pending')
 
+    _allowed_sort = {'title', 'priority_tier', 'current_score', 'search_count', 'cooldown_until', 'created_at', 'instance', 'upgrade_reason', 'status'}
+    sort_col  = request.args.get('sort', 'priority_tier')
+    sort_dir  = request.args.get('order', 'asc')
+    if sort_col not in _allowed_sort: sort_col = 'priority_tier'
+    if sort_dir not in ('asc', 'desc'): sort_dir = 'asc'
+    secondary = 'created_at DESC' if sort_col != 'created_at' else 'title ASC'
+
+    search_q = request.args.get('q', '').strip()
+
     db = get_request_db()
     where, params = [], []
-    if tier_f:  where.append("priority_tier=?");  params.append(tier_f)
-    if inst_f:  where.append("instance=?");       params.append(inst_f)
-    if stat_f:  where.append("status=?");         params.append(stat_f)
+    if tier_f:    where.append("priority_tier=?");        params.append(tier_f)
+    if inst_f:    where.append("instance=?");             params.append(inst_f)
+    if stat_f:    where.append("status=?");               params.append(stat_f)
+    if search_q:  where.append("title LIKE ?");           params.append(f'%{search_q}%')
     wc = ("WHERE " + " AND ".join(where)) if where else ""
 
     total = db.execute(f"SELECT COUNT(*) as cnt FROM upgrade_queue {wc}", params).fetchone()['cnt']
     items = db.execute(
-        f"SELECT * FROM upgrade_queue {wc} ORDER BY priority_tier, created_at DESC LIMIT ? OFFSET ?",
+        f"SELECT * FROM upgrade_queue {wc} ORDER BY {sort_col} {sort_dir}, {secondary} LIMIT ? OFFSET ?",
         params + [per, (page - 1) * per]
     ).fetchall()
 
     return render_template('queue.html',
         items=items, page=page, per_page=per, total=total,
         tier_filter=tier_f, instance_filter=inst_f, status_filter=stat_f,
+        search_query=search_q,
         instances=list(get_instances_request().keys()),
+        sort_col=sort_col, sort_dir=sort_dir,
     )
 
 @app.route('/history')
@@ -1216,22 +1466,36 @@ def history_page():
     per    = 100
     inst_f = request.args.get('instance', '')
     res_f  = request.args.get('result', '')
+    search_q = request.args.get('q', '').strip()
+    date_f = request.args.get('date', '').strip()
+    if date_f == 'today':
+        date_f = datetime.utcnow().strftime('%Y-%m-%d')
+
+    _allowed_sort = {'searched_at', 'instance', 'title', 'tier', 'search_type', 'trigger', 'result'}
+    sort_col = request.args.get('sort', 'searched_at')
+    sort_dir = request.args.get('order', 'desc')
+    if sort_col not in _allowed_sort: sort_col = 'searched_at'
+    if sort_dir not in ('asc', 'desc'): sort_dir = 'desc'
 
     db = get_request_db()
     where, params = [], []
-    if inst_f: where.append("instance=?"); params.append(inst_f)
-    if res_f:  where.append("result=?");   params.append(res_f)
+    if inst_f:   where.append("instance=?");         params.append(inst_f)
+    if res_f:    where.append("result=?");           params.append(res_f)
+    if search_q: where.append("title LIKE ?");       params.append(f'%{search_q}%')
+    if date_f:   where.append("date(searched_at)=?"); params.append(date_f)
     wc = ("WHERE " + " AND ".join(where)) if where else ""
 
     total = db.execute(f"SELECT COUNT(*) as cnt FROM search_log {wc}", params).fetchone()['cnt']
     items = db.execute(
-        f"SELECT * FROM search_log {wc} ORDER BY searched_at DESC LIMIT ? OFFSET ?",
+        f"SELECT * FROM search_log {wc} ORDER BY {sort_col} {sort_dir} LIMIT ? OFFSET ?",
         params + [per, (page - 1) * per]
     ).fetchall()
 
     return render_template('history.html',
         items=items, page=page, per_page=per, total=total,
-        instance_filter=inst_f, result_filter=res_f,
+        instance_filter=inst_f, result_filter=res_f, search_query=search_q,
+        date_filter=date_f,
+        sort_col=sort_col, sort_dir=sort_dir,
         instances=list(get_instances_request().keys()),
     )
 
@@ -1245,7 +1509,9 @@ def settings_page():
         'cooldown_hours':    get_config('cooldown_hours',    str(COOLDOWN_HOURS)),
         'sweep_minutes':     get_config('sweep_minutes',     str(SWEEP_MINUTES)),
         'min_score':         get_config('min_score',         str(MIN_SCORE)),
-        'season_threshold':  get_config('season_threshold',  str(SEASON_THRESHOLD)),
+        'season_threshold':           get_config('season_threshold',           str(SEASON_THRESHOLD)),
+        'no_source_sync_threshold':   get_config('no_source_sync_threshold',   str(NO_SOURCE_SYNC_THRESHOLD)),
+        'max_searches_per_day':       get_config('max_searches_per_day',       '0'),
         'display_tz':        get_config('display_tz',        DISPLAY_TZ),
         'backup_schedule_hour': get_config('backup_schedule_hour', '3'),
         'tmdb_api_key': get_config('tmdb_api_key', os.getenv('TMDB_API_KEY', '')),
@@ -1318,6 +1584,15 @@ def api_stats():
     db = get_request_db()
     today = datetime.utcnow().strftime('%Y-%m-%d')
     s = db.execute("SELECT * FROM daily_stats WHERE date=?", (today,)).fetchone()
+
+    # Real upgrade count from upgrade_history (daily_stats.upgrades_found was never incremented)
+    upgrades_today = db.execute(
+        "SELECT COUNT(*) FROM upgrade_history WHERE date(imported_at)=?", (today,)
+    ).fetchone()[0]
+    searches_today = s['searches_total'] if s else 0
+
+    max_searches = int(get_config('max_searches_per_day', '0'))  # 0 = unlimited
+
     queue_total = db.execute(
         "SELECT COUNT(*) as cnt FROM upgrade_queue WHERE status='pending'"
     ).fetchone()['cnt']
@@ -1329,13 +1604,35 @@ def api_stats():
     if job and job.next_run_time:
         next_sweep = job.next_run_time.isoformat()
     paused = get_config('paused', 'false') == 'true'
+
+    # 5-day rolling history
+    history = []
+    for row in db.execute("""
+        SELECT d.date,
+               COALESCE(s.searches_total, 0) as searches,
+               COALESCE(u.upgrades, 0) as upgrades
+        FROM (
+            SELECT date('now', '-' || n || ' days') as date
+            FROM (SELECT 0 n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4)
+        ) d
+        LEFT JOIN daily_stats s ON s.date = d.date
+        LEFT JOIN (
+            SELECT date(imported_at) as date, COUNT(*) as upgrades
+            FROM upgrade_history GROUP BY date(imported_at)
+        ) u ON u.date = d.date
+        ORDER BY d.date ASC
+    """):
+        history.append({'date': row[0], 'searches': row[1], 'upgrades': row[2]})
+
     return jsonify({
-        'paused':         paused,
-        'searches_today': s['searches_total'] if s else 0,
-        'upgrades_today': s['upgrades_found'] if s else 0,
-        'queue_total':    queue_total,
-        'tier_counts':    tier_counts,
-        'next_sweep':     next_sweep,
+        'paused':              paused,
+        'searches_today':      searches_today,
+        'upgrades_today':      upgrades_today,
+        'max_searches_per_day': max_searches,
+        'queue_total':         queue_total,
+        'tier_counts':         tier_counts,
+        'next_sweep':          next_sweep,
+        'history':             history,
     })
 
 # ---------------------------------------------------------------------------
@@ -1347,7 +1644,8 @@ def api_stats():
 def api_settings():
     data = request.get_json() or {}
     numeric = ['searches_per_hour','downloads_per_day','cooldown_hours',
-               'sweep_minutes','min_score','season_threshold','backup_schedule_hour']
+               'sweep_minutes','min_score','season_threshold','backup_schedule_hour',
+               'no_source_sync_threshold','max_searches_per_day']
     for key in numeric:
         if key in data:
             set_config(key, data[key])
@@ -1662,11 +1960,35 @@ def webhook_radarr():
     if not _is_internal_request():
         return jsonify({'error': 'Forbidden'}), 403
 
+    # Instance identified via ?source=radarr-hd (or radarr-4k) in the webhook URL
+    source = request.args.get('source', 'radarr-unknown')
+
     data = request.get_json(silent=True) or {}
     event_type = data.get('eventType', '')
 
+    if event_type == 'Grab':
+        movie = data.get('movie', {})
+        mid = movie.get('id')
+        infohash = data.get('downloadId', '')
+        if mid and infohash:
+            db = get_request_db()
+            # Tag if Upgraderr searched this movie within the last 2 hours
+            row = db.execute(
+                """SELECT id FROM upgrade_queue
+                   WHERE media_id=? AND media_type='movie' AND instance=?
+                     AND searched_at >= datetime('now', '-2 hours')""",
+                (mid, source)
+            ).fetchone()
+            if row:
+                _qb_tag_torrent(infohash)
+        return jsonify({'status': 'grab_processed'}), 200
+
     if event_type not in ('Download', 'MovieFileRenamed'):
         return jsonify({'status': 'ignored'}), 200
+
+    # Skip first-time RSS grabs — only record quality upgrades of existing files
+    if event_type == 'Download' and not data.get('isUpgrade', False):
+        return jsonify({'status': 'new_content_ignored'}), 200
 
     movie = data.get('movie', {})
     movie_file = data.get('movieFile', {})
@@ -1679,11 +2001,13 @@ def webhook_radarr():
         return jsonify({'status': 'no_id'}), 200
 
     db = get_request_db()
+    # Scope lookup to the sending instance so IDs from different instances don't collide
     row = db.execute(
-        "SELECT * FROM upgrade_queue WHERE media_id=? AND media_type='movie'", (mid,)
+        "SELECT * FROM upgrade_queue WHERE media_id=? AND media_type='movie' AND instance=?",
+        (mid, source)
     ).fetchone()
 
-    inst_name = row['instance'] if row else 'radarr-unknown'
+    inst_name = row['instance'] if row else source
     before_quality = row['before_quality'] if row else None
     before_score = row['before_score'] if row else None
     tier = row['priority_tier'] if row else None
@@ -1700,14 +2024,15 @@ def webhook_radarr():
          new_path, after_score, tier)
     )
 
-    db.execute(
-        """UPDATE upgrade_queue SET status='found', searched_at=CURRENT_TIMESTAMP
-           WHERE media_id=? AND media_type='movie'""",
-        (mid,)
-    )
+    if row:
+        db.execute(
+            """UPDATE upgrade_queue SET status='found', searched_at=CURRENT_TIMESTAMP
+               WHERE media_id=? AND media_type='movie' AND instance=?""",
+            (mid, source)
+        )
     db.commit()
 
-    log.info(f"[webhook] Radarr import: {full_title} -> {new_path}")
+    log.info(f"[webhook] Radarr import ({source}): {full_title} -> {new_path}")
     return jsonify({'status': 'recorded'}), 200
 
 
@@ -1717,11 +2042,36 @@ def webhook_sonarr():
     if not _is_internal_request():
         return jsonify({'error': 'Forbidden'}), 403
 
+    # Instance identified via ?source=sonarr-hd (or sonarr-4k) in the webhook URL
+    source = request.args.get('source', 'sonarr-unknown')
+
     data = request.get_json(silent=True) or {}
     event_type = data.get('eventType', '')
 
+    if event_type == 'Grab':
+        series = data.get('series', {})
+        sid = series.get('id')
+        infohash = data.get('downloadId', '')
+        season_num = (data.get('episodes') or [{}])[0].get('seasonNumber', 0)
+        if sid and infohash:
+            composite_id = sid * 10000 + season_num
+            db = get_request_db()
+            row = db.execute(
+                """SELECT id FROM upgrade_queue
+                   WHERE media_id=? AND media_type='season' AND instance=?
+                     AND searched_at >= datetime('now', '-2 hours')""",
+                (composite_id, source)
+            ).fetchone()
+            if row:
+                _qb_tag_torrent(infohash)
+        return jsonify({'status': 'grab_processed'}), 200
+
     if event_type not in ('Download', 'EpisodeFileRenamed'):
         return jsonify({'status': 'ignored'}), 200
+
+    # Skip first-time RSS grabs — only record quality upgrades of existing files
+    if event_type == 'Download' and not data.get('isUpgrade', False):
+        return jsonify({'status': 'new_content_ignored'}), 200
 
     series = data.get('series', {})
     episode_file = data.get('episodeFile', {})
@@ -1736,11 +2086,13 @@ def webhook_sonarr():
 
     composite_id = sid * 10000 + season_num
     db = get_request_db()
+    # Scope lookup to the sending instance so IDs from different instances don't collide
     row = db.execute(
-        "SELECT * FROM upgrade_queue WHERE media_id=? AND media_type='season'", (composite_id,)
+        "SELECT * FROM upgrade_queue WHERE media_id=? AND media_type='season' AND instance=?",
+        (composite_id, source)
     ).fetchone()
 
-    inst_name = row['instance'] if row else 'sonarr-unknown'
+    inst_name = row['instance'] if row else source
     before_quality = row['before_quality'] if row else None
     before_score = row['before_score'] if row else None
     tier = row['priority_tier'] if row else None
@@ -1757,14 +2109,15 @@ def webhook_sonarr():
          new_path, after_score, tier)
     )
 
-    db.execute(
-        """UPDATE upgrade_queue SET status='found', searched_at=CURRENT_TIMESTAMP
-           WHERE media_id=? AND media_type='season'""",
-        (composite_id,)
-    )
+    if row:
+        db.execute(
+            """UPDATE upgrade_queue SET status='found', searched_at=CURRENT_TIMESTAMP
+               WHERE media_id=? AND media_type='season' AND instance=?""",
+            (composite_id, source)
+        )
     db.commit()
 
-    log.info(f"[webhook] Sonarr import: {season_title} -> {new_path}")
+    log.info(f"[webhook] Sonarr import ({source}): {season_title} -> {new_path}")
     return jsonify({'status': 'recorded'}), 200
 
 # ---------------------------------------------------------------------------
@@ -1811,6 +2164,42 @@ def api_queue_search(item_id):
     else:
         return jsonify({'error': 'Search command failed'}), 500
 
+
+@app.route('/api/queue/<int:item_id>/reset', methods=['POST'])
+@require_auth
+def api_queue_reset(item_id):
+    """Clear cooldown and decrement search count so the next sweep re-searches this item."""
+    db = get_request_db()
+    row = db.execute("SELECT id, title FROM upgrade_queue WHERE id=?", (item_id,)).fetchone()
+    if not row:
+        return jsonify({'error': 'Not found'}), 404
+    db.execute(
+        "UPDATE upgrade_queue SET cooldown_until=NULL, search_count=MAX(0, search_count-1), status='pending' WHERE id=?",
+        (item_id,)
+    )
+    db.commit()
+    return jsonify({'status': 'reset'})
+
+
+@app.route('/api/queue/reset-all', methods=['POST'])
+@require_auth
+def api_queue_reset_all():
+    """Clear cooldowns on all pending items matching optional tier/instance filters."""
+    data = request.get_json(silent=True) or {}
+    tier_f = data.get('tier')
+    inst_f = data.get('instance')
+    where, params = ["status='pending'"], []
+    if tier_f: where.append("priority_tier=?"); params.append(tier_f)
+    if inst_f: where.append("instance=?");      params.append(inst_f)
+    wc = "WHERE " + " AND ".join(where)
+    db = get_request_db()
+    affected = db.execute(
+        f"UPDATE upgrade_queue SET cooldown_until=NULL, search_count=MAX(0, search_count-1) {wc}",
+        params
+    ).rowcount
+    db.commit()
+    return jsonify({'status': 'reset', 'affected': affected})
+
 # ---------------------------------------------------------------------------
 # Upgrade History page
 # ---------------------------------------------------------------------------
@@ -1821,16 +2210,40 @@ def upgrades_page():
     db = get_request_db()
     page = max(1, request.args.get('page', 1, type=int))
     per_page = 50
-    offset = (page - 1) * per_page
+    inst_f   = request.args.get('instance', '')
+    tier_f   = request.args.get('tier', '')
+    search_q = request.args.get('q', '').strip()
+    date_f   = request.args.get('date', '').strip()
+    if date_f == 'today':
+        date_f = datetime.utcnow().strftime('%Y-%m-%d')
 
-    total = db.execute("SELECT COUNT(*) as cnt FROM upgrade_history").fetchone()['cnt']
+    _allowed_sort = {'imported_at', 'instance', 'title', 'tier', 'before_quality', 'after_quality', 'score_delta'}
+    sort_col = request.args.get('sort', 'imported_at')
+    sort_dir = request.args.get('order', 'desc')
+    if sort_col not in _allowed_sort: sort_col = 'imported_at'
+    if sort_dir not in ('asc', 'desc'): sort_dir = 'desc'
+
+    order_expr = '(after_score - before_score)' if sort_col == 'score_delta' else sort_col
+
+    where, params = [], []
+    if inst_f:   where.append("instance=?");          params.append(inst_f)
+    if tier_f:   where.append("tier=?");              params.append(tier_f)
+    if search_q: where.append("title LIKE ?");        params.append(f'%{search_q}%')
+    if date_f:   where.append("date(imported_at)=?"); params.append(date_f)
+    wc = ("WHERE " + " AND ".join(where)) if where else ""
+
+    total = db.execute(f"SELECT COUNT(*) as cnt FROM upgrade_history {wc}", params).fetchone()['cnt']
     items = db.execute(
-        "SELECT * FROM upgrade_history ORDER BY imported_at DESC LIMIT ? OFFSET ?",
-        (per_page, offset)
+        f"SELECT * FROM upgrade_history {wc} ORDER BY {order_expr} {sort_dir} LIMIT ? OFFSET ?",
+        params + [per_page, (page - 1) * per_page]
     ).fetchall()
 
     return render_template('upgrades.html', items=items, total=total,
-                           page=page, per_page=per_page, fmt_dt=fmt_dt)
+                           page=page, per_page=per_page, fmt_dt=fmt_dt,
+                           instance_filter=inst_f, tier_filter=tier_f,
+                           search_query=search_q, date_filter=date_f,
+                           sort_col=sort_col, sort_dir=sort_dir,
+                           instances=list(get_instances_request().keys()))
 
 # ---------------------------------------------------------------------------
 # Init

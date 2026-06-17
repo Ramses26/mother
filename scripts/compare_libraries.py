@@ -73,6 +73,11 @@ UNRAID_PATHS = {
 # Path translations: Inventory paths → Mother mount paths
 # Inventories are generated on Terminus (for Unraid) and Mother (for Synology)
 PATH_TRANSLATIONS = [
+    # Unraid Agent inventory paths (local Unraid) → Mother CIFS mount paths
+    ('/mnt/user/Media/4K Movies', '/mnt/unraid/media/4K Movies'),
+    ('/mnt/user/Media/4K TV Shows', '/mnt/unraid/media/4K TV Shows'),
+    ('/mnt/user/Media/Movies', '/mnt/unraid/media/Movies'),
+    ('/mnt/user/Media/TV Shows', '/mnt/unraid/media/TV Shows'),
     # Terminus inventory paths → Mother mount paths (Unraid)
     ('/mnt/media/4K Movies', '/mnt/unraid/media/4K Movies'),
     ('/mnt/media/4K TV Shows', '/mnt/unraid/media/4K TV Shows'),
@@ -90,10 +95,6 @@ EXCLUDED_TITLES = [
     'Despecialized Edition',
     'Sacred Timeline Cut',
     'Infinity Saga',
-    # Concerts/live performances
-    'Live in New York',
-    'Live at',
-    'Concert',
     # Extended versions split into parts
     'Extended Version.*Chapter',
     'Extended Version.*part',
@@ -104,18 +105,24 @@ EXCLUDED_PATHS = [
     'Despecialized Edition',
     'Sacred Timeline Cut',
     'Infinity Saga',
-    'Adele Live in New York',
     'Hateful Eight, The - Extended Version',
 ]
 
+# File extensions to exclude — raw broadcast captures (.ts) that need format upgrade
+# Concerts/live shows in proper MKV containers are synced normally
+EXCLUDED_EXTENSIONS = ['.ts']
+
 def is_excluded(file_path: str, title: str) -> bool:
-    """Check if a file should be excluded from comparison (fan edits, concerts, etc.)"""
+    """Check if a file should be excluded from comparison (fan edits, raw broadcast captures, etc.)"""
     for pattern in EXCLUDED_PATHS:
         if pattern.lower() in file_path.lower():
             return True
     for pattern in EXCLUDED_TITLES:
         if re.search(pattern, title, re.IGNORECASE):
             return True
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext in EXCLUDED_EXTENSIONS:
+        return True
     return False
 
 def translate_path_to_mother(path: str) -> str:
@@ -467,6 +474,20 @@ def match_files(ali_files: List[MediaFile], chris_files: List[MediaFile]) -> Dic
         chris_set = [f for f in chris_by_title_year.get(title_year, []) if id(f) not in chris_matched]
         if ali_set or chris_set:
             key = f'title-{title_year}'
+            matches[key] = (ali_set, chris_set, 'title_year')
+            for f in ali_set:
+                ali_matched.add(id(f))
+            for f in chris_set:
+                chris_matched.add(id(f))
+
+    # Pass 3.5: Match remaining by title alone (no year) — catches fan films,
+    # web series, etc. that lack a year in the filename. Only match when BOTH
+    # sides have the title to avoid false positives from unique items.
+    for title in set(ali_by_title.keys()) | set(chris_by_title.keys()):
+        ali_set = [f for f in ali_by_title.get(title, []) if id(f) not in ali_matched and not f.year]
+        chris_set = [f for f in chris_by_title.get(title, []) if id(f) not in chris_matched and not f.year]
+        if ali_set and chris_set:
+            key = f'title_only-{title}'
             matches[key] = (ali_set, chris_set, 'title_year')
             for f in ali_set:
                 ali_matched.add(id(f))
@@ -903,7 +924,7 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
                 lib_type = result.ali_file.library_type or ''
                 is_tv = 'tv' in lib_type.lower() or 'TV Shows' in src_file
 
-                if '4k' in lib_type.lower() or '4k' in src_file.lower():
+                if '4k' in lib_type.lower():
                     if is_tv:
                         dest = SYNOLOGY_PATHS['tv_4k']
                     else:
@@ -943,7 +964,7 @@ def generate_reports(all_results: List[ComparisonResult], misplaced_files: List[
                 lib_type = result.chris_file.library_type or ''
                 is_tv = 'tv' in lib_type.lower() or 'rs-tv' in src_file
 
-                if '4k' in lib_type.lower() or '4k' in src_file.lower():
+                if '4k' in lib_type.lower():
                     if is_tv:
                         dest = UNRAID_PATHS['tv_4k']
                     else:
@@ -1246,29 +1267,32 @@ def main():
     # Default is to skip (--skip-upgrade-candidates=True), but --include-upgrade-candidates overrides
     skip_upgrades = args.skip_upgrade_candidates and not getattr(args, 'include_upgrade_candidates', False)
 
-    # Filter out 720p files if requested (Huntarr will upgrade these)
+    # SYNC STRATEGY: 720p and x265-no-HDR files are intentionally excluded from the
+    # sync comparison. Upgraderr (Tier 3) handles upgrading 720p → 1080p on Chris's side.
+    # Once upgraded to 1080p, the sync loop picks up the quality version automatically.
+    # Copying 720p files cross-library is wasteful — Upgraderr would then need to upgrade
+    # them on both sides instead of one. recyclarr also blocks x265-no-HDR at 1080p.
+    # These filters apply to BOTH sides so neither library propagates low-quality versions.
     if args.skip_720p or skip_upgrades:
         ali_720p = len([f for f in ali_files if f.resolution == '720p'])
         chris_720p = len([f for f in chris_files if f.resolution == '720p'])
         ali_files = [f for f in ali_files if f.resolution != '720p']
         chris_files = [f for f in chris_files if f.resolution != '720p']
-        print(f"   Skipped 720p: Ali={ali_720p}, Chris={chris_720p} (Huntarr will upgrade)")
+        print(f"   Skipped 720p: Ali={ali_720p}, Chris={chris_720p} (Upgraderr handles 720p→1080p upgrades)")
 
-    # Filter out x265 no-HDR at 1080p if requested (recyclarr blocks these, Huntarr will upgrade)
     if skip_upgrades:
         def is_upgrade_candidate(f: MediaFile) -> bool:
-            """Check if file will likely be upgraded by Huntarr"""
+            """x265 without HDR at 1080p — recyclarr blocks these, Upgraderr will find better source"""
             is_x265 = f.codec in ['HEVC', 'H.265', 'x265']
             has_hdr = f.hdr and f.hdr not in ['', 'None', 'SDR']
             is_1080p = f.library_type in ['1080p_movies', '1080p_tv']
-            # x265 without HDR at 1080p = recyclarr blocks, Huntarr will upgrade
             return is_x265 and not has_hdr and is_1080p
 
         ali_x265_no_hdr = len([f for f in ali_files if is_upgrade_candidate(f)])
         chris_x265_no_hdr = len([f for f in chris_files if is_upgrade_candidate(f)])
         ali_files = [f for f in ali_files if not is_upgrade_candidate(f)]
         chris_files = [f for f in chris_files if not is_upgrade_candidate(f)]
-        print(f"   Skipped x265 (no HDR) at 1080p: Ali={ali_x265_no_hdr}, Chris={chris_x265_no_hdr} (recyclarr blocks)")
+        print(f"   Skipped x265 (no HDR) at 1080p: Ali={ali_x265_no_hdr}, Chris={chris_x265_no_hdr} (recyclarr blocks, Upgraderr upgrades)")
 
     # Find misplaced files
     misplaced_files = [f for f in ali_files + chris_files if not f.is_valid_placement]

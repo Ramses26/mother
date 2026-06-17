@@ -239,6 +239,20 @@ async function searchNow(itemId) {
   }
 }
 
+async function resetCooldown(itemId, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true;
+  try {
+    await apiFetch(`/api/queue/${itemId}/reset`, 'POST');
+    btn.textContent = '\u2713';
+    btn.title = 'Cooldown cleared \u2014 will search on next sweep';
+    setTimeout(() => { btn.disabled = false; btn.textContent = orig; }, 3000);
+  } catch(e) {
+    btn.textContent = '\u2717';
+    setTimeout(() => { btn.disabled = false; btn.textContent = orig; }, 3000);
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 async function apiFetch(url, method = 'GET', body = null) {

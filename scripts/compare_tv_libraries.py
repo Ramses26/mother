@@ -239,12 +239,37 @@ def load_tv_inventory(inventory_path: Path) -> List[TVEpisode]:
                 season = s
                 episode = first_ep
 
+        tvdb_id = item.get('tvdb_id', '')
+        if not tvdb_id:
+            # Extract from show folder name (e.g., "Breaking Bad {tvdb-81189}")
+            tvdb_match = re.search(r'\{tvdb-(\d+)\}', show_folder, re.IGNORECASE)
+            if tvdb_match:
+                tvdb_id = tvdb_match.group(1)
+
+        # Compute relative_path if not provided (Unraid Agent doesn't set it)
+        relative_path = item.get('relative_path', '')
+        if not relative_path:
+            item_path = item.get('path', '')
+            for lib_root in [
+                '/mnt/user/Media/4K TV Shows/',
+                '/mnt/user/Media/TV Shows/',
+                '/mnt/unraid/media/4K TV Shows/',
+                '/mnt/unraid/media/TV Shows/',
+                '/mnt/media/4K TV Shows/',
+                '/mnt/media/TV Shows/',
+                '/mnt/synology/rs-4kmedia/4ktv/',
+                '/mnt/synology/rs-tv/',
+            ]:
+                if item_path.startswith(lib_root):
+                    relative_path = item_path[len(lib_root):]
+                    break
+
         ep = TVEpisode(
             filename=item.get('filename', ''),
             path=item.get('path', ''),
-            relative_path=item.get('relative_path', ''),
+            relative_path=relative_path,
             show_folder=show_folder,
-            tvdb_id=item.get('tvdb_id', ''),
+            tvdb_id=tvdb_id,
             season=season,
             episode=episode,
             episode_title=item.get('episode_title', ''),
@@ -311,7 +336,10 @@ def compare_libraries(ali_episodes: List[TVEpisode], chris_episodes: List[TVEpis
 def translate_path_for_rsync(path: str, source: str) -> str:
     """Translate inventory path to rsync-compatible path on Mother"""
     if source == 'ali':
-        # Ali's paths: /mnt/media/TV Shows/... -> /mnt/unraid/media/TV Shows/...
+        # Unraid Agent inventory paths (/mnt/user/Media/...)
+        path = path.replace('/mnt/user/Media/4K TV Shows', '/mnt/unraid/media/4K TV Shows')
+        path = path.replace('/mnt/user/Media/TV Shows', '/mnt/unraid/media/TV Shows')
+        # Legacy Terminus inventory paths (/mnt/media/...)
         path = path.replace('/mnt/media/', '/mnt/unraid/media/')
     # Chris's paths are already correct for Mother
     return path

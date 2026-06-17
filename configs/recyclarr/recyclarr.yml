@@ -1,5 +1,6 @@
 ###############################################################################
 # Recyclarr Configuration - Project Mother
+# Version: v8 format (recyclarr v8.x)
 #
 # Profiles:
 #   Radarr-HD:  HD Bluray + WEB, Remux + WEB 1080p
@@ -10,8 +11,11 @@
 # Key customizations:
 # - x265 (no HDR/DV) blocking for 1080p (allows HDR x265, blocks SDR x265)
 # - Unwanted release blockers
+# - Atmos/surround audio bonuses
+# - until_quality set to profile maximum (highest quality tier in each profile)
+# - until_score: -9999 (prevent Radarr CF-score-chasing autonomous searches)
 #
-# Last Updated: 2026-01-01
+# Last Updated: 2026-04-26 (migrated v7->v8)
 ###############################################################################
 
 radarr:
@@ -23,35 +27,31 @@ radarr:
     base_url: http://radarr-hd:7878
     api_key: !env_var RADARR_HD_API_KEY
 
+    quality_definition:
+      type: movie
+
     delete_old_custom_formats: true
-    replace_existing_custom_formats: true
 
-    include:
-      - template: radarr-quality-definition-movie
-      # HD Bluray + WEB profile
-      - template: radarr-quality-profile-hd-bluray-web
-      - template: radarr-custom-formats-hd-bluray-web
-      # Remux + WEB 1080p profile
-      - template: radarr-quality-profile-remux-web-1080p
-      - template: radarr-custom-formats-remux-web-1080p
-
-    # Upgrades DISABLED - prioritizing initial sync (re-enable with Huntarr later)
     quality_profiles:
-      - name: HD Bluray + WEB
+      - trash_id: d1d67249d3890e49bc12e275d989a7e9  # HD Bluray + WEB
+        reset_unmatched_scores:
+          enabled: true
         upgrade:
-          allowed: false
+          allowed: true
           until_quality: Bluray-1080p
-          until_score: 10000
-      - name: Remux + WEB 1080p
+          until_score: -9999
+
+      - trash_id: 9ca12ea80aa55ef916e3751f4b874151  # Remux + WEB 1080p
+        reset_unmatched_scores:
+          enabled: true
         upgrade:
-          allowed: false
+          allowed: true
           until_quality: Remux-1080p
-          until_score: 10000
+          until_score: -9999
 
     custom_formats:
       # Movie Versions
       - trash_ids:
-      # Uncomment any of the following lines to prefer these movie versions
           - 570bc9ebecd92723d2d21500f4be314c # Remaster
           - eca37840c13c6ef2dd0262b141a5482f # 4K Remaster
           - e0c07d59beb37348e975a930d5e50319 # Criterion Collection
@@ -64,7 +64,7 @@ radarr:
           - name: HD Bluray + WEB
           - name: Remux + WEB 1080p
 
-      # Optional
+      # Unwanted releases
       - trash_ids:
           - b6832f586342ef70d9c128d40c07b872 # Bad Dual Groups
           - e204b80c87be9497a8a6eaff48f72905 # LQ (Release Title)
@@ -77,29 +77,31 @@ radarr:
           - name: HD Bluray + WEB
           - name: Remux + WEB 1080p
 
+      # x265 (HD) at score 0 — allows HDR x265 without penalty
       - trash_ids:
-          # Uncomment the next six lines to allow x265 HD releases with HDR/DV
           - dc98083864ea246d05a42df0d05f81cc # x265 (HD)
         assign_scores_to:
           - name: HD Bluray + WEB
             score: 0
           - name: Remux + WEB 1080p
             score: 0
+
+      # x265 (no HDR/DV) — block SDR x265 at 1080p
       - trash_ids:
           - 839bea857ed2c0a8e084f3cbdbd65ecb # x265 (no HDR/DV)
         assign_scores_to:
           - name: HD Bluray + WEB
           - name: Remux + WEB 1080p
 
-      #Not all Devices support DV, therefore adding DV w/o HDR fallback 
+      # DV without HDR fallback + HDR formats
       - trash_ids:
-          - 923b6abef9b17f937fab56cfcf89e1f1 #DV (w/o HDR fallback)
-          - 493b6d1dbec3c3364c59d7607f7e3405 #HDR Formats
+          - 923b6abef9b17f937fab56cfcf89e1f1 # DV (w/o HDR fallback)
+          - 493b6d1dbec3c3364c59d7607f7e3405 # HDR Formats
         assign_scores_to:
           - name: HD Bluray + WEB
           - name: Remux + WEB 1080p
 
-      # Premium audio formats (Radarr HD)
+      # Premium audio formats
       - trash_ids:
           - 496f355514737f7d83bf7aa4d24f8169 # TrueHD Atmos
         assign_scores_to:
@@ -142,7 +144,7 @@ radarr:
           - name: HD Bluray + WEB
           - name: Remux + WEB 1080p
 
-      # Surround channel preference (Radarr HD)
+      # Surround channel bonuses
       - trash_ids:
           - 77ff61788dfe1097194fd8743d7b4524 # 5.1 Surround
         assign_scores_to:
@@ -166,8 +168,6 @@ radarr:
             score: 200
 
 
-
-
   #---------------------------------------------------------------------------
   # Radarr-4K: 4K Movies
   # Profiles: UHD Bluray + WEB, Remux + WEB 2160p
@@ -176,132 +176,123 @@ radarr:
     base_url: http://radarr-4k:7878
     api_key: !env_var RADARR_4K_API_KEY
 
-    delete_old_custom_formats: true
-    replace_existing_custom_formats: true
+    quality_definition:
+      type: movie
 
-    include:
-      - template: radarr-quality-definition-movie
-      # UHD Bluray + WEB profile
-      - template: radarr-quality-profile-uhd-bluray-web
-      - template: radarr-custom-formats-uhd-bluray-web
-      # Remux + WEB 2160p profile
-      - template: radarr-quality-profile-remux-web-2160p
-      - template: radarr-custom-formats-remux-web-2160p
+    delete_old_custom_formats: true
+
+    quality_profiles:
+      - trash_id: 64fb5f9858489bdac2af690e27c8f42f  # UHD Bluray + WEB
+        reset_unmatched_scores:
+          enabled: true
+        upgrade:
+          allowed: true
+          until_quality: Bluray-2160p
+          until_score: -9999
+
+      - trash_id: fd161a61e3ab826d3a22d53f935696dd  # Remux + WEB 2160p
+        reset_unmatched_scores:
+          enabled: true
+        upgrade:
+          allowed: true
+          until_quality: Remux-2160p
+          until_score: -9999
 
     custom_formats:
-          # Audio
+      # Audio formats
       - trash_ids:
-          # Uncomment the next section to enable Advanced Audio Formats
-           - 496f355514737f7d83bf7aa4d24f8169 # TrueHD Atmos
-           - 2f22d89048b01681dde8afe203bf2e95 # DTS X
-           - 417804f7f2c4308c1f4c5d380d4c4475 # ATMOS (undefined)
-           - 1af239278386be2919e1bcee0bde047e # DD+ ATMOS
-           - 3cafb66171b47f226146a0770576870f # TrueHD
-           - dcf3ec6938fa32445f590a4da84256cd # DTS-HD MA
-           - a570d4a0e56a2874b64e5bfa55202a1b # FLAC
-           - e7c2fcae07cbada050a0af3357491d7b # PCM
-           - 8e109e50e0a0b83a5098b056e13bf6db # DTS-HD HRA
-           - 185f1dd7264c4562b9022d963ac37424 # DD+
-           - f9f847ac70a0af62ea4a08280b859636 # DTS-ES
-           - 1c1a4c5e823891c75bc50380a6866f73 # DTS
-           - 240770601cc226190c367ef59aba7463 # AAC
-           - c2998bd0d90ed5621d8df281e839436e # DD
+          - 496f355514737f7d83bf7aa4d24f8169 # TrueHD Atmos
+          - 2f22d89048b01681dde8afe203bf2e95 # DTS X
+          - 417804f7f2c4308c1f4c5d380d4c4475 # ATMOS (undefined)
+          - 1af239278386be2919e1bcee0bde047e # DD+ ATMOS
+          - 3cafb66171b47f226146a0770576870f # TrueHD
+          - dcf3ec6938fa32445f590a4da84256cd # DTS-HD MA
+          - a570d4a0e56a2874b64e5bfa55202a1b # FLAC
+          - e7c2fcae07cbada050a0af3357491d7b # PCM
+          - 8e109e50e0a0b83a5098b056e13bf6db # DTS-HD HRA
+          - 185f1dd7264c4562b9022d963ac37424 # DD+
+          - f9f847ac70a0af62ea4a08280b859636 # DTS-ES
+          - 1c1a4c5e823891c75bc50380a6866f73 # DTS
+          - 240770601cc226190c367ef59aba7463 # AAC
+          - c2998bd0d90ed5621d8df281e839436e # DD
         assign_scores_to:
           - name: UHD Bluray + WEB
           - name: Remux + WEB 2160p
 
       # Movie Versions
       - trash_ids:
-      # Uncomment any of the following lines to prefer these movie versions
-           - 570bc9ebecd92723d2d21500f4be314c # Remaster
-           - eca37840c13c6ef2dd0262b141a5482f # 4K Remaster
-           - e0c07d59beb37348e975a930d5e50319 # Criterion Collection
-           - 9d27d9d2181838f76dee150882bdc58c # Masters of Cinema
-           - db9b4c4b53d312a3ca5f1378f6440fc9 # Vinegar Syndrome
-           - 957d0f44b592285f26449575e8b1167e # Special Edition
-           - eecf3a857724171f968a66cb5719e152 # IMAX
-           - 9f6cbff8cfe4ebbc1bde14c7b7bec0de # IMAX Enhanced          
-        assign_scores_to:
-          - name: UHD Bluray + WEB
-          - name: Remux + WEB 2160p           
-          
-      # Optional unwanted release filters
-      - trash_ids:
-          - b6832f586342ef70d9c128d40c07b872  # Bad Dual Groups
-          - e204b80c87be9497a8a6eaff48f72905  # LQ (Release Title)
-          - ae9b7c9ebde1f3bd336a8cbd1ec4c5e5  # No-RlsGroup
-          - 7357cf5161efbf8c4d5d0c30b4815ee2  # Obfuscated
-          - 5c44f52a8714fdd79bb4d98e2673be1f  # Retags
-          - f537cf427b64c38c8e36298f657e4828  # Scene
+          - 570bc9ebecd92723d2d21500f4be314c # Remaster
+          - eca37840c13c6ef2dd0262b141a5482f # 4K Remaster
+          - e0c07d59beb37348e975a930d5e50319 # Criterion Collection
+          - 9d27d9d2181838f76dee150882bdc58c # Masters of Cinema
+          - db9b4c4b53d312a3ca5f1378f6440fc9 # Vinegar Syndrome
+          - 957d0f44b592285f26449575e8b1167e # Special Edition
+          - eecf3a857724171f968a66cb5719e152 # IMAX
+          - 9f6cbff8cfe4ebbc1bde14c7b7bec0de # IMAX Enhanced
         assign_scores_to:
           - name: UHD Bluray + WEB
           - name: Remux + WEB 2160p
 
-            
+      # Unwanted releases
       - trash_ids:
-          # Uncomment the next six lines to allow x265 HD releases with HDR/DV
-          # - dc98083864ea246d05a42df0d05f81cc # x265 (HD)
-        # assign_scores_to:
-          # - name: UHD Bluray + WEB
-            # score: 0
-      # - trash_ids:
-          # - 839bea857ed2c0a8e084f3cbdbd65ecb # x265 (no HDR/DV)
+          - b6832f586342ef70d9c128d40c07b872 # Bad Dual Groups
+          - e204b80c87be9497a8a6eaff48f72905 # LQ (Release Title)
+          - ae9b7c9ebde1f3bd336a8cbd1ec4c5e5 # No-RlsGroup
+          - 7357cf5161efbf8c4d5d0c30b4815ee2 # Obfuscated
+          - 5c44f52a8714fdd79bb4d98e2673be1f # Retags
+          - f537cf427b64c38c8e36298f657e4828 # Scene
         assign_scores_to:
           - name: UHD Bluray + WEB
-          - name: Remux + WEB 2160p  
+          - name: Remux + WEB 2160p
 
+      # Surround channel bonuses
       - trash_ids:
-          # Comment out the next line if you and all of your users' setups are fully DV compatible
-          #- 923b6abef9b17f937fab56cfcf89e1f1 # DV (w/o HDR fallback)
+          - 77ff61788dfe1097194fd8743d7b4524 # 5.1 Surround
+        assign_scores_to:
+          - name: UHD Bluray + WEB
+            score: 100
+          - name: Remux + WEB 2160p
+            score: 100
+      - trash_ids:
+          - 6fd7b090c3f7317502ab3b63cc7f51e3 # 6.1 Surround
+        assign_scores_to:
+          - name: UHD Bluray + WEB
+            score: 150
+          - name: Remux + WEB 2160p
+            score: 150
+      - trash_ids:
+          - e77382bcfeba57cb83744c9c5449b401 # 7.1 Surround
+        assign_scores_to:
+          - name: UHD Bluray + WEB
+            score: 200
+          - name: Remux + WEB 2160p
+            score: 200
 
-          # HDR10+ Boost - Uncomment the HDR10+ Boost line if you want to prefer HDR10+ releases
-          # DV Boost - Uncomment the DV Boost line if you want to prefer DV releases
-          # Uncomment both lines if you want to prefer both (DV HDR10+)
-          # - b337d6812e06c200ec9a2d3cfa9d20a7 # DV Boost
-          # - caa37d0df9c348912df1fb1d88f9273a # HDR10+ Boost
-
-    # Enable upgrades - Huntarr will trigger searches, Radarr handles upgrades
-    quality_profiles:
-      - name: UHD Bluray + WEB
-        upgrade:
-          allowed: false
-          until_quality: Bluray-2160p
-          until_score: 10000
-      - name: Remux + WEB 2160p
-        upgrade:
-          allowed: false
-          until_quality: Remux-2160p
-          until_score: 10000
 
 sonarr:
   #---------------------------------------------------------------------------
   # Sonarr-HD: 1080p TV Shows
   # Profiles: WEB-1080p, Bluray-1080p, Remux-1080p
+  # Note: Bluray-1080p and Remux-1080p have no official TRaSH templates.
+  # WEB-1080p uses trash_id but with custom qualities (adds Bluray-1080p).
   #---------------------------------------------------------------------------
   sonarr-hd:
     base_url: http://sonarr-hd:8989
     api_key: !env_var SONARR_HD_API_KEY
 
-    delete_old_custom_formats: true
-    replace_existing_custom_formats: true
+    quality_definition:
+      type: series
 
-    include:
-      # Comment out any of the following includes to disable them
-      - template: sonarr-quality-definition-series
-      # Choose between the standard or alternative quality profile setup (choose one only)
-      - template: sonarr-v4-quality-profile-web-1080p
-      # - template: sonarr-v4-quality-profile-web-1080p-alternative
-      #- template: sonarr-v4-custom-formats-web-1080p
-      
-    # Enable upgrades - Huntarr will trigger searches, Sonarr handles upgrades
+    delete_old_custom_formats: true
+
     quality_profiles:
-      - name: WEB-1080P
+      - name: WEB-1080p
         reset_unmatched_scores:
           enabled: true
         upgrade:
-          allowed: false
+          allowed: true
           until_quality: WEB 1080p
-          until_score: 10000
+          until_score: -9999
         min_format_score: 0
         quality_sort: top
         qualities:
@@ -311,16 +302,13 @@ sonarr:
               - WEBRip-1080p
           - name: Bluray-1080p
 
-    # Custom Bluray and Remux profiles for Sonarr
-    # (TRaSH doesn't have official templates for these)
-
       - name: Bluray-1080p
         reset_unmatched_scores:
           enabled: true
         upgrade:
-          allowed: false
+          allowed: true
           until_quality: Bluray-1080p
-          until_score: 10000
+          until_score: -9999
         min_format_score: 0
         quality_sort: top
         qualities:
@@ -334,9 +322,9 @@ sonarr:
         reset_unmatched_scores:
           enabled: true
         upgrade:
-          allowed: false
+          allowed: true
           until_quality: Bluray-1080p Remux
-          until_score: 10000
+          until_score: -9999
         min_format_score: 0
         quality_sort: top
         qualities:
@@ -345,24 +333,21 @@ sonarr:
           - name: WEB 1080p
             qualities:
               - WEBDL-1080p
-              - WEBRip-1080p    
+              - WEBRip-1080p
 
     custom_formats:
-      # Optional unwanted release filters
+      # Unwanted + tier scoring
       - trash_ids:
           - 3bc5f395426614e155e585a2f056cdf1  # Season Pack
-        #  Misc
           - ec8fa7296b64e8cd390a1600981f3923  # Repack/Proper
           - eb3d5cc0a2be0db205fb823640db6a3c  # Repack2
           - 44e7c4de10ae50265753082e5dc76047  # Repack3
-          
-        # GQ Source Groups  
+          # GQ Source Groups
           - e6258996055b9fbab7e9cb2f75819294  # Web Tier 01
           - 58790d4e2fdcd9733aa7ae68ba2bb503  # Web Tier 02
           - d84935abd3f8556dcd51d4f27e22d0a6  # Web Tier 03
           - d0c516558625b04b363fa6c5c2c7cfd4  # Web Scene
-
-        # Streaming Services  
+          # Streaming Services
           - d660701077794679fd59e8bdf4ce3a29 # AMZN
           - f67c9ca88f463a48346062e8ad07713f # ATVP
           - 77a7b25585c18af08f60b1547bb9b4fb # CC
@@ -381,27 +366,23 @@ sonarr:
           - 1efe8da11bfd74fbbcd4d8117ddb9213 # STAN
           - 9623c5c9cac8e939c1b9aedd32f640bf # SYFY
           - 218e93e5702f44a68ad9e3c6ba87d2f0 # HD Streaming Boost
-        
-        # unwanted
-        
+          # Unwanted
           - 32b367365729d530ca1c124a0b180c64  # Bad Dual Groups
           - e2315f990da2e2cbfc9fa5b7a6fcfe48  # LQ (Release Title)
           - 9c11cd3f07101cdba90a2d81cf0e56b4  # LQ
           - 82d40da2bc6923f41e14394075dd4b03  # No-RlsGroup
           - e1a997ddb54e3ecbfe06341ad323c458  # Obfuscated
           - 06d66ab109d4d2eddb2794d21526d140  # Retags
-          - 85c61753df5da1fb2aab6f2a47426b09  # BR-Disk 
-          - 32b367365729d530ca1c124a0b180c64  # Bad Dual Groups
+          - 85c61753df5da1fb2aab6f2a47426b09  # BR-Disk
           - 15a05bc7c1a36e2b57fd628f8977e2fc  # AV1
           - fbcb31d8dabd2a319072b84fc0b7249c  # Extras
-          - 47435ece6b99a0b477caf360e79ba0bb # x265 (HD)
-          
+          - 47435ece6b99a0b477caf360e79ba0bb  # x265 (HD)
         assign_scores_to:
           - name: WEB-1080p
           - name: Bluray-1080p
           - name: Remux-1080p
 
-        #Adding scene as 100 so if there aren't any other better quality, download scene
+      # Scene gets slight bonus (fallback when nothing better available)
       - trash_ids:
           - 1b3994c551cbb92a2c781af061f4ab44  # Scene
         assign_scores_to:
@@ -411,7 +392,6 @@ sonarr:
             score: 100
           - name: Remux-1080p
             score: 100
-
 
       # Premium audio formats
       - trash_ids:
@@ -464,7 +444,7 @@ sonarr:
           - name: Bluray-1080p
           - name: Remux-1080p
 
-      # Surround channel preference
+      # Surround channel bonuses
       - trash_ids:
           - 3fbafa924f361e66fbc6187af82dfa85 # 5.1 Surround
         assign_scores_to:
@@ -492,7 +472,6 @@ sonarr:
             score: 200
           - name: Remux-1080p
             score: 200
-
 
     media_naming:
       series: plex-tvdb
@@ -506,37 +485,68 @@ sonarr:
   #---------------------------------------------------------------------------
   # Sonarr-4K: 4K TV Shows
   # Profiles: WEB-2160p, Bluray-2160p, Remux-2160p
+  # Note: Bluray-2160p and Remux-2160p have no official TRaSH templates.
   #---------------------------------------------------------------------------
   sonarr-4k:
     base_url: http://sonarr-4k:8989
     api_key: !env_var SONARR_4K_API_KEY
 
-    delete_old_custom_formats: true
-    replace_existing_custom_formats: true
+    quality_definition:
+      type: series
 
-    include:
-      # Comment out any of the following includes to disable them
-      - template: sonarr-quality-definition-series
-      # Choose between the standard or alternative quality profile setup (choose one only)
-      - template: sonarr-v4-quality-profile-web-2160p
-      # - template: sonarr-v4-quality-profile-web-2160p-alternative
-      #- template: sonarr-v4-custom-formats-web-2160p
+    delete_old_custom_formats: true
+
+    quality_profiles:
+      - name: WEB-2160p
+        reset_unmatched_scores:
+          enabled: true
+        upgrade:
+          allowed: true
+          until_quality: WEB 2160p
+          until_score: -9999
+        min_format_score: 0
+        quality_sort: top
+        qualities:
+          - name: WEB 2160p
+            qualities:
+              - WEBDL-2160p
+              - WEBRip-2160p
+
+      - name: Bluray-2160p
+        reset_unmatched_scores:
+          enabled: true
+        upgrade:
+          allowed: true
+          until_quality: Bluray-2160p
+          until_score: -9999
+        min_format_score: 0
+        quality_sort: top
+        qualities:
+          - name: Bluray-2160p
+          - name: WEB 2160p
+            qualities:
+              - WEBDL-2160p
+              - WEBRip-2160p
+
+      - name: Remux-2160p
+        reset_unmatched_scores:
+          enabled: true
+        upgrade:
+          allowed: true
+          until_quality: Bluray-2160p Remux
+          until_score: -9999
+        min_format_score: 0
+        quality_sort: top
+        qualities:
+          - name: Bluray-2160p Remux
+          - name: Bluray-2160p
+          - name: WEB 2160p
+            qualities:
+              - WEBDL-2160p
+              - WEBRip-2160p
 
     custom_formats:
-      # HDR Formats
-      - trash_ids:
-          # Comment out the next line if you and all of your users' setups are fully DV compatible
-          #- 9b27ab6498ec0f31a3353992e19434ca # DV (w/o HDR fallback)
-
-          # HDR10+ Boost - Uncomment the HDR10+ Boost line if you want to prefer HDR10+ releases
-          # DV Boost - Uncomment the DV Boost line if you want to prefer DV releases
-          # Uncomment both lines if you want to prefer both (DV HDR10+)
-          # - 0c4b99df9206d2cfac3c05ab897dd62a # HDR10+ Boost
-          # - 7c3a61a9c6cb04f52f1544be6d44a026 # DV Boost
-        assign_scores_to:
-          #- name: WEB-2160p
-          
-      # Optional unwanted release filters
+      # Unwanted releases
       - trash_ids:
           - 32b367365729d530ca1c124a0b180c64  # Bad Dual Groups
           - e2315f990da2e2cbfc9fa5b7a6fcfe48  # LQ (Release Title)
@@ -600,7 +610,7 @@ sonarr:
           - name: Bluray-2160p
           - name: Remux-2160p
 
-      # Surround channel preference
+      # Surround channel bonuses
       - trash_ids:
           - 3fbafa924f361e66fbc6187af82dfa85 # 5.1 Surround
         assign_scores_to:
@@ -628,42 +638,6 @@ sonarr:
             score: 200
           - name: Remux-2160p
             score: 200
-
-
-    # Custom Bluray and Remux profiles for 4K Sonarr - upgrades enabled
-    quality_profiles:
-      - name: Bluray-2160p
-        reset_unmatched_scores:
-          enabled: true
-        upgrade:
-          allowed: false
-          until_quality: Bluray-2160p
-          until_score: 10000
-        min_format_score: 0
-        quality_sort: top
-        qualities:
-          - name: Bluray-2160p
-          - name: WEB 2160p
-            qualities:
-              - WEBDL-2160p
-              - WEBRip-2160p
-
-      - name: Remux-2160p
-        reset_unmatched_scores:
-          enabled: true
-        upgrade:
-          allowed: false
-          until_quality: Bluray-2160p Remux
-          until_score: 10000
-        min_format_score: 0
-        quality_sort: top
-        qualities:
-          - name: Bluray-2160p Remux
-          - name: Bluray-2160p
-          - name: WEB 2160p
-            qualities:
-              - WEBDL-2160p
-              - WEBRip-2160p
 
     media_naming:
       series: plex-tvdb

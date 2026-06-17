@@ -31,8 +31,15 @@ NC='\033[0m'
 # Library paths (from Mother server)
 SYNOLOGY_MOVIES_1080P="/mnt/synology/rs-movies"
 SYNOLOGY_MOVIES_4K="/mnt/synology/rs-4kmedia/4kmovies"
-UNRAID_MOVIES_1080P="/mnt/unraid/media/Movies"
-UNRAID_MOVIES_4K="/mnt/unraid/media/4K Movies"
+
+# Ali's Unraid paths as seen by the Unraid Agent (local scan, fast)
+ALI_MOVIES_1080P_AGENT="/mnt/user/Media/Movies"
+ALI_MOVIES_4K_AGENT="/mnt/user/Media/4K Movies"
+
+# Load env for Unraid Agent credentials
+set +e; set -a; source "$(dirname "$SCRIPT_DIR")/.env" 2>/dev/null; set +a; set -e
+UNRAID_AGENT_URL="${UNRAID_AGENT_URL:-http://192.168.1.10:8100}"
+UNRAID_AGENT_API_KEY="${UNRAID_AGENT_API_KEY:-}"
 
 ###############################################################################
 # Functions
@@ -87,6 +94,49 @@ generate_inventory() {
         log_error "Failed to generate inventory"
         return 1
     fi
+}
+
+fetch_ali_inventory() {
+    local ali_path="$1"
+    local output_name="$2"
+    local output_path="$INVENTORY_DIR/$output_name"
+    local encoded_path="${ali_path// /%20}"
+
+    log_info "Fetching Ali inventory via Unraid Agent: ${ali_path}"
+
+    if [ -z "$UNRAID_AGENT_API_KEY" ]; then
+        log_error "UNRAID_AGENT_API_KEY not set — cannot fetch from agent"
+        return 1
+    fi
+
+    local inv_tmp inv_http_code
+    inv_tmp=$(mktemp)
+    inv_http_code=$(curl -s -o "$inv_tmp" -w '%{http_code}' \
+        -H "X-Api-Key: ${UNRAID_AGENT_API_KEY}" \
+        "${UNRAID_AGENT_URL}/inventory?path=${encoded_path}&refresh=true" 2>/dev/null)
+
+    if [ "$inv_http_code" != "200" ]; then
+        log_error "Unraid Agent inventory failed (HTTP ${inv_http_code})"
+        rm -f "$inv_tmp"
+        return 1
+    fi
+
+    python3 -c "
+import json
+data = json.load(open('$inv_tmp'))
+items = data.get('items', data) if isinstance(data, dict) else data
+json.dump(items, open('${output_path}.json', 'w'), indent=2)
+print(len(items))
+" 2>/dev/null && {
+        local count
+        count=$(python3 -c "import json; print(len(json.load(open('${output_path}.json'))))" 2>/dev/null || echo '?')
+        log_info "✅ Ali inventory fetched: ${count} files"
+    } || {
+        log_error "Failed to parse Unraid Agent response"
+        rm -f "$inv_tmp"
+        return 1
+    }
+    rm -f "$inv_tmp"
 }
 
 run_comparison() {
@@ -159,13 +209,10 @@ main() {
     log_section "Checking Library Access"
     local synology_1080p_ok=false
     local synology_4k_ok=false
-    local unraid_1080p_ok=false
-    local unraid_4k_ok=false
 
     check_path "$SYNOLOGY_MOVIES_1080P" "Synology Movies (1080p)" && synology_1080p_ok=true
     check_path "$SYNOLOGY_MOVIES_4K" "Synology 4K Movies" && synology_4k_ok=true
-    check_path "$UNRAID_MOVIES_1080P" "Unraid Movies (1080p)" && unraid_1080p_ok=true
-    check_path "$UNRAID_MOVIES_4K" "Unraid 4K Movies" && unraid_4k_ok=true
+    log_info "Ali's inventory will be fetched from Unraid Agent (${UNRAID_AGENT_URL})"
 
     # Generate inventories
     if [ "$do_inventory" = true ]; then
@@ -175,18 +222,14 @@ main() {
             if [ "$synology_1080p_ok" = true ]; then
                 generate_inventory "$SYNOLOGY_MOVIES_1080P" "chris_movies_1080p"
             fi
-            if [ "$unraid_1080p_ok" = true ]; then
-                generate_inventory "$UNRAID_MOVIES_1080P" "ali_movies_1080p"
-            fi
+            fetch_ali_inventory "$ALI_MOVIES_1080P_AGENT" "ali_movies_1080p" || log_warn "Ali 1080p inventory unavailable — skipping"
         fi
 
         if [ "$do_4k" = true ]; then
             if [ "$synology_4k_ok" = true ]; then
                 generate_inventory "$SYNOLOGY_MOVIES_4K" "chris_movies_4k"
             fi
-            if [ "$unraid_4k_ok" = true ]; then
-                generate_inventory "$UNRAID_MOVIES_4K" "ali_movies_4k"
-            fi
+            fetch_ali_inventory "$ALI_MOVIES_4K_AGENT" "ali_movies_4k" || log_warn "Ali 4K inventory unavailable — skipping"
         fi
     fi
 

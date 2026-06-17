@@ -31,8 +31,15 @@ NC='\033[0m'
 # Library paths (from Mother server)
 SYNOLOGY_TV_1080P="/mnt/synology/rs-tv"
 SYNOLOGY_TV_4K="/mnt/synology/rs-4kmedia/4ktv"
-UNRAID_TV_1080P="/mnt/unraid/media/TV Shows"
-UNRAID_TV_4K="/mnt/unraid/media/4K TV Shows"
+
+# Ali's Unraid paths as seen by the Unraid Agent (local scan, fast)
+ALI_TV_1080P_AGENT="/mnt/user/Media/TV Shows"
+ALI_TV_4K_AGENT="/mnt/user/Media/4K TV Shows"
+
+# Load env for Unraid Agent credentials
+set +e; set -a; source "$(dirname "$SCRIPT_DIR")/.env" 2>/dev/null; set +a; set -e
+UNRAID_AGENT_URL="${UNRAID_AGENT_URL:-http://192.168.1.10:8100}"
+UNRAID_AGENT_API_KEY="${UNRAID_AGENT_API_KEY:-}"
 
 ###############################################################################
 # Functions
@@ -87,6 +94,76 @@ generate_inventory() {
         log_error "Failed to generate inventory"
         return 1
     fi
+}
+
+fetch_ali_tv_inventory() {
+    local ali_path="$1"
+    local output_name="$2"
+    local output_path="$INVENTORY_DIR/$output_name"
+    local encoded_path="${ali_path// /%20}"
+
+    log_info "Fetching Ali TV inventory via Unraid Agent: ${ali_path}"
+
+    if [ -z "$UNRAID_AGENT_API_KEY" ]; then
+        log_error "UNRAID_AGENT_API_KEY not set — cannot fetch from agent"
+        return 1
+    fi
+
+    local inv_tmp inv_http_code
+    inv_tmp=$(mktemp)
+    inv_http_code=$(curl -s -o "$inv_tmp" -w '%{http_code}' \
+        -H "X-Api-Key: ${UNRAID_AGENT_API_KEY}" \
+        "${UNRAID_AGENT_URL}/inventory?path=${encoded_path}&refresh=true" 2>/dev/null)
+
+    if [ "$inv_http_code" != "200" ]; then
+        log_error "Unraid Agent TV inventory failed (HTTP ${inv_http_code})"
+        rm -f "$inv_tmp"
+        return 1
+    fi
+
+    # Transform agent response: add tvdb_id from folder name + relative_path + show_folder
+    python3 -c "
+import json, re
+
+data = json.load(open('$inv_tmp'))
+items = data.get('items', data) if isinstance(data, dict) else data
+lib_root = '${ali_path}/'
+
+result = []
+for item in items:
+    show_folder = item.get('title', '')
+    tvdb_match = re.search(r'\{tvdb-(\d+)\}', show_folder, re.IGNORECASE)
+    tvdb_id = tvdb_match.group(1) if tvdb_match else ''
+    item_path = item.get('path', '')
+    rel_path = item_path[len(lib_root):] if item_path.startswith(lib_root) else item.get('filename', '')
+    result.append({
+        'show_folder': show_folder,
+        'title': show_folder,
+        'filename': item.get('filename', ''),
+        'path': item_path,
+        'relative_path': rel_path,
+        'size_bytes': item.get('size_bytes', 0),
+        'size_gb': item.get('size_gb', 0),
+        'resolution': item.get('resolution', ''),
+        'source': item.get('source', ''),
+        'hdr': item.get('hdr', ''),
+        'audio_codec': item.get('audio_codec', ''),
+        'video_codec': item.get('video_codec', ''),
+        'tvdb_id': tvdb_id,
+    })
+
+json.dump(result, open('${output_path}.json', 'w'), indent=2)
+print(len(result))
+" 2>/dev/null && {
+        local count
+        count=$(python3 -c "import json; print(len(json.load(open('${output_path}.json'))))" 2>/dev/null || echo '?')
+        log_info "✅ Ali TV inventory fetched: ${count} episodes"
+    } || {
+        log_error "Failed to parse Unraid Agent TV response"
+        rm -f "$inv_tmp"
+        return 1
+    }
+    rm -f "$inv_tmp"
 }
 
 run_comparison() {
@@ -159,13 +236,10 @@ main() {
     log_section "Checking Library Access"
     local synology_1080p_ok=false
     local synology_4k_ok=false
-    local unraid_1080p_ok=false
-    local unraid_4k_ok=false
 
     check_path "$SYNOLOGY_TV_1080P" "Synology TV Shows (1080p)" && synology_1080p_ok=true
     check_path "$SYNOLOGY_TV_4K" "Synology 4K TV Shows" && synology_4k_ok=true
-    check_path "$UNRAID_TV_1080P" "Unraid TV Shows (1080p)" && unraid_1080p_ok=true
-    check_path "$UNRAID_TV_4K" "Unraid 4K TV Shows" && unraid_4k_ok=true
+    log_info "Ali's TV inventory will be fetched from Unraid Agent (${UNRAID_AGENT_URL})"
 
     # Generate inventories
     if [ "$do_inventory" = true ]; then
@@ -175,18 +249,14 @@ main() {
             if [ "$synology_1080p_ok" = true ]; then
                 generate_inventory "$SYNOLOGY_TV_1080P" "chris_tv_1080p"
             fi
-            if [ "$unraid_1080p_ok" = true ]; then
-                generate_inventory "$UNRAID_TV_1080P" "ali_tv_1080p"
-            fi
+            fetch_ali_tv_inventory "$ALI_TV_1080P_AGENT" "ali_tv_1080p" || log_warn "Ali TV 1080p inventory unavailable — skipping"
         fi
 
         if [ "$do_4k" = true ]; then
             if [ "$synology_4k_ok" = true ]; then
                 generate_inventory "$SYNOLOGY_TV_4K" "chris_tv_4k"
             fi
-            if [ "$unraid_4k_ok" = true ]; then
-                generate_inventory "$UNRAID_TV_4K" "ali_tv_4k"
-            fi
+            fetch_ali_tv_inventory "$ALI_TV_4K_AGENT" "ali_tv_4k" || log_warn "Ali TV 4K inventory unavailable — skipping"
         fi
     fi
 

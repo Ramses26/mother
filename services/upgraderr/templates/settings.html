@@ -121,6 +121,12 @@
       <small>Hard cap across all instances per sweep. Default: 10</small>
     </div>
     <div class="form-group">
+      <label>Daily Search Cap (all instances combined)</label>
+      <input type="number" name="max_searches_per_day" class="form-control"
+             value="{{ cfg.max_searches_per_day }}" min="0" max="1000">
+      <small>Maximum total search commands per day (UTC). 0 = unlimited. Recommended: 25–50 to avoid sync backlog. Progress shown on dashboard.</small>
+    </div>
+    <div class="form-group">
       <label>Cooldown After Search (hours)</label>
       <input type="number" name="cooldown_hours" class="form-control"
              value="{{ cfg.cooldown_hours }}" min="1" max="720">
@@ -141,6 +147,12 @@
       <input type="number" name="season_threshold" class="form-control"
              value="{{ cfg.season_threshold }}" min="10" max="100">
       <small>If ≥ this % of a season's episodes need upgrading → use SeasonSearch (better pack chances)</small>
+    </div>
+    <div class="form-group">
+      <label>Fallback Sync After N Searches</label>
+      <input type="number" name="no_source_sync_threshold" class="form-control"
+             value="{{ cfg.no_source_sync_threshold }}" min="1" max="20">
+      <small>Sync current quality (720p/SD) to Ali if no upgrade found after this many searches. Prevents permanent gaps when no 1080p source exists.</small>
     </div>
   </div>
 </div>
