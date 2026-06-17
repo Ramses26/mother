@@ -233,6 +233,8 @@ def init_database():
             cursor.execute('ALTER TABLE sync_jobs ADD COLUMN started_at TIMESTAMP')
         if 'priority' not in columns:
             cursor.execute('ALTER TABLE sync_jobs ADD COLUMN priority INTEGER DEFAULT 0')
+        if 'delete_after_sync' not in columns:
+            cursor.execute('ALTER TABLE sync_jobs ADD COLUMN delete_after_sync TEXT DEFAULT NULL')
 
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_status ON sync_jobs(status)
@@ -270,20 +272,21 @@ def log_sync_job(job_type, source, dest, title, status, duration=None, error=Non
         logger.error(f"Could not log sync job: {e}")
 
 
-def start_sync_job(job_type, source, dest, title, quality, file_size, retry_count=0, status='in_progress'):
+def start_sync_job(job_type, source, dest, title, quality, file_size, retry_count=0, status='in_progress', delete_after_sync=None):
     """Create a job entry with the given status and return the job_id.
 
     Pass status='pending' to create the row before the semaphore is acquired
     so the history scanner and auto-retry see it immediately and skip duplicates.
     Promote to 'in_progress' via _update_job_status() once the semaphore is held.
+    Pass delete_after_sync=path to remove an old Unraid file after successful sync.
     """
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO sync_jobs (job_type, source_path, dest_path, title, quality, file_size, status, retry_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (job_type, source, dest, title, quality, file_size, status, retry_count))
+            INSERT INTO sync_jobs (job_type, source_path, dest_path, title, quality, file_size, status, retry_count, delete_after_sync)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (job_type, source, dest, title, quality, file_size, status, retry_count, delete_after_sync))
         job_id = cursor.lastrowid
         conn.commit()
         conn.close()
@@ -977,7 +980,7 @@ def format_size(size_bytes: int) -> str:
     return f"{size_bytes:.1f} PB"
 
 
-def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, dest_base: str = None, retry_count: int = 0):
+def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, dest_base: str = None, retry_count: int = 0, delete_after_sync: str = None):
     """
     Run rsync in background thread and send notification when complete.
     This allows the webhook to return immediately.
@@ -991,6 +994,7 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
         media_type: "Movie" or "Episode"
         dest_base: Base destination path for Plex section lookup (e.g., /mnt/unraid/media/TV Shows)
         retry_count: Current retry attempt (0 = first try, 1 = first retry, etc.)
+        delete_after_sync: Unraid path of old file to delete after successful sync (version replacement)
     """
     job_type = 'movie' if media_type == 'Movie' else 'episode'
     # Fall back to extracting dest_base from dest if not provided (for retries from database)
@@ -1005,7 +1009,7 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
     # Create the DB row as 'pending' NOW, before the semaphore.  This makes
     # the item visible to the history scanner and auto-retry immediately so
     # neither will re-queue it while it waits for a free slot.
-    job_id = start_sync_job(job_type, source, dest, title, quality, file_size, retry_count, status='pending')
+    job_id = start_sync_job(job_type, source, dest, title, quality, file_size, retry_count, status='pending', delete_after_sync=delete_after_sync)
 
     def do_sync():
         # Acquire semaphore to limit concurrent syncs (prevents overwhelming NFS)
@@ -1057,6 +1061,49 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                 if job_id:
                     complete_sync_job(job_id, 'success', duration=duration)
                 update_stats(job_type, success=True, file_size=file_size)
+
+                # Version sync: delete old Unraid file after successful copy
+                if job_id and not DRY_RUN:
+                    try:
+                        _conn = sqlite3.connect(DB_PATH)
+                        _row = _conn.execute('SELECT delete_after_sync FROM sync_jobs WHERE id = ?', (job_id,)).fetchone()
+                        _conn.close()
+                        old_path = _row[0] if _row else None
+                        if old_path:
+                            # Verify the new file landed at the destination first
+                            new_dest = os.path.join(dest, os.path.basename(source))
+                            if os.path.exists(new_dest):
+                                _del_resp = requests.post(
+                                    f"{UNRAID_AGENT_URL}/delete",
+                                    json={'paths': [old_path]},
+                                    headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
+                                    timeout=30
+                                )
+                                _del_result = _del_resp.json()
+                                if old_path in _del_result.get('deleted', []):
+                                    logger.info(f"Version sync: removed old file {old_path}")
+                                else:
+                                    _errs = _del_result.get('errors', {})
+                                    logger.warning(f"Version sync: Agent could not delete {old_path}: {_errs}")
+                                    send_notification(
+                                        title="⚠️ Version Sync: Old File Not Deleted",
+                                        body=f"Rsync succeeded but Agent rejected delete of old file.\nPath: {old_path}\nErrors: {_errs}",
+                                        notify_type=apprise.NotifyType.WARNING
+                                    )
+                            else:
+                                logger.warning(f"Version sync: new file not found at {new_dest} — skipping delete of {old_path}")
+                                send_notification(
+                                    title="⚠️ Version Sync: Destination Not Found",
+                                    body=f"Rsync succeeded but new file missing at destination.\nExpected: {new_dest}\nOld file NOT deleted: {old_path}",
+                                    notify_type=apprise.NotifyType.WARNING
+                                )
+                    except Exception as _e:
+                        logger.error(f"Version sync: delete-after-sync error: {_e}")
+                        send_notification(
+                            title="⚠️ Version Sync: Delete-After-Sync Error",
+                            body=f"Rsync succeeded but post-sync delete failed with exception.\nOld path: {old_path}\nError: {_e}",
+                            notify_type=apprise.NotifyType.WARNING
+                        )
 
                 msg = (
                     f"*{title}*\n"
@@ -1305,12 +1352,13 @@ def send_daily_summary():
 
 
 # Initialize scheduler for daily summary and auto-retry
-scheduler = BackgroundScheduler()
+# All times expressed in America/New_York (Eastern); APScheduler handles DST automatically.
+scheduler = BackgroundScheduler(timezone='America/New_York')
 scheduler.add_job(
     func=send_daily_summary,
     trigger='cron',
-    hour=0,
-    minute=5,  # Run at 00:05 each day
+    hour=20,
+    minute=5,  # 8:05 PM ET
     id='daily_summary',
     name='Daily sync summary',
     replace_existing=True
@@ -1808,6 +1856,313 @@ def scan_tv_gaps():
         logger.info("TV gap scanner: all identified gaps are already queued or recently synced")
 
 
+VERSION_SYNC_MAX_PER_RUN = int(os.environ.get('VERSION_SYNC_MAX_PER_RUN', '20'))
+VERSION_SYNC_DRY_RUN = os.environ.get('VERSION_SYNC_DRY_RUN', 'false').lower() == 'true'
+
+
+def reconcile_tv_versions():
+    """
+    Nightly TV version reconciliation — runs at 11:15 PM ET (after TV gap scan).
+
+    For episodes present on BOTH Synology and Unraid, checks whether the filename
+    matches. If Synology's version differs (e.g. WEB-DL vs old Remux), queues a
+    TVVersionSync job that: (1) rsyncs the Synology file to Unraid, (2) deletes
+    the old Unraid file via Agent after successful transfer.
+
+    Synology is always the source of truth — it is managed by Sonarr/Upgraderr.
+    Uses the cached Agent inventory from the TV gap scan (30-min cache, no re-scan).
+    """
+    logger.info("TV version reconcile: starting check for version mismatches...")
+
+    pause_file = os.environ.get('PAUSE_VERSION_SYNC_FILE', '/opt/mother/PAUSE_VERSION_SYNC')
+    if os.path.exists(pause_file):
+        logger.warning(f"TV version reconcile: PAUSE_VERSION_SYNC sentinel exists — skipping. Remove {pause_file} to re-enable.")
+        return
+
+    synology_tv_root = '/mnt/synology/rs-tv'
+    if not os.path.isdir(synology_tv_root):
+        logger.error("TV version reconcile: Synology TV mount not accessible")
+        return
+
+    # Fetch Unraid inventory — uses 30-min cache populated by gap scan (no refresh=true)
+    try:
+        resp = requests.get(
+            f"{UNRAID_AGENT_URL}/inventory",
+            params={'path': '/mnt/user/Media/TV Shows'},
+            headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
+            timeout=180
+        )
+        resp.raise_for_status()
+        agent_data = resp.json()
+    except Exception as e:
+        logger.error(f"TV version reconcile: Agent inventory failed: {e}")
+        return
+
+    # Build dict: (show_folder, ep_key) -> (fname, full_unraid_path)
+    # When there are multiple files for the same episode (shouldn't happen after dedup),
+    # keep the largest (best quality).
+    ep_re = re.compile(r'S(\d{1,2})E(\d{1,4})', re.IGNORECASE)
+    unraid_ep_files: dict = {}
+    for item in agent_data.get('items', []):
+        path = item.get('path', '')
+        parts = path.split('/')
+        if len(parts) < 8:
+            continue
+        show_folder = parts[5]
+        fname = parts[-1]
+        m = ep_re.search(fname)
+        if not m:
+            continue
+        ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
+        key = (show_folder, ep_key)
+        size = item.get('size_bytes', 0)
+        if key not in unraid_ep_files or size > unraid_ep_files[key][2]:
+            unraid_ep_files[key] = (fname, path, size)
+
+    skip_names = {'#recycle', '@eaDir', '.DS_Store', '.lnk', '.txt'}
+    video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v')
+    mismatches = []  # list of (syn_path, unraid_path, display_title)
+
+    for show_entry in os.scandir(synology_tv_root):
+        if not show_entry.is_dir() or show_entry.name in skip_names:
+            continue
+        show_name = show_entry.name
+        for season_entry in os.scandir(show_entry.path):
+            if not season_entry.is_dir() or season_entry.name in skip_names:
+                continue
+            for f_entry in os.scandir(season_entry.path):
+                if not f_entry.is_file():
+                    continue
+                fname = f_entry.name
+                if not fname.lower().endswith(video_exts):
+                    continue
+                if not _should_sync_tv_episode(fname):
+                    continue
+                m = ep_re.search(fname)
+                if not m:
+                    continue
+                ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
+                key = (show_name, ep_key)
+
+                if key not in unraid_ep_files:
+                    continue  # gap scanner handles missing episodes
+
+                unraid_fname, unraid_path, _ = unraid_ep_files[key]
+                if fname.lower() == unraid_fname.lower():
+                    continue  # same file — in sync
+
+                # Different filename: Synology has a different version than Unraid
+                display_title = f"{show_name} - {ep_key}"
+                mismatches.append((f_entry.path, unraid_path, display_title))
+
+    if not mismatches:
+        logger.info("TV version reconcile: all episodes in sync — no version mismatches")
+        return
+
+    logger.info(f"TV version reconcile: {len(mismatches)} version mismatch(es) found")
+
+    tv_dest_base = '/mnt/unraid/media/TV Shows'
+    queued = 0
+    queued_titles = []
+
+    for syn_path, unraid_path, display_title in mismatches:
+        if queued >= VERSION_SYNC_MAX_PER_RUN:
+            logger.info(f"TV version reconcile: capped at {VERSION_SYNC_MAX_PER_RUN} — "
+                        f"{len(mismatches) - queued} deferred to tomorrow")
+            break
+
+        if _is_already_queued(syn_path):
+            continue
+
+        try:
+            file_size = os.path.getsize(syn_path)
+        except OSError:
+            file_size = 0
+
+        season_dir = os.path.basename(os.path.dirname(syn_path))
+        show_name = os.path.basename(os.path.dirname(os.path.dirname(syn_path)))
+        dest = os.path.join(tv_dest_base, show_name, season_dir)
+
+        if VERSION_SYNC_DRY_RUN:
+            logger.info(f"[DRY RUN] TV version reconcile: would replace {display_title}\n"
+                        f"  old: {os.path.basename(unraid_path)}\n"
+                        f"  new: {os.path.basename(syn_path)}")
+            queued += 1
+            queued_titles.append(display_title)
+            continue
+
+        background_sync(
+            source=syn_path,
+            dest=dest,
+            title=display_title,
+            quality='TVVersionSync',
+            file_size=file_size,
+            media_type='Episode',
+            dest_base=tv_dest_base,
+            delete_after_sync=unraid_path,
+        )
+        queued += 1
+        queued_titles.append(display_title)
+        logger.info(f"TV version reconcile: queued replacement for {display_title} "
+                    f"({os.path.basename(unraid_path)} → {os.path.basename(syn_path)})")
+
+    if queued > 0:
+        dry = " (DRY RUN)" if VERSION_SYNC_DRY_RUN else ""
+        titles_list = "\n".join(f"• {t}" for t in queued_titles[:20])
+        if len(queued_titles) > 20:
+            titles_list += f"\n... and {len(queued_titles) - 20} more"
+        send_notification(
+            title=f"TV Version Sync{dry}",
+            body=f"Found {queued} episode(s) where Synology has a newer version than Unraid — queued for replacement:\n{titles_list}",
+            notify_type=apprise.NotifyType.WARNING
+        )
+
+
+def reconcile_movie_versions():
+    """
+    Nightly movie version reconciliation — runs at 11:45 PM ET (after movie gap scan).
+
+    For movie folders present on BOTH Synology and Unraid, compares the main video
+    file (largest .mkv/.mp4 in folder). If they differ, queues a MovieVersionSync
+    job that rsyncs the Synology file and deletes the old Unraid file after success.
+
+    Uses cached Agent inventory from movie gap scan (no re-scan cost).
+    """
+    logger.info("Movie version reconcile: starting check for version mismatches...")
+
+    pause_file = os.environ.get('PAUSE_VERSION_SYNC_FILE', '/opt/mother/PAUSE_VERSION_SYNC')
+    if os.path.exists(pause_file):
+        logger.warning(f"Movie version reconcile: PAUSE_VERSION_SYNC sentinel exists — skipping. Remove {pause_file} to re-enable.")
+        return
+
+    synology_movies_root = '/mnt/synology/rs-movies'
+    if not os.path.isdir(synology_movies_root):
+        logger.error("Movie version reconcile: Synology movies mount not accessible")
+        return
+
+    try:
+        resp = requests.get(
+            f"{UNRAID_AGENT_URL}/inventory",
+            params={'path': '/mnt/user/Media/Movies'},
+            headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
+            timeout=180
+        )
+        resp.raise_for_status()
+        agent_data = resp.json()
+    except Exception as e:
+        logger.error(f"Movie version reconcile: Agent inventory failed: {e}")
+        return
+
+    # Build dict: movie_folder -> (fname, full_unraid_path, size) for largest video file
+    video_exts = ('.mkv', '.mp4', '.avi', '.m4v')
+    skip_names = {'#recycle', '@eaDir', '.DS_Store'}
+    unraid_movie_files: dict = {}
+    for item in agent_data.get('items', []):
+        path = item.get('path', '')
+        parts = path.split('/')
+        if len(parts) < 7:
+            continue
+        movie_folder = parts[5]  # /mnt/user/Media/Movies/<folder>/<file>
+        fname = parts[-1]
+        if not any(fname.lower().endswith(ext) for ext in video_exts):
+            continue
+        size = item.get('size_bytes', 0)
+        if movie_folder not in unraid_movie_files or size > unraid_movie_files[movie_folder][2]:
+            unraid_movie_files[movie_folder] = (fname, path, size)
+
+    mismatches = []  # (syn_file_path, unraid_file_path, movie_folder)
+    for folder_entry in os.scandir(synology_movies_root):
+        if not folder_entry.is_dir() or folder_entry.name in skip_names:
+            continue
+        movie_folder = folder_entry.name
+        if movie_folder not in unraid_movie_files:
+            continue  # gap scanner handles missing folders
+
+        # Find largest video file in Synology folder
+        syn_best = None
+        syn_best_size = 0
+        try:
+            for f in os.scandir(folder_entry.path):
+                if f.is_file() and any(f.name.lower().endswith(ext) for ext in video_exts):
+                    sz = f.stat().st_size
+                    if sz > syn_best_size:
+                        syn_best = f.path
+                        syn_best_size = sz
+        except OSError:
+            continue
+
+        if not syn_best:
+            continue
+
+        syn_fname = os.path.basename(syn_best)
+        unraid_fname, unraid_path, _ = unraid_movie_files[movie_folder]
+
+        if syn_fname.lower() == unraid_fname.lower():
+            continue  # in sync
+
+        mismatches.append((syn_best, unraid_path, movie_folder))
+
+    if not mismatches:
+        logger.info("Movie version reconcile: all movies in sync — no version mismatches")
+        return
+
+    logger.info(f"Movie version reconcile: {len(mismatches)} version mismatch(es) found")
+
+    movies_dest_base = '/mnt/unraid/media/Movies'
+    queued = 0
+    queued_titles = []
+
+    for syn_path, unraid_path, movie_folder in mismatches:
+        if queued >= VERSION_SYNC_MAX_PER_RUN:
+            logger.info(f"Movie version reconcile: capped at {VERSION_SYNC_MAX_PER_RUN} — "
+                        f"{len(mismatches) - queued} deferred to tomorrow")
+            break
+
+        if _is_already_queued(syn_path):
+            continue
+
+        try:
+            file_size = os.path.getsize(syn_path)
+        except OSError:
+            file_size = 0
+
+        dest = os.path.join(movies_dest_base, movie_folder)
+
+        if VERSION_SYNC_DRY_RUN:
+            logger.info(f"[DRY RUN] Movie version reconcile: would replace {movie_folder}\n"
+                        f"  old: {os.path.basename(unraid_path)}\n"
+                        f"  new: {os.path.basename(syn_path)}")
+            queued += 1
+            queued_titles.append(movie_folder)
+            continue
+
+        background_sync(
+            source=syn_path,
+            dest=dest,
+            title=movie_folder,
+            quality='MovieVersionSync',
+            file_size=file_size,
+            media_type='Movie',
+            dest_base=movies_dest_base,
+            delete_after_sync=unraid_path,
+        )
+        queued += 1
+        queued_titles.append(movie_folder)
+        logger.info(f"Movie version reconcile: queued replacement for {movie_folder} "
+                    f"({os.path.basename(unraid_path)} → {os.path.basename(syn_path)})")
+
+    if queued > 0:
+        dry = " (DRY RUN)" if VERSION_SYNC_DRY_RUN else ""
+        titles_list = "\n".join(f"• {t}" for t in queued_titles[:20])
+        if len(queued_titles) > 20:
+            titles_list += f"\n... and {len(queued_titles) - 20} more"
+        send_notification(
+            title=f"Movie Version Sync{dry}",
+            body=f"Found {queued} movie(s) where Synology has a newer version than Unraid — queued for replacement:\n{titles_list}",
+            notify_type=apprise.NotifyType.WARNING
+        )
+
+
 def nightly_library_report():
     """
     Nightly library health report — runs at 04:15 UTC (after both gap scans).
@@ -1997,14 +2352,16 @@ def nightly_unraid_dedup():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         # Issue 3 fix: include 'pending' — jobs waiting for semaphore count as active
+        # Also include version sync jobs — they write new files whose old counterparts
+        # dedup must not delete before the replacement lands.
         cursor.execute(
             "SELECT COUNT(*) FROM sync_jobs WHERE status IN ('in_progress','pending') "
-            "AND quality IN ('TVGapSync','GapSync')"
+            "AND quality IN ('TVGapSync','GapSync','TVVersionSync','MovieVersionSync')"
         )
         active_gap_jobs = cursor.fetchone()[0]
         # Use UTC-aware comparison (completed_at now stored as UTC via datetime.utcnow)
         cursor.execute(
-            "SELECT COUNT(*) FROM sync_jobs WHERE quality IN ('TVGapSync','GapSync') "
+            "SELECT COUNT(*) FROM sync_jobs WHERE quality IN ('TVGapSync','GapSync','TVVersionSync','MovieVersionSync') "
             "AND completed_at > datetime('now', ?)",
             (f'-{DEDUP_MIN_AGE_HOURS} hours',)
         )
@@ -2281,11 +2638,11 @@ def scan_library_gaps():
         logger.info("Gap scanner: all HD movies are in sync")
 
 
-# Daily DB backup at 02:00 UTC
+# Daily DB backup at 10:00 PM ET
 scheduler.add_job(
     func=lambda: create_backup('scheduled'),
     trigger='cron',
-    hour=2,
+    hour=22,
     minute=0,
     id='db_backup',
     name='Daily DB backup',
@@ -2304,57 +2661,80 @@ if RADARR_HD_API_KEY or SONARR_HD_API_KEY:
     )
     logger.info(f"History scanner enabled - checking every {HISTORY_SCAN_INTERVAL} min, looking back {HISTORY_SCAN_HOURS} hours")
 
-# TV gap scanner — nightly at 03:00 UTC
+# TV gap scanner — nightly at 11:00 PM ET
 scheduler.add_job(
     func=scan_tv_gaps,
     trigger='cron',
-    hour=3,
+    hour=23,
     minute=0,
     id='tv_gap_scanner',
     name='Nightly TV gap scan (Synology vs Unraid via Agent)',
     replace_existing=True
 )
-logger.info("TV gap scanner enabled - runs nightly at 03:00 UTC")
+logger.info("TV gap scanner enabled - runs nightly at 11:00 PM ET")
 
-# Movie gap scanner — nightly at 03:30 UTC (after DB backup, before Curatorr tasks)
+# TV version reconciliation — nightly at 11:15 PM ET (after gap scan, uses cached inventory)
+scheduler.add_job(
+    func=reconcile_tv_versions,
+    trigger='cron',
+    hour=23,
+    minute=15,
+    id='tv_version_reconcile',
+    name='Nightly TV version reconcile (replace old Unraid versions with Synology current)',
+    replace_existing=True
+)
+logger.info("TV version reconcile enabled - runs nightly at 11:15 PM ET")
+
+# Movie gap scanner — nightly at 11:30 PM ET (after TV reconcile, before library report)
 scheduler.add_job(
     func=scan_library_gaps,
     trigger='cron',
-    hour=3,
+    hour=23,
     minute=30,
     id='library_gap_scanner',
     name='Nightly HD movie gap scan (Synology vs Unraid via Agent)',
     replace_existing=True
 )
-logger.info("Library gap scanner enabled - runs nightly at 03:30 UTC")
+logger.info("Library gap scanner enabled - runs nightly at 11:30 PM ET")
 
-# Library health report — nightly at 04:15 UTC (after both gap scans, before dedup)
+# Movie version reconciliation — nightly at 11:45 PM ET (after movie gap scan, uses cached inventory)
+scheduler.add_job(
+    func=reconcile_movie_versions,
+    trigger='cron',
+    hour=23,
+    minute=45,
+    id='movie_version_reconcile',
+    name='Nightly movie version reconcile (replace old Unraid versions with Synology current)',
+    replace_existing=True
+)
+logger.info("Movie version reconcile enabled - runs nightly at 11:45 PM ET")
+
+# Library health report — nightly at 12:15 AM ET (after both gap scans)
 scheduler.add_job(
     func=nightly_library_report,
     trigger='cron',
-    hour=4,
+    hour=0,
     minute=15,
     id='library_report',
     name='Nightly library health report (movies + TV summary to Telegram)',
     replace_existing=True
 )
-logger.info("Library report enabled - runs nightly at 04:15 UTC")
+logger.info("Library report enabled - runs nightly at 12:15 AM ET")
 
-# Unraid dedup — daily at 12:00 UTC (noon).
-# Moved from 04:45 UTC: gap scanners run at 03:00/03:30 UTC and queue rsync jobs;
-# running dedup immediately after (04:45) created a churn cycle where newly-synced
-# files were immediately deleted as "duplicates". 12:00 UTC gives the 12-concurrent
-# rsync queue ~8 hours to drain before dedup evaluates what remains.
+# Unraid dedup — daily at 8:00 AM ET.
+# Gap scanners run at 11:00/11:30 PM ET and queue rsync jobs;
+# running dedup at 8 AM ET gives the 12-concurrent rsync queue ~8 hours to drain
+# before dedup evaluates what remains.
 scheduler.add_job(
     func=nightly_unraid_dedup,
     trigger='cron',
-    hour=12,
+    hour=8,
     minute=0,
     id='unraid_dedup',
     name='Daily Unraid duplicate cleanup via Agent',
     replace_existing=True
 )
-logger.info("Unraid dedup enabled - runs daily at 12:00 UTC")
+logger.info("Unraid dedup enabled - runs daily at 8:00 AM ET")
 
 scheduler.start()
 logger.info("Scheduler started - daily summary at 00:05, auto-retry every 15 min")

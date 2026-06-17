@@ -16,7 +16,7 @@ When Radarr or Sonarr imports a new file (download complete), they send a webhoo
 8. Auto-retries failed jobs every 15 minutes
 9. Sends daily summary report at midnight
 
-The service also handles file deletion events to keep the destination in sync when files are manually removed from Radarr/Sonarr.
+**Critical design rule**: The service is **append-only** — it never deletes files from Unraid. `MovieFileDelete` and `EpisodeFileDelete` events are intentionally ignored. Deletions happen exclusively through the nightly Unraid dedup job.
 
 ## Files
 
@@ -95,7 +95,7 @@ curl -X POST http://localhost:5001/sync/manual \
 | `SYNC_LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `SYNC_LOG_PATH` | `/logs` | Directory for persistent log files |
 | `SYNC_DB_PATH` | `/data/sync_jobs.db` | SQLite database path |
-| `SYNC_MAX_CONCURRENT` | `2` | Max concurrent rsync operations (prevents NFS overload) |
+| `SYNC_MAX_CONCURRENT` | `12` | Max concurrent rsync operations (prevents NFS overload) |
 | `SYNC_MAX_RETRIES` | `20` | Max retry attempts per job |
 | `SYNC_RETRY_LOOKBACK_DAYS` | `7` | Days to look back for retryable jobs |
 | `SYNC_SKIP_TITLES` | (empty) | Comma-separated titles to skip (e.g., large files that timeout) |
@@ -117,6 +117,23 @@ curl -X POST http://localhost:5001/sync/manual \
 | `SYNC_HISTORY_SCAN_INTERVAL` | `30` | Minutes between history scans |
 | `RSYNC_STALL_MINUTES` | `15` | Minutes of zero I/O before a sync is considered stalled and killed |
 | `RSYNC_MAX_MINUTES` | `240` | Absolute max runtime for any rsync (killed even if making progress) |
+
+### Nightly Gap Scanner + Version Reconcile
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `UNRAID_AGENT_URL` | `http://192.168.1.10:8100` | Unraid Agent API base URL |
+| `UNRAID_AGENT_API_KEY` | (required) | Auth key for Unraid Agent |
+| `GAP_SCAN_MAX_QUEUE` | `500` | Max gap-sync jobs queued per nightly run |
+| `VERSION_SYNC_MAX_PER_RUN` | `20` | Max version-sync jobs queued per nightly run |
+| `VERSION_SYNC_DRY_RUN` | `false` | Preview version replacements without executing |
+
+**Sentinel files** (create on host to pause operations):
+
+| File | Effect |
+|------|--------|
+| `/opt/mother/PAUSE_DEDUP` | Block nightly Unraid dedup |
+| `/opt/mother/PAUSE_VERSION_SYNC` | Block TV and movie version reconcile |
 
 ### Plex Integration (Optional)
 
@@ -163,14 +180,21 @@ volumes:
 
 ## Scheduled Tasks (Built-in)
 
-The service includes APScheduler for automatic background tasks:
+The service includes APScheduler for automatic background tasks. All scheduled times are **Eastern (America/New_York)**, DST-aware.
 
-| Task | Schedule | Description |
-|------|----------|-------------|
-| Daily Summary | 00:05 | Sends Telegram summary with failed titles and items needing attention |
-| Auto-Retry | Every 15 min | Retries failed jobs (up to 20 attempts per job) |
+| Task | Schedule (ET) | Description |
+|------|--------------|-------------|
+| Auto-Retry | Every 15 min | Retries failed jobs with exponential backoff (15m→1h→4h→12h) |
 | Stall Watchdog | Every 15 min | Detects and kills frozen rsync processes; sends Telegram alert |
 | History Scanner | Every 30 min | Scans Radarr/Sonarr history for missed webhooks (failsafe) |
+| Daily Summary | 8:05 PM | Telegram snapshot with stats and failures |
+| DB Backup | 10:00 PM | SQLite backup, keeps last 10 |
+| TV Gap Scanner | 11:00 PM | Compares Synology rs-tv vs Unraid Agent; queues missing HD episodes |
+| TV Version Reconcile | 11:15 PM | For episodes on both sides, replaces Unraid copy if filename differs |
+| Movie Gap Scanner | 11:30 PM | Compares Synology rs-movies vs Unraid Agent; queues missing HD movies |
+| Movie Version Reconcile | 11:45 PM | For movie folders on both sides, replaces Unraid copy if filename differs |
+| Library Health Report | 12:15 AM | Telegram summary of remaining gaps |
+| Unraid Dedup | 8:00 AM | Deletes lower-quality duplicates from Unraid via Agent API |
 | Startup Recovery | On start | Recovers in-progress jobs interrupted by restart |
 
 **These run automatically when the container starts - no cron setup needed.**
@@ -257,6 +281,18 @@ rsync -avh --ignore-existing --exclude='#recycle' --exclude='@eaDir' --exclude='
 - `-h`: Human-readable sizes
 - `--ignore-existing`: Skip files that already exist on destination
 - Excludes Synology recycle bin and metadata folders
+
+## Job Types
+
+| `quality` field | Created by | delete_after_sync? | Notes |
+|----------------|------------|-------------------|-------|
+| WEB-DL 1080p / BluRay etc. | Webhook (Radarr/Sonarr) | No | Normal quality string from *arr |
+| `TVGapSync` | TV gap scanner | No | Missing episode detected at 11:00 PM ET |
+| `GapSync` | Movie gap scanner | No | Missing movie folder detected at 11:30 PM ET |
+| `TVVersionSync` | TV version reconcile | Yes — old Unraid path | Episode filename mismatch; old file deleted post-rsync |
+| `MovieVersionSync` | Movie version reconcile | Yes — old Unraid path | Movie filename mismatch; old file deleted post-rsync |
+
+Jobs with `delete_after_sync` set: after a successful rsync, the service calls the Unraid Agent `/delete` endpoint to remove the old file. If deletion fails, a Telegram alert is sent but the job is still marked `success` (the new file is confirmed present).
 
 ## Docker Configuration
 

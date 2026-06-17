@@ -76,11 +76,13 @@ Project Mother is a media management and synchronization system consolidating tw
 
 2. **Webhook Sync** (append-only) — Real-time sync of new downloads. Flask app (`services/sync-webhook/app.py`) receives Radarr/Sonarr webhooks, **copies new files to Unraid only — never deletes**. Auto-retry, history scanning failsafe, Telegram notifications. `MovieFileDelete`/`EpisodeFileDelete` events are intentionally ignored.
 
-3. **Nightly Reconciliation** — Jobs run nightly to keep libraries in sync:
-   - **TV gap scan (03:00 UTC)**: finds episodes on Synology missing from Unraid, queues them. Capped at `GAP_SCAN_MAX_QUEUE=500` per run.
-   - **Movie gap scan (03:30 UTC)**: finds movie folders on Synology missing from Unraid, queues them. Same cap.
-   - **Library health report (04:15 UTC)**: Telegram summary of missing movies/episodes.
-   - **Unraid dedup (12:00 UTC)**: calls Unraid Agent to find and delete lower-quality duplicates. Moved to noon UTC (from 04:45) to give the 03:00 gap scanner's rsync queue ~9 hours to drain before dedup evaluates what remains.
+3. **Nightly Reconciliation** — Jobs run nightly to keep libraries in sync (all times Eastern / America/New_York, DST-aware):
+   - **TV gap scan (11:00 PM ET)**: finds episodes on Synology missing from Unraid, queues them. Capped at `GAP_SCAN_MAX_QUEUE=500` per run.
+   - **TV version reconcile (11:15 PM ET)**: for episodes present on BOTH sides, compares filenames. If Synology has a newer version (e.g. WEB-DL vs old Remux), queues `TVVersionSync` — rsyncs new file then deletes old Unraid file via Agent. Cap: `VERSION_SYNC_MAX_PER_RUN=20`.
+   - **Movie gap scan (11:30 PM ET)**: finds movie folders on Synology missing from Unraid, queues them. Same cap.
+   - **Movie version reconcile (11:45 PM ET)**: same as TV reconcile but compares the largest video file per movie folder. Queues `MovieVersionSync`.
+   - **Library health report (12:15 AM ET)**: Telegram summary of missing movies/episodes.
+   - **Unraid dedup (8:00 AM ET)**: calls Unraid Agent to find and delete lower-quality duplicates. Runs in the morning to give the overnight rsync queue ~8 hours to drain before dedup evaluates what remains.
 
 4. **Upgraderr** — Custom quality upgrade automation service (replaces Huntarr). Active once initial sync reaches ~99%+. See `services/upgraderr/`. UI at port 9706.
 
@@ -96,10 +98,12 @@ The nightly dedup (`nightly_unraid_dedup` in `app.py`) caused a mass-deletion in
 | Per-run cap | `DEDUP_MAX_PER_RUN` | 50 | Max deletions per run (enforced across all library types via flat loop). Remaining deferred. |
 | Dry-run mode | `DEDUP_DRY_RUN` | false | Set `true` to preview deletions without executing. |
 | Min age | `DEDUP_MIN_AGE_HOURS` | 24 | Skips dedup if any gap-sync job completed in last N hours OR is still in_progress/pending. |
-| Active job check | (code) | always | Skips dedup if any TVGapSync/GapSync jobs are `in_progress` OR `pending`. |
+| Active job check | (code) | always | Skips dedup if any TVGapSync/GapSync/TVVersionSync/MovieVersionSync jobs are `in_progress` OR `pending`. |
 | Agent confirm | (code) | always | Counts deletion as success only if path appears in Agent `deleted[]` — not just HTTP 200. |
 
 **PAUSE_DEDUP should exist while the batch sync screen is running.** Remove it only once the batch sync is complete and verified.
+
+**PAUSE_VERSION_SYNC** (`/opt/mother/PAUSE_VERSION_SYNC`) — blocks both TV and movie version reconcile. Use during major library reorganization to prevent version sync from interfering.
 
 ### Upgraderr Tier Priority Note
 The sweep randomizes movie order within each instance (`random.shuffle`), so there is no natural tier ordering. To prioritize 720p upgrades (Tier 3), disable Tiers 4–6 in the Settings UI (`http://mother:9706/settings`). This concentrates search budget on Tiers 1–3 only. Re-enable 4–6 once Tier 3 queue is empty.
@@ -119,7 +123,7 @@ The sweep randomizes movie order within each instance (`random.shuffle`), so the
 The largest and most critical codebase component. Handles:
 - Webhook endpoints: `POST /sync/radarr`, `/sync/sonarr`, `/sync/manual`
 - SQLite job tracking with retry logic (up to 20 retries)
-- APScheduler tasks: daily summary, auto-retry (15min), history scanner (30min), **stall watchdog (15min)**, **TV gap scanner (03:00 UTC)**, **movie gap scanner (03:30 UTC)**, **library health report (04:15 UTC)**, **Unraid dedup (12:00 UTC)**
+- APScheduler tasks: daily summary, auto-retry (15min), history scanner (30min), **stall watchdog (15min)**, **TV gap scanner (11:00 PM ET)**, **movie gap scanner (11:30 PM ET)**, **library health report (12:15 AM ET)**, **Unraid dedup (8:00 AM ET)**
 - Plex library scan integration (optional)
 - Health/stats API: `GET /health`, `/stats`, `/jobs`
 - Gap scan trigger: `POST /api/gap-scan/trigger`
@@ -136,7 +140,7 @@ thread sends a "Stalled Sync Killed" Telegram alert instead of generic "Sync Fai
 instead of `series.path` (entire show directory), preventing whole-show rsyncs that block the queue.
 Catchup path only — no deletions.
 
-**Movie Gap Scanner** (`scan_library_gaps`): Nightly at 03:30 UTC. Compares Synology HD-movies
+**Movie Gap Scanner** (`scan_library_gaps`): Nightly at 11:30 PM ET. Compares Synology HD-movies
 NFS listing vs Unraid folder list via Unraid Agent API. Queues missing folders as `GapSync` jobs.
 HD movies only (4K excluded). Sends Telegram alert listing queued titles.
 - Synology side: `os.listdir('/mnt/synology/rs-movies')` — NFS mount, fast local read
@@ -145,7 +149,7 @@ HD movies only (4K excluded). Sends Telegram alert listing queued titles.
 - Skips `#recycle`, `.lnk`, `.txt` entries and items already pending/in_progress in DB
 - Skips items with a `success` record in the last 7 days
 
-**TV Gap Scanner** (`scan_tv_gaps`): Nightly at 03:00 UTC. Compares Synology rs-tv (per-episode NFS
+**TV Gap Scanner** (`scan_tv_gaps`): Nightly at 11:00 PM ET. Compares Synology rs-tv (per-episode NFS
 scan) vs Unraid Agent TV inventory. Queues individual missing episode files as `TVGapSync` jobs.
 - Quality filter (`_should_sync_tv_episode`): skips 720p/SD and x265 without HDR/DV — same rules as
   sync strategy table above. This prevents copying pre-upgrade versions to Unraid.
@@ -153,7 +157,7 @@ scan) vs Unraid Agent TV inventory. Queues individual missing episode files as `
   picks the largest file (best-quality heuristic)
 - Unraid inventory via `GET /inventory?path=/mnt/user/Media/TV%20Shows&refresh=true` on Agent
 
-**Unraid Dedup** (`nightly_unraid_dedup`): Daily at **12:00 UTC** (moved from 04:45 to allow gap-scanner queue to drain). Calls `GET /scan?refresh=true` on Unraid Agent. For each duplicate group, deletes lower-quality versions via `POST /delete` on Agent. Only deletes files marked `safe_to_delete=True` by Agent. Multiple safety checks in order: (1) `PAUSE_DEDUP` sentinel file, (2) active gap-sync jobs check, (3) `DEDUP_SAFETY_LIMIT` abort threshold, (4) `DEDUP_MAX_PER_RUN` per-run cap, (5) `DEDUP_DRY_RUN` preview mode. Sends Telegram with summary + top-10 largest deletions.
+**Unraid Dedup** (`nightly_unraid_dedup`): Daily at **8:00 AM ET** (moved from midnight to morning to allow gap-scanner queue to drain overnight). Calls `GET /scan?refresh=true` on Unraid Agent. For each duplicate group, deletes lower-quality versions via `POST /delete` on Agent. Only deletes files marked `safe_to_delete=True` by Agent. Multiple safety checks in order: (1) `PAUSE_DEDUP` sentinel file, (2) active gap-sync jobs check, (3) `DEDUP_SAFETY_LIMIT` abort threshold, (4) `DEDUP_MAX_PER_RUN` per-run cap, (5) `DEDUP_DRY_RUN` preview mode. Sends Telegram with summary + top-10 largest deletions.
 
 **DB columns**: `rsync_pid`, `last_progress_bytes`, `last_progress_at`, `stall_killed` (added 2026-02-23)
 
@@ -337,26 +341,30 @@ curl http://localhost:9706/health                     # Upgraderr health
 ```
 
 **APScheduler jobs (inside containers — not cron):**
-| Time (UTC) | Service | Job |
+Note: sync-webhook times are Eastern (America/New_York, DST-aware). Other services still use UTC.
+| Time (ET) | Service | Job |
 |---|---|---|
 | Every 15 min | sync-webhook | Auto-retry failed jobs (exponential backoff: 15m→1h→4h→12h) |
 | Every 15 min | sync-webhook | Stall watchdog (kills frozen rsync after 15min no I/O) |
 | Every 30 min | sync-webhook | History scanner (checks *arr history for missed downloads, last 6h) |
 | Every 30 min | upgraderr | Quality sweep (classifies all *arr items into tiers, triggers searches) |
-| 00:05 | sync-webhook | Daily summary Telegram notification |
-| 02:00 | sync-webhook | DB backup |
-| 02:00 | curatorr | Watch history sync (Tautulli delta) |
-| 02:30 | upgraderr | TMDB BluRay release date scan (pre-caches Tier 4 eligibility) |
-| 03:00 | upgraderr | DB backup (keeps last 10) |
-| 03:00 | curatorr | Ratings refresh (OMDB/MDBList/TMDB) |
-| 03:00 | sync-webhook | **TV gap scanner** (Synology rs-tv per-episode vs Unraid Agent; queues missing TV episodes) |
-| 03:30 | sync-webhook | **Movie gap scanner** (Synology rs-movies folder vs Unraid Agent; queues missing HD movies) |
-| 04:00 | upgraderr | Search log prune (keeps 90 days) |
-| 04:00 | curatorr | Rules engine run |
-| 04:30 | curatorr | DB backup |
-| 12:00 | sync-webhook | **Unraid dedup** (Agent /scan → /delete lower-quality duplicates; moved to noon to allow gap-scanner rsync queue to drain first) |
-| 06:00 | curatorr | Library sync (Radarr + Sonarr + Plex full rescan) |
-| Sun 09:00 | curatorr | Weekly digest (Telegram summary via Apprise) |
+| 8:05 PM ET | sync-webhook | Daily summary Telegram notification |
+| 10:00 PM ET | sync-webhook | DB backup |
+| 02:00 UTC | curatorr | Watch history sync (Tautulli delta) |
+| 02:30 UTC | upgraderr | TMDB BluRay release date scan (pre-caches Tier 4 eligibility) |
+| 03:00 UTC | upgraderr | DB backup (keeps last 10) |
+| 03:00 UTC | curatorr | Ratings refresh (OMDB/MDBList/TMDB) |
+| 11:00 PM ET | sync-webhook | **TV gap scanner** (Synology rs-tv per-episode vs Unraid Agent; queues missing TV episodes) |
+| 11:15 PM ET | sync-webhook | **TV version reconcile** (compares filenames for episodes on both sides; queues TVVersionSync + deletes old Unraid file on success) |
+| 11:30 PM ET | sync-webhook | **Movie gap scanner** (Synology rs-movies folder vs Unraid Agent; queues missing HD movies) |
+| 11:45 PM ET | sync-webhook | **Movie version reconcile** (same as TV reconcile but for movies; queues MovieVersionSync) |
+| 12:15 AM ET | sync-webhook | **Library health report** (missing movies + TV summary to Telegram) |
+| 04:00 UTC | upgraderr | Search log prune (keeps 90 days) |
+| 04:00 UTC | curatorr | Rules engine run |
+| 04:30 UTC | curatorr | DB backup |
+| 8:00 AM ET | sync-webhook | **Unraid dedup** (Agent /scan → /delete lower-quality duplicates; runs in morning after overnight rsync queue drains) |
+| 06:00 UTC | curatorr | Library sync (Radarr + Sonarr + Plex full rescan) |
+| Sun 09:00 UTC | curatorr | Weekly digest (Telegram summary via Apprise) |
 
 ## Environment & Configuration
 
@@ -445,4 +453,4 @@ Analysis scripts use: `tqdm` (optional, for progress bars). Some scripts use `pa
 - Movie batch sync is **disabled** via `/opt/mother/DISABLE_MOVIE_SYNC` sentinel file.
 - TV batch sync screen (`tvsync`) completed Jun 17 2026. The screen session can be closed; nightly gap scanner handles ongoing TV sync.
 - `/opt/mother/PAUSE_DEDUP` sentinel **should exist while any batch sync is running**. Remove only after batch sync completes and gap scanner has had one clean verification run.
-- Dedup now runs at 12:00 UTC (not 04:45) — see Dedup Safety Controls section above.
+- Dedup now runs at 8:00 AM ET (not midnight) — see Dedup Safety Controls section above.
