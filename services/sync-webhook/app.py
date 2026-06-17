@@ -193,8 +193,11 @@ def init_database():
             logger.error(f"No write permission to {db_dir}")
             return False
 
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
+        # WAL mode allows concurrent reads during writes — prevents "database is locked" under load
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=30000")
 
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS sync_jobs (
@@ -260,7 +263,7 @@ def log_sync_job(job_type, source, dest, title, status, duration=None, error=Non
         history_logger.info(f"{timestamp} | {status.upper():8} | {job_type:8} | {title} | {duration_str}")
 
         # Log to database
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO sync_jobs (job_type, source_path, dest_path, title, status, duration_seconds, error_message, file_size, completed_at)
@@ -281,7 +284,7 @@ def start_sync_job(job_type, source, dest, title, quality, file_size, retry_coun
     Pass delete_after_sync=path to remove an old Unraid file after successful sync.
     """
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO sync_jobs (job_type, source_path, dest_path, title, quality, file_size, status, retry_count, delete_after_sync)
@@ -302,7 +305,7 @@ def _is_already_queued(source_path: str) -> bool:
     source path.  Used to prevent the history scanner and auto-retry from
     spawning duplicate threads for items already waiting in the queue."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         c = conn.cursor()
         c.execute(
             "SELECT 1 FROM sync_jobs WHERE source_path = ? AND status IN ('pending', 'in_progress') LIMIT 1",
@@ -320,7 +323,7 @@ def _update_job_status(job_id: int | None, status: str):
     if job_id is None:
         return
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         if status == 'in_progress':
             conn.execute(
                 'UPDATE sync_jobs SET status = ?, started_at = ? WHERE id = ?',
@@ -338,7 +341,7 @@ def complete_sync_job(job_id, status, duration=None, error=None):
     """Update a job to success or failed status"""
     try:
         # Log to history file
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -367,7 +370,7 @@ def complete_sync_job(job_id, status, duration=None, error=None):
 def update_job_pid(job_id: int, pid: int):
     """Store the rsync PID in the job record so the stall watchdog can track it."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.execute('UPDATE sync_jobs SET rsync_pid = ? WHERE id = ?', (pid, job_id))
         conn.commit()
         conn.close()
@@ -471,7 +474,7 @@ def check_stalled_syncs():
     logger.debug("Stall watchdog: checking for stalled syncs...")
 
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
 
@@ -565,7 +568,7 @@ def check_stalled_syncs():
 def recover_interrupted_jobs():
     """On startup, recover interrupted jobs and retry unresolved failures"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -1022,7 +1025,7 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
             # Check if job was cancelled while waiting for the semaphore
             if job_id:
                 try:
-                    _conn = sqlite3.connect(DB_PATH)
+                    _conn = sqlite3.connect(DB_PATH, timeout=30)
                     _cur = _conn.cursor()
                     _cur.execute('SELECT status FROM sync_jobs WHERE id = ?', (job_id,))
                     _row = _cur.fetchone()
@@ -1065,7 +1068,7 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                 # Version sync: delete old Unraid file after successful copy
                 if job_id and not DRY_RUN:
                     try:
-                        _conn = sqlite3.connect(DB_PATH)
+                        _conn = sqlite3.connect(DB_PATH, timeout=30)
                         _row = _conn.execute('SELECT delete_after_sync FROM sync_jobs WHERE id = ?', (job_id,)).fetchone()
                         _conn.close()
                         old_path = _row[0] if _row else None
@@ -1142,7 +1145,7 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                 stall_killed = False
                 if job_id:
                     try:
-                        conn = sqlite3.connect(DB_PATH)
+                        conn = sqlite3.connect(DB_PATH, timeout=30)
                         row = conn.execute(
                             'SELECT stall_killed FROM sync_jobs WHERE id = ?', (job_id,)
                         ).fetchone()
@@ -1194,7 +1197,7 @@ def background_sync_with_retry(source: str, dest: str, title: str, quality: str,
 def get_job_counts():
     """Get counts of jobs by status from database"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
         cursor.execute('''
             SELECT status, COUNT(*) FROM sync_jobs
@@ -1249,7 +1252,7 @@ def send_daily_summary():
     logger.info("Generating daily summary...")
 
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
 
         # Get yesterday's stats
@@ -1395,7 +1398,7 @@ def auto_retry_failed():
     global _error_alert_sent
     logger.info("Auto-retry: checking for failed jobs...")
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -1518,7 +1521,7 @@ def scan_arr_history():
     # Get list of recently synced titles from our database
     synced_titles = set()
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         c = conn.cursor()
         c.execute('''
             SELECT title FROM sync_jobs
@@ -1790,7 +1793,7 @@ def scan_tv_gaps():
         if key not in best or size > best[key][1]:
             best[key] = (src_path, size)
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -1833,7 +1836,7 @@ def scan_tv_gaps():
             media_type='Episode',
             dest_base=tv_dest_base,
         )
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -2349,7 +2352,7 @@ def nightly_unraid_dedup():
     #   b) Any gap job completed within DEDUP_MIN_AGE_HOURS (default 24h)
     DEDUP_MIN_AGE_HOURS = int(os.environ.get('DEDUP_MIN_AGE_HOURS', '24'))
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
         # Issue 3 fix: include 'pending' — jobs waiting for semaphore count as active
         # Also include version sync jobs — they write new files whose old counterparts
@@ -2584,7 +2587,7 @@ def scan_library_gaps():
     queued_titles = []
     MOVIE_GAP_SCAN_MAX_QUEUE = int(os.environ.get('GAP_SCAN_MAX_QUEUE', '500'))
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -2615,7 +2618,7 @@ def scan_library_gaps():
 
         conn.close()
         background_sync(source, '/mnt/unraid/media/Movies', folder, 'GapSync', file_size, 'Movie')
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -2795,7 +2798,7 @@ def get_stats():
 
     # Get database stats
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
 
         # Total counts
@@ -2832,7 +2835,7 @@ def list_jobs():
     status_filter = request.args.get('status', None)
 
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -2863,7 +2866,7 @@ def list_jobs():
 def get_job(job_id):
     """Get details for a specific job"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM sync_jobs WHERE id = ?', (job_id,))
@@ -3156,7 +3159,7 @@ def sonarr_webhook():
 def retry_job(job_id):
     """Retry a specific failed job"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM sync_jobs WHERE id = ?', (job_id,))
@@ -3197,7 +3200,7 @@ def retry_job(job_id):
 def retry_all_failed():
     """Retry all unresolved failed jobs within the lookback window"""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         lookback = f'-{RETRY_LOOKBACK_DAYS} days'
@@ -3384,7 +3387,7 @@ app.jinja_env.globals['fmt_dur'] = _fmt_dur
 @app.route('/ui')
 @app.route('/ui/')
 def ui_dashboard():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -3469,7 +3472,7 @@ def ui_queue():
     secondary = ', created_at ASC' if sort_col != 'created_at' else ''
 
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute(f"SELECT COUNT(*) FROM sync_jobs {where_sql}", params)
@@ -3522,7 +3525,7 @@ def ui_history():
     where_sql = 'WHERE ' + ' AND '.join(where)
 
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute(f"SELECT COUNT(*) FROM sync_jobs {where_sql}", params)
@@ -3580,7 +3583,7 @@ def trigger_library_report():
 def cancel_job(job_id):
     """Cancel a pending job. The queued thread will abort after acquiring the semaphore."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cur = conn.cursor()
         cur.execute("SELECT status FROM sync_jobs WHERE id = ?", (job_id,))
         row = cur.fetchone()
@@ -3607,7 +3610,7 @@ def rush_job(job_id):
     can start immediately alongside current active syncs rather than waiting.
     """
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cur = conn.cursor()
         cur.execute("SELECT status, title FROM sync_jobs WHERE id = ?", (job_id,))
         row = cur.fetchone()

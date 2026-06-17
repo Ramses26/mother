@@ -1,6 +1,8 @@
 """Curatorr APScheduler — all background jobs."""
 import asyncio
 import logging
+import os
+import re
 import aiosqlite
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor
@@ -162,6 +164,146 @@ def _job_filesystem_scan():
         log.debug("Filesystem scan already in progress — skipped scheduler trigger")
 
 
+_PART_RE = re.compile(r'\bpart\s*\d+\b', re.IGNORECASE)
+
+
+def _is_multipart_group(group: dict) -> bool:
+    """Return True if this group contains multi-part files (e.g. PART 1, PART 2).
+    These are continuation files, not duplicates — skip the entire group."""
+    versions = group.get('versions', [])
+    part_count = sum(1 for v in versions if _PART_RE.search(os.path.basename(v.get('file_path', ''))))
+    return part_count >= 2
+
+
+def _do_synology_dedup() -> None:
+    """Nightly Synology duplicate cleanup — deletes lower-quality copies from Synology NFS mounts."""
+    import os as _os
+    import time as _time
+    from app.routes.duplicates import _scan_cache, _do_filesystem_scan, _purge_synology_recycle, SCAN_CACHE_TTL
+    from app.notifications import send_notification
+
+    PAUSE_FILE = _os.environ.get('PAUSE_SYNOLOGY_DEDUP_FILE', '/opt/mother/PAUSE_SYNOLOGY_DEDUP')
+    MAX_PER_RUN = int(_os.environ.get('SYNOLOGY_DEDUP_MAX_PER_RUN', '50'))
+    DRY_RUN = _os.environ.get('SYNOLOGY_DEDUP_DRY_RUN', 'false').lower() == 'true'
+    MIN_AGE_HOURS = int(_os.environ.get('SYNOLOGY_DEDUP_MIN_AGE_HOURS', '24'))
+
+    if _os.path.exists(PAUSE_FILE):
+        log.warning(f"Synology dedup: PAUSE_SYNOLOGY_DEDUP sentinel present — skipping. Remove {PAUSE_FILE} to re-enable.")
+        return
+
+    # Use cached scan if fresh enough (up to 2h old), otherwise run a new Synology-only scan
+    now = _time.time()
+    cache_age = now - _scan_cache['ts']
+    if _scan_cache['data'] is not None and cache_age < SCAN_CACHE_TTL * 4:
+        log.info(f"Synology dedup: using cached scan ({cache_age:.0f}s old)")
+        data = _scan_cache['data']
+    else:
+        log.info("Synology dedup: no fresh cache — running Synology NFS scan (skip Unraid)")
+        data = _do_filesystem_scan(refresh_unraid=False)
+        _scan_cache['data'] = data
+        _scan_cache['ts'] = _time.time()
+
+    syn = data.get('synology', {})
+    cutoff = now - (MIN_AGE_HOURS * 3600)
+    deleted = skipped = errors = 0
+    freed_bytes = 0
+    top_deletions: list = []
+
+    for folder_type in ('hd_movies', '4k_movies', 'hd_tv', '4k_tv'):
+        for group in syn.get(folder_type, []):
+            if deleted >= MAX_PER_RUN:
+                break
+
+            versions = group.get('versions', [])
+            if len(versions) < 2:
+                continue
+
+            # Skip multi-part files (e.g. "Infinity Saga PART 1 / PART 2 / ...")
+            if _is_multipart_group(group):
+                log.debug(f"Synology dedup: skipping multi-part group '{group.get('title', '')}'")
+                skipped += 1
+                continue
+
+            # versions[0] = keep (highest trash_score); versions[1:] = delete candidates
+            for v in versions[1:]:
+                if deleted >= MAX_PER_RUN:
+                    break
+
+                path = v.get('file_path', '')
+                if not path:
+                    continue
+
+                # TV: respect safe_to_delete flag (covers shared-episode-number cases)
+                if group.get('media_type') == 'tv' and not v.get('safe_to_delete', True):
+                    skipped += 1
+                    continue
+
+                # Skip recently-added files
+                try:
+                    if _os.path.getmtime(path) > cutoff:
+                        skipped += 1
+                        continue
+                except OSError:
+                    skipped += 1
+                    continue
+
+                size = v.get('file_size_bytes', 0)
+                title = group.get('title', '')
+
+                if DRY_RUN:
+                    log.info(f"Synology dedup [DRY RUN]: would delete {path} ({size/1e9:.2f}GB)")
+                    deleted += 1
+                    freed_bytes += size
+                    top_deletions.append((size, title, _os.path.basename(path)))
+                    continue
+
+                try:
+                    _os.remove(path)
+                    _purge_synology_recycle(path)
+                    deleted += 1
+                    freed_bytes += size
+                    top_deletions.append((size, title, _os.path.basename(path)))
+                    log.info(f"Synology dedup: deleted {path} ({size/1e9:.2f}GB)")
+                except FileNotFoundError:
+                    pass  # Already gone — count as success
+                except Exception as e:
+                    log.error(f"Synology dedup: failed to delete {path}: {e}")
+                    errors += 1
+
+    if deleted == 0 and skipped == 0 and errors == 0:
+        log.info("Synology dedup: no duplicates found")
+        return
+
+    # Invalidate cache so next UI load reflects deletions
+    if deleted > 0 and not DRY_RUN:
+        _scan_cache['data'] = None
+        _scan_cache['ts'] = 0.0
+
+    dry_tag = ' (DRY RUN)' if DRY_RUN else ''
+    gb = freed_bytes / 1_073_741_824
+    msg = f"Synology Dedup{dry_tag}: {deleted} file(s) deleted, {gb:.2f} GB freed"
+    if skipped:
+        msg += f", {skipped} skipped (unsafe/recent/multi-part)"
+    if errors:
+        msg += f", {errors} errors (see logs)"
+    if top_deletions:
+        top_deletions.sort(reverse=True)
+        msg += "\nTop deletions:"
+        for size, title, fname in top_deletions[:10]:
+            msg += f"\n• {title} — {fname[:50]} ({size/1e9:.1f}GB)"
+    try:
+        send_notification(msg)
+    except Exception as e:
+        log.error(f"Synology dedup: notification failed: {e}")
+
+
+def _job_synology_dedup():
+    try:
+        _do_synology_dedup()
+    except Exception as e:
+        log.error(f"Synology dedup job error: {e}")
+
+
 def start_scheduler():
     """Start all APScheduler jobs."""
     _scheduler.add_job(_job_sync_libraries, 'interval', hours=6,
@@ -180,6 +322,8 @@ def start_scheduler():
                        id='weekly_digest', replace_existing=True)
     _scheduler.add_job(_job_filesystem_scan, 'interval', minutes=30,
                        id='filesystem_scan', replace_existing=True)
+    _scheduler.add_job(_job_synology_dedup, 'cron', hour=3, minute=30,
+                       id='synology_dedup', replace_existing=True)
     _scheduler.start()
     log.info("Scheduler started")
 
