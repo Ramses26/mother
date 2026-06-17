@@ -448,7 +448,8 @@
     <MediaDetail :item="selectedItem" @close="selectedItem = null"
       @delete="startDelete" @unmonitor="doUnmonitor"/>
     <DeleteConfirm :show="!!deleteTarget" :item="deleteTarget" :require-typing="true"
-      @confirm="doDelete" @cancel="deleteTarget = null"/>
+      media-type="tv"
+      @done="onDeleteDone" @cancel="deleteTarget = null"/>
 
     <!-- Bulk action bar -->
     <div v-if="selectedIds.size > 0"
@@ -464,18 +465,61 @@
       <button @click="selectedIds.value = new Set(); selectedSizes.clear()" class="text-slate-400 hover:text-white text-lg leading-none px-2">✕</button>
     </div>
 
-    <!-- Bulk delete confirmation modal -->
-    <div v-if="bulkDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div class="rounded-xl border p-6 w-full max-w-sm shadow-2xl" style="background:#1a1d27; border-color:#2d3250;">
-        <h3 class="text-white font-bold text-lg mb-2">Delete {{ selectedIds.size }} shows?</h3>
-        <div class="text-slate-400 text-sm mb-4 space-y-1">
-          <div v-for="title in bulkDeleteTitles().slice(0, 8)" :key="title">• {{ title }}</div>
-          <div v-if="selectedIds.size > 8" class="text-slate-500">…and {{ selectedIds.size - 8 }} more</div>
-        </div>
-        <div class="flex gap-3">
-          <button @click="bulkDeleteConfirm = false" class="flex-1 btn-secondary text-sm">Cancel</button>
-          <button @click="doBulkDelete" class="flex-1 btn-danger text-sm">Delete {{ selectedIds.size }}</button>
-        </div>
+    <!-- Bulk delete modal -->
+    <div v-if="bulkDeleteConfirm || bulkDeleteRunning || bulkDeleteResult"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div class="rounded-xl border p-6 w-full max-w-md shadow-2xl" style="background:#1a1d27; border-color:#2d3250;">
+
+        <!-- Confirm phase -->
+        <template v-if="bulkDeleteConfirm && !bulkDeleteRunning && !bulkDeleteResult">
+          <h3 class="text-white font-bold text-lg mb-2">Delete {{ selectedIds.size }} shows?</h3>
+          <div class="text-slate-400 text-sm mb-4 space-y-1">
+            <div v-for="title in bulkDeleteTitles().slice(0, 8)" :key="title">• {{ title }}</div>
+            <div v-if="selectedIds.size > 8" class="text-slate-500">…and {{ selectedIds.size - 8 }} more</div>
+          </div>
+          <div class="flex gap-3">
+            <button @click="bulkDeleteConfirm = false" class="flex-1 btn-secondary text-sm">Cancel</button>
+            <button @click="doBulkDelete" class="flex-1 btn-danger text-sm">Delete {{ selectedIds.size }}</button>
+          </div>
+        </template>
+
+        <!-- Running phase -->
+        <template v-else-if="bulkDeleteRunning">
+          <h3 class="text-white font-bold text-lg mb-4">Deleting {{ bulkDeleteProgress.total }} shows…</h3>
+          <div class="h-2 rounded-full overflow-hidden mb-3" style="background:#2d3250;">
+            <div class="h-full bg-violet-600 rounded-full transition-all"
+              :style="{ width: (bulkDeleteProgress.done / bulkDeleteProgress.total * 100) + '%' }"></div>
+          </div>
+          <div class="text-sm text-slate-400">
+            {{ bulkDeleteProgress.done }} / {{ bulkDeleteProgress.total }}
+            <span v-if="bulkDeleteProgress.current" class="text-slate-500"> · {{ bulkDeleteProgress.current }}</span>
+          </div>
+        </template>
+
+        <!-- Result phase -->
+        <template v-else-if="bulkDeleteResult">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="text-2xl">{{ bulkDeleteResult.failed.length === 0 ? '✓' : '⚠' }}</div>
+            <div>
+              <div class="text-white font-bold">
+                {{ bulkDeleteResult.succeeded.length }} deleted
+                <span v-if="bulkDeleteResult.failed.length" class="text-red-400">
+                  · {{ bulkDeleteResult.failed.length }} failed
+                </span>
+              </div>
+              <div v-if="bulkDeleteResult.freed_gb > 0" class="text-sm text-slate-400">
+                {{ bulkDeleteResult.freed_gb.toFixed(1) }} GB freed
+              </div>
+            </div>
+          </div>
+          <div v-if="bulkDeleteResult.failed.length" class="mb-4 max-h-40 overflow-y-auto space-y-1">
+            <div v-for="f in bulkDeleteResult.failed" :key="f.id"
+              class="text-xs text-red-300 p-2 rounded" style="background:#1f0a0a;">
+              ✗ {{ f.title }} — {{ f.error }}
+            </div>
+          </div>
+          <button @click="bulkDeleteResult = null; bulkDeleteConfirm = false" class="w-full btn-secondary text-sm">Close</button>
+        </template>
       </div>
     </div>
 
@@ -516,6 +560,9 @@ const availableGenres = ref([])
 const availableContentRatings = ref([])
 const showAllGenres = ref(false)
 const bulkDeleteConfirm = ref(false)
+const bulkDeleteRunning = ref(false)
+const bulkDeleteResult = ref(null)
+const bulkDeleteProgress = ref({ done: 0, total: 0, current: '' })
 const toast = ref('')
 let toastTimer = null
 let fetchTimer = null
@@ -698,12 +745,10 @@ const openDetail = async (s) => {
 
 const startDelete = (item) => { deleteTarget.value = item }
 
-const doDelete = async () => {
-  if (!deleteTarget.value) return
-  try {
-    await axios.delete(`/api/tv/${deleteTarget.value.id}`, { data: { confirm: true } })
-    selectedItem.value = null; deleteTarget.value = null; fetchShows()
-  } catch { alert('Delete failed') }
+const onDeleteDone = () => {
+  selectedItem.value = null
+  deleteTarget.value = null
+  fetchShows()
 }
 
 const doUnmonitor = async (item) => {
@@ -812,16 +857,39 @@ const doBulkMonitor = async () => {
 const doBulkDelete = async () => {
   const ids = [...selectedIds.value]
   bulkDeleteConfirm.value = false
-  try {
-    const res = await axios.post('/api/tv/bulk-delete', { ids })
-    const succeeded = res.data.succeeded || []
-    const failed = res.data.failed || []
-    const succeededIds = new Set(succeeded.map(s => s.id))
-    shows.value = shows.value.filter(s => !succeededIds.has(s.id))
-    selectedIds.value = new Set(); selectedSizes.clear()
-    showToast(failed.length > 0 ? `${succeeded.length} deleted, ${failed.length} failed` : `${succeeded.length} deleted`)
-    fetchShows()
-  } catch { showToast('Delete failed') }
+  bulkDeleteRunning.value = true
+  bulkDeleteProgress.value = { done: 0, total: ids.length, current: '' }
+
+  const succeeded = [], failed = []
+  let freed_bytes = 0
+
+  // Delete one at a time so we can show progress per item
+  for (const id of ids) {
+    const show = shows.value.find(s => s.id === id)
+    bulkDeleteProgress.value.current = show?.title || `id ${id}`
+    try {
+      const res = await axios.delete(`/api/tv/${id}`, { data: { confirm: true } })
+      const d = res.data
+      if (d.arr_delete_ok) {
+        succeeded.push({ id, title: show?.title || String(id) })
+        freed_bytes += d.freed_bytes || 0
+      } else {
+        failed.push({ id, title: show?.title || String(id), error: d.message || 'Arr deletion failed' })
+      }
+    } catch (err) {
+      failed.push({ id, title: show?.title || String(id), error: err?.response?.data?.detail || 'Request failed' })
+    }
+    bulkDeleteProgress.value.done++
+  }
+
+  bulkDeleteRunning.value = false
+  bulkDeleteResult.value = { succeeded, failed, freed_gb: freed_bytes / 1_073_741_824 }
+
+  const succeededIds = new Set(succeeded.map(s => s.id))
+  shows.value = shows.value.filter(s => !succeededIds.has(s.id))
+  selectedIds.value = new Set(); selectedSizes.clear()
+  if (failed.length === 0) setTimeout(() => { bulkDeleteResult.value = null; fetchShows() }, 2500)
+  else fetchShows()
 }
 
 const doExportCSV = () => {

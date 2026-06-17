@@ -470,7 +470,8 @@
 
     <!-- Delete confirm -->
     <DeleteConfirm :show="!!deleteTarget" :item="deleteTarget"
-      @confirm="doDelete" @cancel="deleteTarget = null"/>
+      media-type="movie"
+      @done="onDeleteDone" @cancel="deleteTarget = null"/>
 
     <!-- Bulk action bar -->
     <div v-if="selectedIds.size > 0"
@@ -798,16 +799,10 @@ const openDetail = async (m) => {
 
 const startDelete = (item) => { deleteTarget.value = item }
 
-const doDelete = async () => {
-  if (!deleteTarget.value) return
-  try {
-    await axios.delete(`/api/movies/${deleteTarget.value.id}`, { data: { confirm: true } })
-    selectedItem.value = null
-    deleteTarget.value = null
-    fetchMovies()
-  } catch {
-    alert('Delete failed')
-  }
+const onDeleteDone = () => {
+  selectedItem.value = null
+  deleteTarget.value = null
+  fetchMovies()
 }
 
 const doUnmonitor = async (item) => {
