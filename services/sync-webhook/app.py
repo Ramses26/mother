@@ -1684,6 +1684,66 @@ def _get_unraid_movie_folders() -> set:
     return folders
 
 
+def _score_filename(filename: str, size_bytes: int = 0) -> int:
+    """TRaSH-aligned quality score from a media filename.
+    Used by version reconcile to compare Synology vs Unraid quality — higher wins."""
+    name = filename.lower()
+
+    # Resolution
+    if re.search(r'\b(2160p|4k|uhd)\b', name):
+        res_score, is_4k = 4000, True
+    elif re.search(r'\b1080p\b', name):
+        res_score, is_4k = 2000, False
+    elif re.search(r'\b720p\b', name):
+        res_score, is_4k = 0, False
+    else:
+        res_score, is_4k = -500, False  # SD
+
+    # Source
+    src_score = 0
+    if re.search(r'\bremux\b', name):
+        src_score = 2000
+    elif re.search(r'\b(bluray|blu-ray|bdrip|bdremux)\b', name):
+        src_score = 1500
+    elif re.search(r'\b(web-dl|webdl)\b', name):
+        src_score = 1000
+    elif re.search(r'\bwebrip\b', name):
+        src_score = 800
+    elif re.search(r'\bhdtv\b', name):
+        src_score = 200
+
+    # HDR — longer tags checked first to avoid partial matches
+    _HDR_4K = [('dv hdr10+', 800), ('dv hdr10', 800), ('hdr10+', 300), ('hdr10', 700),
+               ('dv hlg', 400), ('dv sdr', 300), ('dolby vision', 400), ('dv', 400), ('hdr', 700), ('hlg', 300)]
+    _HDR_HD = [('dv hdr10+', 400), ('dv hdr10', 400), ('hdr10+', 350), ('hdr10', 400),
+               ('dv hlg', 350), ('dv sdr', 300), ('dolby vision', 350), ('dv', 350), ('hdr', 400), ('hlg', 300)]
+    hdr_score = 0
+    for tag, pts in (_HDR_4K if is_4k else _HDR_HD):
+        if tag in name:
+            hdr_score = pts
+            break
+
+    # Audio — longest/best tags first
+    audio_score = 0
+    for tag, pts in [('truehd atmos', 500), ('truehd', 450), ('dts-hd ma', 400),
+                     ('dts:x', 400), ('dts-hd', 350), ('eac3 atmos', 300), ('atmos', 500),
+                     ('eac3', 150), ('dts', 200), ('dd+', 150), ('ac3', 100), ('aac', 50)]:
+        if tag in name:
+            audio_score = pts
+            break
+
+    # HEVC penalty at 1080p without HDR
+    is_hevc = bool(re.search(r'\b(x265|h265|hevc|x\.265)\b', name))
+    hevc_penalty = 0
+    if is_hevc and not is_4k and hdr_score == 0:
+        hevc_penalty = -300
+
+    # Size bonus capped at 200 (+10 per GB)
+    size_bonus = min(int(size_bytes / 1_073_741_824 * 10), 200)
+
+    return res_score + src_score + hdr_score + audio_score + hevc_penalty + size_bonus
+
+
 def _should_sync_tv_episode(filename: str) -> bool:
     """Returns False for files that must NOT be synced per sync rules:
     – 720p/SD content (Upgraderr handles the upgrade first)
@@ -1950,11 +2010,25 @@ def reconcile_tv_versions():
                 if key not in unraid_ep_files:
                     continue  # gap scanner handles missing episodes
 
-                unraid_fname, unraid_path, _ = unraid_ep_files[key]
+                unraid_fname, unraid_path, unraid_size = unraid_ep_files[key]
                 if fname.lower() == unraid_fname.lower():
                     continue  # same file — in sync
 
-                # Different filename: Synology has a different version than Unraid
+                # Only replace if Synology's TRaSH score strictly exceeds Unraid's.
+                try:
+                    syn_size = f_entry.stat().st_size
+                except OSError:
+                    syn_size = 0
+                syn_score = _score_filename(fname, syn_size)
+                unraid_score = _score_filename(unraid_fname, unraid_size)
+                if syn_score <= unraid_score:
+                    logger.debug(
+                        f"TV version reconcile: skipping {show_name} {ep_key} — "
+                        f"Synology score {syn_score} ≤ Unraid score {unraid_score} "
+                        f"(syn={fname!r} vs unraid={unraid_fname!r})"
+                    )
+                    continue
+
                 display_title = f"{show_name} - {ep_key}"
                 mismatches.append((f_entry.path, unraid_path, display_title))
 
@@ -2098,10 +2172,22 @@ def reconcile_movie_versions():
             continue
 
         syn_fname = os.path.basename(syn_best)
-        unraid_fname, unraid_path, _ = unraid_movie_files[movie_folder]
+        unraid_fname, unraid_path, unraid_size = unraid_movie_files[movie_folder]
 
         if syn_fname.lower() == unraid_fname.lower():
             continue  # in sync
+
+        # Only replace if Synology's TRaSH score strictly exceeds Unraid's.
+        # This prevents replacing a Remux with a WEB-DL, or any equal-quality re-encode.
+        syn_score = _score_filename(syn_fname, syn_best_size)
+        unraid_score = _score_filename(unraid_fname, unraid_size)
+        if syn_score <= unraid_score:
+            logger.debug(
+                f"Movie version reconcile: skipping '{movie_folder}' — "
+                f"Synology score {syn_score} ≤ Unraid score {unraid_score} "
+                f"(syn={syn_fname!r} vs unraid={unraid_fname!r})"
+            )
+            continue
 
         mismatches.append((syn_best, unraid_path, movie_folder))
 
