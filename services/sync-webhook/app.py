@@ -2099,11 +2099,13 @@ def reconcile_movie_versions():
     """
     Nightly movie version reconciliation — runs at 11:45 PM ET (after movie gap scan).
 
-    For movie folders present on BOTH Synology and Unraid, compares the main video
-    file (largest .mkv/.mp4 in folder). If they differ, queues a MovieVersionSync
-    job that rsyncs the Synology file and deletes the old Unraid file after success.
+    Uses Radarr HD API as the canonical source of what file should exist on Synology.
+    For each movie where Radarr's imported file differs from what's on Unraid, queues
+    a MovieVersionSync job (rsync new file → delete old Unraid file on success).
 
-    Uses cached Agent inventory from movie gap scan (no re-scan cost).
+    Radarr is the quality authority — its imported file reflects the quality profile
+    and Recyclarr settings Chris has configured. The score gate still prevents
+    replacing a higher-quality Unraid copy with a lower-quality Radarr file.
     """
     logger.info("Movie version reconcile: starting check for version mismatches...")
 
@@ -2112,11 +2114,43 @@ def reconcile_movie_versions():
         logger.warning(f"Movie version reconcile: PAUSE_VERSION_SYNC sentinel exists — skipping. Remove {pause_file} to re-enable.")
         return
 
-    synology_movies_root = '/mnt/synology/rs-movies'
-    if not os.path.isdir(synology_movies_root):
-        logger.error("Movie version reconcile: Synology movies mount not accessible")
+    # ── Step 1: Get Radarr's canonical file map ────────────────────────────────
+    # Radarr knows exactly which file it imported for each movie — far more reliable
+    # than guessing from the largest NFS file.
+    synology_movies_nfs = '/mnt/synology/rs-movies'
+    try:
+        resp = requests.get(
+            f"{RADARR_HD_URL}/api/v3/movie",
+            params={'includeMovieFile': 'true'},
+            headers={'X-Api-Key': RADARR_HD_API_KEY},
+            timeout=120
+        )
+        resp.raise_for_status()
+        radarr_movies = resp.json()
+    except Exception as e:
+        logger.error(f"Movie version reconcile: Radarr API failed — {e}")
         return
 
+    # Build dict: folder_name → (expected_filename, nfs_path, size, quality_name)
+    # Radarr container path /movies/<folder>/<file> → NFS /mnt/synology/rs-movies/<folder>/<file>
+    radarr_file_map: dict = {}
+    for m in radarr_movies:
+        if not m.get('hasFile') or not m.get('movieFile'):
+            continue
+        mf = m['movieFile']
+        container_path = mf.get('path', '')  # e.g. /movies/Movie (Year)/file.mkv
+        if not container_path:
+            continue
+        folder = os.path.basename(os.path.dirname(container_path))
+        filename = os.path.basename(container_path)
+        nfs_path = os.path.join(synology_movies_nfs, folder, filename)
+        quality = mf.get('quality', {}).get('quality', {}).get('name', '?')
+        size = mf.get('size', 0)
+        radarr_file_map[folder] = (filename, nfs_path, size, quality)
+
+    logger.info(f"Movie version reconcile: {len(radarr_file_map):,} movies with files in Radarr")
+
+    # ── Step 2: Get Unraid inventory ───────────────────────────────────────────
     try:
         resp = requests.get(
             f"{UNRAID_AGENT_URL}/inventory",
@@ -2130,16 +2164,14 @@ def reconcile_movie_versions():
         logger.error(f"Movie version reconcile: Agent inventory failed: {e}")
         return
 
-    # Build dict: movie_folder -> (fname, full_unraid_path, size) for largest video file
     video_exts = ('.mkv', '.mp4', '.avi', '.m4v')
-    skip_names = {'#recycle', '@eaDir', '.DS_Store'}
     unraid_movie_files: dict = {}
     for item in agent_data.get('items', []):
         path = item.get('path', '')
         parts = path.split('/')
         if len(parts) < 7:
             continue
-        movie_folder = parts[5]  # /mnt/user/Media/Movies/<folder>/<file>
+        movie_folder = parts[5]
         fname = parts[-1]
         if not any(fname.lower().endswith(ext) for ext in video_exts):
             continue
@@ -2147,49 +2179,42 @@ def reconcile_movie_versions():
         if movie_folder not in unraid_movie_files or size > unraid_movie_files[movie_folder][2]:
             unraid_movie_files[movie_folder] = (fname, path, size)
 
-    mismatches = []  # (syn_file_path, unraid_file_path, movie_folder)
-    for folder_entry in os.scandir(synology_movies_root):
-        if not folder_entry.is_dir() or folder_entry.name in skip_names:
-            continue
-        movie_folder = folder_entry.name
+    # ── Step 3: Compare Radarr canonical file vs Unraid ───────────────────────
+    mismatches = []  # (syn_file_path, unraid_file_path, movie_folder, quality)
+    for movie_folder, (radarr_fname, nfs_path, radarr_size, quality) in radarr_file_map.items():
         if movie_folder not in unraid_movie_files:
             continue  # gap scanner handles missing folders
 
-        # Find largest video file in Synology folder
-        syn_best = None
-        syn_best_size = 0
-        try:
-            for f in os.scandir(folder_entry.path):
-                if f.is_file() and any(f.name.lower().endswith(ext) for ext in video_exts):
-                    sz = f.stat().st_size
-                    if sz > syn_best_size:
-                        syn_best = f.path
-                        syn_best_size = sz
-        except OSError:
-            continue
-
-        if not syn_best:
-            continue
-
-        syn_fname = os.path.basename(syn_best)
         unraid_fname, unraid_path, unraid_size = unraid_movie_files[movie_folder]
 
-        if syn_fname.lower() == unraid_fname.lower():
+        if radarr_fname.lower() == unraid_fname.lower():
             continue  # in sync
 
-        # Only replace if Synology's TRaSH score strictly exceeds Unraid's.
-        # This prevents replacing a Remux with a WEB-DL, or any equal-quality re-encode.
-        syn_score = _score_filename(syn_fname, syn_best_size)
+        # Verify the Radarr file actually exists on Synology NFS before queuing
+        if not os.path.isfile(nfs_path):
+            logger.warning(f"Movie version reconcile: Radarr file not on NFS — skipping '{movie_folder}' "
+                           f"({radarr_fname!r} not at {nfs_path!r})")
+            continue
+
+        # Score gate: Radarr's file must be strictly better quality than what's on Unraid.
+        # This protects against the edge case where Unraid somehow has a higher-quality copy
+        # (e.g., from a previous sync before Radarr downgraded).
+        syn_score = _score_filename(radarr_fname, radarr_size)
         unraid_score = _score_filename(unraid_fname, unraid_size)
         if syn_score <= unraid_score:
-            logger.debug(
+            logger.info(
                 f"Movie version reconcile: skipping '{movie_folder}' — "
-                f"Synology score {syn_score} ≤ Unraid score {unraid_score} "
-                f"(syn={syn_fname!r} vs unraid={unraid_fname!r})"
+                f"Radarr has {quality!r} (score {syn_score}) but Unraid has equal/better "
+                f"(score {unraid_score}). Unraid: {unraid_fname!r}"
             )
             continue
 
-        mismatches.append((syn_best, unraid_path, movie_folder))
+        mismatches.append((nfs_path, unraid_path, movie_folder, quality))
+        logger.debug(
+            f"Movie version reconcile: mismatch '{movie_folder}': "
+            f"Radarr={radarr_fname!r} [{quality}] score={syn_score} vs "
+            f"Unraid={unraid_fname!r} score={unraid_score}"
+        )
 
     if not mismatches:
         logger.info("Movie version reconcile: all movies in sync — no version mismatches")
@@ -2201,7 +2226,7 @@ def reconcile_movie_versions():
     queued = 0
     queued_titles = []
 
-    for syn_path, unraid_path, movie_folder in mismatches:
+    for syn_path, unraid_path, movie_folder, quality in mismatches:
         if queued >= VERSION_SYNC_MAX_PER_RUN:
             logger.info(f"Movie version reconcile: capped at {VERSION_SYNC_MAX_PER_RUN} — "
                         f"{len(mismatches) - queued} deferred to tomorrow")
@@ -2220,9 +2245,9 @@ def reconcile_movie_versions():
         if VERSION_SYNC_DRY_RUN:
             logger.info(f"[DRY RUN] Movie version reconcile: would replace {movie_folder}\n"
                         f"  old: {os.path.basename(unraid_path)}\n"
-                        f"  new: {os.path.basename(syn_path)}")
+                        f"  new: {os.path.basename(syn_path)}  [{quality}]")
             queued += 1
-            queued_titles.append(movie_folder)
+            queued_titles.append(f"{movie_folder} [{quality}]")
             continue
 
         background_sync(
@@ -2236,9 +2261,9 @@ def reconcile_movie_versions():
             delete_after_sync=unraid_path,
         )
         queued += 1
-        queued_titles.append(movie_folder)
+        queued_titles.append(f"{movie_folder} [{quality}]")
         logger.info(f"Movie version reconcile: queued replacement for {movie_folder} "
-                    f"({os.path.basename(unraid_path)} → {os.path.basename(syn_path)})")
+                    f"[{quality}] ({os.path.basename(unraid_path)} → {os.path.basename(syn_path)})")
 
     if queued > 0:
         dry = " (DRY RUN)" if VERSION_SYNC_DRY_RUN else ""
