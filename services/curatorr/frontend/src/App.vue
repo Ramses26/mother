@@ -65,6 +65,7 @@ const navLinks = [
   { to: '/tv', label: 'TV Shows' },
   { to: '/collections', label: 'Collections' },
   { to: '/duplicates', label: 'Duplicates' },
+  { to: '/sync-status', label: 'Sync Status' },
   { to: '/rules', label: 'Rules' },
   { to: '/logs', label: 'Logs' },
   { to: '/settings', label: 'Settings' },

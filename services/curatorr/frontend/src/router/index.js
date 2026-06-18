@@ -11,6 +11,7 @@ const routes = [
   { path: '/duplicates', component: () => import('../views/Duplicates.vue') },
   { path: '/rules', component: () => import('../views/Rules.vue') },
   { path: '/logs', component: () => import('../views/Logs.vue') },
+  { path: '/sync-status', component: () => import('../views/SyncStatus.vue') },
   { path: '/settings', component: () => import('../views/Settings.vue') },
   { path: '/help', component: () => import('../views/Help.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' },

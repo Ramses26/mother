@@ -1,6 +1,6 @@
 # Project Mother — Operations Guide
 
-**Last Updated**: 2026-06-17
+**Last Updated**: 2026-06-18
 
 This document covers day-to-day operations, monitoring, and troubleshooting for Project Mother in its current **steady-state** configuration. Batch syncs are complete; ongoing sync is driven entirely by webhooks and nightly scheduled jobs.
 
@@ -66,20 +66,29 @@ Nightly jobs catch anything the webhook missed (container restart, race conditio
 
 **Quality filter**: 720p, SD, and x265-without-HDR/DV are **never** queued — Upgraderr upgrades Chris's side first, then the next gap scan picks up the upgraded version.
 
-**Version reconcile**: When Synology has a better version of something already on Unraid (e.g., WEB-DL vs old Remux), version reconcile rsyncs the new file then calls the Unraid Agent to delete the old one. Guarded by `PAUSE_VERSION_SYNC` sentinel.
+**Version reconcile** (movie): For each movie folder, scans ALL video files on Synology NFS directly (`os.scandir`) and picks the highest TRaSH-scored file (including custom format bonuses: `[Hybrid]`=+100, release group `-GROUP.ext`=+50, `Proper/Repack`=+25). Only queues replacement if Synology's best file score > Unraid's file score — this prevents overwriting a better release-group copy on Unraid with Radarr's unnamed version. `.m2ts` files are included in the scan.
+
+**Version reconcile** (TV): Synology is the Sonarr-managed source of truth. Any filename mismatch queues a replacement without a score gate.
+
+Both reconcile jobs call the Unraid Agent to delete the old file after rsync succeeds. Guarded by `PAUSE_VERSION_SYNC` sentinel.
 
 ### Layer 3: Upgraderr Quality Sweep (Every 30 Min)
 
-Upgraderr classifies all Radarr/Sonarr items into 6 upgrade tiers and triggers searches:
+Upgraderr classifies all Radarr/Sonarr items into **7 upgrade tiers** and triggers searches:
 
-| Tier | Target |
-|------|--------|
-| 1 | m2ts/BDMV raw discs → proper encode |
-| 2 | Non-MKV container → MKV |
-| 3 | 720p/SD → 1080p |
-| 4 | TMDB physical release available → better BluRay source |
-| 5 | No surround audio → Atmos/DTS-HD |
-| 6 | Low TRaSH score → better quality |
+| Tier | Target | Notes |
+|------|--------|-------|
+| 1 | m2ts/BDMV raw discs → proper encode | Highest priority |
+| 2 | Non-MKV container → MKV | |
+| 3 | 720p/SD → 1080p | |
+| 4 | TMDB physical release ≥90 days ago → BluRay | Checks TMDB release dates API |
+| 5 | No surround audio → Atmos/DTS-HD MA | Skips pre-1992 films |
+| 6 | Low TRaSH score → better quality | |
+| 7 | Quality profile mismatch → correct format | **Lowest priority** — file is watchable but outside Radarr profile (e.g. Remux when profile says Blu-ray) |
+
+**Tier 7 detail**: Radarr won't auto-search for profile mismatches because the file quality is above the profile ceiling in Radarr's quality ordering (`cutoffNotMet=false`). Upgraderr detects this by fetching `GET /api/v3/qualityprofile` and checking if the file's quality ID is in the profile's `allowed` list. If not → Tier 7 search.
+
+To prioritize Tier 3 (720p upgrades): disable Tiers 4–7 in Settings UI.
 
 UI: `http://mother:9706` (JWT login required)
 
@@ -136,9 +145,22 @@ curl http://localhost:9706/health      # Upgraderr health
 
 - **Grafana**: `http://mother:3003` — service metrics + log streams
 - **Dozzle**: `http://mother:8080` — live Docker logs
-- **Upgraderr UI**: `http://mother:9706` — upgrade queue + tier breakdown
-- **Curatorr UI**: `http://mother:9707` — library browser + duplicates
+- **Upgraderr UI**: `http://mother:9706` — upgrade queue + 7-tier breakdown
+- **Curatorr UI**: `http://mother:9707` — library browser + sync status + duplicates
+  - **Sync Status tab**: Shows In Sync / Missing / Version Mismatch / Radarr Out of Date / Not Downloaded for HD movies and TV episodes
 - **Uptime Kuma**: `http://mother:3001` — service availability
+
+### Curatorr Sync Status
+
+Navigate to `http://mother:9707/sync-status` to see the real-time sync health:
+
+| Card | Color | Meaning | Action |
+|------|-------|---------|--------|
+| In Sync | Green | Same file on both sides | None |
+| Missing from Unraid | Red | Folder on Synology not on Unraid | Gap scan will queue tonight |
+| Version Mismatch | Violet | Synology has a higher-scored file | Version reconcile runs tonight at 11:45 PM |
+| Radarr Out of Date | Amber | Synology folder has better file than Radarr tracks | Trigger Radarr → Library Import / Rescan |
+| Not Downloaded | Gray | No file yet in Radarr | Monitor Radarr queue |
 
 ---
 

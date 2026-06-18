@@ -11,7 +11,8 @@ Curatorr provides:
 - Watch history tracking from both Tautulli instances (Ali + Chris)
 - Rules engine for automated media management
 - Collection tracking (TMDB collections)
-- Duplicate detection
+- Duplicate detection (Synology NFS scan + Unraid Agent API)
+- **Sync Status** — real-time Synology→Unraid parity view showing In Sync / Missing / Version Mismatch / Radarr Out of Date / Not Downloaded for HD Movies and TV
 - Direct deletion via Radarr/Sonarr API + Unraid NFS
 
 ## Access

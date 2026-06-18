@@ -9,14 +9,21 @@ When Radarr or Sonarr imports a new file (download complete), they send a webhoo
 1. Parses the webhook payload to extract file/folder paths
 2. Checks NFS mount health before proceeding
 3. Translates container paths to NFS mount paths
-4. **For upgrades: Deletes old file(s) from destination before syncing new file**
-5. Logs the job to SQLite database
-6. Runs rsync in background thread (webhook returns immediately)
-7. Sends a Telegram notification on success or failure
-8. Auto-retries failed jobs every 15 minutes
-9. Sends daily summary report at midnight
+4. Logs the job to SQLite database
+5. Runs rsync in background thread (webhook returns immediately)
+6. Sends a Telegram notification on success or failure
+7. Auto-retries failed jobs every 15 minutes (exponential backoff)
+8. Sends daily summary report at 8:05 PM ET
 
-**Critical design rule**: The service is **append-only** — it never deletes files from Unraid. `MovieFileDelete` and `EpisodeFileDelete` events are intentionally ignored. Deletions happen exclusively through the nightly Unraid dedup job.
+**Critical design rule**: The service is **append-only** — it never deletes files from Unraid. `MovieFileDelete` and `EpisodeFileDelete` events are intentionally ignored. Deletions happen exclusively through the nightly Unraid dedup job (8:00 AM ET).
+
+**Nightly jobs** (all times Eastern, DST-aware):
+- 11:00 PM — TV gap scan (missing episodes Synology→Unraid)
+- 11:15 PM — TV version reconcile (filename mismatch → replace on Unraid)
+- 11:30 PM — Movie gap scan (missing movie folders)
+- 11:45 PM — Movie version reconcile (Synology folder scan + TRaSH score gate)
+- 12:15 AM — Library health report (Telegram summary)
+- 8:00 AM — Unraid dedup (runs in morning after overnight queue drains)
 
 ## Files
 

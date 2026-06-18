@@ -80,7 +80,7 @@ Project Mother is a media management and synchronization system consolidating tw
    - **TV gap scan (11:00 PM ET)**: finds episodes on Synology missing from Unraid, queues them. Capped at `GAP_SCAN_MAX_QUEUE=500` per run.
    - **TV version reconcile (11:15 PM ET)**: for episodes present on BOTH sides, compares filenames. If Synology has a newer version (e.g. WEB-DL vs old Remux), queues `TVVersionSync` — rsyncs new file then deletes old Unraid file via Agent. Cap: `VERSION_SYNC_MAX_PER_RUN=20`.
    - **Movie gap scan (11:30 PM ET)**: finds movie folders on Synology missing from Unraid, queues them. Same cap.
-   - **Movie version reconcile (11:45 PM ET)**: same as TV reconcile but compares the largest video file per movie folder. Queues `MovieVersionSync`.
+   - **Movie version reconcile (11:45 PM ET)**: Scans the ACTUAL Synology folder (`os.scandir`) for ALL video files (`.mkv`, `.mp4`, `.avi`, `.m4v`, `.ts`, `.m2ts`), picks the highest TRaSH-scored file including custom format bonuses (`[Hybrid]`=+100, release group `-GROUP.ext`=+50, Proper/Repack=+25). Compares against Unraid's best file. **Score gate**: only queues `MovieVersionSync` if Synology best score > Unraid score — prevents overwriting Unraid's better release-group copy with Radarr's unnamed version.
    - **Library health report (12:15 AM ET)**: Telegram summary of missing movies/episodes.
    - **Unraid dedup (8:00 AM ET)**: calls Unraid Agent to find and delete lower-quality duplicates. Runs in the morning to give the overnight rsync queue ~8 hours to drain before dedup evaluates what remains.
 
@@ -178,8 +178,8 @@ Scans media directories, extracts quality metadata from filenames via regex, out
 
 ### `services/upgraderr/app.py` (Flask app)
 Custom quality upgrade automation service replacing Huntarr. Handles:
-- Discovery sweep every 30 min: classifies all 4 *arr instances into 6 upgrade tiers
-- **6 Tiers**: m2ts/BDMV (1), non-MKV container (2), 720p/SD (3), TMDB BluRay available (4), no surround audio (5), low TRaSH score (6)
+- Discovery sweep every 30 min: classifies all 4 *arr instances into 7 upgrade tiers
+- **7 Tiers**: m2ts/BDMV (1), non-MKV container (2), 720p/SD (3), TMDB BluRay available (4), no surround audio (5), low TRaSH score (6), quality profile mismatch (7 — file quality not in Radarr's profile allowed list; Radarr won't auto-search because `cutoffNotMet=false`; Upgraderr forces search)
 - APScheduler tasks: sweep (every 30min), TMDB scan (02:30 UTC daily), DB backup (03:00 UTC daily), search log prune (04:00 UTC daily, keeps 90 days)
 - Global pause toggle + per-instance budget (searches/day from `config` table)
 - Webhook endpoints: `POST /webhook/radarr`, `/webhook/sonarr` — records before/after quality on upgrades
@@ -211,6 +211,7 @@ Media intelligence and curation service. Comprehensive library browser with scor
 - TMDB collection tracking, duplicate detection
 - Direct deletion: calls *arr API + removes file from Unraid NFS path
 - **Filesystem duplicate scanner**: 4-tab UI — Synology Movies, Synology TV, Unraid Movies, Unraid TV. Scans NFS paths directly for Synology; calls Unraid Agent API for Unraid. TRaSH-scored, multi-select bulk delete with Synology `#recycle` purge.
+- **Sync Status** (`/sync-status`): Real-time Synology→Unraid parity view for HD Movies and TV. Shows In Sync / Missing / Version Mismatch / **Radarr Out of Date** (amber — Synology folder has better file than Radarr tracks; fix: trigger Radarr library rescan) / Not Downloaded. Uses Synology NFS folder scan (not just Radarr's tracked file) to find best TRaSH-scored file including custom format bonuses (Hybrid +100, release group +50, Proper +25).
 - APScheduler: 6h library sync, 02:00 watch history, 03:00 ratings, 04:00 rules, 04:30 backup, Sun 09:00 digest
 - JWT dual-token auth (bcrypt, HttpOnly cookies, 1h access / 7d refresh)
 - Telegram weekly digest via Apprise

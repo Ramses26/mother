@@ -247,7 +247,7 @@ async def poster_proxy(url: str, server: str = 'chris', _auth=Depends(require_au
 
 
 # ── Import route modules ──────────────────────────────────────────────────────
-from app.routes import sync, movies, tv, stats, collections, duplicates, rules, deletion_log, settings, actions, logs
+from app.routes import sync, movies, tv, stats, collections, duplicates, rules, deletion_log, settings, actions, logs, sync_status
 
 app.include_router(sync.router, prefix='/api')
 app.include_router(movies.router, prefix='/api')
@@ -260,6 +260,7 @@ app.include_router(deletion_log.router, prefix='/api')
 app.include_router(settings.router, prefix='/api')
 app.include_router(actions.router, prefix='/api')
 app.include_router(logs.router, prefix='/api')
+app.include_router(sync_status.router, prefix='/api')
 
 
 # ── SPA catch-all ─────────────────────────────────────────────────────────────

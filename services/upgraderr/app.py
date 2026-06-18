@@ -955,6 +955,23 @@ def _trigger_fallback_sync(container_path: str, title: str, media_type: str, qua
     threading.Thread(target=_post, daemon=True).start()
 
 
+def _build_profile_allowed(inst):
+    """Return dict: profile_id → frozenset of allowed quality IDs for this *arr instance."""
+    raw = arr_get(inst, '/qualityprofile') or []
+    result = {}
+    for p in raw:
+        allowed = set()
+        for item in p.get('items', []):
+            if item.get('allowed'):
+                if 'quality' in item:
+                    allowed.add(item['quality']['id'])
+                for sub in item.get('items', []):
+                    if 'quality' in sub:
+                        allowed.add(sub['quality']['id'])
+        result[p['id']] = frozenset(allowed)
+    return result
+
+
 def _sweep_radarr(inst, budget, trigger, tier_counts):
     inst_name = inst['name']
     movies = arr_get(inst, '/movie') or []
@@ -963,6 +980,10 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
 
     all_tags = {t['id']: t['label'].lower() for t in (arr_get(inst, '/tag') or [])}
     skip_tag_ids = {tid for tid, lbl in all_tags.items() if lbl in ('upgraderr-skip', 'upgraderr-no-source')}
+
+    # Quality profile map — used to detect files with quality not allowed by their profile
+    # (e.g. Remux imported via batch sync into a Bluray-only profile)
+    quality_profile_allowed = _build_profile_allowed(inst)
 
     random.shuffle(movies)
 
@@ -984,6 +1005,24 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
         filename = mfile.get('relativePath', '') or mfile.get('path', '')
         tmdb_id = movie.get('tmdbId')
         tiers = classify_tiers(filename, year=year, is_4k=is_4k, media_type='movie', tmdb_id=tmdb_id)
+
+        # Detect quality not allowed by the Radarr quality profile (e.g. Remux in a
+        # Blu-ray-only profile, imported via batch sync before profiles were applied).
+        # Radarr won't self-heal these because Remux scores above the Blu-ray cutoff,
+        # so cutoffNotMet stays false — we must force a search.
+        # Tier 7 (lowest priority): the file is watchable, just wrong for the profile.
+        # Run after all real quality problems (T1-T6) are addressed.
+        file_quality_id = ((mfile.get('quality') or {}).get('quality') or {}).get('id')
+        profile_id = movie.get('qualityProfileId')
+        if (file_quality_id and profile_id and profile_id in quality_profile_allowed
+                and file_quality_id not in quality_profile_allowed[profile_id]):
+            tiers.append((7, 'tier7_profile_mismatch'))
+            log.info(
+                f"[{inst_name}] {title} ({year}): quality profile mismatch (Tier 7) — "
+                f"file quality ID {file_quality_id} not in profile {profile_id} allowed IDs "
+                f"{quality_profile_allowed[profile_id]}"
+            )
+
         tiers = [(t, r) for (t, r) in tiers if _tier_enabled(t)]
         if not tiers:
             row = _db_get_queue_entry(inst_name, mid, 'movie')
