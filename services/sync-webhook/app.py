@@ -2186,11 +2186,21 @@ def reconcile_movie_versions():
         if movie_folder not in unraid_movie_files or sc > _score_filename(unraid_movie_files[movie_folder][0], unraid_movie_files[movie_folder][2]):
             unraid_movie_files[movie_folder] = (fname, path, size)
 
-    # ── Step 3: Scan Synology folder for best file, compare vs Unraid ─────────
-    # We scan the actual Synology folder rather than trusting Radarr's canonical
-    # file alone — Radarr may track an older file while a better one sits in the
-    # same folder (e.g. batch sync imported -DON.mkv but Radarr still references
-    # the unnamed version it originally downloaded).
+    # ── Step 3: Compare Radarr's file vs Unraid, queue mismatches ────────────
+    # Radarr is the authority for what file should exist on both sides.
+    # We also scan the Synology folder so that if Unraid already has the best
+    # available file (e.g. a better release-group copy from batch sync that
+    # Radarr hasn't recognised yet), we don't overwrite it.
+    #
+    # Decision tree:
+    #   1. radarr_fname == unraid_fname → in sync, nothing to do
+    #   2. best Synology folder file == unraid_fname → Unraid already has
+    #      Synology's best (Radarr just hasn't rescanned yet) → in sync
+    #   3. Otherwise → sync Radarr's tracked file to Unraid and delete the old one
+    #
+    # NO score gate: profile mismatches (Remux when profile says Blu-ray) and
+    # container changes (m2ts → mkv) must sync even though Radarr's new file
+    # scores lower. Radarr chose the file; both sides must mirror that choice.
     synology_movies_nfs = '/mnt/synology/rs-movies'
     mismatches = []  # (syn_file_path, unraid_file_path, movie_folder, quality)
 
@@ -2200,7 +2210,11 @@ def reconcile_movie_versions():
 
         unraid_fname, unraid_path, unraid_size = unraid_movie_files[movie_folder]
 
-        # Scan Synology folder for the best available file (score-based, not just Radarr's view)
+        # Fast path: Radarr's tracked file == Unraid's file → in sync
+        if radarr_fname.lower() == unraid_fname.lower():
+            continue
+
+        # Scan Synology folder for all video files (best-quality first)
         folder_path = os.path.join(synology_movies_nfs, movie_folder)
         syn_files = []
         try:
@@ -2216,39 +2230,26 @@ def reconcile_movie_versions():
 
         if syn_files:
             syn_files.sort(key=lambda x: _score_filename(x[0], x[2]), reverse=True)
-            best_syn_fname, best_syn_path, best_syn_size = syn_files[0]
+            best_syn_fname, best_syn_path = syn_files[0][0], syn_files[0][1]
         else:
-            # Fallback to Radarr's canonical if NFS scan fails
-            best_syn_fname, best_syn_path, best_syn_size = radarr_fname, nfs_path, radarr_size
+            best_syn_fname, best_syn_path = radarr_fname, nfs_path
 
+        # If Unraid already has Synology's best file (even if Radarr hasn't rescanned yet) → in sync
         if best_syn_fname.lower() == unraid_fname.lower():
-            continue  # in sync
-
-        if not os.path.isfile(best_syn_path):
-            logger.warning(f"Movie version reconcile: best Synology file not accessible — "
-                           f"skipping '{movie_folder}' ({best_syn_fname!r})")
             continue
 
-        # Score gate: only queue if Synology's best file is strictly better than Unraid's.
-        # This prevents replacing Unraid's named release (e.g. -DON.mkv) with a lower-scored
-        # copy, and handles cases like [Hybrid] on Unraid scoring higher than non-Hybrid on Synology.
-        syn_score   = _score_filename(best_syn_fname, best_syn_size)
-        unraid_score = _score_filename(unraid_fname, unraid_size)
-
-        if syn_score <= unraid_score:
-            logger.info(
-                f"Movie version reconcile: skipping '{movie_folder}' — "
-                f"Synology best score {syn_score} ≤ Unraid score {unraid_score} "
-                f"(syn={best_syn_fname!r} vs unraid={unraid_fname!r})"
-            )
+        # Mismatch: sync Radarr's tracked file (authoritative source of truth)
+        if not os.path.isfile(nfs_path):
+            logger.warning(f"Movie version reconcile: Radarr's file missing from NFS — "
+                           f"skipping '{movie_folder}' ({radarr_fname!r})")
             continue
 
-        mismatches.append((best_syn_path, unraid_path, movie_folder, quality))
+        mismatches.append((nfs_path, unraid_path, movie_folder, quality))
         logger.info(
             f"Movie version reconcile: mismatch '{movie_folder}': "
-            f"Synology best={best_syn_fname!r} score={syn_score} vs "
-            f"Unraid={unraid_fname!r} score={unraid_score}"
-            + (f" [Radarr tracking {radarr_fname!r}]" if best_syn_fname != radarr_fname else "")
+            f"Radarr={radarr_fname!r} vs Unraid={unraid_fname!r}"
+            + (f" [Synology also has: {best_syn_fname!r}]"
+               if best_syn_fname.lower() != radarr_fname.lower() else "")
         )
 
     if not mismatches:

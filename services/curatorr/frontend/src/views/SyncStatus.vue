@@ -100,10 +100,11 @@
           </div>
           <div v-else>
             <div class="text-xs text-slate-500 mb-3 p-3 rounded" style="background:#1a1e2e; border:1px solid #2d3748;">
-              These movies have a different file on Unraid than what Radarr currently holds on Synology.
-              Radarr is the authority — its file will replace what's on Unraid regardless of score.
-              The nightly version reconcile (11:45 PM) queues replacements automatically.
-              Score is shown for reference only.
+              Radarr's file on Synology differs from what's on Unraid. Radarr is the authority —
+              its file replaces the Unraid copy regardless of TRaSH score. This includes
+              <strong class="text-slate-300">profile mismatches</strong> (e.g. Unraid has Remux but Radarr's profile says Blu-ray and it downloaded one)
+              and <strong class="text-slate-300">container changes</strong> (e.g. m2ts → MKV encode after Upgraderr Tier 1).
+              The nightly version reconcile (11:45 PM ET) queues replacements and deletes the old Unraid file.
             </div>
             <div v-for="m in movieData.syn_better" :key="m.title" class="mb-3 rounded-lg overflow-hidden"
               style="background:#1a1d27; border:1px solid #2d3748;">

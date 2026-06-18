@@ -208,80 +208,81 @@ def _run_movie_scan():
                 in_sync += 1
                 continue
 
-            # Use Synology's BEST file (from actual NFS scan) rather than just
-            # Radarr's canonical — Radarr may be tracking an older file in the folder.
+            # Decision tree (matches reconcile_movie_versions logic):
+            #   1. radarr_file == unraid_file → in sync
+            #   2. Synology's best file == unraid_file → in sync (Unraid has best, Radarr just stale)
+            #   3. Otherwise → Version Mismatch (version reconcile will fix tonight)
+            #
+            # NO score gate: Radarr's file is authoritative. Profile mismatches
+            # (Remux when profile says Blu-ray) and container changes (m2ts → mkv)
+            # are mismatches even if Radarr's new file scores lower.
+
             syn_info = syn_nfs.get(folder)
             if syn_info:
                 syn_file, syn_size = syn_info['best']
-                syn_has_dups = syn_info['count'] > 1
             else:
                 syn_file, syn_size = radarr_file, radarr_size
-                syn_has_dups = False
 
             unraid_file, unraid_path, unraid_size = unraid[folder]
 
-            syn_sc    = _score(syn_file, syn_size)
-            unraid_sc = _score(unraid_file, unraid_size)
-
-            # Detect when Radarr is tracking an old/unnamed file while the folder
-            # already contains a better one (e.g. batch sync added -DON.mkv but
-            # Radarr still references the unnamed version imported earlier).
+            # Detect when Radarr is tracking an old file while the folder has better
             radarr_behind = (
                 syn_file.lower() != radarr_file.lower()
-                and syn_sc > _score(radarr_file, radarr_size)
+                and _score(syn_file, syn_size) > _score(radarr_file, radarr_size)
             )
 
-            if syn_file.lower() == unraid_file.lower():
-                # Both sides have the same file — in sync.
-                # Still flag if Radarr is tracking something older.
+            # Case 1: Radarr's file == Unraid's file → in sync
+            if radarr_file.lower() == unraid_file.lower():
                 in_sync += 1
                 if radarr_behind:
                     radarr_stale.append({
                         'title': title,
                         'radarr_file': radarr_file, 'radarr_size_bytes': radarr_size,
                         'syn_file': syn_file, 'syn_size_bytes': syn_size,
-                        'syn_score': syn_sc,
+                        'syn_score': _score(syn_file, syn_size),
                         'syn_label': _qlabel(syn_file),
-                        'note': 'Both sides already have the better file — trigger a Radarr library rescan',
+                        'note': 'Both sides have Radarr\'s file — trigger a Radarr library rescan to adopt better version',
                     })
                 continue
 
-            if syn_sc > unraid_sc:
-                # Synology's best file is strictly better than Unraid's — needs sync.
-                entry = {
-                    'title': title,
-                    'syn_file': syn_file, 'syn_score': syn_sc,
-                    'syn_size_bytes': syn_size, 'syn_quality': quality,
-                    'syn_label': _qlabel(syn_file),
-                    'unraid_file': unraid_file, 'unraid_score': unraid_sc,
-                    'unraid_size_bytes': unraid_size,
-                    'unraid_label': _qlabel(unraid_file),
-                    'radarr_file': radarr_file if radarr_behind else None,
-                }
-                syn_better.append(entry)
-                if radarr_behind:
-                    radarr_stale.append({
-                        'title': title,
-                        'radarr_file': radarr_file, 'radarr_size_bytes': radarr_size,
-                        'syn_file': syn_file, 'syn_size_bytes': syn_size,
-                        'syn_score': syn_sc,
-                        'syn_label': _qlabel(syn_file),
-                        'note': 'Synology folder has better file — trigger a Radarr library rescan after sync',
-                    })
-            else:
-                # Unraid has equal or better quality — keep it, don't replace.
+            # Case 2: Unraid already has Synology's best file (Radarr not rescanned yet) → in sync
+            if syn_file.lower() == unraid_file.lower():
                 in_sync += 1
                 if radarr_behind:
                     radarr_stale.append({
                         'title': title,
                         'radarr_file': radarr_file, 'radarr_size_bytes': radarr_size,
                         'syn_file': syn_file, 'syn_size_bytes': syn_size,
-                        'syn_score': syn_sc,
+                        'syn_score': _score(syn_file, syn_size),
                         'syn_label': _qlabel(syn_file),
-                        'unraid_file': unraid_file, 'unraid_score': unraid_sc,
-                        'unraid_label': _qlabel(unraid_file),
-                        'note': 'Unraid already has equal/better file — trigger a Radarr library rescan',
+                        'note': 'Unraid has Synology\'s best file — trigger a Radarr library rescan',
                     })
+                continue
+
+            # Case 3: Mismatch — Radarr's file ≠ Unraid's file, version reconcile will fix
+            syn_sc    = _score(syn_file, syn_size)
+            unraid_sc = _score(unraid_file, unraid_size)
+            syn_better.append({
+                'title': title,
+                'syn_file': radarr_file, 'syn_score': _score(radarr_file, radarr_size),
+                'syn_size_bytes': radarr_size, 'syn_quality': quality,
+                'syn_label': _qlabel(radarr_file),
+                'unraid_file': unraid_file, 'unraid_score': unraid_sc,
+                'unraid_size_bytes': unraid_size,
+                'unraid_label': _qlabel(unraid_file),
+                'radarr_file': None,
+                'note': ('Radarr\'s file scores lower but is profile-correct — reconcile will replace Unraid copy'
+                         if _score(radarr_file, radarr_size) < unraid_sc else None),
+            })
+            if radarr_behind:
+                radarr_stale.append({
+                    'title': title,
+                    'radarr_file': radarr_file, 'radarr_size_bytes': radarr_size,
+                    'syn_file': syn_file, 'syn_size_bytes': syn_size,
+                    'syn_score': syn_sc,
+                    'syn_label': _qlabel(syn_file),
+                    'note': 'Synology folder has better file — trigger a Radarr library rescan after sync',
+                })
 
         result = {
             'status': 'ready',
