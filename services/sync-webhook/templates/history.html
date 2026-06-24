@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}History — Sync Webhook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>History</h1>
+  <span class="stat-badge">{{ total }} items</span>
+  <div class="header-actions">
+    {% if status_filter == 'failed' or not status_filter %}
+    <button class="btn btn-sm btn-warning" onclick="retryAllFailed(this)">Retry All Failed</button>
+    {% endif %}
+  </div>
+</div>
+
+<form class="filter-bar" method="get">
+  <input type="hidden" name="sort" value="{{ sort_col }}">
+  <input type="hidden" name="order" value="{{ sort_dir }}">
+  <input type="text" name="q" value="{{ search_q }}" placeholder="Search title…" class="form-control" style="max-width:220px">
+  <select name="status" class="form-select">
+    <option value=""          {% if not status_filter %}selected{% endif %}>All (done + failed)</option>
+    <option value="success"   {% if status_filter == 'success' %}selected{% endif %}>Success</option>
+    <option value="failed"    {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+    <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+  </select>
+  <select name="type" class="form-select">
+    <option value="" {% if not type_filter %}selected{% endif %}>All Types</option>
+    <option value="movie"   {% if type_filter == 'movie' %}selected{% endif %}>Movies</option>
+    <option value="episode" {% if type_filter == 'episode' %}selected{% endif %}>Episodes</option>
+  </select>
+  <button type="submit" class="btn btn-primary">Filter</button>
+  {% if search_q %}<a href="?status={{ status_filter }}&type={{ type_filter }}&sort={{ sort_col }}&order={{ sort_dir }}" class="btn btn-ghost">Clear</a>{% endif %}
+</form>
+
+{% macro sort_link(col, label) %}
+  {% set next_order = 'desc' if sort_col == col and sort_dir == 'asc' else 'asc' %}
+  <a href="?sort={{ col }}&order={{ next_order }}&status={{ status_filter }}&type={{ type_filter }}&q={{ search_q }}&page=1"
+     class="sort-link {% if sort_col == col %}sort-active{% endif %}">
+    {{ label }}{% if sort_col == col %} {{ '▲' if sort_dir == 'asc' else '▼' }}{% else %} ⇅{% endif %}
+  </a>
+{% endmacro %}
+
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{{ sort_link('title', 'Title') }}</th>
+        <th>{{ sort_link('job_type', 'Type') }}</th>
+        <th>{{ sort_link('quality', 'Quality') }}</th>
+        <th>{{ sort_link('file_size', 'Size') }}</th>
+        <th>{{ sort_link('status', 'Status') }}</th>
+        <th>{{ sort_link('completed_at', 'Completed') }}</th>
+        <th>{{ sort_link('duration_seconds', 'Duration') }}</th>
+        <th>{{ sort_link('retry_count', 'Retries') }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in items %}
+      <tr {% if job.status == 'failed' %}class="row-failed"{% elif job.status == 'cancelled' %}class="row-cancelled"{% endif %}>
+        <td>
+          {{ job.title or '—' }}
+          {% if job.is_upgrade %}<span class="badge badge-upgrade" title="Quality upgrade">↑</span>{% endif %}
+          {% if job.error_message %}<span class="err-hint" title="{{ job.error_message }}">⚠</span>{% endif %}
+        </td>
+        <td><span class="badge badge-{{ job.job_type }}">{{ job.job_type }}</span></td>
+        <td class="mono small">{{ job.quality or '—' }}</td>
+        <td class="mono">{{ fmt_size(job.file_size) }}</td>
+        <td><span class="status-badge status-{{ job.status }}">{{ job.status }}</span></td>
+        <td class="mono small">{{ fmt_dt(job.completed_at or job.created_at) }}</td>
+        <td class="mono small">{{ fmt_dur(job.duration_seconds) }}</td>
+        <td>{{ job.retry_count or 0 }}</td>
+        <td>
+          {% if job.status == 'failed' %}
+          <button class="btn btn-sm btn-warning" onclick="retryJob({{ job.id }}, this)">↺ Retry</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" class="empty">No items match the current filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if total > per_page %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a href="?page={{ page-1 }}&status={{ status_filter }}&type={{ type_filter }}&sort={{ sort_col }}&order={{ sort_dir }}&q={{ search_q }}" class="btn btn-sm btn-ghost">← Prev</a>
+  {% endif %}
+  <span>Page {{ page }} of {{ ((total-1)//per_page)+1 }}</span>
+  {% if page * per_page < total %}
+  <a href="?page={{ page+1 }}&status={{ status_filter }}&type={{ type_filter }}&sort={{ sort_col }}&order={{ sort_dir }}&q={{ search_q }}" class="btn btn-sm btn-ghost">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+<div id="toast" class="toast" style="display:none"></div>
+{% endblock %}

@@ -301,14 +301,17 @@ def start_sync_job(job_type, source, dest, title, quality, file_size, retry_coun
 
 
 def _is_already_queued(source_path: str) -> bool:
-    """Return True if a pending or in_progress row already exists for this
-    source path.  Used to prevent the history scanner and auto-retry from
-    spawning duplicate threads for items already waiting in the queue."""
+    """Return True if this source_path is already actively queued (pending or in_progress).
+    Only blocks concurrent duplicates — does NOT block retries of failed jobs.
+    Auto-retry handles its own backoff; history scanner has its own in-scan dedup."""
     try:
         conn = sqlite3.connect(DB_PATH, timeout=30)
         c = conn.cursor()
         c.execute(
-            "SELECT 1 FROM sync_jobs WHERE source_path = ? AND status IN ('pending', 'in_progress') LIMIT 1",
+            """SELECT 1 FROM sync_jobs
+               WHERE source_path = ?
+               AND status IN ('pending', 'in_progress')
+               LIMIT 1""",
             (source_path,)
         )
         result = c.fetchone()
@@ -440,11 +443,14 @@ def _kill_stalled_job(cursor, job_id: int, pid: int, title: str, reason: str, ru
     """
     logger.warning(f"Stall watchdog: killing '{title}' (PID {pid}) - {reason}")
 
-    # Mark stall_killed BEFORE sending the signal so do_sync() sees it immediately
+    # Mark stall_killed and commit BEFORE sending SIGKILL so do_sync() sees the flag
+    # immediately when it wakes up from proc.communicate() — otherwise it reads 0 and
+    # sends a generic "Sync Failed" notification instead of "Stalled Sync Killed".
     cursor.execute(
         "UPDATE sync_jobs SET stall_killed = 1 WHERE id = ? AND status = 'in_progress'",
         (job_id,)
     )
+    cursor.connection.commit()
 
     # Kill the entire process group - rsync spawns sender/receiver/generator children
     try:
@@ -646,7 +652,7 @@ def recover_interrupted_jobs():
                     AND s.status = 'success'
                     AND s.created_at > f.created_at
                 )
-                ORDER BY f.created_at DESC
+                ORDER BY f.created_at ASC
                 LIMIT 50
             ''', (lookback, MAX_RETRIES) + tuple(interrupted_ids))
         else:
@@ -661,7 +667,7 @@ def recover_interrupted_jobs():
                     AND s.status = 'success'
                     AND s.created_at > f.created_at
                 )
-                ORDER BY f.created_at DESC
+                ORDER BY f.created_at ASC
                 LIMIT 50
             ''', (lookback, MAX_RETRIES))
         unresolved_jobs = [dict(row) for row in cursor.fetchall()]
@@ -900,11 +906,18 @@ def run_rsync(source: str, dest_dir: str, is_file: bool = True, job_id: int = No
     # /media/TV Shows/Show Name/Season 01/
     try:
         os.makedirs(dest_dir, exist_ok=True)
-        os.chmod(dest_dir, 0o777)
         logger.debug(f"Ensured destination directory exists: {dest_dir}")
     except OSError as e:
         logger.error(f"Failed to create destination directory {dest_dir}: {e}")
         return False, f"Failed to create destination directory: {e}", 0
+
+    # chmod is best-effort — Synology NFS rejects it via root_squash (EPERM) when
+    # the directory already exists and is owned by a different UID. That's fine;
+    # the existing perms are already set correctly by Sonarr/Radarr on Synology.
+    try:
+        os.chmod(dest_dir, 0o777)
+    except OSError:
+        pass
 
     # Build rsync command
     # -a: archive mode
@@ -951,7 +964,7 @@ def run_rsync(source: str, dest_dir: str, is_file: bool = True, job_id: int = No
             logger.debug(f"Rsync started: PID {proc.pid} for job {job_id}")
 
         try:
-            stdout, stderr = proc.communicate(timeout=14400)  # 4 hour absolute timeout
+            stdout, stderr = proc.communicate(timeout=43200)  # 12 hour absolute timeout
         except subprocess.TimeoutExpired:
             logger.warning(f"Rsync timeout after 4 hours: {source}")
             try:
@@ -1065,7 +1078,13 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                     complete_sync_job(job_id, 'success', duration=duration)
                 update_stats(job_type, success=True, file_size=file_size)
 
-                # Version sync: delete old Unraid file after successful copy
+                # Version sync: delete the inferior file after successful copy.
+                # Direction depends on job quality:
+                #   Reverse (MovieReverseSync/TVReverseSync): source=Unraid CIFS, dest=Synology NFS
+                #     → old file is on Synology → direct os.remove() on NFS path
+                #   Forward (MovieVersionSync/TVVersionSync): source=Synology NFS, dest=Unraid CIFS
+                #     → old file is on Unraid → delete via Unraid Agent API
+                is_reverse = quality in ('MovieReverseSync', 'TVReverseSync')
                 if job_id and not DRY_RUN:
                     try:
                         _conn = sqlite3.connect(DB_PATH, timeout=30)
@@ -1076,23 +1095,37 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                             # Verify the new file landed at the destination first
                             new_dest = os.path.join(dest, os.path.basename(source))
                             if os.path.exists(new_dest):
-                                _del_resp = requests.post(
-                                    f"{UNRAID_AGENT_URL}/delete",
-                                    json={'paths': [old_path]},
-                                    headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
-                                    timeout=30
-                                )
-                                _del_result = _del_resp.json()
-                                if old_path in _del_result.get('deleted', []):
-                                    logger.info(f"Version sync: removed old file {old_path}")
+                                if is_reverse:
+                                    # Delete old Synology file via direct NFS remove
+                                    try:
+                                        os.remove(old_path)
+                                        logger.info(f"Reverse version sync: removed old Synology file {old_path}")
+                                    except OSError as _oe:
+                                        logger.warning(f"Reverse version sync: could not delete old Synology file {old_path}: {_oe}")
+                                        send_notification(
+                                            title="⚠️ Reverse Sync: Old Synology File Not Deleted",
+                                            body=f"Rsync succeeded but NFS delete failed.\nPath: {old_path}\nError: {_oe}",
+                                            notify_type=apprise.NotifyType.WARNING
+                                        )
                                 else:
-                                    _errs = _del_result.get('errors', {})
-                                    logger.warning(f"Version sync: Agent could not delete {old_path}: {_errs}")
-                                    send_notification(
-                                        title="⚠️ Version Sync: Old File Not Deleted",
-                                        body=f"Rsync succeeded but Agent rejected delete of old file.\nPath: {old_path}\nErrors: {_errs}",
-                                        notify_type=apprise.NotifyType.WARNING
+                                    # Delete old Unraid file via Agent API
+                                    _del_resp = requests.post(
+                                        f"{UNRAID_AGENT_URL}/delete",
+                                        json={'paths': [old_path]},
+                                        headers={'X-Api-Key': UNRAID_AGENT_API_KEY},
+                                        timeout=30
                                     )
+                                    _del_result = _del_resp.json()
+                                    if old_path in _del_result.get('deleted', []):
+                                        logger.info(f"Version sync: removed old file {old_path}")
+                                    else:
+                                        _errs = _del_result.get('errors', {})
+                                        logger.warning(f"Version sync: Agent could not delete {old_path}: {_errs}")
+                                        send_notification(
+                                            title="⚠️ Version Sync: Old File Not Deleted",
+                                            body=f"Rsync succeeded but Agent rejected delete of old file.\nPath: {old_path}\nErrors: {_errs}",
+                                            notify_type=apprise.NotifyType.WARNING
+                                        )
                             else:
                                 logger.warning(f"Version sync: new file not found at {new_dest} — skipping delete of {old_path}")
                                 send_notification(
@@ -1416,8 +1449,8 @@ def auto_retry_failed():
                 AND s.status = 'success'
                 AND s.created_at > f.created_at
             )
-            ORDER BY f.created_at DESC
-            LIMIT 50
+            ORDER BY f.created_at ASC
+            LIMIT 500
         ''', (lookback, MAX_RETRIES))
         failed_jobs = [dict(row) for row in cursor.fetchall()]
         conn.close()
@@ -1435,13 +1468,14 @@ def auto_retry_failed():
                     seen_titles.add(title)
                     unique_jobs.append(job)
 
-            now = datetime.now()
+            now = datetime.utcnow()
             queued = 0
             for job in unique_jobs:
                 retry_count = (job.get('retry_count') or 0) + 1
                 wait_minutes = get_retry_wait_minutes(retry_count)
 
                 # Check if enough time has passed since last failure (backoff)
+                # completed_at is stored as UTC via datetime.utcnow() so compare against utcnow()
                 completed_at = job.get('completed_at')
                 if completed_at:
                     try:
@@ -1459,10 +1493,12 @@ def auto_retry_failed():
                     job_type = job['job_type']
                     file_size = job['file_size'] or 0
                     quality = job.get('quality') or 'Retry'
+                    delete_after = job.get('delete_after_sync')
 
                     media_type = "Movie" if job_type == 'movie' else "Episode"
                     background_sync(source, dest, title, quality, file_size, media_type,
-                                   dest_base=None, retry_count=retry_count)
+                                   dest_base=None, retry_count=retry_count,
+                                   delete_after_sync=delete_after)
                     queued += 1
                     logger.info(f"Auto-retry: queued {title} (attempt {retry_count}/{MAX_RETRIES})")
                 else:
@@ -1516,22 +1552,33 @@ def scan_arr_history():
 
     missed_count = 0
     missed_titles = []
-    lookback = datetime.now() - timedelta(hours=HISTORY_SCAN_HOURS)
+    lookback = datetime.utcnow() - timedelta(hours=HISTORY_SCAN_HOURS)
 
-    # Get list of recently synced titles from our database
+    # Get list of recently synced titles from our database.
+    # Bug fix: pending/in_progress are checked without a time limit — old jobs (weeks/months
+    # old) must still block re-queuing even if outside the 48h lookback window.
+    # success/failed are time-limited: we only care about recent completions/failures.
     synced_titles = set()
     try:
         conn = sqlite3.connect(DB_PATH, timeout=30)
         c = conn.cursor()
         c.execute('''
             SELECT title FROM sync_jobs
-            WHERE created_at > ? AND status IN ('success', 'in_progress', 'pending', 'failed')
+            WHERE status IN ('in_progress', 'pending')
+            UNION
+            SELECT title FROM sync_jobs
+            WHERE created_at > ? AND status IN ('success', 'failed')
         ''', (lookback.isoformat(),))
         synced_titles = {row[0] for row in c.fetchall()}
         conn.close()
     except Exception as e:
         logger.error(f"History scanner: database error: {e}")
         return
+
+    # Per-scan dedup: Sonarr/Radarr history often has multiple import events for
+    # the same item (successive upgrades).  Track what we've queued in THIS run
+    # so we don't create multiple jobs for the same logical episode/movie.
+    queued_this_scan: set = set()
 
     # Define arr instances to check
     arr_configs = [
@@ -1612,6 +1659,11 @@ def scan_arr_history():
                 if already_synced:
                     continue
 
+                # Per-scan dedup: skip if we already queued this logical item in this run.
+                # Catches multiple Sonarr/Radarr import events for the same episode (upgrades).
+                if check_title in queued_this_scan:
+                    continue
+
                 # Check skip list
                 skip = False
                 for skip_title in SKIP_TITLES:
@@ -1628,6 +1680,7 @@ def scan_arr_history():
 
                 logger.info(f"History scanner: found missed download - {display_title}")
                 missed_titles.append(display_title)
+                queued_this_scan.add(check_title)
 
                 # Queue the sync
                 source_path = source if media_type == 'movie' else folder_path.replace(container_path, source.rsplit('/', 1)[0])
@@ -2020,10 +2073,12 @@ def reconcile_tv_versions():
                 if fname.lower() == unraid_fname.lower():
                     continue  # same file — in sync
 
-                # Synology (Sonarr-managed) is the source of truth — queue replacement
-                # regardless of score.  Unraid may have a higher-scored old file (e.g.
-                # Remux from batch sync) but Sonarr's current file is what both sides
-                # should have.
+                # Bidirectional gate: skip if Unraid's file is also 720p/x265-no-HDR.
+                # Both sides having low quality means Upgraderr is handling the upgrade;
+                # don't create a reverse-sync job that would push 720p to Synology.
+                if not _should_sync_tv_episode(unraid_fname):
+                    continue
+
                 try:
                     syn_size = f_entry.stat().st_size
                 except OSError:
@@ -2031,63 +2086,102 @@ def reconcile_tv_versions():
                 syn_score = _score_filename(fname, syn_size)
                 unraid_score = _score_filename(unraid_fname, unraid_size)
                 display_title = f"{show_name} - {ep_key}"
-                logger.info(
-                    f"TV version reconcile: mismatch {display_title} — "
-                    f"Synology score {syn_score} vs Unraid score {unraid_score} "
-                    f"(syn={fname!r} vs unraid={unraid_fname!r})"
-                )
-                mismatches.append((f_entry.path, unraid_path, display_title))
+
+                if syn_score > unraid_score:
+                    # Synology has a better version → push to Unraid (existing direction)
+                    logger.info(
+                        f"TV version reconcile: mismatch {display_title} — "
+                        f"Synology score {syn_score} > Unraid score {unraid_score} — "
+                        f"queuing Syn→Unraid (syn={fname!r} vs unraid={unraid_fname!r})"
+                    )
+                    mismatches.append(('syn_to_unraid', f_entry.path, unraid_path, display_title))
+                elif unraid_score > syn_score:
+                    # Unraid has a better version → push to Synology (reverse direction)
+                    logger.info(
+                        f"TV version reconcile: mismatch {display_title} — "
+                        f"Unraid score {unraid_score} > Synology score {syn_score} — "
+                        f"queuing Unraid→Syn (unraid={unraid_fname!r} vs syn={fname!r})"
+                    )
+                    # Compute Synology destination dir for reverse job
+                    syn_season_dir = season_entry.path  # /mnt/synology/rs-tv/<show>/<season>/
+                    # Agent returns /mnt/user/Media/... paths; rsync source must use CIFS mount
+                    unraid_cifs_path = unraid_path.replace('/mnt/user/Media/', '/mnt/unraid/media/', 1)
+                    mismatches.append(('unraid_to_syn', unraid_cifs_path, syn_season_dir, display_title, f_entry.path))
 
     if not mismatches:
         logger.info("TV version reconcile: all episodes in sync — no version mismatches")
         return
 
-    logger.info(f"TV version reconcile: {len(mismatches)} version mismatch(es) found")
+    syn_better = sum(1 for m in mismatches if m[0] == 'syn_to_unraid')
+    unraid_better = sum(1 for m in mismatches if m[0] == 'unraid_to_syn')
+    logger.info(f"TV version reconcile: {len(mismatches)} version mismatch(es) — "
+                f"{syn_better} Syn→Unraid, {unraid_better} Unraid→Syn")
 
     tv_dest_base = '/mnt/unraid/media/TV Shows'
+    syn_tv_base = '/mnt/synology/rs-tv'
     queued = 0
     queued_titles = []
 
-    for syn_path, unraid_path, display_title in mismatches:
+    for mismatch in mismatches:
         if queued >= VERSION_SYNC_MAX_PER_RUN:
             logger.info(f"TV version reconcile: capped at {VERSION_SYNC_MAX_PER_RUN} — "
                         f"{len(mismatches) - queued} deferred to tomorrow")
             break
 
-        if _is_already_queued(syn_path):
-            continue
+        direction = mismatch[0]
 
-        try:
-            file_size = os.path.getsize(syn_path)
-        except OSError:
-            file_size = 0
+        if direction == 'syn_to_unraid':
+            _, syn_path, unraid_path, display_title = mismatch
+            source = syn_path
+            if _is_already_queued(source):
+                continue
+            try:
+                file_size = os.path.getsize(source)
+            except OSError:
+                file_size = 0
+            season_dir = os.path.basename(os.path.dirname(syn_path))
+            show_name = os.path.basename(os.path.dirname(os.path.dirname(syn_path)))
+            dest = os.path.join(tv_dest_base, show_name, season_dir)
+            if VERSION_SYNC_DRY_RUN:
+                logger.info(f"[DRY RUN] TV reconcile Syn→Unraid: would replace {display_title}\n"
+                            f"  old: {os.path.basename(unraid_path)}\n  new: {os.path.basename(syn_path)}")
+                queued += 1
+                queued_titles.append(f"{display_title} [Syn→Unraid]")
+                continue
+            background_sync(
+                source=source, dest=dest, title=display_title,
+                quality='TVVersionSync', file_size=file_size,
+                media_type='Episode', dest_base=tv_dest_base,
+                delete_after_sync=unraid_path,
+            )
+            logger.info(f"TV reconcile Syn→Unraid queued: {display_title} "
+                        f"({os.path.basename(unraid_path)} → {os.path.basename(syn_path)})")
+        else:  # unraid_to_syn
+            _, unraid_path, syn_dest_dir, display_title, old_syn_path = mismatch
+            source = unraid_path
+            if _is_already_queued(source):
+                continue
+            try:
+                file_size = os.path.getsize(source)
+            except OSError:
+                file_size = 0
+            if VERSION_SYNC_DRY_RUN:
+                logger.info(f"[DRY RUN] TV reconcile Unraid→Syn: would replace {display_title}\n"
+                            f"  old: {os.path.basename(old_syn_path)}\n  new: {os.path.basename(unraid_path)}")
+                queued += 1
+                queued_titles.append(f"{display_title} [Unraid→Syn]")
+                continue
+            background_sync(
+                source=source, dest=syn_dest_dir, title=display_title,
+                quality='TVReverseSync', file_size=file_size,
+                media_type='Episode', dest_base=syn_tv_base,
+                delete_after_sync=old_syn_path,
+            )
+            logger.info(f"TV reconcile Unraid→Syn queued: {display_title} "
+                        f"({os.path.basename(old_syn_path)} → {os.path.basename(unraid_path)})")
 
-        season_dir = os.path.basename(os.path.dirname(syn_path))
-        show_name = os.path.basename(os.path.dirname(os.path.dirname(syn_path)))
-        dest = os.path.join(tv_dest_base, show_name, season_dir)
-
-        if VERSION_SYNC_DRY_RUN:
-            logger.info(f"[DRY RUN] TV version reconcile: would replace {display_title}\n"
-                        f"  old: {os.path.basename(unraid_path)}\n"
-                        f"  new: {os.path.basename(syn_path)}")
-            queued += 1
-            queued_titles.append(display_title)
-            continue
-
-        background_sync(
-            source=syn_path,
-            dest=dest,
-            title=display_title,
-            quality='TVVersionSync',
-            file_size=file_size,
-            media_type='Episode',
-            dest_base=tv_dest_base,
-            delete_after_sync=unraid_path,
-        )
         queued += 1
-        queued_titles.append(display_title)
-        logger.info(f"TV version reconcile: queued replacement for {display_title} "
-                    f"({os.path.basename(unraid_path)} → {os.path.basename(syn_path)})")
+        queued_titles.append(display_title if len(mismatch) < 5 else f"{display_title} [{direction.replace('_', '→').replace('syn', 'Syn').replace('unraid', 'Unraid')}]")
 
     if queued > 0:
         dry = " (DRY RUN)" if VERSION_SYNC_DRY_RUN else ""
@@ -2096,7 +2190,7 @@ def reconcile_tv_versions():
             titles_list += f"\n... and {len(queued_titles) - 20} more"
         send_notification(
             title=f"TV Version Sync{dry}",
-            body=f"Found {queued} episode(s) where Synology has a newer version than Unraid — queued for replacement:\n{titles_list}",
+            body=f"Found {queued} episode(s) with version mismatches — queued for replacement:\n({syn_better} Syn→Unraid, {unraid_better} Unraid→Syn)\n{titles_list}",
             notify_type=apprise.NotifyType.WARNING
         )
 
@@ -2105,13 +2199,13 @@ def reconcile_movie_versions():
     """
     Nightly movie version reconciliation — runs at 11:45 PM ET (after movie gap scan).
 
-    Uses Radarr HD API as the canonical source of what file should exist on Synology.
-    For each movie where Radarr's imported file differs from what's on Unraid, queues
-    a MovieVersionSync job (rsync new file → delete old Unraid file on success).
+    Uses Radarr HD API as the canonical source of what file should exist on both sides.
+    Radarr's quality profile is the authority — the file Radarr tracks IS the correct
+    version for both Synology and Unraid, even if Unraid has a higher raw TRaSH score.
 
-    Radarr is the quality authority — its imported file reflects the quality profile
-    and Recyclarr settings Chris has configured. The score gate still prevents
-    replacing a higher-quality Unraid copy with a lower-quality Radarr file.
+    Queues MovieVersionSync (Syn→Unraid) when Synology's Radarr file differs from Unraid.
+    Queues MovieReverseSync (Unraid→Syn) when Radarr's file is missing from Synology but
+    exists on Unraid (rare, handles NFS/filesystem drift).
     """
     logger.info("Movie version reconcile: starting check for version mismatches...")
 
@@ -2171,7 +2265,8 @@ def reconcile_movie_versions():
         return
 
     video_exts = ('.mkv', '.mp4', '.avi', '.m4v', '.ts', '.m2ts')
-    unraid_movie_files: dict = {}
+    unraid_movie_files: dict = {}   # folder → (best_fname, best_agent_path, best_size)
+    unraid_folder_all: dict = {}    # folder → {fname_lower: agent_path} for specific-filename lookup
     for item in agent_data.get('items', []):
         path = item.get('path', '')
         parts = path.split('/')
@@ -2185,6 +2280,9 @@ def reconcile_movie_versions():
         sc = _score_filename(fname, size)
         if movie_folder not in unraid_movie_files or sc > _score_filename(unraid_movie_files[movie_folder][0], unraid_movie_files[movie_folder][2]):
             unraid_movie_files[movie_folder] = (fname, path, size)
+        # Store CIFS path (rsync reads Unraid files via CIFS mount, not Agent paths)
+        cifs_path = path.replace('/mnt/user/Media/', '/mnt/unraid/media/', 1)
+        unraid_folder_all.setdefault(movie_folder, {})[fname.lower()] = cifs_path
 
     # ── Step 3: Compare Radarr's file vs Unraid, queue mismatches ────────────
     # Radarr is the authority for what file should exist on both sides.
@@ -2238,68 +2336,117 @@ def reconcile_movie_versions():
         if best_syn_fname.lower() == unraid_fname.lower():
             continue
 
-        # Mismatch: sync Radarr's tracked file (authoritative source of truth)
-        if not os.path.isfile(nfs_path):
-            logger.warning(f"Movie version reconcile: Radarr's file missing from NFS — "
-                           f"skipping '{movie_folder}' ({radarr_fname!r})")
+        # Quality gate: skip 720p/SD and x265-without-HDR — Upgraderr upgrades first.
+        if not _should_sync_tv_episode(radarr_fname):
+            logger.info(
+                f"Movie version reconcile: skipping '{movie_folder}' — "
+                f"Radarr file is 720p/x265-no-HDR ({radarr_fname!r}), Upgraderr will upgrade first"
+            )
             continue
 
-        mismatches.append((nfs_path, unraid_path, movie_folder, quality))
+        # Radarr is the authority — no score gate. Radarr's tracked file IS the target
+        # for both sides (it reflects the quality profile choice). Even if Unraid has a
+        # higher raw TRaSH score (e.g. Remux), Radarr chose the current file based on
+        # the profile. Both sides must mirror that choice.
+        if not os.path.isfile(nfs_path):
+            # Radarr's file is missing from Synology NFS — look up exact filename in Agent
+            # inventory (already fetched above) instead of os.path.isfile() over CIFS.
+            folder_files = unraid_folder_all.get(movie_folder, {})
+            unraid_agent_path = folder_files.get(radarr_fname.lower())
+            if unraid_agent_path:
+                syn_folder = os.path.join(synology_movies_nfs, movie_folder)
+                syn_old_file = best_syn_path if syn_files else None
+                logger.info(
+                    f"Movie version reconcile: Radarr's file on Unraid but missing from Synology — "
+                    f"queuing Unraid→Syn for '{movie_folder}' ({radarr_fname!r})"
+                )
+                mismatches.append(('unraid_to_syn', unraid_agent_path, syn_folder, movie_folder, quality, syn_old_file))
+            else:
+                logger.warning(f"Movie version reconcile: Radarr's file missing from NFS and not found on Unraid — "
+                               f"skipping '{movie_folder}' ({radarr_fname!r})")
+            continue
+
+        mismatches.append(('syn_to_unraid', nfs_path, unraid_path, movie_folder, quality))
         logger.info(
-            f"Movie version reconcile: mismatch '{movie_folder}': "
-            f"Radarr={radarr_fname!r} vs Unraid={unraid_fname!r}"
-            + (f" [Synology also has: {best_syn_fname!r}]"
-               if best_syn_fname.lower() != radarr_fname.lower() else "")
+            f"Movie version reconcile: mismatch '{movie_folder}' — queuing Syn→Unraid "
+            f"({radarr_fname!r} → replaces {unraid_fname!r})"
         )
 
     if not mismatches:
         logger.info("Movie version reconcile: all movies in sync — no version mismatches")
         return
 
-    logger.info(f"Movie version reconcile: {len(mismatches)} version mismatch(es) found")
+    syn_better = sum(1 for m in mismatches if m[0] == 'syn_to_unraid')
+    unraid_better = sum(1 for m in mismatches if m[0] == 'unraid_to_syn')
+    logger.info(f"Movie version reconcile: {len(mismatches)} version mismatch(es) — "
+                f"{syn_better} Syn→Unraid, {unraid_better} Unraid→Syn")
 
     movies_dest_base = '/mnt/unraid/media/Movies'
+    syn_movies_base = '/mnt/synology/rs-movies'
     queued = 0
     queued_titles = []
 
-    for syn_path, unraid_path, movie_folder, quality in mismatches:
+    for mismatch in mismatches:
         if queued >= VERSION_SYNC_MAX_PER_RUN:
             logger.info(f"Movie version reconcile: capped at {VERSION_SYNC_MAX_PER_RUN} — "
                         f"{len(mismatches) - queued} deferred to tomorrow")
             break
 
-        if _is_already_queued(syn_path):
-            continue
+        direction = mismatch[0]
 
-        try:
-            file_size = os.path.getsize(syn_path)
-        except OSError:
-            file_size = 0
+        if direction == 'syn_to_unraid':
+            _, syn_path, unraid_path, movie_folder, radarr_quality = mismatch
+            source = syn_path
+            if _is_already_queued(source):
+                continue
+            try:
+                file_size = os.path.getsize(source)
+            except OSError:
+                file_size = 0
+            dest = os.path.join(movies_dest_base, movie_folder)
+            if VERSION_SYNC_DRY_RUN:
+                logger.info(f"[DRY RUN] Movie reconcile Syn→Unraid: would replace {movie_folder}\n"
+                            f"  old: {os.path.basename(unraid_path)}\n"
+                            f"  new: {os.path.basename(syn_path)}  [{radarr_quality}]")
+                queued += 1
+                queued_titles.append(f"{movie_folder} [{radarr_quality}] [Syn→Unraid]")
+                continue
+            background_sync(
+                source=source, dest=dest, title=movie_folder,
+                quality='MovieVersionSync', file_size=file_size,
+                media_type='Movie', dest_base=movies_dest_base,
+                delete_after_sync=unraid_path,
+            )
+            logger.info(f"Movie reconcile Syn→Unraid queued: {movie_folder} "
+                        f"[{radarr_quality}] ({os.path.basename(unraid_path)} → {os.path.basename(syn_path)})")
+        else:  # unraid_to_syn
+            _, unraid_path, syn_folder, movie_folder, radarr_quality, old_syn_file = mismatch
+            source = unraid_path
+            if _is_already_queued(source):
+                continue
+            try:
+                file_size = os.path.getsize(source)
+            except OSError:
+                file_size = 0
+            if VERSION_SYNC_DRY_RUN:
+                old_name = os.path.basename(old_syn_file) if old_syn_file else '(none)'
+                logger.info(f"[DRY RUN] Movie reconcile Unraid→Syn: would replace {movie_folder}\n"
+                            f"  old: {old_name}\n  new: {os.path.basename(unraid_path)}  [{radarr_quality}]")
+                queued += 1
+                queued_titles.append(f"{movie_folder} [{radarr_quality}] [Unraid→Syn]")
+                continue
+            background_sync(
+                source=source, dest=syn_folder, title=movie_folder,
+                quality='MovieReverseSync', file_size=file_size,
+                media_type='Movie', dest_base=syn_movies_base,
+                delete_after_sync=old_syn_file,
+            )
+            logger.info(f"Movie reconcile Unraid→Syn queued: {movie_folder} "
+                        f"[{radarr_quality}] ({os.path.basename(unraid_path)} → Synology)")
 
-        dest = os.path.join(movies_dest_base, movie_folder)
-
-        if VERSION_SYNC_DRY_RUN:
-            logger.info(f"[DRY RUN] Movie version reconcile: would replace {movie_folder}\n"
-                        f"  old: {os.path.basename(unraid_path)}\n"
-                        f"  new: {os.path.basename(syn_path)}  [{quality}]")
-            queued += 1
-            queued_titles.append(f"{movie_folder} [{quality}]")
-            continue
-
-        background_sync(
-            source=syn_path,
-            dest=dest,
-            title=movie_folder,
-            quality='MovieVersionSync',
-            file_size=file_size,
-            media_type='Movie',
-            dest_base=movies_dest_base,
-            delete_after_sync=unraid_path,
-        )
         queued += 1
-        queued_titles.append(f"{movie_folder} [{quality}]")
-        logger.info(f"Movie version reconcile: queued replacement for {movie_folder} "
-                    f"[{quality}] ({os.path.basename(unraid_path)} → {os.path.basename(syn_path)})")
+        label = 'Syn→Unraid' if direction == 'syn_to_unraid' else 'Unraid→Syn'
+        queued_titles.append(f"{movie_folder} [{radarr_quality}] [{label}]")
 
     if queued > 0:
         dry = " (DRY RUN)" if VERSION_SYNC_DRY_RUN else ""
@@ -2308,7 +2455,7 @@ def reconcile_movie_versions():
             titles_list += f"\n... and {len(queued_titles) - 20} more"
         send_notification(
             title=f"Movie Version Sync{dry}",
-            body=f"Found {queued} movie(s) where Synology has a newer version than Unraid — queued for replacement:\n{titles_list}",
+            body=f"Found {queued} movie(s) with version mismatches — queued for replacement:\n({syn_better} Syn→Unraid, {unraid_better} Unraid→Syn)\n{titles_list}",
             notify_type=apprise.NotifyType.WARNING
         )
 
@@ -2502,16 +2649,19 @@ def nightly_unraid_dedup():
         conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
         # Issue 3 fix: include 'pending' — jobs waiting for semaphore count as active
-        # Also include version sync jobs — they write new files whose old counterparts
-        # dedup must not delete before the replacement lands.
+        # Also include version sync jobs (both directions) — they write new files whose
+        # old counterparts dedup must not delete before the replacement lands.
         cursor.execute(
             "SELECT COUNT(*) FROM sync_jobs WHERE status IN ('in_progress','pending') "
-            "AND quality IN ('TVGapSync','GapSync','TVVersionSync','MovieVersionSync')"
+            "AND quality IN ('TVGapSync','GapSync','TVVersionSync','MovieVersionSync',"
+            "'TVReverseSync','MovieReverseSync')"
         )
         active_gap_jobs = cursor.fetchone()[0]
         # Use UTC-aware comparison (completed_at now stored as UTC via datetime.utcnow)
         cursor.execute(
-            "SELECT COUNT(*) FROM sync_jobs WHERE quality IN ('TVGapSync','GapSync','TVVersionSync','MovieVersionSync') "
+            "SELECT COUNT(*) FROM sync_jobs WHERE quality IN ('TVGapSync','GapSync',"
+            "'TVVersionSync','MovieVersionSync','TVReverseSync','MovieReverseSync') "
+            "AND status = 'success' "
             "AND completed_at > datetime('now', ?)",
             (f'-{DEDUP_MIN_AGE_HOURS} hours',)
         )
@@ -2746,10 +2896,10 @@ def scan_library_gaps():
 
         source = os.path.join(src_base, folder)
 
-        # Skip if already pending or in_progress
+        # Skip if already pending or in_progress (exact source_path match)
         cursor.execute(
-            "SELECT id FROM sync_jobs WHERE title LIKE ? AND status IN ('pending','in_progress')",
-            (f'%{folder[:40]}%',)
+            "SELECT id FROM sync_jobs WHERE source_path = ? AND status IN ('pending','in_progress')",
+            (source,)
         )
         if cursor.fetchone():
             logger.debug(f"Gap scanner: {folder} already queued, skipping")
@@ -2823,17 +2973,20 @@ scheduler.add_job(
 )
 logger.info("TV gap scanner enabled - runs nightly at 11:00 PM ET")
 
-# TV version reconciliation — nightly at 11:15 PM ET (after gap scan, uses cached inventory)
+# TV version reconcile — nightly at 11:15 PM ET (after TV gap scan).
+# Score-gated + quality-filtered: only syncs when Synology scores higher AND file
+# passes the 720p/x265-no-HDR filter. Unraid's better copies are never touched.
 scheduler.add_job(
     func=reconcile_tv_versions,
     trigger='cron',
     hour=23,
     minute=15,
+    timezone='America/New_York',
     id='tv_version_reconcile',
-    name='Nightly TV version reconcile (replace old Unraid versions with Synology current)',
+    name='Nightly TV version reconcile (score-gated: Synology score > Unraid score only)',
     replace_existing=True
 )
-logger.info("TV version reconcile enabled - runs nightly at 11:15 PM ET")
+logger.info("TV version reconcile enabled (score-gated + quality-filtered) - runs nightly at 11:15 PM ET")
 
 # Movie gap scanner — nightly at 11:30 PM ET (after TV reconcile, before library report)
 scheduler.add_job(
@@ -2847,17 +3000,19 @@ scheduler.add_job(
 )
 logger.info("Library gap scanner enabled - runs nightly at 11:30 PM ET")
 
-# Movie version reconciliation — nightly at 11:45 PM ET (after movie gap scan, uses cached inventory)
+# Movie version reconcile — nightly at 11:45 PM ET (after movie gap scan).
+# Score-gated: only replaces Unraid's file if Radarr's file scores HIGHER.
+# Unraid copies that score >= Radarr's file are left alone (Upgraderr upgrades Synology first).
 scheduler.add_job(
     func=reconcile_movie_versions,
     trigger='cron',
     hour=23,
     minute=45,
     id='movie_version_reconcile',
-    name='Nightly movie version reconcile (replace old Unraid versions with Synology current)',
+    name='Nightly movie version reconcile (score-gated: Radarr score > Unraid score only)',
     replace_existing=True
 )
-logger.info("Movie version reconcile enabled - runs nightly at 11:45 PM ET")
+logger.info("Movie version reconcile enabled (score-gated) - runs nightly at 11:45 PM ET")
 
 # Library health report — nightly at 12:15 AM ET (after both gap scans)
 scheduler.add_job(
@@ -2900,6 +3055,39 @@ threading.Thread(target=_deferred_recovery, name="startup-recovery", daemon=True
 
 # Shut down scheduler on exit
 atexit.register(lambda: scheduler.shutdown())
+
+
+@app.route('/metrics', methods=['GET'])
+def prometheus_metrics():
+    """Prometheus-format metrics for sync-webhook"""
+    job_counts = get_job_counts()
+    available_slots = sync_semaphore._value
+    active_syncs = MAX_CONCURRENT_SYNCS - available_slots
+
+    with stats_lock:
+        bytes_xfer = stats['bytes_transferred']
+
+    lines = [
+        '# HELP sync_webhook_active_syncs Currently running rsync transfers',
+        '# TYPE sync_webhook_active_syncs gauge',
+        f'sync_webhook_active_syncs {active_syncs}',
+        '# HELP sync_webhook_pending_jobs Jobs waiting for a semaphore slot',
+        '# TYPE sync_webhook_pending_jobs gauge',
+        f'sync_webhook_pending_jobs {job_counts.get("pending", 0)}',
+        '# HELP sync_webhook_failed_jobs_24h Failed jobs in the last 24h',
+        '# TYPE sync_webhook_failed_jobs_24h gauge',
+        f'sync_webhook_failed_jobs_24h {job_counts.get("failed", 0)}',
+        '# HELP sync_webhook_success_jobs_24h Successful jobs in the last 24h',
+        '# TYPE sync_webhook_success_jobs_24h gauge',
+        f'sync_webhook_success_jobs_24h {job_counts.get("success", 0)}',
+        '# HELP sync_webhook_bytes_transferred_total Total bytes transferred since startup',
+        '# TYPE sync_webhook_bytes_transferred_total counter',
+        f'sync_webhook_bytes_transferred_total {bytes_xfer}',
+        '# HELP sync_webhook_max_concurrent Maximum concurrent syncs configured',
+        '# TYPE sync_webhook_max_concurrent gauge',
+        f'sync_webhook_max_concurrent {MAX_CONCURRENT_SYNCS}',
+    ]
+    return '\n'.join(lines) + '\n', 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
 @app.route('/health', methods=['GET'])
@@ -3333,7 +3521,8 @@ def retry_job(job_id):
         # Run in background
         media_type = "Movie" if job_type == 'movie' else "Episode"
         background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type,
-                       dest_base=None, retry_count=1)
+                       dest_base=None, retry_count=1,
+                       delete_after_sync=job.get('delete_after_sync'))
 
         conn.close()
         return jsonify({'status': 'retry_started', 'job_id': job_id})
@@ -3345,7 +3534,7 @@ def retry_job(job_id):
 
 @app.route('/queue/retry-failed', methods=['POST'])
 def retry_all_failed():
-    """Retry all unresolved failed jobs within the lookback window"""
+    """Retry failed jobs within the lookback window (oldest first, capped at 500 per click)"""
     try:
         conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
@@ -3361,7 +3550,8 @@ def retry_all_failed():
                 AND s.status = 'success'
                 AND s.created_at > f.created_at
             )
-            ORDER BY f.created_at DESC
+            ORDER BY f.created_at ASC
+            LIMIT 500
         ''', (lookback,))
         failed_jobs = [dict(row) for row in cursor.fetchall()]
         conn.close()
@@ -3389,7 +3579,8 @@ def retry_all_failed():
 
             media_type = "Movie" if job_type == 'movie' else "Episode"
             background_sync(source, dest, title, "Retry", file_size, media_type,
-                           dest_base=None, retry_count=retry_count)
+                           dest_base=None, retry_count=retry_count,
+                           delete_after_sync=job.get('delete_after_sync'))
             retried += 1
             logger.info(f"Queued retry for: {title}")
 
@@ -3715,6 +3906,30 @@ def trigger_gap_scan():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/reconcile/trigger', methods=['POST'])
+def trigger_reconcile():
+    """Manually trigger bidirectional version reconcile (TV, movies, or both).
+    Query param: type=tv|movies|all (default: all)
+    """
+    try:
+        type_ = request.args.get('type', 'all')
+        started = []
+        if type_ in ('tv', 'all'):
+            thread = threading.Thread(target=reconcile_tv_versions, daemon=True)
+            thread.start()
+            started.append('tv')
+        if type_ in ('movies', 'all'):
+            thread = threading.Thread(target=reconcile_movie_versions, daemon=True)
+            thread.start()
+            started.append('movies')
+        if not started:
+            return jsonify({'error': f"Unknown type {type_!r}, use tv|movies|all"}), 400
+        return jsonify({'status': 'triggered', 'reconcile': started,
+                        'message': f"Reconcile started for: {', '.join(started)} — check logs and Telegram for results"})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/library-report/trigger', methods=['POST'])
 def trigger_library_report():
     """Manually trigger the nightly library health report (sends Telegram summary)."""
@@ -3728,7 +3943,7 @@ def trigger_library_report():
 
 @app.route('/jobs/<int:job_id>/cancel', methods=['POST'])
 def cancel_job(job_id):
-    """Cancel a pending job. The queued thread will abort after acquiring the semaphore."""
+    """Cancel a pending or failed job."""
     try:
         conn = sqlite3.connect(DB_PATH, timeout=30)
         cur = conn.cursor()
@@ -3737,9 +3952,9 @@ def cancel_job(job_id):
         if not row:
             conn.close()
             return jsonify({'error': 'Job not found'}), 404
-        if row[0] != 'pending':
+        if row[0] not in ('pending', 'failed'):
             conn.close()
-            return jsonify({'error': f'Job is {row[0]}, only pending jobs can be cancelled'}), 400
+            return jsonify({'error': f'Job is {row[0]}, only pending/failed jobs can be cancelled'}), 400
         cur.execute("UPDATE sync_jobs SET status='cancelled', completed_at=CURRENT_TIMESTAMP WHERE id=?", (job_id,))
         conn.commit()
         conn.close()
@@ -3747,6 +3962,76 @@ def cancel_job(job_id):
         return jsonify({'status': 'cancelled', 'job_id': job_id})
     except Exception as e:
         logger.error(f"Error cancelling job {job_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/jobs/bulk-cancel', methods=['POST'])
+def bulk_cancel_jobs():
+    """Cancel multiple pending/failed jobs by ID. Skips in_progress jobs."""
+    try:
+        data = request.get_json() or {}
+        ids = data.get('ids', [])
+        if not ids or not isinstance(ids, list):
+            return jsonify({'error': 'ids must be a non-empty list'}), 400
+        # Clamp to 2000 IDs per call to prevent accidental mass-ops
+        ids = [int(i) for i in ids[:2000]]
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        cur = conn.cursor()
+        placeholders = ','.join('?' * len(ids))
+        cur.execute(
+            f"UPDATE sync_jobs SET status='cancelled', completed_at=CURRENT_TIMESTAMP "
+            f"WHERE id IN ({placeholders}) AND status IN ('pending', 'failed')",
+            ids
+        )
+        cancelled = cur.rowcount
+        conn.commit()
+        conn.close()
+        logger.info(f"Bulk cancel: {cancelled} job(s) cancelled via UI (requested {len(ids)})")
+        return jsonify({'cancelled': cancelled, 'requested': len(ids)})
+    except Exception as e:
+        logger.error(f"Error in bulk cancel: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/jobs/cancel-matching', methods=['POST'])
+def cancel_matching_jobs():
+    """Cancel all pending/failed jobs matching the given filters (status, type, q)."""
+    try:
+        data = request.get_json() or {}
+        status_filter = data.get('status', '')
+        type_filter   = data.get('type', '')
+        search_q      = data.get('q', '')
+
+        where = ["status IN ('pending', 'failed')"]
+        params = []
+
+        if status_filter == 'failed':
+            where = ["status = 'failed'"]
+        elif status_filter == 'active':
+            where = ["status = 'pending'"]  # in_progress cannot be cancelled
+        # '' (all) → default: both pending + failed
+
+        if type_filter:
+            where.append("job_type = ?")
+            params.append(type_filter)
+        if search_q:
+            where.append("title LIKE ?")
+            params.append(f'%{search_q}%')
+
+        where_sql = 'WHERE ' + ' AND '.join(where)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE sync_jobs SET status='cancelled', completed_at=CURRENT_TIMESTAMP {where_sql}",
+            params
+        )
+        cancelled = cur.rowcount
+        conn.commit()
+        conn.close()
+        logger.info(f"Cancel-matching: {cancelled} job(s) cancelled (status={status_filter!r} type={type_filter!r} q={search_q!r})")
+        return jsonify({'cancelled': cancelled})
+    except Exception as e:
+        logger.error(f"Error in cancel-matching: {e}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -3773,9 +4058,16 @@ def rush_job(job_id):
         conn.commit()
         conn.close()
 
-        # Open one extra semaphore slot so a waiting thread can start immediately
-        sync_semaphore.release()
-        logger.info(f"Job {job_id} ({title}) rushed — extra semaphore slot opened")
+        # Open one extra semaphore slot so a waiting thread can start immediately.
+        # Only release if the semaphore is currently fully consumed (i.e. there are
+        # threads blocked on acquire). _value is a CPython implementation detail but
+        # it's the only way to peek without acquiring. If _value > 0, all slots are
+        # free and releasing would permanently inflate the concurrency limit.
+        if sync_semaphore._value == 0:
+            sync_semaphore.release()
+            logger.info(f"Job {job_id} ({title}) rushed — extra semaphore slot opened")
+        else:
+            logger.info(f"Job {job_id} ({title}) rushed — semaphore has free slots, no extra release needed")
         return jsonify({
             'status': 'rushed',
             'job_id': job_id,

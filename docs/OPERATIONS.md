@@ -183,6 +183,41 @@ curl -X POST http://localhost:5001/sync/manual \
 
 # Trigger gap scan immediately
 curl -X POST http://localhost:5001/api/gap-scan/trigger
+
+# Trigger version reconcile immediately
+curl -X POST http://localhost:5001/api/reconcile/trigger
+```
+
+### Cancel Jobs in Bulk (Queue UI)
+
+The Queue UI (`http://mother:5001/ui/queue`) has three cancel mechanisms:
+
+| Method | How | Scope |
+|--------|-----|-------|
+| ✕ Cancel (per row) | Click button on any failed/pending row | 1 job |
+| ✕ Cancel Selected | Check row checkboxes → Cancel Selected | Up to 50 (current page) |
+| ✕ Cancel All N Matching | Header button | **All jobs matching current filter** — no pagination limit |
+
+**Cancel everything for a deleted show** (e.g., Dollhouse):
+1. Filter to **Failed**
+2. Type the show name in the search box
+3. Click **✕ Cancel All N Matching** → confirm
+
+**Cancel all failed jobs** (nuclear option):
+1. Filter to **Failed**
+2. Click **✕ Cancel All N Matching** → confirm
+
+Via API:
+```bash
+# Cancel all failed jobs for a specific show
+curl -X POST http://localhost:5001/jobs/cancel-matching \
+  -H "Content-Type: application/json" \
+  -d '{"status": "failed", "type": "", "q": "Dollhouse"}'
+
+# Cancel all failed jobs (no filter)
+curl -X POST http://localhost:5001/jobs/cancel-matching \
+  -H "Content-Type: application/json" \
+  -d '{"status": "failed", "type": "", "q": ""}'
 ```
 
 ### Docker Management
@@ -344,9 +379,9 @@ curl -s -H "X-Api-Key: $(grep UNRAID_AGENT_API_KEY /opt/mother/.env | cut -d= -f
 | 8:05 PM | Daily summary | Telegram snapshot |
 | 10:00 PM | DB backup | Keeps last 10 |
 | 11:00 PM | TV gap scan | Missing HD TV episodes → Unraid |
-| 11:15 PM | TV version reconcile | Filename mismatches → replace on Unraid |
+| 11:15 PM | TV version reconcile | Bidirectional: Synology→Unraid (TVVersionSync) or Unraid→Synology (TVReverseSync) based on TRaSH score |
 | 11:30 PM | Movie gap scan | Missing HD movie folders → Unraid |
-| 11:45 PM | Movie version reconcile | Filename mismatches → replace on Unraid |
+| 11:45 PM | Movie version reconcile | Bidirectional: MovieVersionSync or MovieReverseSync; cap: VERSION_SYNC_MAX_PER_RUN=100 |
 | 12:15 AM | Library health report | Telegram gap summary |
 | 8:00 AM | Unraid dedup | Delete lower-quality duplicates (multiple safety gates) |
 

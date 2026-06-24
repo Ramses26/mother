@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Sync Webhook{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Dashboard</h1>
+  <div class="header-actions">
+    <button class="btn btn-sm btn-ghost" onclick="location.reload()">↻ Refresh</button>
+    <button class="btn btn-sm btn-warning" onclick="retryAllFailed(this)">Retry Failed</button>
+  </div>
+</div>
+
+<div class="scanner-bar">
+  <span class="scanner-label">History Scanner</span>
+  <span class="scanner-item">
+    <span class="scanner-dot {% if hs_last_ran %}dot-ok{% else %}dot-idle{% endif %}"></span>
+    Last ran: <strong>{{ hs_last_ran or 'not yet (since restart)' }}</strong>
+    {% if hs_last_ran and hs_last_found > 0 %}
+    — queued <strong>{{ hs_last_found }}</strong> missed item{{ 's' if hs_last_found != 1 }}
+    {% elif hs_last_ran %}
+    — nothing missed
+    {% endif %}
+  </span>
+  <span class="scanner-sep">·</span>
+  <span class="scanner-item">Next run: <strong id="hs-next">{{ hs_next or '—' }}</strong></span>
+  <span class="scanner-sep">·</span>
+  <span class="scanner-item">Interval: every {{ hs_interval }} min</span>
+  <button class="btn btn-sm btn-ghost" onclick="triggerHistoryScan(this)" style="margin-left:auto">Run Now</button>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value" style="color:var(--warning)">{{ pending_count }}</div>
+    <div class="stat-label">Pending</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:var(--primary)">{{ active_count }}</div>
+    <div class="stat-label">Active</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:var(--success)">{{ done_today }}</div>
+    <div class="stat-label">Done Today</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:var(--danger)">{{ failed_today }}</div>
+    <div class="stat-label">Failed Today</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ total_success }}</div>
+    <div class="stat-label">Total Synced</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="font-size:1.3rem">{{ fmt_size(total_bytes) }}</div>
+    <div class="stat-label">Total Data</div>
+  </div>
+</div>
+
+{% if active %}
+<div class="section">
+  <h2>Active Syncs ({{ active|length }})</h2>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr><th>Title</th><th>Type</th><th>Quality</th><th>Size</th><th>Started</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for job in active %}
+        <tr class="row-active">
+          <td>{{ job.title or '—' }}</td>
+          <td><span class="badge badge-{{ job.job_type }}">{{ job.job_type }}</span></td>
+          <td class="mono small">{{ job.quality or '—' }}</td>
+          <td class="mono">{{ fmt_size(job.file_size) }}</td>
+          <td class="mono small">{{ fmt_dt(job.started_at) }}</td>
+          <td><span class="status-badge status-in_progress">syncing…</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if pending %}
+<div class="section">
+  <h2>Pending Queue (showing {{ pending|length }}{% if pending_count > pending|length %} of {{ pending_count }}{% endif %})
+    <a href="{{ url_for('ui_queue') }}" style="font-size:0.8rem;font-weight:400;margin-left:0.5rem;color:var(--primary)">View all →</a>
+  </h2>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr><th>Title</th><th>Type</th><th>Quality</th><th>Size</th><th>Queued</th><th>Retries</th></tr>
+      </thead>
+      <tbody>
+        {% for job in pending %}
+        <tr>
+          <td>{{ job.title or '—' }}</td>
+          <td><span class="badge badge-{{ job.job_type }}">{{ job.job_type }}</span></td>
+          <td class="mono small">{{ job.quality or '—' }}</td>
+          <td class="mono">{{ fmt_size(job.file_size) }}</td>
+          <td class="mono small">{{ fmt_dt(job.created_at) }}</td>
+          <td>{{ job.retry_count or 0 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="section">
+  <h2>Recent Completed
+    <a href="{{ url_for('ui_history') }}" style="font-size:0.8rem;font-weight:400;margin-left:0.5rem;color:var(--primary)">View all →</a>
+  </h2>
+  {% if recent %}
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr><th>Title</th><th>Type</th><th>Quality</th><th>Size</th><th>Status</th><th>Completed</th><th>Duration</th></tr>
+      </thead>
+      <tbody>
+        {% for job in recent %}
+        <tr>
+          <td>{{ job.title or '—' }}</td>
+          <td><span class="badge badge-{{ job.job_type }}">{{ job.job_type }}</span></td>
+          <td class="mono small">{{ job.quality or '—' }}</td>
+          <td class="mono">{{ fmt_size(job.file_size) }}</td>
+          <td><span class="status-badge status-{{ job.status }}">{{ job.status }}</span></td>
+          <td class="mono small">{{ fmt_dt(job.completed_at) }}</td>
+          <td class="mono small">{{ fmt_dur(job.duration_seconds) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No completed jobs yet.</p>
+  {% endif %}
+</div>
+
+<script>
+  // Auto-refresh dashboard every 30s if there are active syncs
+  {% if active_count > 0 %}
+  setTimeout(() => location.reload(), 30000);
+  {% endif %}
+</script>
+{% endblock %}
