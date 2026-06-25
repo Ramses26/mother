@@ -13,5 +13,6 @@ settings.yml
 
 # Keep our config files
 !recyclarr.yml
+!settings.yml
 !.env.example
 !*.md

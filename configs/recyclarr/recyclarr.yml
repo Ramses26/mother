@@ -14,8 +14,9 @@
 # - Atmos/surround audio bonuses
 # - until_quality set to profile maximum (highest quality tier in each profile)
 # - until_score: -9999 (prevent Radarr CF-score-chasing autonomous searches)
+# - Local CFs: BHDStudio (-50), Bad Container MP4 (-1000) for Radarr only
 #
-# Last Updated: 2026-04-26 (migrated v7->v8)
+# Last Updated: 2026-06-25
 ###############################################################################
 
 radarr:
@@ -167,6 +168,22 @@ radarr:
           - name: Remux + WEB 1080p
             score: 200
 
+      # Local custom formats (not in TRaSH Guide)
+      - trash_ids:
+          - local-bad-container-mp4 # MP4 container: can't hold lossless audio (TrueHD/DTS-HD MA)
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: -1000
+          - name: Remux + WEB 1080p
+            score: -1000
+      - trash_ids:
+          - local-bhdstudio # BHDStudio: encode group, often MP4, typically lower quality than release groups
+        assign_scores_to:
+          - name: HD Bluray + WEB
+            score: -50
+          - name: Remux + WEB 1080p
+            score: -50
+
 
   #---------------------------------------------------------------------------
   # Radarr-4K: 4K Movies
@@ -267,6 +284,22 @@ radarr:
             score: 200
           - name: Remux + WEB 2160p
             score: 200
+
+      # Local custom formats (not in TRaSH Guide)
+      - trash_ids:
+          - local-bad-container-mp4 # MP4 container: can't hold lossless audio
+        assign_scores_to:
+          - name: UHD Bluray + WEB
+            score: -1000
+          - name: Remux + WEB 2160p
+            score: -1000
+      - trash_ids:
+          - local-bhdstudio # BHDStudio: encode group, typically lower quality
+        assign_scores_to:
+          - name: UHD Bluray + WEB
+            score: -50
+          - name: Remux + WEB 2160p
+            score: -50
 
 
 sonarr:

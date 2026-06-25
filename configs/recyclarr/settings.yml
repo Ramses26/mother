@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/recyclarr/recyclarr/master/schemas/settings-schema.json
+
+# Edit this file to customize the behavior of Recyclarr beyond its defaults
+# For the settings file reference guide, visit the link to the wiki below:
+# https://recyclarr.dev/wiki/yaml/settings-reference/
+
+# Local custom format JSON files (not in TRaSH Guide)
+# JSON files in this directory define CFs by trash_id slug then referenced in recyclarr.yml
+resource_providers:
+  - name: local-cfs-radarr
+    type: custom-formats
+    path: /config/custom-formats/radarr
+    service: radarr

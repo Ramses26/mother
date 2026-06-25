@@ -1100,6 +1100,9 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                                     try:
                                         os.remove(old_path)
                                         logger.info(f"Reverse version sync: removed old Synology file {old_path}")
+                                    except FileNotFoundError:
+                                        # Already gone (Sonarr/Radarr may have replaced it) — no-op
+                                        logger.info(f"Reverse version sync: old Synology file already removed {old_path}")
                                     except OSError as _oe:
                                         logger.warning(f"Reverse version sync: could not delete old Synology file {old_path}: {_oe}")
                                         send_notification(
@@ -1794,13 +1797,16 @@ def _score_filename(filename: str, size_bytes: int = 0) -> int:
     # Size bonus capped at 200 (+10 per GB)
     size_bonus = min(int(size_bytes / 1_073_741_824 * 10), 200)
 
+    # Container penalty: MP4 can't hold lossless audio (TrueHD/DTS-HD MA); always an inferior container
+    container_penalty = -100 if filename.lower().endswith('.mp4') else 0
+
     # TRaSH Custom Format equivalents (same bonuses as sync_status.py _score())
     _RG_RE = re.compile(r'-([A-Za-z][A-Za-z0-9]{1,14})\.(mkv|mp4|avi|m4v|ts|m2ts)$', re.IGNORECASE)
     hybrid  = 100 if re.search(r'\[hybrid\]', name) else 0
     rg      = 50  if _RG_RE.search(filename) else 0
     proper  = 25  if re.search(r'\b(proper|repack|rerip)\b', name) else 0
 
-    return res_score + src_score + hdr_score + audio_score + hevc_penalty + size_bonus + hybrid + rg + proper
+    return res_score + src_score + hdr_score + audio_score + hevc_penalty + size_bonus + container_penalty + hybrid + rg + proper
 
 
 def _should_sync_tv_episode(filename: str) -> bool:
@@ -2344,10 +2350,50 @@ def reconcile_movie_versions():
             )
             continue
 
-        # Radarr is the authority — no score gate. Radarr's tracked file IS the target
-        # for both sides (it reflects the quality profile choice). Even if Unraid has a
-        # higher raw TRaSH score (e.g. Remux), Radarr chose the current file based on
-        # the profile. Both sides must mirror that choice.
+        # ── Direction: cross-tier vs same-tier ────────────────────────────────────
+        # Cross-tier (e.g. Syn=Bluray, Unraid=Remux): Radarr's profile is the authority.
+        #   Radarr chose this tier — forward sync regardless of Unraid's tier.
+        #   The Unraid file is a batch-sync leftover; Radarr's profile decision wins.
+        #
+        # Same-tier (both Bluray-1080p, both WEB-DL, etc.): use _score_filename() to
+        #   pick the better within-tier version. Container (MKV > MP4), release group,
+        #   size, and HDR bonuses all factor in.
+        #   If Unraid wins → reverse sync (Unraid→Syn) so Radarr rescans the better file.
+        _SOURCE_TIER_MAP = {
+            'remux': 6, 'bdremux': 6,
+            'bluray': 5, 'blu-ray': 5, 'bdrip': 5,
+            'web-dl': 4, 'webdl': 4,
+            'webrip': 3, 'web': 3,
+            'hdtv': 2,
+            '720p': 1,
+        }
+        def _get_source_tier(fname):
+            n = fname.lower()
+            for key, tier in _SOURCE_TIER_MAP.items():
+                if key in n:
+                    return tier
+            return 0
+
+        syn_tier    = _get_source_tier(best_syn_fname)
+        unraid_tier = _get_source_tier(unraid_fname)
+
+        if syn_tier == unraid_tier:
+            syn_score    = _score_filename(best_syn_fname, syn_files[0][2] if syn_files else radarr_size)
+            unraid_score = _score_filename(unraid_fname, unraid_size)
+            if unraid_score > syn_score:
+                unraid_cifs = unraid_path.replace('/mnt/user/Media/', '/mnt/unraid/media/', 1)
+                syn_folder  = os.path.join(synology_movies_nfs, movie_folder)
+                old_syn     = best_syn_path if syn_files else None
+                logger.info(
+                    f"Movie version reconcile: same-tier, Unraid has better version — "
+                    f"queuing Unraid→Syn for '{movie_folder}' "
+                    f"({unraid_fname!r} score={unraid_score} > {best_syn_fname!r} score={syn_score})"
+                )
+                mismatches.append(('unraid_to_syn', unraid_cifs, syn_folder, movie_folder, quality, old_syn))
+                continue
+            # Same-tier, Syn wins or tie → fall through to forward sync
+        # Cross-tier: Radarr's profile authority → fall through to forward sync
+
         if not os.path.isfile(nfs_path):
             # Radarr's file is missing from Synology NFS — look up exact filename in Agent
             # inventory (already fetched above) instead of os.path.isfile() over CIFS.
@@ -2364,6 +2410,15 @@ def reconcile_movie_versions():
             else:
                 logger.warning(f"Movie version reconcile: Radarr's file missing from NFS and not found on Unraid — "
                                f"skipping '{movie_folder}' ({radarr_fname!r})")
+            continue
+
+        # If Unraid already has Radarr's tracked file (alongside a duplicate), skip —
+        # dedup will clean the extra file. No need to rsync a file that's already there.
+        if radarr_fname.lower() in unraid_folder_all.get(movie_folder, {}):
+            logger.info(
+                f"Movie version reconcile: skipping '{movie_folder}' — "
+                f"Unraid already has Radarr's file {radarr_fname!r} (plus duplicate {unraid_fname!r}, dedup will clean)"
+            )
             continue
 
         mismatches.append(('syn_to_unraid', nfs_path, unraid_path, movie_folder, quality))
