@@ -1,4 +1,5 @@
 """Sync status — Radarr canonical files vs Unraid Agent comparison."""
+import asyncio
 import json
 import logging
 import os
@@ -671,6 +672,72 @@ async def sync_status_tv_parity(refresh: bool = Query(False), _auth=Depends(requ
 
 
 _SYNC_WEBHOOK_INTERNAL = os.environ.get('SYNC_WEBHOOK_URL', 'http://sync-webhook:5000')
+
+_DIRECTION_LABELS = {
+    'MovieReverseSync': 'Unraid → Syn',
+    'TVReverseSync':    'Unraid → Syn',
+    'MovieVersionSync': 'Syn → Unraid',
+    'TVVersionSync':    'Syn → Unraid',
+    'GapSync':          'Syn → Unraid',
+    'TVGapSync':        'Syn → Unraid',
+}
+
+
+@router.get('/sync-status/queue')
+async def get_sync_queue(_auth=Depends(require_auth)):
+    """Live sync-webhook job queue: active + pending + today's stats."""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            stats_r, active_r, pending_r, recent_r = await asyncio.gather(
+                client.get(f"{_SYNC_WEBHOOK_INTERNAL}/stats"),
+                client.get(f"{_SYNC_WEBHOOK_INTERNAL}/jobs", params={'status': 'in_progress', 'limit': 20}),
+                client.get(f"{_SYNC_WEBHOOK_INTERNAL}/jobs", params={'status': 'pending',     'limit': 200}),
+                client.get(f"{_SYNC_WEBHOOK_INTERNAL}/jobs", params={'limit': 30}),
+            )
+        stats   = stats_r.json()
+        active  = active_r.json().get('jobs', [])
+        pending = pending_r.json().get('jobs', [])
+        recent  = recent_r.json().get('jobs', [])
+
+        # Pending breakdown by job type
+        pending_by_type: dict = {}
+        for j in pending:
+            q = j.get('quality') or j.get('job_type', 'unknown')
+            pending_by_type[q] = pending_by_type.get(q, 0) + 1
+
+        def _job_row(j):
+            src = j.get('source_path', '') or ''
+            fname = src.split('/')[-1] if src else ''
+            q = j.get('quality') or j.get('job_type', '')
+            return {
+                'id':        j['id'],
+                'title':     j.get('title', ''),
+                'quality':   q,
+                'direction': _DIRECTION_LABELS.get(q, 'Syn → Unraid'),
+                'status':    j['status'],
+                'filename':  fname,
+                'file_size': j.get('file_size'),
+                'started_at':   j.get('started_at'),
+                'completed_at': j.get('completed_at'),
+                'error_message': j.get('error_message'),
+                'retry_count': j.get('retry_count', 0),
+            }
+
+        return {
+            'stats': {
+                'today_successful': stats.get('today_successful', 0),
+                'today_failed':     stats.get('today_failed', 0),
+                'bytes_transferred': stats.get('bytes_transferred', 0),
+                'bytes_transferred_human': stats.get('bytes_transferred_human', '0 B'),
+            },
+            'active':          [_job_row(j) for j in active],
+            'pending_count':   len(pending),
+            'pending_by_type': pending_by_type,
+            'recent':          [_job_row(j) for j in recent],
+        }
+    except Exception as e:
+        log.error(f"Queue fetch failed: {e}")
+        return {'error': str(e)}
 
 
 @router.post('/sync-status/reconcile')

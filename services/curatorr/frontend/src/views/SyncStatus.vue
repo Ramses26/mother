@@ -1,11 +1,8 @@
 <template>
   <div class="p-6 max-w-6xl mx-auto">
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-between mb-4">
       <h1 class="text-2xl font-bold text-white">Sync Status</h1>
       <div class="flex items-center gap-3">
-        <span class="text-xs text-slate-500">
-          Bidirectional reconcile — TRaSH + Radarr profile as authority
-        </span>
         <button @click="triggerReconcile" :disabled="reconciling" class="btn-secondary text-sm text-violet-300 border-violet-700">
           {{ reconciling ? 'Queuing…' : 'Reconcile Now' }}
         </button>
@@ -15,13 +12,67 @@
       </div>
     </div>
 
+    <!-- ── LIVE SYNC QUEUE PANEL ─────────────────────────────────────── -->
+    <div class="rounded-lg mb-5 overflow-hidden" style="background:#0f1117; border:1px solid #1e2535;">
+      <!-- Header row -->
+      <div class="flex items-center justify-between px-4 py-2.5" style="border-bottom:1px solid #1e2535;">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Live Sync Queue</span>
+          <span v-if="queueData?.active?.length" class="flex items-center gap-1.5 text-xs text-emerald-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
+            {{ queueData.active.length }} active
+          </span>
+          <span v-else class="text-xs text-slate-600">idle</span>
+        </div>
+        <div class="flex items-center gap-4 text-xs text-slate-500">
+          <span v-if="queueData?.pending_count">
+            <span class="text-amber-400 font-medium">{{ queueData.pending_count }}</span> pending
+          </span>
+          <span v-if="queueData?.stats">
+            Today: <span class="text-slate-300">{{ queueData.stats.today_successful }}</span> done ·
+            <span class="text-slate-300">{{ queueData.stats.bytes_transferred_human }}</span>
+            <span v-if="queueData.stats.today_failed" class="text-red-400 ml-1">· {{ queueData.stats.today_failed }} failed</span>
+          </span>
+          <span class="text-slate-700">auto-refresh 10s</span>
+        </div>
+      </div>
+
+      <!-- Active jobs -->
+      <div v-if="queueData?.active?.length" class="divide-y divide-slate-800/50">
+        <div v-for="job in queueData.active" :key="job.id"
+          class="flex items-center gap-3 px-4 py-2.5 text-sm">
+          <div class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+          <span class="text-emerald-300 font-medium w-32 flex-shrink-0 truncate" :title="job.quality">{{ job.quality }}</span>
+          <span class="text-slate-400 w-20 flex-shrink-0 text-xs">{{ job.direction }}</span>
+          <span class="text-slate-300 flex-1 truncate font-mono text-xs" :title="job.filename">{{ job.filename }}</span>
+          <span v-if="job.file_size" class="text-slate-500 text-xs flex-shrink-0">{{ (job.file_size/1073741824).toFixed(1) }} GB</span>
+        </div>
+      </div>
+
+      <!-- Pending breakdown (when idle or below active) -->
+      <div v-if="queueData?.pending_by_type && Object.keys(queueData.pending_by_type).length"
+        class="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2.5">
+        <span v-for="(cnt, type) in queueData.pending_by_type" :key="type" class="text-xs">
+          <span class="text-slate-400">{{ type }}:</span>
+          <span class="text-amber-300 ml-1 font-medium">{{ cnt }}</span>
+        </span>
+      </div>
+
+      <!-- No queue -->
+      <div v-if="!queueData?.active?.length && !queueData?.pending_count && queueData"
+        class="px-4 py-2.5 text-xs text-slate-600">
+        No active or pending sync jobs.
+      </div>
+      <div v-if="!queueData" class="px-4 py-2.5 text-xs text-slate-600">Loading queue…</div>
+    </div>
+
     <!-- Library tabs -->
     <div class="flex gap-2 mb-6">
-      <button v-for="t in ['Movies', 'TV Shows', 'TV Parity']" :key="t"
+      <button v-for="t in ['Movies', 'TV Shows', 'TV Parity', 'Queue']" :key="t"
         @click="library = t"
         class="px-4 py-1.5 rounded text-sm transition-colors"
         :class="library === t ? 'bg-violet-600 text-white' : 'bg-surface-200 text-slate-400 hover:text-white'">
-        {{ t }}
+        {{ t }}<span v-if="t === 'Queue' && queueData?.pending_count" class="ml-1.5 text-xs text-amber-400">({{ queueData.pending_count }})</span>
       </button>
     </div>
 
@@ -575,6 +626,79 @@
         </template>
       </template>
     </template>
+
+    <!-- ── QUEUE TAB ──────────────────────────────────────────────────── -->
+    <template v-if="library === 'Queue'">
+      <div v-if="!queueData" class="text-center py-20 text-slate-500">Loading queue…</div>
+      <template v-else>
+        <!-- Active jobs -->
+        <div v-if="queueData.active?.length" class="mb-6">
+          <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">
+            Active ({{ queueData.active.length }})
+          </div>
+          <div class="rounded-lg overflow-hidden" style="background:#1a1d27; border:1px solid #2d3748;">
+            <div v-for="job in queueData.active" :key="job.id"
+              class="flex items-center gap-3 px-4 py-3 border-b border-slate-800/60 last:border-0">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+              <span class="text-emerald-300 text-xs font-medium w-36 flex-shrink-0">{{ job.quality }}</span>
+              <span class="text-slate-500 text-xs w-28 flex-shrink-0">{{ job.direction }}</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-white text-sm truncate">{{ job.title }}</div>
+                <div class="text-slate-500 text-xs font-mono truncate" :title="job.filename">{{ job.filename }}</div>
+              </div>
+              <span v-if="job.file_size" class="text-slate-500 text-xs flex-shrink-0">{{ (job.file_size/1073741824).toFixed(1) }} GB</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending breakdown -->
+        <div v-if="queueData.pending_count" class="mb-6">
+          <div class="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-3">
+            Pending ({{ queueData.pending_count }})
+          </div>
+          <div class="flex flex-wrap gap-3 mb-4">
+            <div v-for="(cnt, type) in queueData.pending_by_type" :key="type"
+              class="rounded-lg px-4 py-3 text-center" style="background:#1a1d27; border:1px solid #2d3748; min-width:120px;">
+              <div class="text-xl font-bold text-amber-300">{{ cnt }}</div>
+              <div class="text-xs text-slate-400 mt-1">{{ type }}</div>
+              <div class="text-xs text-slate-600 mt-0.5">{{ directionLabel(type) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent jobs (last 30) -->
+        <div>
+          <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Recent (last 30)</div>
+          <div class="rounded-lg overflow-hidden" style="background:#1a1d27; border:1px solid #2d3748;">
+            <div v-for="job in queueData.recent" :key="job.id"
+              class="flex items-center gap-3 px-4 py-2.5 border-b border-slate-800/40 last:border-0 text-sm">
+              <span class="w-2 h-2 rounded-full flex-shrink-0"
+                :class="{
+                  'bg-emerald-400 animate-pulse': job.status === 'in_progress',
+                  'bg-green-600':  job.status === 'success',
+                  'bg-red-500':    job.status === 'failed',
+                  'bg-amber-500':  job.status === 'pending',
+                  'bg-slate-600':  job.status === 'cancelled',
+                }"></span>
+              <span class="text-xs font-mono w-28 flex-shrink-0"
+                :class="{
+                  'text-emerald-300': job.status === 'in_progress',
+                  'text-green-500':   job.status === 'success',
+                  'text-red-400':     job.status === 'failed',
+                  'text-amber-400':   job.status === 'pending',
+                  'text-slate-600':   job.status === 'cancelled',
+                }">{{ job.status }}</span>
+              <span class="text-slate-500 text-xs w-36 flex-shrink-0 truncate">{{ job.quality }}</span>
+              <div class="flex-1 min-w-0">
+                <span class="text-slate-300 truncate">{{ job.title }}</span>
+                <span v-if="job.error_message" class="text-red-400 text-xs ml-2">{{ job.error_message }}</span>
+              </div>
+              <span class="text-slate-600 text-xs flex-shrink-0">{{ job.direction }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </template>
   </div>
 </template>
 
@@ -590,9 +714,19 @@ const parityTab = ref('missing')
 const movieData  = ref(null)
 const tvData     = ref(null)
 const parityData = ref(null)
+const queueData  = ref(null)
 const loading    = ref(false)
 const reconciling = ref(false)
 const VERSION_SYNC_MAX = 100
+
+const directionLabel = (type) => {
+  const m = {
+    'MovieReverseSync': 'Unraid → Syn', 'TVReverseSync': 'Unraid → Syn',
+    'MovieVersionSync': 'Syn → Unraid', 'TVVersionSync':  'Syn → Unraid',
+    'GapSync': 'Syn → Unraid', 'TVGapSync': 'Syn → Unraid',
+  }
+  return m[type] || 'Syn → Unraid'
+}
 
 const expandedMiss = ref(new Set())
 const expandedSyn  = ref(new Set())
@@ -637,7 +771,8 @@ const parityTabs = computed(() => [
   { key: 'mismatch',    label: 'Version Mismatch',       count: parityData.value?.summary?.mismatch_count },
 ])
 
-let pollTimer = null
+let pollTimer    = null
+let queueTimer   = null
 
 const loadMovies = async (force = false) => {
   try {
@@ -669,6 +804,15 @@ const loadParity = async (force = false) => {
   }
 }
 
+const loadQueue = async () => {
+  try {
+    const r = await axios.get('/api/sync-status/queue')
+    queueData.value = r.data
+  } catch (e) {
+    // silently keep last good data on transient errors
+  }
+}
+
 const schedulePoll = () => {
   if (pollTimer) return
   pollTimer = setInterval(async () => {
@@ -681,7 +825,7 @@ const schedulePoll = () => {
 
 const refresh = async () => {
   loading.value = true
-  await Promise.all([loadMovies(true), loadTv(true), loadParity(true)])
+  await Promise.all([loadMovies(true), loadTv(true), loadParity(true), loadQueue()])
   schedulePoll()
 }
 
@@ -689,7 +833,9 @@ const triggerReconcile = async () => {
   reconciling.value = true
   try {
     const r = await axios.post('/api/sync-status/reconcile?type=all')
-    alert(`Reconcile queued: ${r.data.message || 'TV + movies started — check Telegram for results'}`)
+    // refresh queue after a short delay so new jobs appear
+    setTimeout(loadQueue, 2000)
+    alert(`Reconcile queued: ${r.data.message || 'TV + movies started'}`)
   } catch (e) {
     alert(`Reconcile trigger failed: ${e?.response?.data?.error || e.message}`)
   } finally {
@@ -698,10 +844,15 @@ const triggerReconcile = async () => {
 }
 
 onMounted(async () => {
-  await Promise.all([loadMovies(), loadTv(), loadParity()])
+  await Promise.all([loadMovies(), loadTv(), loadParity(), loadQueue()])
   const needPoll = [movieData, tvData, parityData].some(d => d.value?.status === 'scanning')
   if (needPoll) schedulePoll()
+  // queue panel always auto-refreshes every 10s
+  queueTimer = setInterval(loadQueue, 10000)
 })
 
-onUnmounted(() => { if (pollTimer) { clearInterval(pollTimer); pollTimer = null } })
+onUnmounted(() => {
+  if (pollTimer)  { clearInterval(pollTimer);  pollTimer  = null }
+  if (queueTimer) { clearInterval(queueTimer); queueTimer = null }
+})
 </script>
