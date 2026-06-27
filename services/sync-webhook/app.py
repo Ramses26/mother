@@ -2377,49 +2377,32 @@ def reconcile_movie_versions():
             )
             continue
 
-        # ── Direction: cross-tier vs same-tier ────────────────────────────────────
-        # Cross-tier (e.g. Syn=Bluray, Unraid=Remux): Radarr's profile is the authority.
-        #   Radarr chose this tier — forward sync regardless of Unraid's tier.
-        #   The Unraid file is a batch-sync leftover; Radarr's profile decision wins.
-        #
-        # Same-tier (both Bluray-1080p, both WEB-DL, etc.): use _score_filename() to
-        #   pick the better within-tier version. Container (MKV > MP4), release group,
-        #   size, and HDR bonuses all factor in.
-        #   If Unraid wins → reverse sync (Unraid→Syn) so Radarr rescans the better file.
-        _SOURCE_TIER_MAP = {
-            'remux': 6, 'bdremux': 6,
-            'bluray': 5, 'blu-ray': 5, 'bdrip': 5,
-            'web-dl': 4, 'webdl': 4,
-            'webrip': 3, 'web': 3,
-            'hdtv': 2,
-            '720p': 1,
-        }
-        def _get_source_tier(fname):
-            n = fname.lower()
-            for key, tier in _SOURCE_TIER_MAP.items():
-                if key in n:
-                    return tier
-            return 0
+        # ── Direction: pure TRaSH score — higher score wins regardless of tier ──────
+        # The highest-scored file across both sides is the target for both sides.
+        # "Radarr's current tracked file as authority" was wrong: it caused cross-tier
+        # cases (Unraid Remux vs Syn Bluray) to queue MovieVersionSync that would
+        # destroy Unraid's better Remux by replacing it with Synology's Bluray.
+        syn_score    = _score_filename(best_syn_fname, syn_files[0][2] if syn_files else radarr_size)
+        unraid_score = _score_filename(unraid_fname, unraid_size)
 
-        syn_tier    = _get_source_tier(best_syn_fname)
-        unraid_tier = _get_source_tier(unraid_fname)
-
-        if syn_tier == unraid_tier:
-            syn_score    = _score_filename(best_syn_fname, syn_files[0][2] if syn_files else radarr_size)
-            unraid_score = _score_filename(unraid_fname, unraid_size)
-            if unraid_score > syn_score:
-                unraid_cifs = unraid_path.replace('/mnt/user/Media/', '/mnt/unraid/media/', 1)
-                syn_folder  = os.path.join(synology_movies_nfs, movie_folder)
-                old_syn     = best_syn_path if syn_files else None
-                logger.info(
-                    f"Movie version reconcile: same-tier, Unraid has better version — "
-                    f"queuing Unraid→Syn for '{movie_folder}' "
-                    f"({unraid_fname!r} score={unraid_score} > {best_syn_fname!r} score={syn_score})"
-                )
-                mismatches.append(('unraid_to_syn', unraid_cifs, syn_folder, movie_folder, quality, old_syn))
-                continue
-            # Same-tier, Syn wins or tie → fall through to forward sync
-        # Cross-tier: Radarr's profile authority → fall through to forward sync
+        if unraid_score > syn_score:
+            unraid_cifs = unraid_path.replace('/mnt/user/Media/', '/mnt/unraid/media/', 1)
+            syn_folder  = os.path.join(synology_movies_nfs, movie_folder)
+            old_syn     = best_syn_path if syn_files else None
+            logger.info(
+                f"Movie version reconcile: Unraid has better version — "
+                f"queuing Unraid→Syn for '{movie_folder}' "
+                f"({unraid_fname!r} score={unraid_score} > {best_syn_fname!r} score={syn_score})"
+            )
+            mismatches.append(('unraid_to_syn', unraid_cifs, syn_folder, movie_folder, quality, old_syn))
+            continue
+        elif syn_score == unraid_score:
+            logger.info(
+                f"Movie version reconcile: scores equal, skipping '{movie_folder}' "
+                f"({best_syn_fname!r} == {unraid_fname!r} score={syn_score})"
+            )
+            continue
+        # else: syn_score > unraid_score → Syn wins → fall through to forward sync
 
         if not os.path.isfile(nfs_path):
             # Radarr's file is missing from Synology NFS — look up exact filename in Agent
