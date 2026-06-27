@@ -66,13 +66,85 @@
       <div v-if="!queueData" class="px-4 py-2.5 text-xs text-slate-600">Loading queue…</div>
     </div>
 
+    <!-- ── PIPELINE PANEL (Upgraderr + Downloads) ──────────────────────── -->
+    <div class="rounded-lg mb-5 overflow-hidden" style="background:#0f1117; border:1px solid #1e2535;">
+      <div class="flex items-center justify-between px-4 py-2.5" style="border-bottom:1px solid #1e2535;">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Pipeline</span>
+          <!-- Upgraderr status -->
+          <template v-if="pipelineData?.upgraderr">
+            <span v-if="pipelineData.upgraderr.paused"
+              class="text-xs px-2 py-0.5 rounded bg-amber-900/40 text-amber-400">Upgraderr paused</span>
+            <span v-else class="text-xs px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-400">Upgraderr active</span>
+            <span class="text-xs text-slate-500">
+              {{ pipelineData.upgraderr.queue_total }} queued ·
+              {{ pipelineData.upgraderr.searches_today }} searches today ·
+              {{ pipelineData.upgraderr.upgrades_today }} upgraded today
+            </span>
+          </template>
+        </div>
+        <div class="flex items-center gap-2">
+          <span v-if="pipelineData?.downloads_total" class="text-xs text-slate-500">
+            <span class="text-blue-400 font-medium">{{ pipelineData.downloads_total }}</span> downloading
+          </span>
+          <button @click="triggerSweep" :disabled="sweeping"
+            class="text-xs px-2.5 py-1 rounded transition-colors"
+            style="background:#1a1d27; border:1px solid #2d3748; color:#94a3b8;"
+            :class="sweeping ? 'opacity-50' : 'hover:text-white'">
+            {{ sweeping ? 'Triggering…' : 'Sweep Now' }}
+          </button>
+          <button v-if="pipelineData?.upgraderr?.paused" @click="setPause(false)"
+            class="text-xs px-2.5 py-1 rounded transition-colors"
+            style="background:#1a1d27; border:1px solid #22543d; color:#68d391;">Resume</button>
+          <button v-else @click="setPause(true)"
+            class="text-xs px-2.5 py-1 rounded transition-colors"
+            style="background:#1a1d27; border:1px solid #744210; color:#f6ad55;">Pause</button>
+        </div>
+      </div>
+
+      <!-- Tier breakdown (compact) -->
+      <div v-if="pipelineData?.upgraderr?.tier_labels"
+        class="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2" style="border-bottom:1px solid #1e2535;">
+        <span v-for="(t, tier) in pipelineData.upgraderr.tier_labels" :key="tier"
+          class="text-xs" :class="t.count > 0 ? 'text-slate-400' : 'text-slate-700'">
+          T{{ tier }} <span class="font-medium" :class="t.count > 0 ? 'text-white' : ''">{{ t.count }}</span>
+          <span class="text-slate-600 ml-0.5">{{ t.label }}</span>
+        </span>
+      </div>
+
+      <!-- Active downloads (top 5) -->
+      <div v-if="pipelineData?.downloads?.length" class="divide-y divide-slate-800/40">
+        <div v-for="dl in pipelineData.downloads.slice(0, 5)" :key="dl.title + dl.instance"
+          class="flex items-center gap-3 px-4 py-2.5 text-sm">
+          <span class="text-blue-400 text-xs w-20 flex-shrink-0 truncate">{{ dl.instance }}</span>
+          <span class="text-slate-500 text-xs w-24 flex-shrink-0">{{ dl.quality }}</span>
+          <span class="flex-1 text-slate-300 truncate text-xs" :title="dl.title">{{ dl.title }}</span>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="w-20 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+              <div class="h-full rounded-full bg-blue-500 transition-all" :style="{width: dl.progress + '%'}"></div>
+            </div>
+            <span class="text-slate-600 text-xs w-8 text-right">{{ dl.progress }}%</span>
+          </div>
+        </div>
+        <div v-if="pipelineData.downloads.length > 5"
+          class="px-4 py-1.5 text-xs text-slate-600 cursor-pointer hover:text-slate-400"
+          @click="library = 'Pipeline'">
+          +{{ pipelineData.downloads.length - 5 }} more — view Pipeline tab
+        </div>
+      </div>
+      <div v-else-if="pipelineData && !pipelineData.downloads?.length"
+        class="px-4 py-2.5 text-xs text-slate-600">No active downloads.</div>
+      <div v-if="!pipelineData" class="px-4 py-2.5 text-xs text-slate-600">Loading pipeline…</div>
+    </div>
+
     <!-- Library tabs -->
     <div class="flex gap-2 mb-6">
-      <button v-for="t in ['Movies', 'TV Shows', 'TV Parity', 'Queue']" :key="t"
+      <button v-for="t in ['Movies', 'TV Shows', 'TV Parity', 'Queue', 'Pipeline']" :key="t"
         @click="library = t"
         class="px-4 py-1.5 rounded text-sm transition-colors"
         :class="library === t ? 'bg-violet-600 text-white' : 'bg-surface-200 text-slate-400 hover:text-white'">
         {{ t }}<span v-if="t === 'Queue' && queueData?.pending_count" class="ml-1.5 text-xs text-amber-400">({{ queueData.pending_count }})</span>
+        <span v-if="t === 'Pipeline' && pipelineData?.downloads_total" class="ml-1.5 text-xs text-blue-400">({{ pipelineData.downloads_total }})</span>
       </button>
     </div>
 
@@ -699,6 +771,75 @@
         </div>
       </template>
     </template>
+
+    <!-- ── PIPELINE TAB ────────────────────────────────────────────────── -->
+    <template v-if="library === 'Pipeline'">
+      <div v-if="!pipelineData" class="text-center py-20 text-slate-500">Loading pipeline…</div>
+      <template v-else>
+        <!-- Upgraderr detail -->
+        <div class="mb-6">
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+            Upgraderr — Quality Upgrade Queue
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div class="rounded-lg p-3 text-center" style="background:#1a1d27; border:1px solid #2d3748;">
+              <div class="text-xl font-bold text-white">{{ pipelineData.upgraderr?.queue_total ?? '—' }}</div>
+              <div class="text-xs text-slate-400 mt-1">Pending Upgrades</div>
+            </div>
+            <div class="rounded-lg p-3 text-center" style="background:#1a1d27; border:1px solid #2d3748;">
+              <div class="text-xl font-bold text-blue-400">{{ pipelineData.upgraderr?.searches_today ?? '—' }}</div>
+              <div class="text-xs text-slate-400 mt-1">Searches Today</div>
+            </div>
+            <div class="rounded-lg p-3 text-center" style="background:#1a1d27; border:1px solid #2d3748;">
+              <div class="text-xl font-bold text-emerald-400">{{ pipelineData.upgraderr?.upgrades_today ?? '—' }}</div>
+              <div class="text-xs text-slate-400 mt-1">Upgraded Today</div>
+            </div>
+            <div class="rounded-lg p-3 text-center" style="background:#1a1d27; border:1px solid #2d3748;">
+              <div class="text-xl font-bold" :class="pipelineData.upgraderr?.paused ? 'text-amber-400' : 'text-emerald-400'">
+                {{ pipelineData.upgraderr?.paused ? 'Paused' : 'Active' }}
+              </div>
+              <div class="text-xs text-slate-400 mt-1">Status</div>
+            </div>
+          </div>
+          <!-- Tier breakdown -->
+          <div v-if="pipelineData.upgraderr?.tier_labels" class="rounded-lg overflow-hidden" style="background:#1a1d27; border:1px solid #2d3748;">
+            <div v-for="(t, tier) in pipelineData.upgraderr.tier_labels" :key="tier"
+              class="flex items-center gap-3 px-4 py-2.5 border-b border-slate-800/40 last:border-0">
+              <span class="text-xs font-mono text-slate-600 w-5">T{{ tier }}</span>
+              <span class="text-sm text-slate-300 flex-1">{{ t.label }}</span>
+              <span class="text-sm font-medium" :class="t.count > 0 ? 'text-white' : 'text-slate-700'">{{ t.count }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download queues -->
+        <div>
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+            Active Downloads — All *arr Instances ({{ pipelineData.downloads_total }})
+          </div>
+          <div v-if="!pipelineData.downloads?.length" class="text-slate-600 text-sm py-4">No active downloads.</div>
+          <div v-else class="rounded-lg overflow-hidden" style="background:#1a1d27; border:1px solid #2d3748;">
+            <div v-for="dl in pipelineData.downloads" :key="dl.title + dl.instance"
+              class="flex items-center gap-3 px-4 py-3 border-b border-slate-800/40 last:border-0">
+              <span class="text-xs text-blue-400 w-24 flex-shrink-0 truncate">{{ dl.instance }}</span>
+              <span class="text-xs text-slate-500 w-28 flex-shrink-0">{{ dl.quality }}</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm text-slate-300 truncate">{{ dl.title }}</div>
+                <div class="text-xs text-slate-600">{{ (dl.size_bytes/1073741824).toFixed(1) }} GB total</div>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="w-24 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div class="h-full rounded-full transition-all"
+                    :class="dl.progress >= 100 ? 'bg-emerald-500' : 'bg-blue-500'"
+                    :style="{width: dl.progress + '%'}"></div>
+                </div>
+                <span class="text-xs text-slate-400 w-10 text-right">{{ dl.progress }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </template>
   </div>
 </template>
 
@@ -717,7 +858,10 @@ const parityData = ref(null)
 const queueData  = ref(null)
 const loading    = ref(false)
 const reconciling = ref(false)
+const sweeping    = ref(false)
 const VERSION_SYNC_MAX = 100
+
+const pipelineData = ref(null)
 
 const directionLabel = (type) => {
   const m = {
@@ -771,8 +915,9 @@ const parityTabs = computed(() => [
   { key: 'mismatch',    label: 'Version Mismatch',       count: parityData.value?.summary?.mismatch_count },
 ])
 
-let pollTimer    = null
-let queueTimer   = null
+let pollTimer     = null
+let queueTimer    = null
+let pipelineTimer = null
 
 const loadMovies = async (force = false) => {
   try {
@@ -813,6 +958,15 @@ const loadQueue = async () => {
   }
 }
 
+const loadPipeline = async () => {
+  try {
+    const r = await axios.get('/api/pipeline')
+    pipelineData.value = r.data
+  } catch (e) {
+    // silently keep last good data
+  }
+}
+
 const schedulePoll = () => {
   if (pollTimer) return
   pollTimer = setInterval(async () => {
@@ -825,7 +979,7 @@ const schedulePoll = () => {
 
 const refresh = async () => {
   loading.value = true
-  await Promise.all([loadMovies(true), loadTv(true), loadParity(true), loadQueue()])
+  await Promise.all([loadMovies(true), loadTv(true), loadParity(true), loadQueue(), loadPipeline()])
   schedulePoll()
 }
 
@@ -833,7 +987,6 @@ const triggerReconcile = async () => {
   reconciling.value = true
   try {
     const r = await axios.post('/api/sync-status/reconcile?type=all')
-    // refresh queue after a short delay so new jobs appear
     setTimeout(loadQueue, 2000)
     alert(`Reconcile queued: ${r.data.message || 'TV + movies started'}`)
   } catch (e) {
@@ -843,16 +996,39 @@ const triggerReconcile = async () => {
   }
 }
 
+const triggerSweep = async () => {
+  sweeping.value = true
+  try {
+    await axios.post('/api/pipeline/sweep')
+    setTimeout(loadPipeline, 3000)
+  } catch (e) {
+    alert(`Sweep trigger failed: ${e?.response?.data?.error || e.message}`)
+  } finally {
+    sweeping.value = false
+  }
+}
+
+const setPause = async (pause) => {
+  try {
+    await axios.post(pause ? '/api/pipeline/pause' : '/api/pipeline/resume')
+    await loadPipeline()
+  } catch (e) {
+    alert(`Failed: ${e?.response?.data?.error || e.message}`)
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([loadMovies(), loadTv(), loadParity(), loadQueue()])
+  await Promise.all([loadMovies(), loadTv(), loadParity(), loadQueue(), loadPipeline()])
   const needPoll = [movieData, tvData, parityData].some(d => d.value?.status === 'scanning')
   if (needPoll) schedulePoll()
-  // queue panel always auto-refreshes every 10s
-  queueTimer = setInterval(loadQueue, 10000)
+  // queue + pipeline auto-refresh: 10s for queue (active rsyncs), 30s for pipeline (downloads)
+  queueTimer    = setInterval(loadQueue,    10000)
+  pipelineTimer = setInterval(loadPipeline, 30000)
 })
 
 onUnmounted(() => {
-  if (pollTimer)  { clearInterval(pollTimer);  pollTimer  = null }
-  if (queueTimer) { clearInterval(queueTimer); queueTimer = null }
+  if (pollTimer)     { clearInterval(pollTimer);     pollTimer    = null }
+  if (queueTimer)    { clearInterval(queueTimer);    queueTimer   = null }
+  if (pipelineTimer) { clearInterval(pipelineTimer); pipelineTimer = null }
 })
 </script>

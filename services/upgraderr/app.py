@@ -31,11 +31,12 @@ from apscheduler.schedulers.background import BackgroundScheduler
 # Configuration (env vars = defaults only; DB is authoritative after first run)
 # ---------------------------------------------------------------------------
 
-SECRET_KEY   = os.environ.get('UPGRADERR_SECRET_KEY', 'change-me-32-chars-xxxxxxxxxxxxxxxx')
-DB_PATH      = os.environ.get('UPGRADERR_DB_PATH', '/data/upgraderr.db')
-BACKUP_DIR   = os.environ.get('UPGRADERR_BACKUP_DIR', '/data/backups')
-LOG_LEVEL    = os.environ.get('UPGRADERR_LOG_LEVEL', 'INFO')
-DISPLAY_TZ   = os.environ.get('TZ', 'America/New_York')
+SECRET_KEY        = os.environ.get('UPGRADERR_SECRET_KEY', 'change-me-32-chars-xxxxxxxxxxxxxxxx')
+DB_PATH           = os.environ.get('UPGRADERR_DB_PATH', '/data/upgraderr.db')
+BACKUP_DIR        = os.environ.get('UPGRADERR_BACKUP_DIR', '/data/backups')
+LOG_LEVEL         = os.environ.get('UPGRADERR_LOG_LEVEL', 'INFO')
+DISPLAY_TZ        = os.environ.get('TZ', 'America/New_York')
+SERVICE_API_KEY   = os.environ.get('UPGRADERR_SERVICE_KEY', '')  # shared key for inter-service calls
 
 # Default instance configuration from env (bootstrapped into DB on first run)
 DEFAULT_INSTANCES = {
@@ -1713,25 +1714,42 @@ def settings_page():
 def health():
     return jsonify({'status': 'healthy', 'paused': get_config('paused', 'false') == 'true'})
 
+def _service_or_auth():
+    """Returns True if the request carries either a valid JWT or the service API key."""
+    svc_key = request.headers.get('X-Service-Key', '')
+    if SERVICE_API_KEY and svc_key == SERVICE_API_KEY:
+        return True
+    if _is_local_request():
+        return True
+    token = get_token()
+    if token and verify_token(token, 'access'):
+        return True
+    refresh = request.cookies.get('refresh_token')
+    return bool(refresh and verify_token(refresh, 'refresh'))
+
+
 @app.route('/api/pause', methods=['POST'])
-@require_auth
 def api_pause():
+    if not _service_or_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
     set_config('paused', 'true')
     set_cfg('paused', 'true')
     send_telegram("⏸ Upgraderr paused by user", category='notify_pause_resume')
     return jsonify({'status': 'paused'})
 
 @app.route('/api/resume', methods=['POST'])
-@require_auth
 def api_resume():
+    if not _service_or_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
     set_config('paused', 'false')
     set_cfg('paused', 'false')
     send_telegram("▶ Upgraderr resumed by user", category='notify_pause_resume')
     return jsonify({'status': 'resumed'})
 
 @app.route('/api/sweep', methods=['POST'])
-@require_auth
 def api_sweep():
+    if not _service_or_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
     threading.Thread(target=do_sweep, args=('manual',), daemon=True).start()
     return jsonify({'status': 'started'})
 

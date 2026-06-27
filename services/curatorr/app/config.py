@@ -59,6 +59,9 @@ ALI_RADARR_KEY   = os.environ.get('ALI_RADARR_API_KEY', '')
 ALI_SONARR_URL   = os.environ.get('ALI_SONARR_URL',   '')
 ALI_SONARR_KEY   = os.environ.get('ALI_SONARR_API_KEY', '')
 
+UPGRADERR_INTERNAL_URL = os.environ.get('UPGRADERR_INTERNAL_URL', 'http://upgraderr:5000')
+UPGRADERR_SERVICE_KEY  = os.environ.get('UPGRADERR_SERVICE_KEY', '')
+
 # ── Telegram ──────────────────────────────────────────────────────────────────
 TELEGRAM_BOT_TOKEN      = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 CURATORR_TELEGRAM_CHAT  = os.environ.get('CURATORR_TELEGRAM_CHAT_ID', '')
