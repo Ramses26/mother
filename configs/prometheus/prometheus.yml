@@ -20,3 +20,11 @@ scrape_configs:
     relabel_configs:
       - target_label: instance
         replacement: mother
+
+  - job_name: sync-webhook
+    static_configs:
+      - targets: [sync-webhook:5000]
+    metrics_path: /metrics
+    relabel_configs:
+      - target_label: instance
+        replacement: mother

@@ -117,6 +117,22 @@ The sweep randomizes movie order within each instance (`random.shuffle`), so the
 /tv-4k      → /mnt/synology/rs-4kmedia/4ktv  → /mnt/unraid/media/4K TV Shows
 ```
 
+## Shared TRaSH Scoring Config
+
+`configs/scoring/trash_scoring.json` is the **single source of truth** for all quality scoring across services.
+Mounted read-only at `/app/scoring/trash_scoring.json` in both `sync-webhook` and `curatorr` containers.
+
+| Service | Where loaded | Function |
+|---|---|---|
+| `sync-webhook` | Module level (`_SC`, `_SC_RES`, `_SC_SRC`, `_SC_CF`) | `_score_filename(fname, size_bytes)` |
+| `curatorr/routes/duplicates.py` | Module level (`_SC`) | `_score_plex_version(v)` |
+| `curatorr/routes/sync_status.py` | Module level (`_SC`) | `_score(fname, size_bytes)` |
+
+To tune any scoring value: edit the JSON, then `docker compose restart sync-webhook curatorr`.
+See `docs/TRASHGUIDES_REFERENCE.md` for the full scoring table.
+
+**gitignore**: `configs/scoring/` is whitelisted in `.gitignore` so the JSON is tracked in git.
+
 ## Key Code Components
 
 ### `services/sync-webhook/app.py` (Flask app)
@@ -138,7 +154,10 @@ thread sends a "Stalled Sync Killed" Telegram alert instead of generic "Sync Fai
 
 **History scanner**: Uses `data.importedPath` (specific episode file) from Sonarr history
 instead of `series.path` (entire show directory), preventing whole-show rsyncs that block the queue.
-Catchup path only — no deletions.
+Catchup path only — no deletions. **Stale-entry guard**: Before queuing, checks `os.path.exists(source)`.
+If the source file on Synology NFS no longer exists (Radarr/Sonarr upgraded it since import), the
+scanner skips the entry and marks it `queued_this_scan` to avoid re-checking. This prevents phantom
+jobs for replaced files from being recreated every 30 minutes.
 
 **Movie Gap Scanner** (`scan_library_gaps`): Nightly at 11:30 PM ET. Compares Synology HD-movies
 NFS listing vs Unraid folder list via Unraid Agent API. Queues missing folders as `GapSync` jobs.
@@ -158,6 +177,15 @@ scan) vs Unraid Agent TV inventory. Queues individual missing episode files as `
 - Unraid inventory via `GET /inventory?path=/mnt/user/Media/TV%20Shows&refresh=true` on Agent
 
 **Unraid Dedup** (`nightly_unraid_dedup`): Daily at **8:00 AM ET** (moved from midnight to morning to allow gap-scanner queue to drain overnight). Calls `GET /scan?refresh=true` on Unraid Agent. For each duplicate group, deletes lower-quality versions via `POST /delete` on Agent. Only deletes files marked `safe_to_delete=True` by Agent. Multiple safety checks in order: (1) `PAUSE_DEDUP` sentinel file, (2) active gap-sync jobs check, (3) `DEDUP_SAFETY_LIMIT` abort threshold, (4) `DEDUP_MAX_PER_RUN` per-run cap, (5) `DEDUP_DRY_RUN` preview mode. Sends Telegram with summary + top-10 largest deletions.
+
+**Auto-retry stale-entry guard**: `auto_retry_failed()` also checks `os.path.exists(source)`. If source
+is gone, sets all rows for that source path to `status='success', error_message='stale: source file upgraded'`
+— permanently stops the retry loop for phantom entries without manual DB intervention.
+
+**TRaSH scoring**: `_score_filename(fname, size_bytes)` loads constants from
+`/app/scoring/trash_scoring.json` (shared volume mount) at module startup. All reconcile decisions
+(movie version, TV version, gap scan quality filter) use this function. Resolution 2160p→1080p→4k/uhd
+order prevents `[4K Remaster]` edition labels from overriding the real resolution tag.
 
 **DB columns**: `rsync_pid`, `last_progress_bytes`, `last_progress_at`, `stall_killed` (added 2026-02-23)
 
@@ -180,7 +208,7 @@ Scans media directories, extracts quality metadata from filenames via regex, out
 Custom quality upgrade automation service replacing Huntarr. Handles:
 - Discovery sweep every 30 min: classifies all 4 *arr instances into 7 upgrade tiers
 - **7 Tiers**: m2ts/BDMV (1), non-MKV container (2), 720p/SD (3), TMDB BluRay available (4), no surround audio (5), low TRaSH score (6), quality profile mismatch (7 — file quality not in Radarr's profile allowed list; Radarr won't auto-search because `cutoffNotMet=false`; Upgraderr forces search)
-- APScheduler tasks: sweep (every 30min), TMDB scan (02:30 UTC daily), DB backup (03:00 UTC daily), search log prune (04:00 UTC daily, keeps 90 days)
+- APScheduler tasks: sweep (every 30min), TMDB scan (02:30 UTC daily), DB backup (03:00 UTC daily), search log prune (04:00 UTC daily, keeps 90 days), **stale queue validation (05:00 UTC daily)** — removes queue entries whose upgrade reason no longer applies (e.g., show was upgraded outside the sweep flow)
 - Global pause toggle + per-instance budget (searches/day from `config` table)
 - Webhook endpoints: `POST /webhook/radarr`, `/webhook/sonarr` — records before/after quality on upgrades
 - Manual search: `POST /api/queue/<id>/search`
@@ -211,7 +239,7 @@ Media intelligence and curation service. Comprehensive library browser with scor
 - TMDB collection tracking, duplicate detection
 - Direct deletion: calls *arr API + removes file from Unraid NFS path
 - **Filesystem duplicate scanner**: 4-tab UI — Synology Movies, Synology TV, Unraid Movies, Unraid TV. Scans NFS paths directly for Synology; calls Unraid Agent API for Unraid. TRaSH-scored, multi-select bulk delete with Synology `#recycle` purge.
-- **Sync Status** (`/sync-status`): Real-time Synology→Unraid parity view for HD Movies and TV. Shows In Sync / Missing / Version Mismatch / **Radarr Out of Date** (amber — Synology folder has better file than Radarr tracks; fix: trigger Radarr library rescan) / Not Downloaded. Uses Synology NFS folder scan (not just Radarr's tracked file) to find best TRaSH-scored file including custom format bonuses (Hybrid +100, release group +50, Proper +25).
+- **Sync Status** (`/sync-status`): Real-time Synology↔Unraid parity view for HD Movies and TV. Shows In Sync / Missing / Version Mismatch / **Unraid Has Better** (amber — Unraid's TRaSH score > Radarr's Synology file; dedup handles Unraid; Upgraderr will upgrade Synology eventually) / **Radarr Out of Date** (amber — Synology folder has a higher-scored file than Radarr currently tracks; fix: trigger Radarr library rescan) / Not Downloaded. Has a **"Reconcile Now" button** that immediately triggers the reconcile jobs. All scoring via shared JSON config.
 - APScheduler: 6h library sync, 02:00 watch history, 03:00 ratings, 04:00 rules, 04:30 backup, Sun 09:00 digest
 - JWT dual-token auth (bcrypt, HttpOnly cookies, 1h access / 7d refresh)
 - Telegram weekly digest via Apprise

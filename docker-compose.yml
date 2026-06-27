@@ -628,6 +628,7 @@ services:
       - /mnt/synology/rs-movies:/mnt/synology/rs-movies
       - /mnt/synology/rs-tv:/mnt/synology/rs-tv
       - /mnt/synology/rs-4kmedia:/mnt/synology/rs-4kmedia
+      - /opt/mother/configs/scoring/trash_scoring.json:/app/scoring/trash_scoring.json:ro
     restart: unless-stopped
     logging: *default-logging
     networks:
@@ -685,16 +686,21 @@ services:
       # Unraid Agent — for nightly gap scan (avoids slow CIFS listing)
       - UNRAID_AGENT_URL=${UNRAID_AGENT_URL:-http://192.168.1.10:8100}
       - UNRAID_AGENT_API_KEY=${UNRAID_AGENT_API_KEY:-}
+      # Version reconcile caps (both directions: Syn→Unraid and Unraid→Syn)
+      - VERSION_SYNC_MAX_PER_RUN=${VERSION_SYNC_MAX_PER_RUN:-100}
+      - VERSION_SYNC_DRY_RUN=${VERSION_SYNC_DRY_RUN:-false}
     volumes:
-      # Synology NFS mounts (source)
-      - /mnt/synology/rs-movies:/mnt/synology/rs-movies:ro
-      - /mnt/synology/rs-tv:/mnt/synology/rs-tv:ro
-      - /mnt/synology/rs-4kmedia:/mnt/synology/rs-4kmedia:ro
-      # Unraid NFS mounts (destination)
+      # Synology NFS mounts (rw: source for forward sync, destination for reverse sync)
+      - /mnt/synology/rs-movies:/mnt/synology/rs-movies
+      - /mnt/synology/rs-tv:/mnt/synology/rs-tv
+      - /mnt/synology/rs-4kmedia:/mnt/synology/rs-4kmedia
+      # Unraid CIFS mount (destination for forward sync, source for reverse sync)
       - /mnt/unraid/media:/mnt/unraid/media
       # Persistent logs and database
       - ${CONFIG_PATH}/sync-webhook/logs:/logs
       - ${CONFIG_PATH}/sync-webhook/data:/data
+      # Shared TRaSH scoring config (single source of truth across all services)
+      - /opt/mother/configs/scoring/trash_scoring.json:/app/scoring/trash_scoring.json:ro
     ports:
       - "${SYNC_WEBHOOK_PORT:-5001}:5000"
     restart: unless-stopped
@@ -783,6 +789,7 @@ services:
       - --storage.tsdb.retention.time=30d
       - --web.console.libraries=/etc/prometheus/console_libraries
       - --web.console.templates=/etc/prometheus/consoles
+      - --web.enable-lifecycle
     volumes:
       - /opt/mother/configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - /opt/mother/data/prometheus:/prometheus

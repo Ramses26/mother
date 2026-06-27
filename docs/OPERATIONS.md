@@ -1,6 +1,6 @@
 # Project Mother — Operations Guide
 
-**Last Updated**: 2026-06-18
+**Last Updated**: 2026-06-27
 
 This document covers day-to-day operations, monitoring, and troubleshooting for Project Mother in its current **steady-state** configuration. Batch syncs are complete; ongoing sync is driven entirely by webhooks and nightly scheduled jobs.
 
@@ -46,7 +46,7 @@ Three layers work together to keep Synology → Unraid in sync:
 Radarr and Sonarr fire `POST /sync/radarr` or `/sync/sonarr` webhooks to sync-webhook (port 5001) on every download/upgrade. The webhook:
 
 1. Translates container path → NFS path → Unraid destination
-2. Queues an rsync job (up to `SYNC_MAX_CONCURRENT=12` concurrent)
+2. Queues an rsync job (up to `SYNC_MAX_CONCURRENT=3` concurrent)
 3. Auto-retries failures with exponential backoff (15m → 1h → 4h → 12h)
 4. Sends Telegram on success/failure
 
@@ -59,16 +59,16 @@ Nightly jobs catch anything the webhook missed (container restart, race conditio
 | Time (ET) | Job | What it does |
 |-----------|-----|-------------|
 | 11:00 PM | TV gap scan | Compares Synology rs-tv vs Unraid Agent; queues missing HD episodes |
-| 11:15 PM | TV version reconcile | For episodes on both sides, replaces Unraid copy if filename differs (Synology is source of truth) |
+| 11:15 PM | TV version reconcile | Scores both copies; higher score wins; queues TVVersionSync (Syn→Unraid) or TVReverseSync (Unraid→Syn) |
 | 11:30 PM | Movie gap scan | Compares Synology rs-movies vs Unraid Agent; queues missing HD movie folders |
-| 11:45 PM | Movie version reconcile | Same as TV version reconcile but for movies |
+| 11:45 PM | Movie version reconcile | Synology's TRaSH-scored best file vs Unraid; queues MovieVersionSync if Synology wins |
 | 12:15 AM | Library health report | Telegram summary of remaining gaps |
 
 **Quality filter**: 720p, SD, and x265-without-HDR/DV are **never** queued — Upgraderr upgrades Chris's side first, then the next gap scan picks up the upgraded version.
 
-**Version reconcile** (movie): For each movie folder, scans ALL video files on Synology NFS directly (`os.scandir`) and picks the highest TRaSH-scored file (including custom format bonuses: `[Hybrid]`=+100, release group `-GROUP.ext`=+50, `Proper/Repack`=+25). Only queues replacement if Synology's best file score > Unraid's file score — this prevents overwriting a better release-group copy on Unraid with Radarr's unnamed version. `.m2ts` files are included in the scan.
+**Version reconcile scoring**: All scoring uses the shared `configs/scoring/trash_scoring.json` — resolution + source + HDR + audio + size bonus + custom format bonuses (`[Hybrid]`=+100, release group `-GROUP.ext`=+50, Proper/Repack=+25). Cap per run: `VERSION_SYNC_MAX_PER_RUN=100`.
 
-**Version reconcile** (TV): Synology is the Sonarr-managed source of truth. Any filename mismatch queues a replacement without a score gate.
+**Stale-entry guard**: Both the history scanner (every 30 min) and the auto-retry loop check `os.path.exists(source_path)` before queuing. If the source file no longer exists on Synology NFS (upgraded/replaced by Radarr), the job is automatically marked `success` with `error_message='stale: source file upgraded'` — preventing phantom jobs from recurring.
 
 Both reconcile jobs call the Unraid Agent to delete the old file after rsync succeeds. Guarded by `PAUSE_VERSION_SYNC` sentinel.
 

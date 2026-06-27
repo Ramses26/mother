@@ -37,6 +37,16 @@ LOG_LEVEL = os.environ.get('SYNC_LOG_LEVEL', 'INFO')
 LOG_PATH = os.environ.get('SYNC_LOG_PATH', '/logs')
 DB_PATH   = os.environ.get('SYNC_DB_PATH', '/data/sync_jobs.db')
 BACKUP_DIR = os.environ.get('SYNC_BACKUP_DIR', '/data/backups')
+
+# Shared TRaSH scoring config — single source of truth across all services.
+# Mounted at /app/scoring/trash_scoring.json via docker-compose volume.
+_SCORING_PATH = os.environ.get('TRASH_SCORING_PATH', '/app/scoring/trash_scoring.json')
+with open(_SCORING_PATH) as _f:
+    _SC = json.load(_f)
+_SC_RES   = _SC['resolution']
+_SC_SRC   = _SC['source']
+_SC_CF    = _SC['custom_formats']
+_RG_RE    = re.compile(r'-([A-Za-z][A-Za-z0-9]{1,14})\.(mkv|mp4|avi|m4v|ts|m2ts)$', re.IGNORECASE)
 MAX_CONCURRENT_SYNCS = int(os.environ.get('SYNC_MAX_CONCURRENT', '2'))
 MAX_RETRIES = int(os.environ.get('SYNC_MAX_RETRIES', '20'))
 RETRY_LOOKBACK_DAYS = int(os.environ.get('SYNC_RETRY_LOOKBACK_DAYS', '7'))
@@ -928,6 +938,7 @@ def run_rsync(source: str, dest_dir: str, is_file: bool = True, job_id: int = No
     cmd = [
         'rsync',
         '-avh',
+        '--no-group',       # Synology NFS root_squash rejects chgrp; group ownership unused
         '--ignore-existing',
         '--chmod=D777,F777',
         '--exclude', '#recycle',
@@ -1084,7 +1095,9 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
                 #     → old file is on Synology → direct os.remove() on NFS path
                 #   Forward (MovieVersionSync/TVVersionSync): source=Synology NFS, dest=Unraid CIFS
                 #     → old file is on Unraid → delete via Unraid Agent API
-                is_reverse = quality in ('MovieReverseSync', 'TVReverseSync')
+                # Detect direction from the actual delete path, not quality name —
+                # quality may be 'Retry' when retried via manual endpoint but dest is still Synology
+                is_reverse = quality in ('MovieReverseSync', 'TVReverseSync') or dest.startswith('/mnt/synology/')
                 if job_id and not DRY_RUN:
                     try:
                         _conn = sqlite3.connect(DB_PATH, timeout=30)
@@ -1498,6 +1511,20 @@ def auto_retry_failed():
                     quality = job.get('quality') or 'Retry'
                     delete_after = job.get('delete_after_sync')
 
+                    # Stale-entry guard: source file gone means Sonarr/Radarr upgraded it.
+                    # Mark all rows for this source as success so history scanner stops re-queuing.
+                    if source and not os.path.exists(source):
+                        logger.info(f"Auto-retry: source gone (upgraded?), marking stale: {title!r} {source}")
+                        _conn2 = sqlite3.connect(DB_PATH, timeout=30)
+                        _conn2.execute(
+                            "UPDATE sync_jobs SET status='success', error_message='stale: source file upgraded' "
+                            "WHERE source_path = ? AND status IN ('pending','failed','in_progress')",
+                            (source,)
+                        )
+                        _conn2.commit()
+                        _conn2.close()
+                        continue
+
                     media_type = "Movie" if job_type == 'movie' else "Episode"
                     background_sync(source, dest, title, quality, file_size, media_type,
                                    dest_base=None, retry_count=retry_count,
@@ -1681,6 +1708,16 @@ def scan_arr_history():
                 if not source:
                     continue
 
+                # Stale-entry guard: if the source file no longer exists on NFS,
+                # Sonarr/Radarr upgraded it since it was imported. Skip silently so
+                # we don't keep re-queuing a ghost file every 30 min.
+                if not os.path.exists(source):
+                    logger.info(
+                        f"History scanner: source gone (upgraded?), skipping {display_title!r}: {source}"
+                    )
+                    queued_this_scan.add(check_title)  # prevent re-check this scan
+                    continue
+
                 logger.info(f"History scanner: found missed download - {display_title}")
                 missed_titles.append(display_title)
                 queued_this_scan.add(check_title)
@@ -1742,69 +1779,59 @@ def _get_unraid_movie_folders() -> set:
 
 def _score_filename(filename: str, size_bytes: int = 0) -> int:
     """TRaSH-aligned quality score from a media filename.
-    Used by version reconcile to compare Synology vs Unraid quality — higher wins."""
+    Scores loaded from configs/scoring/trash_scoring.json (shared with curatorr).
+    Higher score wins in version reconcile comparisons."""
     name = filename.lower()
 
-    # Resolution
-    if re.search(r'\b(2160p|4k|uhd)\b', name):
-        res_score, is_4k = 4000, True
+    # Resolution — explicit pixel-count tags first so "[4K Remaster]" edition labels
+    # don't override the actual quality tag "[Remux-1080p]"
+    if re.search(r'\b2160p\b', name):
+        res_score, is_4k = _SC_RES['2160p'], True
     elif re.search(r'\b1080p\b', name):
-        res_score, is_4k = 2000, False
+        res_score, is_4k = _SC_RES['1080p'], False
     elif re.search(r'\b720p\b', name):
-        res_score, is_4k = 0, False
+        res_score, is_4k = _SC_RES['720p'], False
+    elif re.search(r'\b(4k|uhd)\b', name):
+        res_score, is_4k = _SC_RES['4k_uhd_fallback'], True
     else:
-        res_score, is_4k = -500, False  # SD
+        res_score, is_4k = _SC_RES['sd'], False
 
     # Source
     src_score = 0
-    if re.search(r'\bremux\b', name):
-        src_score = 2000
-    elif re.search(r'\b(bluray|blu-ray|bdrip|bdremux)\b', name):
-        src_score = 1500
-    elif re.search(r'\b(web-dl|webdl)\b', name):
-        src_score = 1000
-    elif re.search(r'\bwebrip\b', name):
-        src_score = 800
-    elif re.search(r'\bhdtv\b', name):
-        src_score = 200
+    if re.search(r'\bremux\b', name):                           src_score = _SC_SRC['remux']
+    elif re.search(r'\b(bluray|blu-ray|bdrip|bdremux)\b', name): src_score = _SC_SRC['bluray']
+    elif re.search(r'\b(web-dl|webdl)\b', name):                src_score = _SC_SRC['web_dl']
+    elif re.search(r'\bwebrip\b', name):                        src_score = _SC_SRC['webrip']
+    elif re.search(r'\bhdtv\b', name):                          src_score = _SC_SRC['hdtv']
 
     # HDR — longer tags checked first to avoid partial matches
-    _HDR_4K = [('dv hdr10+', 800), ('dv hdr10', 800), ('hdr10+', 300), ('hdr10', 700),
-               ('dv hlg', 400), ('dv sdr', 300), ('dolby vision', 400), ('dv', 400), ('hdr', 700), ('hlg', 300)]
-    _HDR_HD = [('dv hdr10+', 400), ('dv hdr10', 400), ('hdr10+', 350), ('hdr10', 400),
-               ('dv hlg', 350), ('dv sdr', 300), ('dolby vision', 350), ('dv', 350), ('hdr', 400), ('hlg', 300)]
     hdr_score = 0
-    for tag, pts in (_HDR_4K if is_4k else _HDR_HD):
+    for tag, pts in (_SC['hdr_4k'] if is_4k else _SC['hdr_hd']):
         if tag in name:
             hdr_score = pts
             break
 
     # Audio — longest/best tags first
     audio_score = 0
-    for tag, pts in [('truehd atmos', 500), ('truehd', 450), ('dts-hd ma', 400),
-                     ('dts:x', 400), ('dts-hd', 350), ('eac3 atmos', 300), ('atmos', 500),
-                     ('eac3', 150), ('dts', 200), ('dd+', 150), ('ac3', 100), ('aac', 50)]:
+    for tag, pts in _SC['audio']:
         if tag in name:
             audio_score = pts
             break
 
     # HEVC penalty at 1080p without HDR
     is_hevc = bool(re.search(r'\b(x265|h265|hevc|x\.265)\b', name))
-    hevc_penalty = 0
-    if is_hevc and not is_4k and hdr_score == 0:
-        hevc_penalty = -300
+    hevc_penalty = _SC['hevc_penalty_hd_no_hdr'] if (is_hevc and not is_4k and hdr_score == 0) else 0
 
-    # Size bonus capped at 200 (+10 per GB)
-    size_bonus = min(int(size_bytes / 1_073_741_824 * 10), 200)
+    # Size bonus capped at configured max
+    size_bonus = min(int(size_bytes / 1_073_741_824 * _SC['size_bonus_per_gb']), _SC['size_bonus_cap'])
 
-    # Container penalty: MP4 can't hold lossless audio (TrueHD/DTS-HD MA); always an inferior container
-    container_penalty = -100 if filename.lower().endswith('.mp4') else 0
+    # Container penalty: MP4 can't hold lossless audio
+    container_penalty = _SC['container_penalty_mp4'] if filename.lower().endswith('.mp4') else 0
 
-    # TRaSH Custom Format equivalents (same bonuses as sync_status.py _score())
-    _RG_RE = re.compile(r'-([A-Za-z][A-Za-z0-9]{1,14})\.(mkv|mp4|avi|m4v|ts|m2ts)$', re.IGNORECASE)
-    hybrid  = 100 if re.search(r'\[hybrid\]', name) else 0
-    rg      = 50  if _RG_RE.search(filename) else 0
-    proper  = 25  if re.search(r'\b(proper|repack|rerip)\b', name) else 0
+    # TRaSH Custom Format equivalents
+    hybrid = _SC_CF['hybrid']        if re.search(r'\[hybrid\]', name) else 0
+    rg     = _SC_CF['release_group'] if _RG_RE.search(filename) else 0
+    proper = _SC_CF['proper_repack'] if re.search(r'\b(proper|repack|rerip)\b', name) else 0
 
     return res_score + src_score + hdr_score + audio_score + hevc_penalty + size_bonus + container_penalty + hybrid + rg + proper
 
@@ -3575,7 +3602,7 @@ def retry_job(job_id):
 
         # Run in background
         media_type = "Movie" if job_type == 'movie' else "Episode"
-        background_sync(source, dest, f"[RETRY] {title}", "Retry", file_size, media_type,
+        background_sync(source, dest, f"[RETRY] {title}", job.get('quality') or 'Retry', file_size, media_type,
                        dest_base=None, retry_count=1,
                        delete_after_sync=job.get('delete_after_sync'))
 
@@ -3633,7 +3660,7 @@ def retry_all_failed():
             retry_count = (job.get('retry_count') or 0) + 1
 
             media_type = "Movie" if job_type == 'movie' else "Episode"
-            background_sync(source, dest, title, "Retry", file_size, media_type,
+            background_sync(source, dest, title, job.get('quality') or 'Retry', file_size, media_type,
                            dest_base=None, retry_count=retry_count,
                            delete_after_sync=job.get('delete_after_sync'))
             retried += 1

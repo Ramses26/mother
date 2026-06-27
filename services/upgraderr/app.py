@@ -1102,9 +1102,21 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
     random.shuffle(series_list)
     season_threshold = int(get_cfg('season_threshold', str(SEASON_THRESHOLD)))
 
+    # Pre-load series IDs that have stale pending/searching entries — always visit
+    # these for cleanup even when budget is exhausted, so resolved upgrades are cleared.
+    db_pre = get_db()
+    stale_series_ids = set(
+        row[0] for row in db_pre.execute(
+            "SELECT DISTINCT media_id / 10000 FROM upgrade_queue "
+            "WHERE instance=? AND media_type='season' AND status IN ('pending','searching')",
+            (inst_name,)
+        ).fetchall()
+    )
+
     for series in series_list:
-        if not budget.can_search(inst_name) and not _is_paused():
-            break
+        has_stale = series.get('id') in stale_series_ids
+        if not budget.can_search(inst_name) and not _is_paused() and not has_stale:
+            continue  # skip: no budget and no stale entries need cleanup
 
         sid   = series.get('id')
         stitle = series.get('title', 'Unknown')
@@ -1275,6 +1287,117 @@ def _prune_search_log():
     except Exception as exc:
         log.warning(f"[prune] search_log prune failed: {exc}")
 
+
+def _validate_stale_queue():
+    """
+    Nightly stale queue validation (5 AM UTC).
+
+    Checks every pending/searching upgrade_queue entry against the current *arr API.
+    Deletes entries whose upgrade reason no longer applies — prevents stale entries
+    from accumulating when shows are upgraded outside the normal sweep flow.
+
+    Only validates tier1-tier3 and tier5 (container, resolution, audio) — these are
+    reliably detectable from the filename. tier4 (BluRay wait), tier6 (score), and
+    tier7 (profile mismatch) are left to the sweep since they need profile context.
+    """
+    SIMPLE_TIERS = {'tier1_m2ts', 'tier2_container', 'tier3_720p', 'tier3_profile_mismatch', 'tier5_audio'}
+
+    def _still_valid(fn: str, reason: str) -> bool:
+        if not fn:
+            return True  # no file yet — keep entry
+        name = fn.lower()
+        ext  = Path(fn).suffix.lower()
+        if reason == 'tier1_m2ts':
+            return ext == '.m2ts'
+        if reason == 'tier2_container':
+            return ext in ('.avi', '.mp4', '.ts', '.wmv', '.m4v', '.divx', '.xvid')
+        if reason in ('tier3_720p', 'tier3_profile_mismatch'):
+            return bool(re.search(r'\b(720p|480p|576p)\b', name))
+        if reason == 'tier5_audio':
+            audio = ''
+            for tag, lbl in [('truehd atmos','TrueHD Atmos'),('truehd','TrueHD'),
+                              ('dts-hd ma','DTS-HD MA'),('dts:x','DTS:X'),('dts-hd','DTS-HD'),
+                              ('eac3 atmos','EAC3 Atmos'),('atmos','Atmos'),('eac3','EAC3'),
+                              ('dts','DTS'),('dd+','DD+'),('ac3','DD'),('aac','AAC')]:
+                if tag in name: audio = lbl; break
+            has_surround = bool(re.search(r'\b(5\.1|6\.1|7\.1|7\.2)\b', name))
+            if audio in SURROUND_AUDIO: return False
+            if audio == 'DD' and has_surround: return False
+            return True  # still bad audio
+        return True  # tier4/6/7 — keep
+
+    try:
+        db = get_db()
+        instances = get_instances_from_db()
+        total_deleted = 0
+
+        # ── TV seasons ─────────────────────────────────────────────────────
+        sonarr_insts = {n: i for n, i in instances.items() if i.get('type') == 'sonarr'}
+        for inst_name, inst in sonarr_insts.items():
+            entries = db.execute("""
+                SELECT id, media_id, upgrade_reason
+                FROM upgrade_queue
+                WHERE instance=? AND media_type='season'
+                  AND status IN ('pending','searching')
+                  AND upgrade_reason IN ('tier1_m2ts','tier2_container','tier3_720p',
+                                         'tier3_profile_mismatch','tier5_audio')
+            """, (inst_name,)).fetchall()
+
+            by_series: dict = {}
+            for e in entries:
+                sid  = e['media_id'] // 10000
+                snum = e['media_id'] %  10000
+                by_series.setdefault(sid, []).append((snum, e['id'], e['upgrade_reason']))
+
+            for sid, seasons in by_series.items():
+                eps = arr_get(inst, '/episode',
+                              params={'seriesId': sid, 'includeEpisodeFile': True}) or []
+                season_files: dict = {}
+                for ep in eps:
+                    sn = ep.get('seasonNumber', 0)
+                    ef = ep.get('episodeFile')
+                    if ef and sn > 0:
+                        fn = ef.get('relativePath', '') or ef.get('path', '')
+                        if fn and sn not in season_files:
+                            season_files[sn] = fn
+                for snum, eid, reason in seasons:
+                    fn = season_files.get(snum, '')
+                    if not _still_valid(fn, reason):
+                        db.execute("DELETE FROM upgrade_queue WHERE id=?", (eid,))
+                        total_deleted += 1
+                        log.debug(f"[validate] Removed stale {inst_name} S{snum:02d} "
+                                  f"(id={eid}, reason={reason}): {fn[:60]}")
+
+        # ── Movies ─────────────────────────────────────────────────────────
+        radarr_insts = {n: i for n, i in instances.items() if i.get('type') == 'radarr'}
+        for inst_name, inst in radarr_insts.items():
+            entries = db.execute("""
+                SELECT id, media_id, upgrade_reason
+                FROM upgrade_queue
+                WHERE instance=? AND media_type='movie'
+                  AND status IN ('pending','searching')
+                  AND upgrade_reason IN ('tier1_m2ts','tier2_container','tier3_720p',
+                                         'tier3_profile_mismatch','tier5_audio')
+            """, (inst_name,)).fetchall()
+
+            for e in entries:
+                movie = arr_get(inst, f"/movie/{e['media_id']}") or {}
+                mf = movie.get('movieFile')
+                if not mf:
+                    continue
+                fn = mf.get('relativePath', '') or mf.get('path', '')
+                if not _still_valid(fn, e['upgrade_reason']):
+                    db.execute("DELETE FROM upgrade_queue WHERE id=?", (e['id'],))
+                    total_deleted += 1
+                    log.debug(f"[validate] Removed stale {inst_name} movie "
+                              f"(id={e['id']}, reason={e['upgrade_reason']}): {fn[:60]}")
+
+        db.commit()
+        log.info(f"[validate] Stale queue validation complete — removed {total_deleted} resolved entries")
+
+    except Exception as exc:
+        log.error(f"[validate] Stale queue validation failed: {exc}")
+
 # ---------------------------------------------------------------------------
 # APScheduler
 # ---------------------------------------------------------------------------
@@ -1307,6 +1430,12 @@ def start_scheduler():
         _prune_search_log,
         'cron', hour=4, minute=0,
         id='prune_search_log', replace_existing=True,
+    )
+
+    scheduler.add_job(
+        _validate_stale_queue,
+        'cron', hour=5, minute=0,
+        id='validate_stale_queue', replace_existing=True,
     )
 
     scheduler.start()
@@ -1557,7 +1686,7 @@ def settings_page():
     }
     tier_enabled = {
         t: get_config(f'tier_enabled_{t}', 'true') == 'true'
-        for t in range(1, 7)
+        for t in range(1, 8)
     }
     instances = get_instances_request()
     backups   = list_backups()
@@ -1695,7 +1824,7 @@ def api_settings():
     if 'tmdb_api_key' in data:
         set_config('tmdb_api_key', str(data['tmdb_api_key']).strip())
 
-    for t in range(1, 7):
+    for t in range(1, 8):
         k = f'tier_enabled_{t}'
         if k in data:
             set_config(k, 'true' if data[k] else 'false')

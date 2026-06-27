@@ -1,0 +1,71 @@
+{
+  "_comment": "TRaSH-aligned quality scoring constants shared across sync-webhook, curatorr/duplicates, curatorr/sync_status. Edit this file to tune scoring — all three services reload on restart.",
+
+  "resolution": {
+    "2160p":           4000,
+    "1080p":           2000,
+    "720p":               0,
+    "4k_uhd_fallback": 4000,
+    "sd":              -500
+  },
+
+  "source": {
+    "remux":  2000,
+    "bluray": 1500,
+    "web_dl": 1000,
+    "webrip":  800,
+    "hdtv":    200
+  },
+
+  "hdr_4k": [
+    ["dv hdr10+",     800],
+    ["dv hdr10",      800],
+    ["hdr10+",        300],
+    ["hdr10",         700],
+    ["dv hlg",        400],
+    ["dv sdr",        300],
+    ["dolby vision",  400],
+    ["dv",            400],
+    ["hdr",           700],
+    ["hlg",           300]
+  ],
+
+  "hdr_hd": [
+    ["dv hdr10+",     400],
+    ["dv hdr10",      400],
+    ["hdr10+",        350],
+    ["hdr10",         400],
+    ["dv hlg",        350],
+    ["dv sdr",        300],
+    ["dolby vision",  350],
+    ["dv",            350],
+    ["hdr",           400],
+    ["hlg",           300]
+  ],
+
+  "audio": [
+    ["truehd atmos",  500],
+    ["truehd",        450],
+    ["dts-hd ma",     400],
+    ["dts:x",         400],
+    ["dts-hd",        350],
+    ["eac3 atmos",    300],
+    ["atmos",         500],
+    ["eac3",          150],
+    ["dts",           200],
+    ["dd+",           150],
+    ["ac3",           100],
+    ["aac",            50]
+  ],
+
+  "hevc_penalty_hd_no_hdr": -300,
+  "size_bonus_per_gb":        10,
+  "size_bonus_cap":          200,
+  "container_penalty_mp4":  -100,
+
+  "custom_formats": {
+    "hybrid":        100,
+    "release_group":  50,
+    "proper_repack":  25
+  }
+}

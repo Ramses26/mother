@@ -4,8 +4,11 @@
       <h1 class="text-2xl font-bold text-white">Sync Status</h1>
       <div class="flex items-center gap-3">
         <span class="text-xs text-slate-500">
-          Source of truth: Radarr/Sonarr (Synology) → Unraid
+          Bidirectional reconcile — TRaSH + Radarr profile as authority
         </span>
+        <button @click="triggerReconcile" :disabled="reconciling" class="btn-secondary text-sm text-violet-300 border-violet-700">
+          {{ reconciling ? 'Queuing…' : 'Reconcile Now' }}
+        </button>
         <button @click="refresh" :disabled="loading" class="btn-secondary text-sm">
           {{ loading ? 'Scanning…' : 'Refresh' }}
         </button>
@@ -14,7 +17,7 @@
 
     <!-- Library tabs -->
     <div class="flex gap-2 mb-6">
-      <button v-for="t in ['Movies', 'TV Shows']" :key="t"
+      <button v-for="t in ['Movies', 'TV Shows', 'TV Parity']" :key="t"
         @click="library = t"
         class="px-4 py-1.5 rounded text-sm transition-colors"
         :class="library === t ? 'bg-violet-600 text-white' : 'bg-surface-200 text-slate-400 hover:text-white'">
@@ -46,17 +49,19 @@
             style="background:#1a1d27; border:1px solid #2d3748;"
             @click="movieTab = 'syn_better'">
             <div class="text-2xl font-bold text-violet-400">{{ fmt(movieData.summary.syn_better_count) }}</div>
-            <div class="text-xs text-slate-400 mt-1">Version Mismatch</div>
+            <div class="text-xs text-slate-400 mt-1">Synology Upgrade</div>
           </div>
           <div class="rounded-lg p-4 text-center cursor-pointer hover:border-amber-500/50 transition-colors"
             style="background:#1a1d27; border:1px solid #2d3748;"
-            @click="movieTab = 'radarr_stale'">
-            <div class="text-2xl font-bold text-amber-400">{{ fmt(movieData.summary.radarr_stale_count) }}</div>
-            <div class="text-xs text-slate-400 mt-1">Radarr Out of Date</div>
+            @click="movieTab = 'unraid_better'">
+            <div class="text-2xl font-bold text-amber-400">{{ fmt(movieData.summary.unraid_better_count) }}</div>
+            <div class="text-xs text-slate-400 mt-1">Unraid Has Better</div>
           </div>
-          <div class="rounded-lg p-4 text-center" style="background:#1a1d27; border:1px solid #2d3748;">
-            <div class="text-2xl font-bold text-slate-500">{{ fmt(movieData.summary.no_file_count) }}</div>
-            <div class="text-xs text-slate-400 mt-1">Not Downloaded</div>
+          <div class="rounded-lg p-4 text-center cursor-pointer hover:border-slate-500/50 transition-colors"
+            style="background:#1a1d27; border:1px solid #2d3748;"
+            @click="movieTab = 'radarr_stale'">
+            <div class="text-2xl font-bold text-slate-400">{{ fmt(movieData.summary.radarr_stale_count) }}</div>
+            <div class="text-xs text-slate-400 mt-1">Radarr Out of Date</div>
           </div>
         </div>
 
@@ -93,18 +98,15 @@
           </div>
         </template>
 
-        <!-- Version mismatches (Radarr's file ≠ Unraid's file → always sync Radarr's version) -->
+        <!-- Synology scores higher → nightly reconcile will sync to Unraid -->
         <template v-else-if="movieTab === 'syn_better'">
           <div v-if="!movieData.syn_better?.length" class="text-center py-10 text-green-400">
-            All movies matched — nothing to sync.
+            No movies where Synology has a better copy — Unraid is up to date!
           </div>
           <div v-else>
             <div class="text-xs text-slate-500 mb-3 p-3 rounded" style="background:#1a1e2e; border:1px solid #2d3748;">
-              Radarr's file on Synology differs from what's on Unraid. Radarr is the authority —
-              its file replaces the Unraid copy regardless of TRaSH score. This includes
-              <strong class="text-slate-300">profile mismatches</strong> (e.g. Unraid has Remux but Radarr's profile says Blu-ray and it downloaded one)
-              and <strong class="text-slate-300">container changes</strong> (e.g. m2ts → MKV encode after Upgraderr Tier 1).
-              The nightly version reconcile (11:45 PM ET) queues replacements and deletes the old Unraid file.
+              Radarr's file on Synology has a <strong class="text-slate-300">higher TRaSH score</strong> than what's on Unraid.
+              The nightly movie version reconcile (11:45 PM ET) will sync Radarr's file to Unraid and remove the old copy.
             </div>
             <div v-for="m in movieData.syn_better" :key="m.title" class="mb-3 rounded-lg overflow-hidden"
               style="background:#1a1d27; border:1px solid #2d3748;">
@@ -125,6 +127,45 @@
                     <span class="text-xs text-slate-400 break-all">{{ m.unraid_file }}</span>
                     <span class="ml-2 text-xs text-slate-500">{{ gb(m.unraid_size_bytes) }}</span>
                     <span class="ml-2 px-1.5 py-0.5 rounded text-xs bg-slate-700 text-slate-400">{{ m.unraid_label }}</span>
+                    <span class="ml-1 text-xs text-slate-600">score {{ m.unraid_score }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Unraid scores higher → keep Unraid copy, Upgraderr should upgrade Synology -->
+        <template v-else-if="movieTab === 'unraid_better'">
+          <div v-if="!movieData.unraid_better?.length" class="text-center py-10 text-green-400">
+            No movies where Unraid has a better copy.
+          </div>
+          <div v-else>
+            <div class="text-xs text-amber-500/80 mb-3 p-3 rounded" style="background:#2d1f00; border:1px solid #4a3200;">
+              Unraid already has a <strong class="text-amber-300">higher TRaSH score</strong> than what Radarr currently tracks on Synology
+              (e.g. Unraid has a Remux from batch sync; Radarr has a Blu-ray encode).
+              The version reconcile will <strong class="text-amber-300">not replace</strong> Unraid's better copy.
+              Upgraderr will eventually upgrade Synology — then the webhook propagates it and both sides match.
+            </div>
+            <div v-for="m in movieData.unraid_better" :key="m.title" class="mb-3 rounded-lg overflow-hidden"
+              style="background:#1a1d27; border:1px solid #2d3748;">
+              <div class="px-4 py-2.5 font-medium text-white text-sm">{{ m.title }}</div>
+              <div class="px-4 pb-3 space-y-1">
+                <div class="flex items-start gap-2">
+                  <span class="text-slate-500 text-xs mt-0.5 w-16 shrink-0">Radarr</span>
+                  <div>
+                    <span class="text-xs text-slate-400 break-all">{{ m.syn_file }}</span>
+                    <span class="ml-2 text-xs text-slate-500">{{ gb(m.syn_size_bytes) }}</span>
+                    <span class="ml-2 px-1.5 py-0.5 rounded text-xs bg-slate-800 text-slate-500">{{ m.syn_quality }}</span>
+                    <span class="ml-1 text-xs text-slate-600">score {{ m.syn_score }}</span>
+                  </div>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="text-green-400 text-xs mt-0.5 w-16 shrink-0">Unraid</span>
+                  <div>
+                    <span class="text-xs text-slate-300 break-all">{{ m.unraid_file }}</span>
+                    <span class="ml-2 text-xs text-slate-500">{{ gb(m.unraid_size_bytes) }}</span>
+                    <span class="ml-2 px-1.5 py-0.5 rounded text-xs bg-amber-900/60 text-amber-300">{{ m.unraid_label }}</span>
                     <span class="ml-1 text-xs text-slate-600">score {{ m.unraid_score }}</span>
                   </div>
                 </div>
@@ -174,7 +215,7 @@
     </template>
 
     <!-- ── TV SHOWS ───────────────────────────────────────────────────── -->
-    <template v-else>
+    <template v-else-if="library === 'TV Shows'">
       <div v-if="tvData?.status === 'scanning' || !tvData" class="text-center py-20">
         <div class="animate-spin h-8 w-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full mx-auto mb-4"></div>
         <div class="text-slate-400 text-sm">Scanning Synology NFS + Unraid Agent TV inventory (~60s)…</div>
@@ -260,7 +301,8 @@
           </div>
           <div v-else>
             <div class="text-xs text-slate-500 mb-3">
-              These episodes will be queued automatically tonight at 11:15 PM by the TV version reconcile job.
+              Synology has a higher TRaSH score for these episodes. Gap scanner will copy Synology's file to Unraid;
+              dedup will then remove the lower-quality Unraid copy.
             </div>
             <div v-for="s in tvData.syn_better_shows" :key="s.show"
               class="mb-2 rounded-lg overflow-hidden"
@@ -334,6 +376,205 @@
         </template>
       </template>
     </template>
+
+    <!-- ── TV PARITY ────────────────────────────────────────────────────── -->
+    <template v-else-if="library === 'TV Parity'">
+      <div v-if="parityData?.status === 'scanning' || !parityData" class="text-center py-20">
+        <div class="animate-spin h-8 w-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full mx-auto mb-4"></div>
+        <div class="text-slate-400 text-sm">Full Synology NFS walk + Unraid Agent inventory — takes ~2 min…</div>
+      </div>
+      <div v-else-if="parityData?.status === 'error'" class="text-center py-10 text-red-400">
+        {{ parityData.error }}
+      </div>
+      <template v-else>
+        <!-- Summary cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div class="rounded-lg p-4 text-center cursor-pointer hover:border-red-500/50 transition-colors"
+            style="background:#1a1d27; border:1px solid #2d3748;" @click="parityTab = 'missing'">
+            <div class="text-2xl font-bold text-red-400">{{ fmt(parityData.summary.missing_count) }}</div>
+            <div class="text-xs text-slate-400 mt-1">Missing from Unraid</div>
+            <div class="text-xs text-slate-600 mt-0.5">gap scanner handles</div>
+          </div>
+          <div class="rounded-lg p-4 text-center cursor-pointer hover:border-blue-500/50 transition-colors"
+            style="background:#1a1d27; border:1px solid #2d3748;" @click="parityTab = 'unraid_pass'">
+            <div class="text-2xl font-bold text-blue-400">{{ fmt(parityData.summary.unraid_pass_count) }}</div>
+            <div class="text-xs text-slate-400 mt-1">Unraid-only 1080p+</div>
+            <div class="text-xs text-slate-600 mt-0.5">{{ gb(parityData.summary.unraid_pass_bytes) }}</div>
+          </div>
+          <div class="rounded-lg p-4 text-center cursor-pointer hover:border-amber-500/50 transition-colors"
+            style="background:#1a1d27; border:1px solid #2d3748;" @click="parityTab = 'unraid_filt'">
+            <div class="text-2xl font-bold text-amber-400">{{ fmt(parityData.summary.unraid_filt_count) }}</div>
+            <div class="text-xs text-slate-400 mt-1">Unraid-only 720p/x265</div>
+            <div class="text-xs text-slate-600 mt-0.5">{{ gb(parityData.summary.unraid_filt_bytes) }} · dedup cleans over time</div>
+          </div>
+          <div class="rounded-lg p-4 text-center cursor-pointer hover:border-violet-500/50 transition-colors"
+            style="background:#1a1d27; border:1px solid #2d3748;" @click="parityTab = 'mismatch'">
+            <div class="text-2xl font-bold text-violet-400">{{ fmt(parityData.summary.mismatch_count) }}</div>
+            <div class="text-xs text-slate-400 mt-1">Version Mismatch</div>
+            <div class="text-xs text-slate-600 mt-0.5">
+              <span class="text-green-500">{{ fmt(parityData.summary.mismatch_syn_better ?? 0) }} Syn→Unraid</span>
+              · <span class="text-amber-400">{{ fmt(parityData.summary.mismatch_unraid_better ?? 0) }} Unraid→Syn</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-600 mb-5">
+          Cached {{ parityData.cached_age_s }}s ago · Synology {{ fmt(parityData.summary.syn_total) }} eps
+          vs Unraid {{ fmt(parityData.summary.unraid_total) }} eps · scan took {{ parityData.elapsed_s }}s
+          <span v-if="parityData.scanning" class="text-amber-400 ml-1">· refreshing…</span>
+        </div>
+
+        <!-- Sub-tabs -->
+        <div class="flex flex-wrap gap-2 mb-5">
+          <button v-for="t in parityTabs" :key="t.key" @click="parityTab = t.key"
+            class="px-4 py-1.5 rounded text-sm transition-colors"
+            :class="parityTab === t.key ? 'bg-violet-600 text-white' : 'bg-surface-200 text-slate-400 hover:text-white'">
+            {{ t.label }}
+            <span v-if="t.count != null" class="ml-1 text-xs opacity-70">({{ fmt(t.count) }})</span>
+          </button>
+        </div>
+
+        <!-- Missing from Unraid -->
+        <template v-if="parityTab === 'missing'">
+          <div class="text-xs text-slate-500 mb-3 p-3 rounded" style="background:#1a1e2e; border:1px solid #2d3748;">
+            Episodes present on Synology (passing quality filter) that are absent from Unraid. The TV gap scanner (11 PM ET) queues these automatically — capped at 500 per run.
+          </div>
+          <div v-if="!parityData.missing_shows?.length" class="text-center py-10 text-green-400">
+            No missing episodes — all syncable Synology episodes are on Unraid!
+          </div>
+          <div v-for="s in parityData.missing_shows" :key="s.show"
+            class="mb-2 rounded-lg overflow-hidden" style="background:#1a1d27; border:1px solid #2d3748;">
+            <div class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-white/5"
+              @click="toggleParity('miss', s.show)">
+              <span class="text-white text-sm font-medium">{{ s.show }}</span>
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-slate-500">{{ gb(s.total_bytes) }}</span>
+                <span class="text-red-400 text-xs">{{ s.count }} ep{{ s.count > 1 ? 's' : '' }}</span>
+                <span class="text-slate-600 text-xs">{{ expandedParity.miss.has(s.show) ? '▲' : '▼' }}</span>
+              </div>
+            </div>
+            <div v-if="expandedParity.miss.has(s.show)" class="border-t border-surface-300 px-4 py-2 space-y-1">
+              <div v-for="ep in s.episodes" :key="ep.ep"
+                class="flex items-center justify-between text-xs py-1">
+                <span class="text-slate-400 w-20 shrink-0 font-mono">{{ ep.ep }}</span>
+                <span class="text-slate-300 truncate flex-1 mx-2">{{ ep.file }}</span>
+                <span class="text-slate-500 shrink-0">{{ gb(ep.size_bytes) }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Unraid-only 1080p+ -->
+        <template v-else-if="parityTab === 'unraid_pass'">
+          <div class="text-xs text-blue-400/80 mb-3 p-3 rounded" style="background:#0d1a2e; border:1px solid #1e3a5f;">
+            These episodes are on Unraid but NOT on Synology, and they pass the 1080p+ quality filter.
+            This is unusual — most likely Sonarr imported an upgraded version to a different filename on Synology
+            and the old file remains on Unraid. The nightly dedup will clean these up once the Synology version propagates.
+          </div>
+          <div v-if="!parityData.unraid_only_pass?.length" class="text-center py-10 text-green-400">
+            No unexpected Unraid-only 1080p+ episodes.
+          </div>
+          <div v-for="s in parityData.unraid_only_pass" :key="s.show"
+            class="mb-2 rounded-lg overflow-hidden" style="background:#1a1d27; border:1px solid #2d3748;">
+            <div class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-white/5"
+              @click="toggleParity('pass', s.show)">
+              <span class="text-white text-sm font-medium">{{ s.show }}</span>
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-slate-500">{{ gb(s.total_bytes) }}</span>
+                <span class="text-blue-400 text-xs">{{ s.count }} ep{{ s.count > 1 ? 's' : '' }}</span>
+                <span class="text-slate-600 text-xs">{{ expandedParity.pass.has(s.show) ? '▲' : '▼' }}</span>
+              </div>
+            </div>
+            <div v-if="expandedParity.pass.has(s.show)" class="border-t border-surface-300 px-4 py-2 space-y-1">
+              <div v-for="ep in s.episodes" :key="ep.ep"
+                class="flex items-center justify-between text-xs py-1">
+                <span class="text-slate-400 w-20 shrink-0 font-mono">{{ ep.ep }}</span>
+                <span class="text-slate-300 truncate flex-1 mx-2">{{ ep.file }}</span>
+                <span class="text-slate-500 shrink-0">{{ gb(ep.size_bytes) }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Unraid-only 720p/x265-no-HDR -->
+        <template v-else-if="parityTab === 'unraid_filt'">
+          <div class="text-xs text-amber-400/80 mb-3 p-3 rounded" style="background:#2d1f00; border:1px solid #4a3200;">
+            Episodes on Unraid that either don't exist on Synology OR exist only in lower-quality form
+            (720p, SD, x265-without-HDR). These were synced during the initial batch transfer before quality filters existed,
+            or Synology has since been upgraded to a different episode key.
+            Upgraderr will upgrade Synology → webhook propagates → nightly dedup removes these.
+            No action needed.
+          </div>
+          <div v-if="!parityData.unraid_only_filt?.length" class="text-center py-10 text-green-400">
+            No 720p/x265-no-HDR Unraid-only episodes.
+          </div>
+          <div v-for="s in parityData.unraid_only_filt" :key="s.show"
+            class="mb-2 rounded-lg overflow-hidden" style="background:#1a1d27; border:1px solid #2d3748;">
+            <div class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-white/5"
+              @click="toggleParity('filt', s.show)">
+              <span class="text-white text-sm font-medium">{{ s.show }}</span>
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-slate-500">{{ gb(s.total_bytes) }}</span>
+                <span class="text-amber-400 text-xs">{{ s.count }} ep{{ s.count > 1 ? 's' : '' }}</span>
+                <span class="text-slate-600 text-xs">{{ expandedParity.filt.has(s.show) ? '▲' : '▼' }}</span>
+              </div>
+            </div>
+            <div v-if="expandedParity.filt.has(s.show)" class="border-t border-surface-300 px-4 py-2 space-y-1">
+              <div v-for="ep in s.episodes" :key="ep.ep"
+                class="flex items-center justify-between text-xs py-1">
+                <span class="text-slate-400 w-20 shrink-0 font-mono">{{ ep.ep }}</span>
+                <span class="text-amber-300/70 truncate flex-1 mx-2">{{ ep.file }}</span>
+                <span class="text-slate-600 shrink-0 ml-2">{{ ep.filter_reason }}</span>
+                <span class="text-slate-500 shrink-0 ml-2">{{ gb(ep.size_bytes) }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Version mismatch -->
+        <template v-else-if="parityTab === 'mismatch'">
+          <div class="text-xs text-slate-500 mb-3 p-3 rounded" style="background:#1a1e2e; border:1px solid #2d3748;">
+            Both sides have the episode but with different filenames. The bidirectional TV version reconcile (11:15 PM ET, cap {{ VERSION_SYNC_MAX }}/run)
+            scores both files using TRaSH scoring — Synology-better → Syn→Unraid; Unraid-better → Unraid→Syn.
+            720p/x265-no-HDR episodes on either side are skipped (Upgraderr upgrades first).
+          </div>
+          <div v-if="!parityData.mismatch_shows?.length" class="text-center py-10 text-green-400">
+            No version mismatches — filenames match on both sides!
+          </div>
+          <div v-for="s in parityData.mismatch_shows" :key="s.show"
+            class="mb-2 rounded-lg overflow-hidden" style="background:#1a1d27; border:1px solid #2d3748;">
+            <div class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-white/5"
+              @click="toggleParity('mm', s.show)">
+              <span class="text-white text-sm font-medium">{{ s.show }}</span>
+              <div class="flex items-center gap-3">
+                <span class="text-violet-400 text-xs">{{ s.count }} ep{{ s.count > 1 ? 's' : '' }}</span>
+                <span class="text-slate-600 text-xs">{{ expandedParity.mm.has(s.show) ? '▲' : '▼' }}</span>
+              </div>
+            </div>
+            <div v-if="expandedParity.mm.has(s.show)" class="border-t border-surface-300 px-4 py-2 space-y-2">
+              <div v-for="ep in s.episodes" :key="ep.ep"
+                class="py-1.5 border-b border-surface-300 last:border-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-mono text-xs text-slate-400">{{ ep.ep }}</span>
+                  <span v-if="ep.syn_better" class="text-xs px-1.5 py-0.5 rounded bg-green-900/40 text-green-400">Syn better</span>
+                  <span v-else class="text-xs px-1.5 py-0.5 rounded bg-amber-900/40 text-amber-400">Unraid better</span>
+                </div>
+                <div class="flex items-start gap-2 text-xs">
+                  <span class="text-green-400 w-16 shrink-0">Synology</span>
+                  <span class="text-slate-300 truncate flex-1">{{ ep.syn_file }}</span>
+                  <span class="text-slate-500 shrink-0 ml-1">{{ ep.syn_score }}</span>
+                </div>
+                <div class="flex items-start gap-2 text-xs mt-0.5">
+                  <span class="text-amber-400 w-16 shrink-0">Unraid</span>
+                  <span class="text-slate-400 truncate flex-1">{{ ep.unraid_file }}</span>
+                  <span class="text-slate-500 shrink-0 ml-1">{{ ep.unraid_score }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </template>
+    </template>
   </div>
 </template>
 
@@ -344,14 +585,19 @@ import axios from 'axios'
 const library = ref('Movies')
 const movieTab = ref('syn_better')
 const tvTab = ref('missing')
+const parityTab = ref('missing')
 
-const movieData = ref(null)
-const tvData = ref(null)
-const loading = ref(false)
+const movieData  = ref(null)
+const tvData     = ref(null)
+const parityData = ref(null)
+const loading    = ref(false)
+const reconciling = ref(false)
+const VERSION_SYNC_MAX = 100
 
 const expandedMiss = ref(new Set())
 const expandedSyn  = ref(new Set())
 const expandedUnr  = ref(new Set())
+const expandedParity = ref({ miss: new Set(), pass: new Set(), filt: new Set(), mm: new Set() })
 
 const toggleShow = (type, show) => {
   const map = { miss: expandedMiss, syn: expandedSyn, unr: expandedUnr }
@@ -361,19 +607,34 @@ const toggleShow = (type, show) => {
   map[type].value = new Set(s)
 }
 
+const toggleParity = (type, show) => {
+  const s = expandedParity.value[type]
+  if (s.has(show)) s.delete(show)
+  else s.add(show)
+  expandedParity.value = { ...expandedParity.value, [type]: new Set(s) }
+}
+
 const fmt = n => n == null ? '—' : n.toLocaleString()
 const gb = b => b ? `${(b / 1_073_741_824).toFixed(1)} GB` : '—'
 
 const movieTabs = computed(() => [
-  { key: 'missing',      label: 'Missing from Unraid', count: movieData.value?.summary?.missing_count },
-  { key: 'syn_better',   label: 'Version Mismatch',    count: movieData.value?.summary?.syn_better_count },
-  { key: 'radarr_stale', label: 'Radarr Out of Date',  count: movieData.value?.summary?.radarr_stale_count },
+  { key: 'missing',       label: 'Missing from Unraid',  count: movieData.value?.summary?.missing_count },
+  { key: 'syn_better',    label: 'Synology Upgrade',     count: movieData.value?.summary?.syn_better_count },
+  { key: 'unraid_better', label: 'Unraid Has Better',    count: movieData.value?.summary?.unraid_better_count },
+  { key: 'radarr_stale',  label: 'Radarr Out of Date',   count: movieData.value?.summary?.radarr_stale_count },
 ])
 
 const tvTabs = computed(() => [
   { key: 'missing',      label: 'Missing from Unraid', count: tvData.value?.summary?.missing_count },
   { key: 'syn_better',   label: 'Synology Upgrade',    count: tvData.value?.summary?.syn_better_count },
   { key: 'unraid_better',label: 'Unraid Has Better',   count: tvData.value?.summary?.unraid_better_count },
+])
+
+const parityTabs = computed(() => [
+  { key: 'missing',     label: 'Missing from Unraid',    count: parityData.value?.summary?.missing_count },
+  { key: 'unraid_pass', label: 'Unraid-only 1080p+',     count: parityData.value?.summary?.unraid_pass_count },
+  { key: 'unraid_filt', label: 'Unraid-only 720p/x265',  count: parityData.value?.summary?.unraid_filt_count },
+  { key: 'mismatch',    label: 'Version Mismatch',       count: parityData.value?.summary?.mismatch_count },
 ])
 
 let pollTimer = null
@@ -398,25 +659,47 @@ const loadTv = async (force = false) => {
   }
 }
 
+const loadParity = async (force = false) => {
+  try {
+    const r = await axios.get('/api/sync-status/tv-parity', { params: force ? { refresh: true } : {} })
+    parityData.value = r.data
+    if (r.data.status === 'scanning') schedulePoll()
+  } catch (e) {
+    parityData.value = { status: 'error', error: e.message }
+  }
+}
+
 const schedulePoll = () => {
   if (pollTimer) return
   pollTimer = setInterval(async () => {
-    await Promise.all([loadMovies(), loadTv()])
-    const bothReady = movieData.value?.status === 'ready' && tvData.value?.status === 'ready'
-    const bothDone  = !movieData.value?.scanning && !tvData.value?.scanning
-    if (bothReady && bothDone) { clearInterval(pollTimer); pollTimer = null; loading.value = false }
+    await Promise.all([loadMovies(), loadTv(), loadParity()])
+    const allReady = [movieData, tvData, parityData].every(d => d.value?.status === 'ready')
+    const allDone  = [movieData, tvData, parityData].every(d => !d.value?.scanning)
+    if (allReady && allDone) { clearInterval(pollTimer); pollTimer = null; loading.value = false }
   }, 5000)
 }
 
 const refresh = async () => {
   loading.value = true
-  await Promise.all([loadMovies(true), loadTv(true)])
+  await Promise.all([loadMovies(true), loadTv(true), loadParity(true)])
   schedulePoll()
 }
 
+const triggerReconcile = async () => {
+  reconciling.value = true
+  try {
+    const r = await axios.post('/api/sync-status/reconcile?type=all')
+    alert(`Reconcile queued: ${r.data.message || 'TV + movies started — check Telegram for results'}`)
+  } catch (e) {
+    alert(`Reconcile trigger failed: ${e?.response?.data?.error || e.message}`)
+  } finally {
+    reconciling.value = false
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([loadMovies(), loadTv()])
-  const needPoll = movieData.value?.status === 'scanning' || tvData.value?.status === 'scanning'
+  await Promise.all([loadMovies(), loadTv(), loadParity()])
+  const needPoll = [movieData, tvData, parityData].some(d => d.value?.status === 'scanning')
   if (needPoll) schedulePoll()
 })
 

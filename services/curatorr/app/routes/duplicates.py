@@ -1,4 +1,5 @@
 """Duplicates detection from Plex and filesystem scan."""
+import json
 import logging
 import os
 import re
@@ -16,17 +17,49 @@ from app.config import RADARR_INSTANCES, synology_to_unraid_path, UNRAID_MEDIA_P
 router = APIRouter()
 log = logging.getLogger('curatorr.routes.duplicates')
 
-# ── TRaSH-aligned scoring for Plex versions ──────────────────────────────────
-_RES = {'4K': 4000, '1080p': 2000, '720p': 0, 'SD': -500}
-_SRC = {'Remux': 2000, 'BluRay': 1500, 'Bluray': 1500, 'WEB-DL': 1000,
-        'WEBDL': 1000, 'WEBRip': 800, 'HDTV': 200}
-_HDR_4K  = {'DV HDR10+': 800, 'DV HDR10': 800, 'HDR10': 700, 'HDR': 700,
-            'DV': 400, 'DV HLG': 400, 'DV SDR': 300, 'HDR10+': 300, 'HLG': 300}
-_HDR_HD  = {'DV HDR10+': 400, 'DV HDR10': 400, 'HDR10': 400, 'HDR': 400,
-            'DV': 350, 'DV HLG': 350, 'DV SDR': 300, 'HDR10+': 350, 'HLG': 300}
-_AUDIO   = {'TrueHD Atmos': 500, 'Atmos': 500, 'TrueHD': 450, 'DTS-HD MA': 400,
-            'DTS:X': 400, 'DTS-HD': 350, 'DTS': 200, 'EAC3 Atmos': 300,
-            'EAC3': 150, 'DD+': 150, 'AC3': 100, 'DD': 100, 'AAC': 50}
+# ── TRaSH-aligned scoring — loaded from shared JSON config ────────────────────
+_SCORING_PATH = os.environ.get('TRASH_SCORING_PATH', '/app/scoring/trash_scoring.json')
+with open(_SCORING_PATH) as _f:
+    _SC = json.load(_f)
+
+# Plex API uses string keys ('4K', '1080p', 'Remux', etc.) — map to JSON numeric values
+_RES = {
+    '4K':   _SC['resolution']['2160p'],
+    '1080p': _SC['resolution']['1080p'],
+    '720p':  _SC['resolution']['720p'],
+    'SD':    _SC['resolution']['sd'],
+}
+_SRC = {
+    'Remux': _SC['source']['remux'],  'BluRay': _SC['source']['bluray'],
+    'Bluray': _SC['source']['bluray'], 'WEB-DL': _SC['source']['web_dl'],
+    'WEBDL':  _SC['source']['web_dl'], 'WEBRip': _SC['source']['webrip'],
+    'HDTV':   _SC['source']['hdtv'],
+}
+# HDR: _parse_brackets() returns capitalized labels — map to JSON scores explicitly
+_HDR_4K = {
+    'DV HDR10+': _SC['hdr_4k'][0][1], 'DV HDR10': _SC['hdr_4k'][1][1],
+    'HDR10+':    _SC['hdr_4k'][2][1], 'HDR10':    _SC['hdr_4k'][3][1],
+    'DV HLG':    _SC['hdr_4k'][4][1], 'DV SDR':   _SC['hdr_4k'][5][1],
+    'DV':        _SC['hdr_4k'][7][1], 'HDR':      _SC['hdr_4k'][8][1],
+    'HLG':       _SC['hdr_4k'][9][1],
+}
+_HDR_HD = {
+    'DV HDR10+': _SC['hdr_hd'][0][1], 'DV HDR10': _SC['hdr_hd'][1][1],
+    'HDR10+':    _SC['hdr_hd'][2][1], 'HDR10':    _SC['hdr_hd'][3][1],
+    'DV HLG':    _SC['hdr_hd'][4][1], 'DV SDR':   _SC['hdr_hd'][5][1],
+    'DV':        _SC['hdr_hd'][7][1], 'HDR':      _SC['hdr_hd'][8][1],
+    'HLG':       _SC['hdr_hd'][9][1],
+}
+# Audio: capitalized Plex-style keys → JSON scores
+_AUDIO = {
+    'TrueHD Atmos': _SC['audio'][0][1], 'TrueHD':  _SC['audio'][1][1],
+    'DTS-HD MA':    _SC['audio'][2][1], 'DTS:X':   _SC['audio'][3][1],
+    'DTS-HD':       _SC['audio'][4][1], 'EAC3 Atmos': _SC['audio'][5][1],
+    'Atmos':        _SC['audio'][6][1], 'EAC3':    _SC['audio'][7][1],
+    'DTS':          _SC['audio'][8][1], 'DD+':     _SC['audio'][9][1],
+    'AC3':          _SC['audio'][10][1], 'DD':     _SC['audio'][10][1],
+    'AAC':          _SC['audio'][11][1],
+}
 _PLEX_AUDIO = {'truehd': 'TrueHD', 'dts': 'DTS', 'eac3': 'EAC3',
                'ac3': 'AC3', 'aac': 'AAC', 'mp3': 'AAC'}
 
@@ -54,12 +87,17 @@ def _parse_brackets(file_path: str) -> dict:
                 if key in bl: audio = val; break
     return {'source': source, 'hdr': hdr, 'audio': audio}
 
+_RELEASE_GROUP_RE = re.compile(r'-([A-Za-z][A-Za-z0-9]{1,14})\.(mkv|mp4|avi|m4v|ts|m2ts)$', re.IGNORECASE)
+
 def _score_plex_version(v: dict) -> int:
     res    = v.get('resolution', '')
     codec  = v.get('video_codec', '').lower()
     is_4k  = res == '4K'
     size_gb = v.get('file_size_bytes', 0) / 1_073_741_824
-    q = _parse_brackets(v.get('file_path', ''))
+    file_path = v.get('file_path', '')
+    fname  = os.path.basename(file_path)
+    name   = fname.lower()
+    q = _parse_brackets(file_path)
     audio  = q['audio'] or _PLEX_AUDIO.get(v.get('audio_codec', '').lower(), '')
     hdr, src = q['hdr'], q['source']
 
@@ -70,7 +108,11 @@ def _score_plex_version(v: dict) -> int:
     # x265/hevc at 1080p without HDR = penalised
     if codec in ('hevc', 'h265') and not is_4k:
         score += 200 if 'DV' in hdr else (0 if hdr else -300)
-    score += min(int(size_gb * 10), 200)
+    score += min(int(size_gb * _SC['size_bonus_per_gb']), _SC['size_bonus_cap'])
+    score += _SC['custom_formats']['hybrid']        if re.search(r'\[hybrid\]', name) else 0
+    score += _SC['custom_formats']['release_group'] if _RELEASE_GROUP_RE.search(fname) else 0
+    score += _SC['custom_formats']['proper_repack'] if re.search(r'\b(proper|repack|rerip)\b', name) else 0
+    score += _SC['container_penalty_mp4']           if fname.lower().endswith('.mp4') else 0
     return score
 
 
