@@ -1,0 +1,370 @@
+{
+ "clientId": "31b5c4c1-bc6d-4828-91de-3a8305335178",
+ "vapidPrivate": "P0tHyz4XjPGm_VFGH6eSO8kMahwbDCVqR2FnQlBj6Vk",
+ "vapidPublic": "BLCSc4eJcHgI5rYig9qT9LvYezcmkp1b3AdPyN5pXywGEANaZKN_RJGMESlclBJ2Elbl6zAzs2M7CaYTB9W8gts",
+ "main": {
+  "apiKey": "MTY3OTY3MjcwNzg4M2M4MjA2NmIwLTljNmMtNDBkYi05ZTI0LWRlNjFkZTY1OTNkNSk=",
+  "applicationTitle": "Request.Stuttler.net",
+  "applicationUrl": "https://Request.Stuttler.net",
+  "cacheImages": false,
+  "defaultPermissions": 50331808,
+  "defaultQuotas": {
+   "movie": {
+    "quotaLimit": 0,
+    "quotaDays": 7
+   },
+   "tv": {
+    "quotaLimit": 0,
+    "quotaDays": 7
+   }
+  },
+  "hideAvailable": false,
+  "hideBlocklisted": false,
+  "localLogin": true,
+  "mediaServerLogin": true,
+  "newPlexLogin": true,
+  "discoverRegion": "US",
+  "streamingRegion": "US",
+  "originalLanguage": "",
+  "blocklistedTags": "",
+  "blocklistedTagsLimit": 50,
+  "mediaServerType": 1,
+  "partialRequestsEnabled": true,
+  "enableSpecialEpisodes": false,
+  "locale": "en",
+  "youtubeUrl": ""
+ },
+ "plex": {
+  "name": "NOSTROMO",
+  "ip": "10.0.0.250",
+  "port": 32400,
+  "useSsl": false,
+  "libraries": [
+   {
+    "id": "13",
+    "name": "4K Movies",
+    "enabled": true,
+    "type": "movie",
+    "lastScan": 1773583200040
+   },
+   {
+    "id": "1",
+    "name": "Movies",
+    "enabled": true,
+    "type": "movie",
+    "lastScan": 1773583200047
+   },
+   {
+    "id": "12",
+    "name": "4K TV Shows",
+    "enabled": true,
+    "type": "show",
+    "lastScan": 1773583200105
+   },
+   {
+    "id": "2",
+    "name": "TV Shows",
+    "enabled": true,
+    "type": "show",
+    "lastScan": 1773583200213
+   },
+   {
+    "id": "11",
+    "name": "Workout",
+    "enabled": false,
+    "type": "show"
+   }
+  ],
+  "machineId": "34a8bd32727dccb6496467a0bec92e9a29cf72a7"
+ },
+ "jellyfin": {
+  "name": "",
+  "ip": "",
+  "port": 8096,
+  "useSsl": false,
+  "urlBase": "",
+  "externalHostname": "",
+  "jellyfinForgotPasswordUrl": "",
+  "libraries": [],
+  "serverId": "",
+  "apiKey": ""
+ },
+ "tautulli": {
+  "hostname": "tautilli",
+  "port": 8181,
+  "apiKey": "03cd28b8973e455e94cc682bedce4ec8",
+  "useSsl": true
+ },
+ "metadataSettings": {
+  "tv": "tmdb",
+  "anime": "tmdb"
+ },
+ "radarr": [
+  {
+   "name": "Radarr-HD",
+   "hostname": "Radarr-HD",
+   "port": 7878,
+   "apiKey": "1450c10b70ef472c930bccadbb33d3d7",
+   "useSsl": false,
+   "baseUrl": "",
+   "activeProfileId": 7,
+   "activeProfileName": "HD Bluray + WEB",
+   "activeDirectory": "/movies",
+   "is4k": false,
+   "minimumAvailability": "released",
+   "tags": [
+    2
+   ],
+   "isDefault": true,
+   "syncEnabled": true,
+   "preventSearch": false,
+   "tagRequests": false,
+   "id": 0
+  },
+  {
+   "name": "Radarr4K",
+   "hostname": "radarr-4k",
+   "port": 7878,
+   "apiKey": "a6b63e377b9b45cb8250ba6e8949aeaa",
+   "useSsl": false,
+   "baseUrl": "",
+   "activeProfileId": 7,
+   "activeProfileName": "UHD Bluray + WEB",
+   "activeDirectory": "/movies-4k",
+   "is4k": true,
+   "minimumAvailability": "released",
+   "tags": [
+    1
+   ],
+   "isDefault": true,
+   "syncEnabled": true,
+   "preventSearch": false,
+   "tagRequests": false,
+   "id": 1
+  }
+ ],
+ "sonarr": [
+  {
+   "name": "SonarrHD",
+   "hostname": "sonarr-hd",
+   "port": 8989,
+   "apiKey": "14aefefaaa8840e2bfd40e7056319b8f",
+   "useSsl": false,
+   "baseUrl": "",
+   "activeProfileId": 7,
+   "activeLanguageProfileId": 1,
+   "activeProfileName": "WEB-1080p",
+   "activeDirectory": "/tv",
+   "activeAnimeProfileId": 7,
+   "activeAnimeLanguageProfileId": 1,
+   "activeAnimeProfileName": "WEB-1080p",
+   "activeAnimeDirectory": "/tv",
+   "tags": [
+    5
+   ],
+   "animeTags": [],
+   "is4k": false,
+   "isDefault": true,
+   "enableSeasonFolders": true,
+   "syncEnabled": true,
+   "preventSearch": false,
+   "tagRequests": true,
+   "id": 0
+  },
+  {
+   "name": "Sonarr4K",
+   "hostname": "sonarr-4k",
+   "port": 8989,
+   "apiKey": "88f0347b1fc74e74ac2f33e882e0172b",
+   "useSsl": false,
+   "baseUrl": "",
+   "activeProfileId": 7,
+   "activeLanguageProfileId": 1,
+   "activeProfileName": "WEB-2160p",
+   "activeDirectory": "/tv-4k",
+   "activeAnimeProfileId": 7,
+   "activeAnimeProfileName": "WEB-2160p",
+   "activeAnimeDirectory": "/tv-4k",
+   "tags": [
+    1
+   ],
+   "animeTags": [],
+   "is4k": true,
+   "isDefault": true,
+   "enableSeasonFolders": true,
+   "syncEnabled": true,
+   "preventSearch": false,
+   "tagRequests": true,
+   "id": 1
+  }
+ ],
+ "public": {
+  "initialized": true
+ },
+ "notifications": {
+  "agents": {
+   "email": {
+    "enabled": true,
+    "embedPoster": true,
+    "options": {
+     "userEmailRequired": false,
+     "emailFrom": "cstuttler@gmail.com",
+     "smtpHost": "smtp.gmail.com",
+     "smtpPort": 587,
+     "secure": false,
+     "ignoreTls": false,
+     "requireTls": false,
+     "allowSelfSigned": false,
+     "senderName": "Stutz Flix Movie Requests",
+     "authUser": "cstuttler@gmail.com",
+     "authPass": "obkekhfvyprwvuxd"
+    }
+   },
+   "discord": {
+    "enabled": false,
+    "embedPoster": true,
+    "types": 0,
+    "options": {
+     "webhookUrl": "",
+     "webhookRoleId": "",
+     "enableMentions": true
+    }
+   },
+   "slack": {
+    "enabled": false,
+    "embedPoster": true,
+    "types": 0,
+    "options": {
+     "webhookUrl": ""
+    }
+   },
+   "telegram": {
+    "enabled": false,
+    "embedPoster": true,
+    "types": 0,
+    "options": {
+     "botAPI": "",
+     "chatId": "",
+     "messageThreadId": "",
+     "sendSilently": false
+    }
+   },
+   "pushbullet": {
+    "enabled": false,
+    "embedPoster": false,
+    "types": 0,
+    "options": {
+     "accessToken": ""
+    }
+   },
+   "pushover": {
+    "enabled": false,
+    "embedPoster": true,
+    "types": 0,
+    "options": {
+     "accessToken": "",
+     "userToken": "",
+     "sound": ""
+    }
+   },
+   "webhook": {
+    "enabled": false,
+    "embedPoster": true,
+    "types": 0,
+    "options": {
+     "webhookUrl": "",
+     "jsonPayload": "IntcbiAgICBcIm5vdGlmaWNhdGlvbl90eXBlXCI6IFwie3tub3RpZmljYXRpb25fdHlwZX19XCIsXG4gICAgXCJldmVudFwiOiBcInt7ZXZlbnR9fVwiLFxuICAgIFwic3ViamVjdFwiOiBcInt7c3ViamVjdH19XCIsXG4gICAgXCJtZXNzYWdlXCI6IFwie3ttZXNzYWdlfX1cIixcbiAgICBcImltYWdlXCI6IFwie3tpbWFnZX19XCIsXG4gICAgXCJ7e21lZGlhfX1cIjoge1xuICAgICAgICBcIm1lZGlhX3R5cGVcIjogXCJ7e21lZGlhX3R5cGV9fVwiLFxuICAgICAgICBcInRtZGJJZFwiOiBcInt7bWVkaWFfdG1kYmlkfX1cIixcbiAgICAgICAgXCJ0dmRiSWRcIjogXCJ7e21lZGlhX3R2ZGJpZH19XCIsXG4gICAgICAgIFwic3RhdHVzXCI6IFwie3ttZWRpYV9zdGF0dXN9fVwiLFxuICAgICAgICBcInN0YXR1czRrXCI6IFwie3ttZWRpYV9zdGF0dXM0a319XCJcbiAgICB9LFxuICAgIFwie3tyZXF1ZXN0fX1cIjoge1xuICAgICAgICBcInJlcXVlc3RfaWRcIjogXCJ7e3JlcXVlc3RfaWR9fVwiLFxuICAgICAgICBcInJlcXVlc3RlZEJ5X2VtYWlsXCI6IFwie3tyZXF1ZXN0ZWRCeV9lbWFpbH19XCIsXG4gICAgICAgIFwicmVxdWVzdGVkQnlfdXNlcm5hbWVcIjogXCJ7e3JlcXVlc3RlZEJ5X3VzZXJuYW1lfX1cIixcbiAgICAgICAgXCJyZXF1ZXN0ZWRCeV9hdmF0YXJcIjogXCJ7e3JlcXVlc3RlZEJ5X2F2YXRhcn19XCJcbiAgICB9LFxuICAgIFwie3tpc3N1ZX19XCI6IHtcbiAgICAgICAgXCJpc3N1ZV9pZFwiOiBcInt7aXNzdWVfaWR9fVwiLFxuICAgICAgICBcImlzc3VlX3R5cGVcIjogXCJ7e2lzc3VlX3R5cGV9fVwiLFxuICAgICAgICBcImlzc3VlX3N0YXR1c1wiOiBcInt7aXNzdWVfc3RhdHVzfX1cIixcbiAgICAgICAgXCJyZXBvcnRlZEJ5X2VtYWlsXCI6IFwie3tyZXBvcnRlZEJ5X2VtYWlsfX1cIixcbiAgICAgICAgXCJyZXBvcnRlZEJ5X3VzZXJuYW1lXCI6IFwie3tyZXBvcnRlZEJ5X3VzZXJuYW1lfX1cIixcbiAgICAgICAgXCJyZXBvcnRlZEJ5X2F2YXRhclwiOiBcInt7cmVwb3J0ZWRCeV9hdmF0YXJ9fVwiXG4gICAgfSxcbiAgICBcInt7Y29tbWVudH19XCI6IHtcbiAgICAgICAgXCJjb21tZW50X21lc3NhZ2VcIjogXCJ7e2NvbW1lbnRfbWVzc2FnZX19XCIsXG4gICAgICAgIFwiY29tbWVudGVkQnlfZW1haWxcIjogXCJ7e2NvbW1lbnRlZEJ5X2VtYWlsfX1cIixcbiAgICAgICAgXCJjb21tZW50ZWRCeV91c2VybmFtZVwiOiBcInt7Y29tbWVudGVkQnlfdXNlcm5hbWV9fVwiLFxuICAgICAgICBcImNvbW1lbnRlZEJ5X2F2YXRhclwiOiBcInt7Y29tbWVudGVkQnlfYXZhdGFyfX1cIlxuICAgIH0sXG4gICAgXCJ7e2V4dHJhfX1cIjogW11cbn0i"
+    }
+   },
+   "webpush": {
+    "enabled": false,
+    "embedPoster": true,
+    "options": {}
+   },
+   "gotify": {
+    "enabled": false,
+    "embedPoster": false,
+    "types": 0,
+    "options": {
+     "url": "",
+     "token": "",
+     "priority": 0
+    }
+   },
+   "ntfy": {
+    "enabled": false,
+    "embedPoster": true,
+    "types": 0,
+    "options": {
+     "url": "",
+     "topic": ""
+    }
+   }
+  }
+ },
+ "jobs": {
+  "plex-recently-added-scan": {
+   "schedule": "0 */5 * * * *"
+  },
+  "plex-full-scan": {
+   "schedule": "0 0 3 * * *"
+  },
+  "plex-watchlist-sync": {
+   "schedule": "0 */10 * * * *"
+  },
+  "plex-refresh-token": {
+   "schedule": "0 0 5 * * *"
+  },
+  "radarr-scan": {
+   "schedule": "0 0 4 * * *"
+  },
+  "sonarr-scan": {
+   "schedule": "0 30 4 * * *"
+  },
+  "availability-sync": {
+   "schedule": "0 0 5 * * *"
+  },
+  "download-sync": {
+   "schedule": "0 * * * * *"
+  },
+  "download-sync-reset": {
+   "schedule": "0 0 1 * * *"
+  },
+  "jellyfin-recently-added-scan": {
+   "schedule": "0 */5 * * * *"
+  },
+  "jellyfin-full-scan": {
+   "schedule": "0 0 3 * * *"
+  },
+  "image-cache-cleanup": {
+   "schedule": "0 0 5 * * *"
+  },
+  "process-blocklisted-tags": {
+   "schedule": "0 30 1 */7 * *"
+  }
+ },
+ "network": {
+  "csrfProtection": true,
+  "forceIpv4First": false,
+  "trustProxy": true,
+  "proxy": {
+   "enabled": false,
+   "hostname": "",
+   "port": 8080,
+   "useSsl": false,
+   "user": "",
+   "password": "",
+   "bypassFilter": "",
+   "bypassLocalAddresses": true
+  },
+  "dnsCache": {
+   "enabled": false,
+   "forceMinTtl": 0,
+   "forceMaxTtl": -1
+  },
+  "apiRequestTimeout": 10000
+ },
+ "migrations": [
+  "0008_migrate_blacklist_to_blocklist"
+ ]
+}

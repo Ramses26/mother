@@ -141,18 +141,30 @@ No code changes needed — the JSON is the only thing to edit.
 
 ---
 
-## Score Gate in Version Reconcile
+## Version Reconcile: Profile Authority, Not a Score Gate
 
-The nightly reconcile jobs use the score to decide which copy wins:
+**Corrected 2026-07-02 — this section previously described a removed behavior.** See
+CLAUDE.md's "Profile Authority" section for the full rule.
 
-- **Movie version reconcile** (11:45 PM ET): Radarr's tracked file vs best file on Unraid.
-  If Synology (Radarr) > Unraid → `MovieVersionSync` (copy Syn→Unraid, delete old Unraid file).
-  If Unraid > Synology → no action (dedup handles Unraid cleanup; Upgraderr will eventually upgrade Synology).
-
-- **TV version reconcile** (11:15 PM ET): Synology episode file vs Unraid episode file.
-  Same logic: higher score wins, lower is deleted after rsync confirms.
+- **Movie version reconcile** (11:45 PM ET): Radarr's tracked file is the target,
+  full stop — `MovieVersionSync` (Synology→Unraid) fires whenever Radarr's file
+  differs from Unraid's, **even if Unraid's current file scores higher** (e.g. Unraid
+  holds a Remux, Radarr tracks Bluray-1080p because that's the assigned profile).
+  There is no "only sync if Synology scores higher" gate — that was removed.
+- **TV version reconcile** (11:15 PM ET): score is used to pick a *direction* only
+  when both sides are genuinely cross-tier-ambiguous; the 720p exclusion applies both
+  ways regardless of score.
 
 The `VERSION_SYNC_MAX_PER_RUN` cap (default 100) limits nightly churn.
+
+**Known gap (not yet fixed, flagged 2026-07-02):** `_score_filename()` uses the same
+source ranking (Bluray=1500 > WEB-DL=1000) for both movies and TV. `scripts/lib/quality_scoring.py`
+(used by Upgraderr and the compare_*.py scripts) intentionally inverts this for TV
+(WEB-DL=1200 > Bluray=1000 > WEBRip=800), per this project's established convention
+that WEB-DL is generally preferred for episodic TV. `reconcile_tv_versions()` doesn't
+apply that inversion — it could pick the wrong side in a Bluray-vs-WEB-DL TV episode
+comparison. Not fixed pending confirmation this matters in practice (most TV episode
+comparisons aren't cross-tier).
 
 ---
 

@@ -66,6 +66,182 @@ Chris's Synology is scanned locally via NFS (`os.listdir('/mnt/synology/...')` �
 
 ---
 
+## Profile Authority (READ THIS BEFORE TOUCHING ANY QUALITY/SCORING LOGIC)
+
+**The single most important cross-cutting rule in this codebase.** Radarr/Sonarr's
+*assigned quality profile* — not a raw TRaSH/quality score comparison — is the
+authority for what quality a movie or episode should be. This applies everywhere a
+service compares "what quality is this file" against "what quality should it be":
+
+- **sync-webhook reconcile**: Radarr's tracked file always wins over Unraid's file,
+  even when Unraid's file scores higher (e.g. Unraid holds a Remux while Radarr tracks
+  a Bluray-1080p because that's the assigned profile). No score gate on movies —
+  `reconcile_movie_versions()` syncs Radarr's file regardless of raw TRaSH delta. TV
+  reconcile uses score only to pick a *direction* when both sides are genuinely
+  cross-tier-ambiguous; the 720p exclusion still applies both ways regardless.
+- **Upgraderr Tier 7 (profile mismatch)**: fires whenever a file's quality ID isn't in
+  its assigned profile's `allowed` list — **regardless of whether the current file is
+  objectively "better."** A Remux sitting in a profile that doesn't allow Remux is
+  wrong and gets replaced, even though a Remux is objectively higher fidelity. Do NOT
+  add a "skip if the current file already scores higher than the profile's cutoff"
+  comparison here — that inverts this exact rule and was tried and reverted on
+  2026-07-02 (see incident below). Implemented for **both Radarr and Sonarr** as of
+  2026-07-02 — Sonarr had no equivalent at all before that (a real, live gap: 48
+  episodes across 5 shows had a Remux sitting in a non-Remux-allowed profile with
+  nothing to ever correct it).
+- **sync-webhook's reconcile — reverted a regression, not just documented a rule**:
+  commit `ae46ea1` (2026-06-27, a *different* prior Claude session) reversed this
+  exact Profile Authority rule in `reconcile_movie_versions()`, replacing it with pure
+  score-based direction ("highest TRaSH score wins, regardless of tier"), reasoning it
+  was protecting Unraid's "better" Remux from being overwritten. That's backwards, and
+  it directly contradicted this rule which was already 11+ days old at the time, and
+  the function's own docstring. It queued 391 successful `MovieReverseSync` jobs that
+  restored old Remuxes from Unraid over Upgraderr's legitimate profile-compliant
+  upgrades — including deleting the exact files Upgraderr had just correctly grabbed
+  for Varsity Blues and Mazinger Z, which is what re-triggered Tier 7 and made the
+  2026-07 incident (below) repeat on the same movies multiple times. Reverted
+  2026-07-02: the only legitimate `MovieReverseSync` trigger now is Radarr's tracked
+  file being genuinely missing from Synology's filesystem (real drift), never a score
+  comparison. **If you ever find yourself reasoning "but Unraid's file scores
+  higher, so keeping it there is safer" — stop. That reasoning has caused two separate
+  incidents. Check CLAUDE.md and the relevant memory before writing that logic.**
+- **Curatorr's Sync Status page** (`sync_status.py`) had the identical "Synology score
+  > Unraid score" framing in a code comment for its "Unraid Has Better" tab — a third
+  occurrence of the same wrong mental model, this time in read-only display logic (it
+  doesn't execute syncs itself, sync-webhook does). Comment corrected 2026-07-02; the
+  `syn_better`/`unraid_better` split in the UI is now informational only (which side
+  scores higher) — both categories resolve identically via forward Syn→Unraid sync.
+- **Curatorr scoring/dedup**: same principle — Radarr/Sonarr's tracked file is correct
+  by definition; a higher-scored file elsewhere is the anomaly to fix, not a reason to
+  keep divergence.
+
+**Why:** the profile assignment reflects a deliberate curation decision (does this
+title warrant Remux-level fidelity, or is a well-encoded Bluray-1080p enough to save
+disk space). A higher raw score never overrides that decision. A Remux unexpectedly
+sitting on a Bluray-only profile is almost always a legacy leftover from before
+profiles were rigorously assigned — the profile is what's correct, not the file.
+
+**This is orthogonal to release quality control.** Profile authority governs
+*resolution/source tier* (Remux vs Bluray vs WEB-DL) — it does NOT mean "accept
+whatever release gets grabbed to satisfy the profile." A release can still be
+objectively unacceptable regardless of which profile tier it technically satisfies.
+See Known-Bad Releases below — that list is enforced independently of, and in
+addition to, profile authority.
+
+### Known-Bad Releases (never acceptable, regardless of profile)
+
+| Pattern | Why | Enforced by |
+|---|---|---|
+| Release group `BHDStudio` | Low-quality encode group | `configs/recyclarr/custom-formats/{radarr,sonarr}/bhdstudio.json` (CF score -50, **both services** as of 2026-07-02 — Sonarr had none before) **and** Upgraderr's `BAD_RELEASE_GROUPS` set + `_flag_if_bad_import()` in `services/upgraderr/app.py` (independent check — doesn't rely on recyclarr) |
+| MP4 container | Can't hold lossless audio (TrueHD/DTS-HD MA) | `configs/recyclarr/custom-formats/{radarr,sonarr}/bad-container-mp4.json` (CF score -1000, both services) **and** Upgraderr Tier 2 (file-extension check in `classify_tiers()`) |
+
+Local custom format JSON files require a matching `resource_providers` entry in
+`configs/recyclarr/settings.yml` per service (`radarr` and `sonarr` are registered
+separately) — a file sitting in `custom-formats/sonarr/` with no `local-cfs-sonarr`
+provider registered silently fails to load (`recyclarr sync ... --preview` reports
+`Invalid trash_id` rather than erroring loudly). Check both exist before assuming a
+local CF is live.
+
+**2026-07-02 incident (read before changing Tier 7 or these custom formats again):**
+the two custom formats above existed but used `ReleaseTitleSpecification` regexes
+requiring a trailing file extension (`\.mp4$`, `-BHDStudio\.`) — Radarr matches
+custom formats against the release *title* (no extension) at grab time, so neither
+regex ever actually fired; confirmed via `customFormats: None` on an affected import.
+Tier 7 was (correctly, per Profile Authority above) forcing searches for Remux-in-
+Bluray-profile movies, and with the safety net silently broken, Radarr grabbed
+whatever "allowed" release it found — including BHDStudio MP4s and 720p releases —
+instead of a proper Bluray-1080p. 314 movies were downgraded over two weeks before it
+was caught. Fixed via corrected regexes (`-BHDStudio\b`, `\bMP4\b|\.mp4$`) plus a
+post-import safety net (`_flag_if_bad_import()`) that alerts and tags
+`upgraderr-skip` when an imported file is *itself* objectively bad — independent of
+whether it scored lower than what it replaced, since a profile-enforced score drop is
+expected and correct.
+
+### Radarr Quality Profile Configuration (READ BEFORE ADDING QUALITIES TO A PROFILE)
+
+The "HD Bluray + WEB" Radarr-HD profile (id 7) had `Bluray-720p` in its **allowed**
+qualities list — a stock TRaSH Guides template default. Since it was "allowed," Radarr
+could legitimately grab and keep a 720p release any time a search (Tier 3, Tier 7, or
+a plain search) turned one up, directly contradicting this project's Sync Strategy
+rule that 720p is never an acceptable end state. This is what happened to Mazinger Z.
+Fixed 2026-07-02 via a `qualities:` override in `configs/recyclarr/recyclarr.yml` for
+that profile entry (keeps `trash_id:` for custom-format sync, overrides only the
+allowed-quality list). Radarr-4K and both Sonarr instances were checked and don't have
+this gap (no 720p/480p in any of their allowed lists). **Before enabling upgradeAllowed
+on a profile or accepting a stock TRaSH template as-is, check its `allowed` items
+list for any quality this project's Sync Strategy says should never be kept.**
+
+### 2026-07-02 Full System Assessment (what was checked, what's confirmed)
+
+A comprehensive pass across every service, triggered by the incidents documented
+above. Recorded here so the state doesn't need to be re-derived:
+
+- **Synology/Unraid parity**: live gap scans run for both movies and TV. Movies: 1
+  new folder found missing, queued. TV: 25 episodes found missing, queued. Both are
+  small, expected steady-state gaps (new downloads since the last nightly run), not
+  evidence of a systemic sync failure.
+- **TV/Sonarr audit**: found and fixed the Tier 7 gap (above) and the missing local
+  custom formats (above). `reconcile_tv_versions()`'s score-based direction is
+  confirmed *intentional* (not a bug) — TV genuinely uses score to pick direction
+  because per-episode profile checks via Sonarr's API would be too slow; the 720p
+  exclusion still applies both ways regardless of score.
+- **Scoring audit**: full comparison table above updated; TV WEB-DL/Bluray fix
+  verified applied in all three places that needed it (`sync-webhook`,
+  `curatorr/sync_status.py`; the Python module already had it correct).
+- **Duplicate scanner Profile Authority bug — the same regression, a fourth time,
+  found and fixed**: neither Curatorr's filesystem duplicate scanner
+  (`duplicates.py`) nor sync-webhook's automatic nightly dedup
+  (`nightly_unraid_dedup()`) cross-checked Radarr/Sonarr's currently-tracked file
+  against duplicate groups — both simply kept whichever version scored highest by
+  raw TRaSH score, same mistake as the reconcile regression above. Verified live:
+  **32 of 305 Unraid HD movie duplicate groups** had the scanner recommending
+  deletion of the actively-tracked, profile-compliant file while keeping an orphaned
+  Remux. The automatic nightly dedup is the more dangerous of the two (no human
+  review) — it's currently blocked by `PAUSE_DEDUP` (see below), so hadn't caused
+  live damage yet, but would have the moment that sentinel was lifted. Fixed in both:
+  `_enforce_profile_authority()` (Curatorr) and `_dedup_enforce_profile_authority()`
+  (sync-webhook) fetch Radarr's tracked filename per movie and Sonarr's per
+  `(tvdbId, S##E##)`, then re-rank each duplicate group so the tracked file is always
+  kept regardless of score. Verified 32→0 mismatches in both independently.
+  sync-webhook's version fails closed (aborts the dedup run) if the Radarr/Sonarr
+  fetch errors, since there's no human safety net there. **The Unraid Agent's own
+  `/scan` endpoint is deliberately left unfixed** — it's a dumb filesystem+score
+  scanner by design with no Radarr/Sonarr access; the correction belongs in the layer
+  that has that access and runs right before any delete decision, which is now both
+  Curatorr and sync-webhook.
+- **Loop-safety audit** (explicit ask: verify no mechanism can recreate a duplicate
+  after dedup removes one, the way the `ae46ea1` regression did): traced the full
+  cycle — Upgraderr upgrades Synology → forward sync deletes Unraid's old file only
+  after confirming the new one landed (`background_sync()`, already solid, sends a
+  Telegram warning rather than failing silently if the delete fails) → dedup (now
+  fixed above) only ever removes genuine orphans, never the tracked file → reconcile
+  sees Radarr's file already matches Unraid's remaining file and takes no action. No
+  gap found after the reconcile-direction fix and the dedup keep-selection fix; both
+  were necessary and are now both closed.
+- **Security review**: SQL injection check across all four services' f-string-built
+  queries — clean everywhere (either whitelisted column/sort identifiers or values
+  passed via proper parameterized placeholders, never raw string interpolation of
+  user input). Auth decorators (`@require_auth` / `Depends(require_auth)`) present on
+  all write endpoints checked in `upgraderr` and `curatorr`. No hardcoded secrets
+  found. **One real fix**: `services/unraid-agent/app.py`'s `/delete` endpoint checked
+  the raw input path string against allowed prefixes and only checked whether the
+  *leaf* was a symlink — a symlinked *intermediate* directory could escape the
+  allowed roots without tripping either check. Fixed to resolve the full realpath
+  first (matching the `/inventory` endpoint's already-correct pattern) before the
+  prefix check. This service runs on Unraid, not Mother, but SSH access from Mother to
+  Unraid is available (`ssh -i ~/.ssh/unraid_key root@192.168.1.10`) — deployed
+  directly the same session via `scp` + remote `docker compose build/up`, see its
+  section below for the exact steps. Don't ask the user to deploy this kind of fix
+  manually; do it.
+- **Cross-app webhook wiring**: confirmed all 4 *arr instances (radarr-hd, radarr-4k,
+  sonarr-hd, sonarr-4k) have both webhooks configured correctly — `Sync to Unraid` →
+  `http://sync-webhook:5000/sync/{radarr,sonarr}` and `Upgraderr` →
+  `http://upgraderr:5000/webhook/{radarr,sonarr}?source=<instance-name>` — with
+  correct per-instance `source` params so Upgraderr's queue tracking doesn't
+  cross-contaminate between HD/4K. No gaps found.
+
+---
+
 ## Architecture Overview
 
 Project Mother is a media management and synchronization system consolidating two users' (~160TB each) media libraries. Mother runs on an Ubuntu VM at Chris's location, managing Docker services for media acquisition (Radarr/Sonarr), quality automation (Recyclarr/Upgraderr), and real-time sync to Ali's Unraid via VPN.
@@ -80,7 +256,7 @@ Project Mother is a media management and synchronization system consolidating tw
    - **TV gap scan (11:00 PM ET)**: finds episodes on Synology missing from Unraid, queues them. Capped at `GAP_SCAN_MAX_QUEUE=500` per run.
    - **TV version reconcile (11:15 PM ET)**: for episodes present on BOTH sides, compares filenames. If Synology has a newer version (e.g. WEB-DL vs old Remux), queues `TVVersionSync` — rsyncs new file then deletes old Unraid file via Agent. Cap: `VERSION_SYNC_MAX_PER_RUN=20`.
    - **Movie gap scan (11:30 PM ET)**: finds movie folders on Synology missing from Unraid, queues them. Same cap.
-   - **Movie version reconcile (11:45 PM ET)**: Scans the ACTUAL Synology folder (`os.scandir`) for ALL video files (`.mkv`, `.mp4`, `.avi`, `.m4v`, `.ts`, `.m2ts`), picks the highest TRaSH-scored file including custom format bonuses (`[Hybrid]`=+100, release group `-GROUP.ext`=+50, Proper/Repack=+25). Compares against Unraid's best file. **Score gate**: only queues `MovieVersionSync` if Synology best score > Unraid score — prevents overwriting Unraid's better release-group copy with Radarr's unnamed version.
+   - **Movie version reconcile (11:45 PM ET)**: Uses Radarr's tracked file as the canonical answer (Profile Authority — see section above), not a raw score comparison. Also scans the ACTUAL Synology folder (`os.scandir`) for all video files to catch cases where Unraid already has Synology's best file under a name Radarr hasn't rescanned yet. Queues `MovieVersionSync` (Synology→Unraid) whenever Radarr's tracked file differs from Unraid's — even if Unraid's current file scores higher (e.g. Unraid holds a Remux, Radarr tracks Bluray-1080p). No score gate on the sync decision itself.
    - **Library health report (12:15 AM ET)**: Telegram summary of missing movies/episodes.
    - **Unraid dedup (8:00 AM ET)**: calls Unraid Agent to find and delete lower-quality duplicates. Runs in the morning to give the overnight rsync queue ~8 hours to drain before dedup evaluates what remains.
 
@@ -101,7 +277,9 @@ The nightly dedup (`nightly_unraid_dedup` in `app.py`) caused a mass-deletion in
 | Active job check | (code) | always | Skips dedup if any TVGapSync/GapSync/TVVersionSync/MovieVersionSync jobs are `in_progress` OR `pending`. |
 | Agent confirm | (code) | always | Counts deletion as success only if path appears in Agent `deleted[]` — not just HTTP 200. |
 
-**PAUSE_DEDUP should exist while the batch sync screen is running.** Remove it only once the batch sync is complete and verified.
+**PAUSE_DEDUP should exist while the batch sync screen is running.** Remove it only once the batch sync is complete and verified. **Status: `PAUSE_DEDUP` was removed 2026-07-02** — it had been continuously active since 2026-06-17 (2+ weeks), meaning dedup had not run at all in that window regardless of any `DEDUP_*` env var tuning.
+
+**IMPORTANT — the `DEDUP_*` env vars in this table were documented and set in `.env` but never actually wired into `docker-compose.yml`'s `sync-webhook` service** until 2026-07-02 — the container always ran on the Python code's hardcoded defaults (200/50/false/10/24) no matter what `.env` said. Fixed by adding explicit `environment:` entries for all five in `docker-compose.yml`. **If you change any `DEDUP_*` value in `.env`, you must `docker compose up -d sync-webhook` to recreate the container — editing `.env` alone does nothing.** `DEDUP_SAFETY_LIMIT` raised to **700** on 2026-07-02 specifically to drain a 669-file backlog that accumulated during the `PAUSE_DEDUP` window (would otherwise abort the first run outright). Revert to a lower steady-state value (200 or similar) once the backlog is confirmed drained — 700 is a one-time drain setting, not the intended long-term steady-state limit.
 
 **PAUSE_VERSION_SYNC** (`/opt/mother/PAUSE_VERSION_SYNC`) — blocks both TV and movie version reconcile. Use during major library reorganization to prevent version sync from interfering.
 
@@ -119,19 +297,98 @@ The sweep randomizes movie order within each instance (`random.shuffle`), so the
 
 ## Shared TRaSH Scoring Config
 
-`configs/scoring/trash_scoring.json` is the **single source of truth** for all quality scoring across services.
-Mounted read-only at `/app/scoring/trash_scoring.json` in both `sync-webhook` and `curatorr` containers.
+**There are TWO scoring implementations in this codebase, not one — know which services
+use which before assuming a value applies everywhere.**
 
-| Service | Where loaded | Function |
+| System | File | Used by |
 |---|---|---|
-| `sync-webhook` | Module level (`_SC`, `_SC_RES`, `_SC_SRC`, `_SC_CF`) | `_score_filename(fname, size_bytes)` |
-| `curatorr/routes/duplicates.py` | Module level (`_SC`) | `_score_plex_version(v)` |
-| `curatorr/routes/sync_status.py` | Module level (`_SC`) | `_score(fname, size_bytes)` |
+| JSON config | `configs/scoring/trash_scoring.json` | `sync-webhook` (`_score_filename`), `curatorr/routes/duplicates.py` (`_score_plex_version`), `curatorr/routes/sync_status.py` (`_score`) |
+| Python module | `scripts/lib/quality_scoring.py` | `services/upgraderr/app.py` (`get_current_score`/`calculate_quality_score`), `scripts/compare_libraries.py`, `scripts/compare_tv_libraries.py`, `scripts/cleanup_duplicates.py` |
 
-To tune any scoring value: edit the JSON, then `docker compose restart sync-webhook curatorr`.
-See `docs/TRASHGUIDES_REFERENCE.md` for the full scoring table.
+The JSON is mounted read-only at `/app/scoring/trash_scoring.json` in `sync-webhook` and
+`curatorr`; edit it and `docker compose restart sync-webhook curatorr` to apply. The
+Python module requires a code change + `docker compose build upgraderr`. **These two
+systems are NOT unified** — migrating Upgraderr onto the shared JSON is a known,
+unfinished TODO (see `todo_unified_scoring.md` memory), not yet done.
+
+### Consolidated scores (both systems, differences flagged)
+
+| Concept | JSON (sync-webhook/curatorr) | Python module (Upgraderr/scripts) | Consistent? |
+|---|---|---|---|
+| Resolution 2160p/1080p/720p/SD | 4000/2000/0/−500 | 4000/2000/0/−500 | ✅ Same |
+| Source, movies (Remux/Bluray/WEB-DL/WEBRip/HDTV) | 2000/1500/1000/800/200 | 2000/1500/1000/800/200 | ✅ Same |
+| Source, TV (Remux/WEB-DL/Bluray/WEBRip/HDTV) | `tv_source` key added 2026-07-02: 2000/1200/1000/800/200, matches Python module | 2000/1200/1000/800/200 (`TV_SOURCE_SCORES`, WEB-DL intentionally beats Bluray) | ✅ Fixed 2026-07-02 — `_score_filename(media_type='tv')` in sync-webhook and `_score(media_type='tv')` in `curatorr/sync_status.py` both now use the TV table for TV call sites; movie call sites unaffected (still default `media_type='movie'`) |
+| HDR (4K and HD tables) | Matches | Matches | ✅ Same |
+| Audio (TrueHD Atmos/TrueHD/DTS-HD MA/DTS:X/DTS-HD/DTS/DD+/AC3/AAC) | Matches | Matches | ✅ Same |
+| EAC3 Atmos vs generic Atmos | Distinguished: EAC3 Atmos=300, generic Atmos=500 | Not distinguished — anything tagged "Atmos" scores 500 | ⚠️ Diverges (minor) |
+| Codec (AVC/x264/HEVC/x265/AV1/VC-1) | **Not scored at all** | AVC/x264=150, HEVC/x265=100, AV1=250, VC-1=100 | ⚠️ Only in Python module |
+| x265 no-HDR-at-1080p penalty | −300 | −300 (same value, plus a +200 DV bonus the JSON lacks) | ✅ Value matches; module has one extra nuance |
+| Container: MP4 | −100 | **Not scored at all** — this gap contributed to the 2026-07 Tier 7 incident (see Profile Authority section) | ⚠️ Only in JSON |
+| Release group / `[Hybrid]` / Proper-Repack bonuses | +50 / +100 / +25 | **Not detected at all** | ⚠️ Only in JSON |
+| Size bonus | +10/GB, cap 200 | +10/GB, cap 200 | ✅ Same |
+
+**Practical implication:** the same file can score differently depending on which
+service evaluates it. When debugging "why did X get picked over Y," check which
+scoring system the relevant service actually uses before trusting a score you
+computed with the other one.
+
+See `docs/TRASHGUIDES_REFERENCE.md` for the full JSON-side reference and tuning instructions.
 
 **gitignore**: `configs/scoring/` is whitelisted in `.gitignore` so the JSON is tracked in git.
+
+## How the Applications Work Together
+
+```
+recyclarr  ──configures──▶  Radarr / Sonarr  ◀──triggers searches──  Upgraderr
+   (quality profiles,           │                                        │
+    custom formats,             │ webhooks on import                    │ sweep every 30 min:
+    "allowed" qualities)        ▼                                        │ classify_tiers() +
+                          sync-webhook                                   │ Tier 7 profile check
+                     (copies new files to Unraid,                       │
+                      nightly gap/version reconcile)                     ▼
+                                │                                  webhook records
+                                ▼                                  before/after quality,
+                          Unraid Agent                             flags bad imports
+                       (remote inventory API)                      (_flag_if_bad_import)
+                                │
+                                ▼
+                            Curatorr
+                  (browses both libraries, scoring,
+                   dedup, rules engine, manual delete)
+```
+
+- **Recyclarr** is config-only (no runtime role) — it pushes TRaSH Guides quality
+  profiles and custom formats into all 4 Radarr/Sonarr instances on a schedule.
+  It decides what Radarr is *allowed* to grab and how releases are scored at
+  grab-time. It does NOT decide which existing file wins a comparison — that's the
+  scoring systems above.
+- **Radarr/Sonarr** are the actual quality decision-makers at grab time, governed
+  entirely by whatever profile/custom-format config recyclarr last pushed. Their
+  assigned quality profile is authoritative — see Profile Authority above.
+- **Upgraderr** doesn't grab anything itself — it only decides *when to ask Radarr/
+  Sonarr to search* (via `POST /command`), based on 7 tiers (`classify_tiers()` +
+  a profile-mismatch check). Once it triggers a search, the actual release selection
+  is 100% Radarr's decision, governed by recyclarr's config. Upgraderr's own
+  post-import check (`_flag_if_bad_import`) is the only place that verifies the
+  *result* of that search was actually good.
+- **sync-webhook** is one-way (Synology→Unraid) and append-only for real-time
+  webhooks; nightly reconcile jobs are the only thing that can delete an Unraid file,
+  and only to bring it in line with Radarr's tracked file (Profile Authority again).
+  It has zero interaction with Upgraderr or recyclarr — it only cares what Radarr/
+  Sonarr currently have on Synology.
+- **Curatorr** is a read-heavy UI/analysis layer (browsing, scoring, watch history,
+  rules) that also has direct-delete capability. It calls Radarr/Sonarr, Plex,
+  Tautulli, and the Unraid Agent directly; it doesn't call sync-webhook or Upgraderr.
+- **Unraid Agent** is the only thing anything on Mother uses to enumerate Unraid's
+  filesystem — never CIFS listing (see Inventory Scanning above). Both sync-webhook
+  and Curatorr depend on it.
+
+**The chain that caused the 2026-07 incident**: recyclarr's custom formats were
+broken (regex bug) → Radarr had no way to reject a bad release when Upgraderr's Tier
+7 (correctly) forced a search → nothing downstream (sync-webhook, Curatorr) could
+have caught it either, since they only mirror whatever Radarr/Sonarr currently track.
+The fix had to happen at the recyclarr/Radarr layer, plus a new independent check
+inside Upgraderr itself — no other service in the chain was positioned to catch it.
 
 ## Key Code Components
 
@@ -207,7 +464,8 @@ Scans media directories, extracts quality metadata from filenames via regex, out
 ### `services/upgraderr/app.py` (Flask app)
 Custom quality upgrade automation service replacing Huntarr. Handles:
 - Discovery sweep every 30 min: classifies all 4 *arr instances into 7 upgrade tiers
-- **7 Tiers**: m2ts/BDMV (1), non-MKV container (2), 720p/SD (3), TMDB BluRay available (4), no surround audio (5), low TRaSH score (6), quality profile mismatch (7 — file quality not in Radarr's profile allowed list; Radarr won't auto-search because `cutoffNotMet=false`; Upgraderr forces search)
+- **7 Tiers**: m2ts/BDMV (1), non-MKV container (2), 720p/SD (3), TMDB BluRay available (4), no surround audio (5), low TRaSH score (6), quality profile mismatch (7 — file quality not in the assigned profile's allowed list; Radarr/Sonarr won't auto-search because `cutoffNotMet=false`; Upgraderr forces search **regardless of whether the current file scores higher than the profile allows — see Profile Authority above**). Tier 7 covers **both Radarr and Sonarr** as of 2026-07-02 (`_build_profile_allowed()` + the per-episode check in `_sweep_sonarr()`) — Sonarr had no equivalent before that.
+- **Post-import safety net** (`_flag_if_bad_import`): independent of the tier system — after any webhook-recorded import, checks whether the *newly imported* file is itself objectively bad (matches Tiers 1-6, or a known-bad release group). If so, alerts via Telegram and tags `upgraderr-skip`. Does NOT alert on score drop alone — a Tier-7 profile-enforced swap is supposed to lower the raw score sometimes, and that's correct, not a bug.
 - APScheduler tasks: sweep (every 30min), TMDB scan (02:30 UTC daily), DB backup (03:00 UTC daily), search log prune (04:00 UTC daily, keeps 90 days), **stale queue validation (05:00 UTC daily)** — removes queue entries whose upgrade reason no longer applies (e.g., show was upgraded outside the sweep flow)
 - Global pause toggle + per-instance budget (searches/day from `config` table)
 - Webhook endpoints: `POST /webhook/radarr`, `/webhook/sonarr` — records before/after quality on upgrades
@@ -275,7 +533,7 @@ Lightweight FastAPI service deployed **on Unraid** (192.168.1.10:8100). Runs ins
 - `GET /health` — liveness check, lists media root paths + existence
 - `GET /inventory?path=<unraid_path>[&refresh=true]` — flat list of all video files under path; 30-min cache per path. Used by gap scanner, duplicate scanner. Response: `{ "items": [{ "path": "/mnt/user/Media/Movies/<folder>/<file>", "title", "size_bytes", "resolution", "source", "hdr", "audio_codec", ... }] }`
 - `GET /scan[?refresh=true]` — full duplicate scan across all libraries; 30-min cache. Returns grouped duplicates for Curatorr UI
-- `POST /delete` — delete files by path (validates against allowed prefixes, no symlink traversal)
+- `POST /delete` — delete files by path (validates against allowed prefixes, no symlink traversal). **Fixed and deployed 2026-07-02**: the prefix check used to run against the raw input path, and the symlink check only looked at whether the leaf itself was a symlink — a symlinked *intermediate* directory in the path could escape the allowed roots without tripping either check. Now resolves the full realpath first and checks that against the allowed prefixes, matching `/inventory`'s already-correct pattern.
 
 **Auth**: `X-Api-Key` header, shared secret `AGENT_API_KEY` / `UNRAID_AGENT_API_KEY`
 
@@ -283,12 +541,15 @@ Lightweight FastAPI service deployed **on Unraid** (192.168.1.10:8100). Runs ins
 
 **Media roots**: `/mnt/user/Media/Movies`, `/mnt/user/Media/4K Movies`, `/mnt/user/Media/TV Shows`, `/mnt/user/Media/4K TV Shows`
 
-**Deployment** (on Unraid via SSH):
+**Deployment — SSH access to Unraid IS available from Mother, use it directly (do not ask the user to do this manually, do not just flag a fix as "needs manual deployment"):**
 ```bash
-ssh -i ~/.ssh/unraid_key root@192.168.1.10
-cd /boot/config/plugins/compose.manager/projects/unraid-agent
-docker compose up -d
+ssh -i ~/.ssh/unraid_key root@192.168.1.10 "echo test"        # verify connectivity first
+scp -i ~/.ssh/unraid_key services/unraid-agent/app.py \
+    root@192.168.1.10:/boot/config/plugins/compose.manager/projects/unraid-agent/app.py
+ssh -i ~/.ssh/unraid_key root@192.168.1.10 \
+    "cd /boot/config/plugins/compose.manager/projects/unraid-agent && docker compose build && docker compose up -d"
 ```
+Before overwriting `app.py` on Unraid, diff it against this repo's copy first (`diff <(ssh ... cat app.py) services/unraid-agent/app.py`) to confirm there's no Unraid-side-only drift before clobbering it. This is the *only* service in the project not managed by Mother's own `docker compose` — everything else (`sync-webhook`, `upgraderr`, `curatorr`, all *arr instances) rebuilds/redeploys locally via `docker compose build/up` from `/opt/mother`.
 
 **Port**: 8100. Accessible from Mother at `http://192.168.1.10:8100` over VPN.
 
@@ -479,7 +740,7 @@ Analysis scripts use: `tqdm` (optional, for progress bars). Some scripts use `pa
 - The webhook service translates container paths → NFS mount paths → Unraid destination paths. Path mapping logic is in `app.py`.
 - Quality scoring follows TRASHGuides preferences: HDR formats, Atmos audio, Remux sources. At 1080p, audio quality trumps HDR.
 - Generated sync scripts (in `reports/`) are timestamped and executable. They contain rsync commands with `--ignore-existing`.
-- Movie batch sync is **disabled** via `/opt/mother/DISABLE_MOVIE_SYNC` sentinel file.
-- TV batch sync screen (`tvsync`) completed Jun 17 2026. The screen session can be closed; nightly gap scanner handles ongoing TV sync.
-- `/opt/mother/PAUSE_DEDUP` sentinel **should exist while any batch sync is running**. Remove only after batch sync completes and gap scanner has had one clean verification run.
+- Movie batch sync is **disabled** via `/opt/mother/DISABLE_MOVIE_SYNC` sentinel file. Read by `scripts/check-sync-health.sh` and `scripts/start-sync-screens.sh` — prevents the obsolete `movie` batch-sync screen from being restarted. Does not affect webhooks, gap scanner, or reconcile.
+- TV batch sync screen (`tvsync`) completed Jun 17 2026, disabled the same way via `/opt/mother/DISABLE_TV_SYNC` sentinel (same two scripts). The screen session can be closed; nightly gap scanner handles ongoing TV sync.
+- `/opt/mother/PAUSE_DEDUP` sentinel **should exist while any batch sync is running**. Remove only after batch sync completes and gap scanner has had one clean verification run. **Status as of 2026-07-02: this sentinel has been present continuously since 2026-06-17 — Unraid dedup has not run in 2+ weeks.** Batch sync completed and verified long ago; whether to remove it is Ali's call given the June dedup mass-deletion incident, not something to do unilaterally.
 - Dedup now runs at 8:00 AM ET (not midnight) — see Dedup Safety Controls section above.
