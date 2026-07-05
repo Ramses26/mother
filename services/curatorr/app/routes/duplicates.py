@@ -12,7 +12,10 @@ from pydantic import BaseModel
 from typing import List
 from app.auth import require_auth
 from app.database import get_db, get_config
-from app.config import RADARR_INSTANCES, synology_to_unraid_path, UNRAID_MEDIA_PATH, UNRAID_AGENT_URL, UNRAID_AGENT_API_KEY
+from app.config import (
+    RADARR_INSTANCES, SONARR_INSTANCES, synology_to_unraid_path,
+    UNRAID_MEDIA_PATH, UNRAID_AGENT_URL, UNRAID_AGENT_API_KEY,
+)
 
 router = APIRouter()
 log = logging.getLogger('curatorr.routes.duplicates')
@@ -477,6 +480,119 @@ def _fetch_unraid_agent_scan(refresh: bool = False) -> dict | None:
         return None
 
 
+def _norm_title(title: str) -> str:
+    t = re.sub(r'\s*\(\d{4}\)\s*$', '', title)
+    t = t.lower().replace('&', ' and ')
+    return re.sub(r'[^a-z0-9]+', '', t)
+
+
+def _fetch_radarr_tracked(inst_name: str) -> dict:
+    """normalized movie title -> Radarr's currently tracked filename (lowercase).
+
+    Raises on fetch failure rather than returning {} — an empty dict must mean
+    "Radarr genuinely tracks nothing," never "the fetch failed," or the caller's
+    Profile Authority correction silently no-ops instead of visibly failing."""
+    inst = next((i for i in RADARR_INSTANCES if i['name'] == inst_name), None)
+    if not inst:
+        raise RuntimeError(f"Radarr instance not configured: {inst_name}")
+    with httpx.Client(timeout=60) as client:
+        r = client.get(f"{inst['url']}/api/v3/movie", headers={'X-Api-Key': inst['api_key']})
+        r.raise_for_status()
+        movies = r.json()
+    out = {}
+    for m in movies:
+        mf = m.get('movieFile')
+        if mf and mf.get('relativePath'):
+            out[_norm_title(m['title'])] = os.path.basename(mf['relativePath']).lower()
+    return out
+
+
+def _fetch_sonarr_tracked(inst_name: str) -> dict:
+    """(tvdbId, 'S####E####') -> Sonarr's currently tracked episode filename (lowercase).
+
+    Raises on fetch failure rather than returning {} — an empty dict must mean
+    "Sonarr genuinely tracks nothing," never "the fetch failed," or the caller's
+    Profile Authority correction silently no-ops instead of visibly failing. Per-
+    series episode-list failures inside the loop below are tolerated (skip that one
+    series) since that's genuine partial data, not a full fetch failure."""
+    inst = next((i for i in SONARR_INSTANCES if i['name'] == inst_name), None)
+    if not inst:
+        raise RuntimeError(f"Sonarr instance not configured: {inst_name}")
+    with httpx.Client(timeout=60) as client:
+        r = client.get(f"{inst['url']}/api/v3/series", headers={'X-Api-Key': inst['api_key']})
+        r.raise_for_status()
+        series_list = r.json()
+    out = {}
+    with httpx.Client(timeout=60) as client:
+        for s in series_list:
+            tvdb_id = s.get('tvdbId')
+            if not tvdb_id:
+                continue
+            try:
+                r = client.get(f"{inst['url']}/api/v3/episode",
+                                params={'seriesId': s['id'], 'includeEpisodeFile': 'true'},
+                                headers={'X-Api-Key': inst['api_key']})
+                r.raise_for_status()
+                episodes = r.json()
+            except Exception:
+                continue
+            for ep in episodes:
+                ef = ep.get('episodeFile')
+                if not ef or not ef.get('relativePath'):
+                    continue
+                key = (tvdb_id, f"S{ep.get('seasonNumber', 0):04d}E{ep.get('episodeNumber', 0):04d}")
+                out[key] = os.path.basename(ef['relativePath']).lower()
+    return out
+
+
+def _enforce_profile_authority(groups: list, tracked_by_title: dict = None,
+                                tracked_by_episode: dict = None, media_type: str = 'movie') -> None:
+    """Re-rank each duplicate group in place so the file Radarr/Sonarr is currently
+    tracking is always first (kept), regardless of raw TRaSH score — see CLAUDE.md
+    Profile Authority. Without this, a stray higher-scoring orphan (e.g. a leftover
+    Remux from before a profile was assigned) would be marked "keep" and the actively
+    tracked, profile-compliant file would be marked deletable — the exact mistake
+    that caused the 2026-07 sync-webhook incident, just via the duplicate scanner
+    instead of the reconcile job. Confirmed live 2026-07-02: 32 of 305 Unraid HD
+    movie duplicate groups had this exact mismatch before this fix.
+    """
+    for grp in groups:
+        versions = grp.get('versions') or []
+        if len(versions) < 2:
+            continue
+
+        tracked_fname = None
+        if media_type == 'movie' and tracked_by_title is not None:
+            tracked_fname = tracked_by_title.get(_norm_title(grp['title']))
+        elif media_type == 'tv' and tracked_by_episode is not None:
+            m = re.search(r'\{tvdb-(\d+)\}', grp.get('title', ''))
+            if m:
+                tracked_fname = tracked_by_episode.get((int(m.group(1)), grp.get('episode', '')))
+        if not tracked_fname:
+            continue
+
+        tracked_idx = next(
+            (i for i, v in enumerate(versions) if v['filename'].lower() == tracked_fname), None
+        )
+        if tracked_idx is None:
+            continue  # not present in this group
+        if tracked_idx == 0:
+            # Already ranked first by raw score — no reorder needed, but Profile
+            # Authority is still the reason it's kept, so the UI badge should say
+            # so rather than defaulting to "kept: highest score" for this common case.
+            versions[0]['kept_reason'] = 'profile_authority'
+            continue
+
+        tracked_version = versions.pop(tracked_idx)
+        tracked_version['kept_reason'] = 'profile_authority'
+        versions.insert(0, tracked_version)
+        grp['versions'] = versions
+        grp['deletable_size_bytes'] = sum(
+            v['file_size_bytes'] for v in versions[1:]
+            if v.get('safe_to_delete', True)
+        )
+
+
 def _do_filesystem_scan(refresh_unraid: bool = False) -> dict:
     _refresh_unraid = refresh_unraid
     """
@@ -530,6 +646,29 @@ def _do_filesystem_scan(refresh_unraid: bool = False) -> dict:
     else:
         result['unraid_agent'] = {'ok': False, 'error': 'Agent unreachable or not configured'}
         log.warning('Unraid agent scan unavailable — Unraid tabs will show placeholder')
+
+    # ── Profile Authority correction ──────────────────────────────────────────
+    # Neither the Synology scan (pure filesystem) nor the Unraid Agent scan (also
+    # pure filesystem) know what Radarr/Sonarr currently tracks — they only sort by
+    # raw TRaSH score. Re-rank every group here so the actively-tracked file always
+    # wins, regardless of score. See _enforce_profile_authority() docstring.
+    try:
+        radarr_hd_tracked = _fetch_radarr_tracked('radarr-hd')
+        radarr_4k_tracked = _fetch_radarr_tracked('radarr-4k')
+        sonarr_hd_tracked = _fetch_sonarr_tracked('sonarr-hd')
+        sonarr_4k_tracked = _fetch_sonarr_tracked('sonarr-4k')
+        for src in ('synology', 'unraid'):
+            _enforce_profile_authority(result[src]['hd_movies'], tracked_by_title=radarr_hd_tracked, media_type='movie')
+            _enforce_profile_authority(result[src]['4k_movies'], tracked_by_title=radarr_4k_tracked, media_type='movie')
+            _enforce_profile_authority(result[src]['hd_tv'], tracked_by_episode=sonarr_hd_tracked, media_type='tv')
+            _enforce_profile_authority(result[src]['4k_tv'], tracked_by_episode=sonarr_4k_tracked, media_type='tv')
+        result['profile_authority'] = {'ok': True}
+    except Exception as e:
+        # Visible in the response, not just the server log — a human reviewing this
+        # scan before a bulk delete needs to know raw-score ranking is unverified
+        # against Radarr/Sonarr's tracked files right now, not just silently trust it.
+        log.error(f"Profile Authority correction failed (scan proceeds with raw-score ranking): {e}")
+        result['profile_authority'] = {'ok': False, 'error': str(e)}
 
     result['summary'] = {
         src: {

@@ -45,6 +45,7 @@ with open(_SCORING_PATH) as _f:
     _SC = json.load(_f)
 _SC_RES   = _SC['resolution']
 _SC_SRC   = _SC['source']
+_SC_SRC_TV = _SC.get('tv_source', _SC_SRC)
 _SC_CF    = _SC['custom_formats']
 _RG_RE    = re.compile(r'-([A-Za-z][A-Za-z0-9]{1,14})\.(mkv|mp4|avi|m4v|ts|m2ts)$', re.IGNORECASE)
 MAX_CONCURRENT_SYNCS = int(os.environ.get('SYNC_MAX_CONCURRENT', '2'))
@@ -632,7 +633,8 @@ def recover_interrupted_jobs():
                             job.get('quality', 'Unknown'),
                             job.get('file_size', 0),
                             "Movie" if job['job_type'] == 'movie' else "Episode",
-                            retry_count
+                            retry_count,
+                            delete_after_sync=job.get('delete_after_sync')
                         )
                         startup_queued += 1
                     # Remaining jobs stay as 'failed' and will be picked up
@@ -705,7 +707,8 @@ def recover_interrupted_jobs():
                         job.get('quality', 'Unknown'),
                         job.get('file_size', 0),
                         "Movie" if job['job_type'] == 'movie' else "Episode",
-                        retry_count
+                        retry_count,
+                        delete_after_sync=job.get('delete_after_sync')
                     )
 
         return len(interrupted_jobs) + len(unresolved_jobs) if unresolved_jobs else len(interrupted_jobs)
@@ -1235,12 +1238,22 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
     logger.info(f"Background sync thread started for: {title}")
 
 
-def background_sync_with_retry(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, retry_count: int = 0):
-    """Wrapper for background_sync that handles retry count"""
+def background_sync_with_retry(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, retry_count: int = 0, delete_after_sync: str = None):
+    """Wrapper for background_sync that handles retry count.
+
+    Must forward delete_after_sync — this is used exclusively by the startup
+    recovery path (recover_interrupted_jobs) to re-queue jobs that were pending/
+    in_progress/failed when the container restarted. Version/reverse-sync jobs
+    carry a delete_after_sync target (the old file to remove once the new one
+    lands); dropping it here silently turns a version-replacement into a copy-only
+    job, leaving the old file behind. The next night's reconcile then re-detects
+    that leftover as a fresh "mismatch" and queues another sync to clean it up —
+    a full extra day's delay every time a restart interrupts one of these jobs.
+    """
     # Clean up title if it has retry prefix
     clean_title = title.replace('[RETRY] ', '').replace('[RETRY]', '')
     background_sync(source, dest, clean_title, quality, file_size, media_type,
-                   dest_base=None, retry_count=retry_count)
+                   dest_base=None, retry_count=retry_count, delete_after_sync=delete_after_sync)
 
 
 def get_job_counts():
@@ -1777,11 +1790,19 @@ def _get_unraid_movie_folders() -> set:
     return folders
 
 
-def _score_filename(filename: str, size_bytes: int = 0) -> int:
+def _score_filename(filename: str, size_bytes: int = 0, media_type: str = 'movie') -> int:
     """TRaSH-aligned quality score from a media filename.
     Scores loaded from configs/scoring/trash_scoring.json (shared with curatorr).
-    Higher score wins in version reconcile comparisons."""
+    Higher score wins in version reconcile comparisons.
+
+    media_type='tv' uses the TV source ranking (WEB-DL > Bluray) instead of the
+    movie ranking (Bluray > WEB-DL) — TV intentionally differs, per
+    scripts/lib/quality_scoring.py's TV_SOURCE_SCORES and CLAUDE.md. Fixed
+    2026-07-02: reconcile_tv_versions() was previously using the movie ranking for
+    TV episodes too, which could pick the wrong side in a Bluray-vs-WEB-DL comparison.
+    """
     name = filename.lower()
+    src_table = _SC_SRC_TV if media_type == 'tv' else _SC_SRC
 
     # Resolution — explicit pixel-count tags first so "[4K Remaster]" edition labels
     # don't override the actual quality tag "[Remux-1080p]"
@@ -1798,11 +1819,11 @@ def _score_filename(filename: str, size_bytes: int = 0) -> int:
 
     # Source
     src_score = 0
-    if re.search(r'\bremux\b', name):                           src_score = _SC_SRC['remux']
-    elif re.search(r'\b(bluray|blu-ray|bdrip|bdremux)\b', name): src_score = _SC_SRC['bluray']
-    elif re.search(r'\b(web-dl|webdl)\b', name):                src_score = _SC_SRC['web_dl']
-    elif re.search(r'\bwebrip\b', name):                        src_score = _SC_SRC['webrip']
-    elif re.search(r'\bhdtv\b', name):                          src_score = _SC_SRC['hdtv']
+    if re.search(r'\bremux\b', name):                           src_score = src_table['remux']
+    elif re.search(r'\b(bluray|blu-ray|bdrip|bdremux)\b', name): src_score = src_table['bluray']
+    elif re.search(r'\b(web-dl|webdl)\b', name):                src_score = src_table['web_dl']
+    elif re.search(r'\bwebrip\b', name):                        src_score = src_table['webrip']
+    elif re.search(r'\bhdtv\b', name):                          src_score = src_table['hdtv']
 
     # HDR — longer tags checked first to avoid partial matches
     hdr_score = 0
@@ -2116,8 +2137,8 @@ def reconcile_tv_versions():
                     syn_size = f_entry.stat().st_size
                 except OSError:
                     syn_size = 0
-                syn_score = _score_filename(fname, syn_size)
-                unraid_score = _score_filename(unraid_fname, unraid_size)
+                syn_score = _score_filename(fname, syn_size, media_type='tv')
+                unraid_score = _score_filename(unraid_fname, unraid_size, media_type='tv')
                 display_title = f"{show_name} - {ep_key}"
 
                 if syn_score > unraid_score:
@@ -2154,11 +2175,15 @@ def reconcile_tv_versions():
     syn_tv_base = '/mnt/synology/rs-tv'
     queued = 0
     queued_titles = []
+    queued_syn_better = 0
+    queued_unraid_better = 0
+    deferred = 0
 
     for mismatch in mismatches:
         if queued >= VERSION_SYNC_MAX_PER_RUN:
+            deferred = len(mismatches) - queued
             logger.info(f"TV version reconcile: capped at {VERSION_SYNC_MAX_PER_RUN} — "
-                        f"{len(mismatches) - queued} deferred to tomorrow")
+                        f"{deferred} deferred to tomorrow")
             break
 
         direction = mismatch[0]
@@ -2179,6 +2204,7 @@ def reconcile_tv_versions():
                 logger.info(f"[DRY RUN] TV reconcile Syn→Unraid: would replace {display_title}\n"
                             f"  old: {os.path.basename(unraid_path)}\n  new: {os.path.basename(syn_path)}")
                 queued += 1
+                queued_syn_better += 1
                 queued_titles.append(f"{display_title} [Syn→Unraid]")
                 continue
             background_sync(
@@ -2202,6 +2228,7 @@ def reconcile_tv_versions():
                 logger.info(f"[DRY RUN] TV reconcile Unraid→Syn: would replace {display_title}\n"
                             f"  old: {os.path.basename(old_syn_path)}\n  new: {os.path.basename(unraid_path)}")
                 queued += 1
+                queued_unraid_better += 1
                 queued_titles.append(f"{display_title} [Unraid→Syn]")
                 continue
             background_sync(
@@ -2214,16 +2241,22 @@ def reconcile_tv_versions():
                         f"({os.path.basename(old_syn_path)} → {os.path.basename(unraid_path)})")
 
         queued += 1
-        queued_titles.append(display_title if len(mismatch) < 5 else f"{display_title} [{direction.replace('_', '→').replace('syn', 'Syn').replace('unraid', 'Unraid')}]")
+        if direction == 'syn_to_unraid':
+            queued_syn_better += 1
+        else:
+            queued_unraid_better += 1
+        label = 'Syn→Unraid' if direction == 'syn_to_unraid' else 'Unraid→Syn'
+        queued_titles.append(f"{display_title} [{label}]")
 
     if queued > 0:
         dry = " (DRY RUN)" if VERSION_SYNC_DRY_RUN else ""
         titles_list = "\n".join(f"• {t}" for t in queued_titles[:20])
         if len(queued_titles) > 20:
             titles_list += f"\n... and {len(queued_titles) - 20} more"
+        deferred_line = f"\n{deferred} more deferred to tomorrow's run." if deferred > 0 else ""
         send_notification(
             title=f"TV Version Sync{dry}",
-            body=f"Found {queued} episode(s) with version mismatches — queued for replacement:\n({syn_better} Syn→Unraid, {unraid_better} Unraid→Syn)\n{titles_list}",
+            body=f"Found {queued} episode(s) with version mismatches — queued for replacement:\n({queued_syn_better} Syn→Unraid, {queued_unraid_better} Unraid→Syn){deferred_line}\n{titles_list}",
             notify_type=apprise.NotifyType.WARNING
         )
 
@@ -2377,32 +2410,21 @@ def reconcile_movie_versions():
             )
             continue
 
-        # ── Direction: pure TRaSH score — higher score wins regardless of tier ──────
-        # The highest-scored file across both sides is the target for both sides.
-        # "Radarr's current tracked file as authority" was wrong: it caused cross-tier
-        # cases (Unraid Remux vs Syn Bluray) to queue MovieVersionSync that would
-        # destroy Unraid's better Remux by replacing it with Synology's Bluray.
-        syn_score    = _score_filename(best_syn_fname, syn_files[0][2] if syn_files else radarr_size)
-        unraid_score = _score_filename(unraid_fname, unraid_size)
-
-        if unraid_score > syn_score:
-            unraid_cifs = unraid_path.replace('/mnt/user/Media/', '/mnt/unraid/media/', 1)
-            syn_folder  = os.path.join(synology_movies_nfs, movie_folder)
-            old_syn     = best_syn_path if syn_files else None
-            logger.info(
-                f"Movie version reconcile: Unraid has better version — "
-                f"queuing Unraid→Syn for '{movie_folder}' "
-                f"({unraid_fname!r} score={unraid_score} > {best_syn_fname!r} score={syn_score})"
-            )
-            mismatches.append(('unraid_to_syn', unraid_cifs, syn_folder, movie_folder, quality, old_syn))
-            continue
-        elif syn_score == unraid_score:
-            logger.info(
-                f"Movie version reconcile: scores equal, skipping '{movie_folder}' "
-                f"({best_syn_fname!r} == {unraid_fname!r} score={syn_score})"
-            )
-            continue
-        # else: syn_score > unraid_score → Syn wins → fall through to forward sync
+        # ── Direction: PROFILE AUTHORITY — Radarr's tracked file always wins ────────
+        # See CLAUDE.md "Profile Authority" section. Reverted 2026-07-02: commit
+        # ae46ea1 (2026-06-27) replaced this with "highest TRaSH score wins,
+        # regardless of tier" — reasoning it was protecting Unraid's "better" Remux
+        # from being overwritten by Synology's Bluray. That's backwards: if Radarr's
+        # profile doesn't want Remux, Unraid's Remux is the anomaly, not the target.
+        # That commit queued 250+ Unraid→Synology reverse syncs that restored old
+        # Remuxes over Upgraderr's legitimate profile-compliant upgrades (391
+        # succeeded total before this revert) — including deleting the exact files
+        # Upgraderr had just correctly grabbed for Varsity Blues and Mazinger Z,
+        # which is what re-triggered Tier 7 and caused those incidents to repeat.
+        # No score comparison here — Synology (Radarr) is simply always the target.
+        # The only legitimate reverse-sync case is below: Radarr's tracked file is
+        # genuinely missing from Synology's filesystem (real drift, not a quality
+        # difference).
 
         if not os.path.isfile(nfs_path):
             # Radarr's file is missing from Synology NFS — look up exact filename in Agent
@@ -2450,11 +2472,15 @@ def reconcile_movie_versions():
     syn_movies_base = '/mnt/synology/rs-movies'
     queued = 0
     queued_titles = []
+    queued_syn_better = 0
+    queued_unraid_better = 0
+    deferred = 0
 
     for mismatch in mismatches:
         if queued >= VERSION_SYNC_MAX_PER_RUN:
+            deferred = len(mismatches) - queued
             logger.info(f"Movie version reconcile: capped at {VERSION_SYNC_MAX_PER_RUN} — "
-                        f"{len(mismatches) - queued} deferred to tomorrow")
+                        f"{deferred} deferred to tomorrow")
             break
 
         direction = mismatch[0]
@@ -2474,6 +2500,7 @@ def reconcile_movie_versions():
                             f"  old: {os.path.basename(unraid_path)}\n"
                             f"  new: {os.path.basename(syn_path)}  [{radarr_quality}]")
                 queued += 1
+                queued_syn_better += 1
                 queued_titles.append(f"{movie_folder} [{radarr_quality}] [Syn→Unraid]")
                 continue
             background_sync(
@@ -2498,6 +2525,7 @@ def reconcile_movie_versions():
                 logger.info(f"[DRY RUN] Movie reconcile Unraid→Syn: would replace {movie_folder}\n"
                             f"  old: {old_name}\n  new: {os.path.basename(unraid_path)}  [{radarr_quality}]")
                 queued += 1
+                queued_unraid_better += 1
                 queued_titles.append(f"{movie_folder} [{radarr_quality}] [Unraid→Syn]")
                 continue
             background_sync(
@@ -2511,6 +2539,10 @@ def reconcile_movie_versions():
 
         queued += 1
         label = 'Syn→Unraid' if direction == 'syn_to_unraid' else 'Unraid→Syn'
+        if direction == 'syn_to_unraid':
+            queued_syn_better += 1
+        else:
+            queued_unraid_better += 1
         queued_titles.append(f"{movie_folder} [{radarr_quality}] [{label}]")
 
     if queued > 0:
@@ -2518,9 +2550,10 @@ def reconcile_movie_versions():
         titles_list = "\n".join(f"• {t}" for t in queued_titles[:20])
         if len(queued_titles) > 20:
             titles_list += f"\n... and {len(queued_titles) - 20} more"
+        deferred_line = f"\n{deferred} more deferred to tomorrow's run." if deferred > 0 else ""
         send_notification(
             title=f"Movie Version Sync{dry}",
-            body=f"Found {queued} movie(s) with version mismatches — queued for replacement:\n({syn_better} Syn→Unraid, {unraid_better} Unraid→Syn)\n{titles_list}",
+            body=f"Found {queued} movie(s) with version mismatches — queued for replacement:\n({queued_syn_better} Syn→Unraid, {queued_unraid_better} Unraid→Syn){deferred_line}\n{titles_list}",
             notify_type=apprise.NotifyType.WARNING
         )
 
@@ -2674,6 +2707,104 @@ def nightly_library_report():
     logger.info(f"Library report: sent — {len(missing_movies)} missing movies, {total_missing_eps} missing TV eps")
 
 
+def _dedup_norm_title(title: str) -> str:
+    t = re.sub(r'\s*\(\d{4}\)\s*$', '', title)
+    t = t.lower().replace('&', ' and ')
+    return re.sub(r'[^a-z0-9]+', '', t)
+
+
+def _dedup_fetch_radarr_tracked(url: str, api_key: str) -> dict:
+    """normalized movie title -> Radarr's currently tracked filename (lowercase).
+
+    Raises on fetch failure (not api_key missing/unconfigured, which legitimately
+    returns {}) rather than swallowing it — an empty dict must mean "Radarr tracks
+    nothing," never "the fetch failed," or the caller's fail-closed abort
+    (nightly_unraid_dedup) never actually triggers."""
+    if not api_key:
+        return {}
+    r = requests.get(f"{url}/api/v3/movie", headers={'X-Api-Key': api_key}, timeout=60)
+    r.raise_for_status()
+    movies = r.json()
+    out = {}
+    for m in movies:
+        mf = m.get('movieFile')
+        if mf and mf.get('relativePath'):
+            out[_dedup_norm_title(m['title'])] = os.path.basename(mf['relativePath']).lower()
+    return out
+
+
+def _dedup_fetch_sonarr_tracked(url: str, api_key: str) -> dict:
+    """(tvdbId, 'S####E####') -> Sonarr's currently tracked episode filename (lowercase).
+
+    Raises on fetch failure (not api_key missing/unconfigured, which legitimately
+    returns {}) rather than swallowing it — see _dedup_fetch_radarr_tracked. Per-
+    series episode-list failures inside the loop below are tolerated (skip that one
+    series) since that's genuine partial data, not a full fetch failure."""
+    if not api_key:
+        return {}
+    r = requests.get(f"{url}/api/v3/series", headers={'X-Api-Key': api_key}, timeout=60)
+    r.raise_for_status()
+    series_list = r.json()
+    out = {}
+    for s in series_list:
+        tvdb_id = s.get('tvdbId')
+        if not tvdb_id:
+            continue
+        try:
+            r = requests.get(f"{url}/api/v3/episode",
+                              params={'seriesId': s['id'], 'includeEpisodeFile': 'true'},
+                              headers={'X-Api-Key': api_key}, timeout=60)
+            r.raise_for_status()
+            episodes = r.json()
+        except Exception:
+            continue
+        for ep in episodes:
+            ef = ep.get('episodeFile')
+            if not ef or not ef.get('relativePath'):
+                continue
+            key = (tvdb_id, f"S{ep.get('seasonNumber', 0):04d}E{ep.get('episodeNumber', 0):04d}")
+            out[key] = os.path.basename(ef['relativePath']).lower()
+    return out
+
+
+def _dedup_enforce_profile_authority(groups: list, tracked_by_title: dict = None,
+                                      tracked_by_episode: dict = None, media_type: str = 'movie') -> None:
+    """Re-rank each duplicate group in place so the file Radarr/Sonarr is currently
+    tracking is always first (kept), regardless of raw TRaSH score — see CLAUDE.md
+    Profile Authority. Without this, the automatic nightly dedup could delete the
+    actively-tracked, profile-compliant file and keep a higher-scoring orphan (e.g. a
+    leftover Remux from before a profile was assigned) — confirmed live 2026-07-02:
+    32 of 305 Unraid HD movie duplicate groups had exactly this mismatch before this
+    fix (found via the equivalent fix in curatorr/routes/duplicates.py — mirrored
+    here since this dedup job calls the Unraid Agent directly, not through Curatorr).
+    """
+    for grp in groups:
+        versions = grp.get('versions') or []
+        if len(versions) < 2:
+            continue
+
+        tracked_fname = None
+        if media_type == 'movie' and tracked_by_title is not None:
+            tracked_fname = tracked_by_title.get(_dedup_norm_title(grp['title']))
+        elif media_type == 'tv' and tracked_by_episode is not None:
+            m = re.search(r'\{tvdb-(\d+)\}', grp.get('title', ''))
+            if m:
+                tracked_fname = tracked_by_episode.get((int(m.group(1)), grp.get('episode', '')))
+        if not tracked_fname:
+            continue
+
+        tracked_idx = next(
+            (i for i, v in enumerate(versions) if v['filename'].lower() == tracked_fname), None
+        )
+        if tracked_idx is None or tracked_idx == 0:
+            continue
+
+        tracked_version = versions.pop(tracked_idx)
+        tracked_version['kept_reason'] = 'profile_authority'
+        versions.insert(0, tracked_version)
+        grp['versions'] = versions
+
+
 def nightly_unraid_dedup():
     """
     Nightly Unraid duplicate cleanup.
@@ -2789,6 +2920,26 @@ def nightly_unraid_dedup():
         logger.error(f"Unraid dedup: Agent scan failed: {e}")
         return
 
+    # ── Profile Authority correction ──────────────────────────────────────────
+    # The Unraid Agent's scan is pure filesystem + raw TRaSH score — it doesn't know
+    # what Radarr/Sonarr currently track. Re-rank every group so the actively-tracked
+    # file always wins before deciding what's deletable. See CLAUDE.md Profile
+    # Authority and _dedup_enforce_profile_authority()'s docstring.
+    try:
+        radarr_hd_tracked = _dedup_fetch_radarr_tracked(RADARR_HD_URL, RADARR_HD_API_KEY)
+        radarr_4k_tracked = _dedup_fetch_radarr_tracked(RADARR_4K_URL, RADARR_4K_API_KEY)
+        sonarr_hd_tracked = _dedup_fetch_sonarr_tracked(SONARR_HD_URL, SONARR_HD_API_KEY)
+        sonarr_4k_tracked = _dedup_fetch_sonarr_tracked(SONARR_4K_URL, SONARR_4K_API_KEY)
+        unraid_groups = scan_data.get('unraid', {})
+        _dedup_enforce_profile_authority(unraid_groups.get('hd_movies', []), tracked_by_title=radarr_hd_tracked, media_type='movie')
+        _dedup_enforce_profile_authority(unraid_groups.get('4k_movies', []), tracked_by_title=radarr_4k_tracked, media_type='movie')
+        _dedup_enforce_profile_authority(unraid_groups.get('hd_tv', []), tracked_by_episode=sonarr_hd_tracked, media_type='tv')
+        _dedup_enforce_profile_authority(unraid_groups.get('4k_tv', []), tracked_by_episode=sonarr_4k_tracked, media_type='tv')
+    except Exception as e:
+        logger.error(f"Unraid dedup: Profile Authority correction failed — aborting run rather than risk deleting an actively-tracked file: {e}")
+        send_notification(title="Unraid Dedup ABORTED", body=f"Profile Authority correction failed: {e}", notify_type=apprise.NotifyType.FAILURE)
+        return
+
     total_deleted = 0
     total_freed = 0
     errors = []
@@ -2821,7 +2972,9 @@ def nightly_unraid_dedup():
         versions = group.get('versions', [])
         if len(versions) < 2:
             continue
-        # versions[0] is best quality (sorted desc by trash_score in Agent)
+        # versions[0] is the keeper — either Radarr/Sonarr's actively-tracked file
+        # (Profile Authority correction above) or, absent a tracked-file match,
+        # highest raw TRaSH score as sorted by the Agent.
         for version in versions[1:]:
             if not version.get('safe_to_delete', True):
                 logger.debug(f"Dedup: skipping unsafe {version.get('file_path')}")
@@ -3048,10 +3201,10 @@ scheduler.add_job(
     minute=15,
     timezone='America/New_York',
     id='tv_version_reconcile',
-    name='Nightly TV version reconcile (score-gated: Synology score > Unraid score only)',
+    name='Nightly TV version reconcile (TV-specific scoring picks direction; 720p excluded both ways)',
     replace_existing=True
 )
-logger.info("TV version reconcile enabled (score-gated + quality-filtered) - runs nightly at 11:15 PM ET")
+logger.info("TV version reconcile enabled (TV-specific scoring: WEB-DL > Bluray, fixed 2026-07-02) - runs nightly at 11:15 PM ET")
 
 # Movie gap scanner — nightly at 11:30 PM ET (after TV reconcile, before library report)
 scheduler.add_job(
@@ -3066,18 +3219,21 @@ scheduler.add_job(
 logger.info("Library gap scanner enabled - runs nightly at 11:30 PM ET")
 
 # Movie version reconcile — nightly at 11:45 PM ET (after movie gap scan).
-# Score-gated: only replaces Unraid's file if Radarr's file scores HIGHER.
-# Unraid copies that score >= Radarr's file are left alone (Upgraderr upgrades Synology first).
+# Profile Authority, not a score gate: Radarr's tracked file always wins and gets
+# pushed to Unraid, even if Unraid's current file scores higher raw TRaSH (e.g.
+# Unraid holds a Remux, Radarr tracks Bluray-1080p because that's the assigned
+# profile). See CLAUDE.md "Profile Authority" section. (Comment corrected 2026-07-02
+# — it previously described a score gate that was removed; see reconcile_movie_versions() docstring.)
 scheduler.add_job(
     func=reconcile_movie_versions,
     trigger='cron',
     hour=23,
     minute=45,
     id='movie_version_reconcile',
-    name='Nightly movie version reconcile (score-gated: Radarr score > Unraid score only)',
+    name='Nightly movie version reconcile (Profile Authority — Radarr file always wins)',
     replace_existing=True
 )
-logger.info("Movie version reconcile enabled (score-gated) - runs nightly at 11:45 PM ET")
+logger.info("Movie version reconcile enabled (Profile Authority) - runs nightly at 11:45 PM ET")
 
 # Library health report — nightly at 12:15 AM ET (after both gap scans)
 scheduler.add_job(

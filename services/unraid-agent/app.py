@@ -499,12 +499,26 @@ def delete_files(body: DeleteRequest, request: Request, x_api_key: str = Header(
     caller_ip = request.client.host if request.client else ''
 
     for path in body.paths:
-        # Safety: must be under an allowed media prefix (not the root itself)
-        safe = any(path.startswith(p) for p in _ALLOWED_DELETE_PREFIXES)
+        # Safety: resolve the full real path (following any symlinked intermediate
+        # directories, not just checking if the leaf itself is a symlink) and check
+        # THAT against the allowed prefixes. Checking the raw input path allowed a
+        # symlinked intermediate directory to escape the allowed roots even though
+        # os.path.islink() on the leaf alone would pass — fixed 2026-07-02.
+        #
+        # Deliberately does NOT allow real_path to equal an allowed prefix root itself
+        # (unlike /inventory's check above, which does) — for a read-only listing,
+        # allowing the bare root is harmless, but for delete it would let a single
+        # call to /delete with path="/mnt/user/Media/Movies" pass this check and
+        # shutil.rmtree() the entire library. A bug matching this exact shape was
+        # found and fixed 2026-07-05 (had been copied from /inventory's pattern
+        # without accounting for the different risk profile) — never reintroduce the
+        # equality branch here.
+        real_path = os.path.realpath(path)
+        safe = any(real_path.startswith(os.path.realpath(p) + os.sep)
+                   for p in _ALLOWED_DELETE_PREFIXES)
         if not safe:
             errors.append({'path': path, 'error': 'Path outside allowed media roots'})
             continue
-        # No symlink traversal
         if os.path.islink(path):
             errors.append({'path': path, 'error': 'Refusing to delete symlink'})
             continue

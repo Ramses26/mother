@@ -45,6 +45,14 @@
           <button @click="load(tab, false)" :disabled="scanning" class="ml-2 text-violet-400 hover:text-violet-300 underline disabled:opacity-40">force refresh</button>
         </div>
 
+        <!-- Profile Authority correction failed — "kept" picks below are raw-score only, unverified against Radarr/Sonarr -->
+        <div v-if="scanData?.profile_authority?.ok === false"
+          class="mb-5 p-3 rounded-lg bg-red-900/20 border border-red-700/50 text-xs text-red-400">
+          ⚠️ Profile Authority check against Radarr/Sonarr failed this scan — "Keep" picks below reflect raw TRaSH score
+          only and have NOT been verified against what Radarr/Sonarr actually track. Review carefully before bulk-deleting.
+          <span class="text-red-300">({{ scanData.profile_authority.error }})</span>
+        </div>
+
         <!-- Agent unavailable notice for Unraid tabs -->
         <div v-if="currentTab.server === 'unraid' && scanData?.unraid_agent?.ok === false"
           class="text-center py-16 text-slate-500">
@@ -130,9 +138,16 @@
                         </div>
                       </div>
 
-                      <div class="flex-shrink-0 self-start pt-0.5">
+                      <div class="flex-shrink-0 self-start pt-0.5 text-right">
                         <span v-if="idx === 0" class="text-green-500 text-xs font-medium">Keep</span>
                         <span v-else class="text-red-400 text-xs">Delete</span>
+                        <div v-if="idx === 0" class="text-[10px] mt-0.5"
+                          :class="v.kept_reason === 'profile_authority' ? 'text-violet-400' : 'text-slate-500'"
+                          :title="v.kept_reason === 'profile_authority'
+                            ? 'Radarr/Sonarr tracks this exact file — kept regardless of TRaSH score'
+                            : 'Kept because it has the highest TRaSH score'">
+                          {{ v.kept_reason === 'profile_authority' ? 'kept: tracked file' : 'kept: highest score' }}
+                        </div>
                       </div>
                     </div>
                   </div>

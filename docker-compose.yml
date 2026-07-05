@@ -172,6 +172,7 @@ services:
       - ${CONFIG_PATH}/radarr-4k:/config
       - ${MOVIES_4K_PATH}:/movies-4k
       - ${DOWNLOADS_PATH}:/downloads
+      - ${DELETED_MOVIES_4K_PATH}:/deleted-movies-4k
     ports:
       - "${RADARR_4K_PORT}:7878"
     restart: unless-stopped
@@ -191,6 +192,7 @@ services:
       - ${CONFIG_PATH}/sonarr-hd:/config
       - ${TV_PATH}:/tv
       - ${DOWNLOADS_PATH}:/downloads
+      - ${DELETED_TV_PATH}:/deleted-tv
     ports:
       - "${SONARR_HD_PORT}:8989"
     restart: unless-stopped
@@ -210,6 +212,7 @@ services:
       - ${CONFIG_PATH}/sonarr-4k:/config
       - ${TV_4K_PATH}:/tv-4k
       - ${DOWNLOADS_PATH}:/downloads
+      - ${DELETED_TV_4K_PATH}:/deleted-tv-4k
     ports:
       - "${SONARR_4K_PORT}:8989"
     restart: unless-stopped
@@ -556,6 +559,8 @@ services:
       - /opt/mother/data/upgraderr:/data
       - /opt/mother/data/logs/upgraderr:/logs
       - /opt/mother/reports:/opt/sync_reports:ro
+      # Shared TRaSH scoring config (single source of truth across all services)
+      - /opt/mother/configs/scoring/trash_scoring.json:/app/scoring/trash_scoring.json:ro
     ports:
       - "${UPGRADERR_PORT:-9706}:5000"
     restart: unless-stopped
@@ -687,8 +692,18 @@ services:
       - UNRAID_AGENT_URL=${UNRAID_AGENT_URL:-http://192.168.1.10:8100}
       - UNRAID_AGENT_API_KEY=${UNRAID_AGENT_API_KEY:-}
       # Version reconcile caps (both directions: Syn→Unraid and Unraid→Syn)
-      - VERSION_SYNC_MAX_PER_RUN=${VERSION_SYNC_MAX_PER_RUN:-100}
+      - VERSION_SYNC_MAX_PER_RUN=${VERSION_SYNC_MAX_PER_RUN:-500}
       - VERSION_SYNC_DRY_RUN=${VERSION_SYNC_DRY_RUN:-false}
+      # Unraid dedup safety controls — these existed in .env and were documented in
+      # CLAUDE.md but were never actually wired through to the container (found
+      # 2026-07-02): the container always ran on the Python code's hardcoded
+      # defaults (200/50/false/10/24) regardless of .env. Added so .env changes
+      # actually take effect.
+      - DEDUP_SAFETY_LIMIT=${DEDUP_SAFETY_LIMIT:-200}
+      - DEDUP_MAX_PER_RUN=${DEDUP_MAX_PER_RUN:-50}
+      - DEDUP_DRY_RUN=${DEDUP_DRY_RUN:-false}
+      - DEDUP_WARN_MINUTES=${DEDUP_WARN_MINUTES:-10}
+      - DEDUP_MIN_AGE_HOURS=${DEDUP_MIN_AGE_HOURS:-24}
     volumes:
       # Synology NFS mounts (rw: source for forward sync, destination for reverse sync)
       - /mnt/synology/rs-movies:/mnt/synology/rs-movies

@@ -46,8 +46,14 @@ _SCORING_PATH = os.environ.get('TRASH_SCORING_PATH', '/app/scoring/trash_scoring
 with open(_SCORING_PATH) as _f:
     _SC = json.load(_f)
 
-def _score(filename: str, size_bytes: int = 0) -> int:
+def _score(filename: str, size_bytes: int = 0, media_type: str = 'movie') -> int:
+    """media_type='tv' uses the TV source ranking (WEB-DL > Bluray) instead of the
+    movie ranking (Bluray > WEB-DL) — see CLAUDE.md Shared TRaSH Scoring Config.
+    Fixed 2026-07-02: this function had no media_type distinction at all and used
+    the movie ranking for TV too, the same bug found and fixed in sync-webhook's
+    _score_filename() the same day."""
     name = filename.lower()
+    src_table = _SC.get('tv_source', _SC['source']) if media_type == 'tv' else _SC['source']
     if re.search(r'\b2160p\b', name):
         res, is_4k = _SC['resolution']['2160p'], True
     elif re.search(r'\b1080p\b', name):
@@ -60,11 +66,11 @@ def _score(filename: str, size_bytes: int = 0) -> int:
         res, is_4k = _SC['resolution']['sd'], False
 
     src = 0
-    if re.search(r'\bremux\b', name):                            src = _SC['source']['remux']
-    elif re.search(r'\b(bluray|blu-ray|bdrip|bdremux)\b', name): src = _SC['source']['bluray']
-    elif re.search(r'\b(web-dl|webdl)\b', name):                 src = _SC['source']['web_dl']
-    elif re.search(r'\bwebrip\b', name):                         src = _SC['source']['webrip']
-    elif re.search(r'\bhdtv\b', name):                           src = _SC['source']['hdtv']
+    if re.search(r'\bremux\b', name):                            src = src_table['remux']
+    elif re.search(r'\b(bluray|blu-ray|bdrip|bdremux)\b', name): src = src_table['bluray']
+    elif re.search(r'\b(web-dl|webdl)\b', name):                 src = src_table['web_dl']
+    elif re.search(r'\bwebrip\b', name):                         src = src_table['webrip']
+    elif re.search(r'\bhdtv\b', name):                           src = src_table['hdtv']
 
     hdr = 0
     for tag, pts in (_SC['hdr_4k'] if is_4k else _SC['hdr_hd']):
@@ -260,10 +266,14 @@ def _run_movie_scan():
                     })
                 continue
 
-            # Case 3: Mismatch — compare TRaSH scores to determine direction.
-            # Synology score > Unraid score → sync Synology → Unraid (nightly reconcile).
-            # Unraid score >= Synology score → Unraid already has better copy; Upgraderr
-            # should upgrade Synology first, then webhook propagates. Do NOT replace Unraid.
+            # Case 3: Mismatch. Corrected 2026-07-02 — this used to imply "Unraid
+            # score >= Synology score" meant Unraid's file was safe and wouldn't be
+            # touched. That's no longer true: sync-webhook's reconcile now always
+            # syncs Synology's (Radarr's) file to Unraid regardless of score (Profile
+            # Authority — see CLAUDE.md). syn_score/unraid_score below are kept as
+            # informational metadata only (which side scores higher), NOT a
+            # prediction of what will happen — both "syn_better" and "unraid_better"
+            # entries get the same Syn→Unraid treatment on the next reconcile run.
             radarr_sc = _score(radarr_file, radarr_size)
             unraid_sc = _score(unraid_file, unraid_size)
             entry = {
@@ -348,7 +358,7 @@ def _run_tv_scan():
                         key = (show, ep)
                         try: size = f.stat().st_size
                         except OSError: size = 0
-                        sc = _score(f.name, size)
+                        sc = _score(f.name, size, media_type='tv')
                         if key not in syn or sc > syn[key]['score']:
                             syn[key] = {'file': f.name, 'path': f.path, 'size': size, 'score': sc}
 
@@ -370,7 +380,7 @@ def _run_tv_scan():
             ep = f"S{int(ep_m.group(1)):02d}E{int(ep_m.group(2)):04d}"
             key = (show, ep)
             size = item.get('size_bytes', 0)
-            sc = _score(fname, size)
+            sc = _score(fname, size, media_type='tv')
             if key not in unraid or sc > unraid[key]['score']:
                 unraid[key] = {'file': fname, 'path': item['path'], 'size_bytes': size, 'score': sc}
 
@@ -591,8 +601,8 @@ def _run_tv_parity_scan():
             else:
                 ui = unraid_eps[(show, epk)]
                 if si['fname'].lower() != ui['fname'].lower():
-                    syn_sc  = _score(si['fname'], si['size'])
-                    unr_sc  = _score(ui['fname'], ui['size'])
+                    syn_sc  = _score(si['fname'], si['size'], media_type='tv')
+                    unr_sc  = _score(ui['fname'], ui['size'], media_type='tv')
                     mismatch_by_show[show].append({
                         'ep': epk,
                         'syn_file': si['fname'],  'syn_score': syn_sc,  'syn_size_bytes': si['size'],
