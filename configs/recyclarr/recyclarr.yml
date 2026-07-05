@@ -41,6 +41,18 @@ radarr:
           allowed: true
           until_quality: Bluray-1080p
           until_score: -9999
+        quality_sort: top
+        qualities:
+          # Overrides the stock TRaSH template's allowed list to exclude Bluray-720p.
+          # 720p must never be an acceptable end state for this profile — Upgraderr
+          # Tier 3's entire job is eliminating 720p; leaving it "allowed" here meant
+          # Radarr could legitimately grab and keep a 720p release whenever that's
+          # all an indexer search turned up (this is what happened to Mazinger Z).
+          - name: Bluray-1080p
+          - name: WEB 1080p
+            qualities:
+              - WEBDL-1080p
+              - WEBRip-1080p
 
       - trash_id: 9ca12ea80aa55ef916e3751f4b874151  # Remux + WEB 1080p
         reset_unmatched_scores:
@@ -506,6 +518,29 @@ sonarr:
           - name: Remux-1080p
             score: 200
 
+      # Local custom formats (not in TRaSH Guide) — same rationale as Radarr's.
+      # Added 2026-07-02: Sonarr had none of these, unlike Radarr — a real gap,
+      # since Upgraderr forcing a TV search with no equivalent safety net would
+      # recreate the exact bug that caused the 2026-07 movie downgrade incident.
+      - trash_ids:
+          - local-bad-container-mp4 # MP4 container: can't hold lossless audio
+        assign_scores_to:
+          - name: WEB-1080p
+            score: -1000
+          - name: Bluray-1080p
+            score: -1000
+          - name: Remux-1080p
+            score: -1000
+      - trash_ids:
+          - local-bhdstudio # BHDStudio: encode group, typically lower quality
+        assign_scores_to:
+          - name: WEB-1080p
+            score: -50
+          - name: Bluray-1080p
+            score: -50
+          - name: Remux-1080p
+            score: -50
+
     media_naming:
       series: plex-tvdb
       season: default
@@ -671,6 +706,26 @@ sonarr:
             score: 200
           - name: Remux-2160p
             score: 200
+
+      # Local custom formats (not in TRaSH Guide) — same rationale as Radarr's.
+      - trash_ids:
+          - local-bad-container-mp4 # MP4 container: can't hold lossless audio
+        assign_scores_to:
+          - name: WEB-2160p
+            score: -1000
+          - name: Bluray-2160p
+            score: -1000
+          - name: Remux-2160p
+            score: -1000
+      - trash_ids:
+          - local-bhdstudio # BHDStudio: encode group, typically lower quality
+        assign_scores_to:
+          - name: WEB-2160p
+            score: -50
+          - name: Bluray-2160p
+            score: -50
+          - name: Remux-2160p
+            score: -50
 
     media_naming:
       series: plex-tvdb

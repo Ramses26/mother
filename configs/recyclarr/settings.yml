@@ -11,3 +11,7 @@ resource_providers:
     type: custom-formats
     path: /config/custom-formats/radarr
     service: radarr
+  - name: local-cfs-sonarr
+    type: custom-formats
+    path: /config/custom-formats/sonarr
+    service: sonarr

@@ -17,6 +17,15 @@
     "hdtv":    200
   },
 
+  "_comment_tv_source": "TV intentionally ranks WEB-DL above Bluray (encode consistency for episodic content) — see scripts/lib/quality_scoring.py TV_SOURCE_SCORES, CLAUDE.md Shared TRaSH Scoring Config section.",
+  "tv_source": {
+    "remux":  2000,
+    "web_dl": 1200,
+    "bluray": 1000,
+    "webrip":  800,
+    "hdtv":    200
+  },
+
   "hdr_4k": [
     ["dv hdr10+",     800],
     ["dv hdr10",      800],
@@ -57,6 +66,15 @@
     ["ac3",           100],
     ["aac",            50]
   ],
+
+  "_comment_codec": "codec and hevc_dv_bonus_hd added 2026-07-05 for the Upgraderr migration (scripts/lib/trash_scoring_json.py) — additive only, preserve scripts/lib/quality_scoring.py's existing codec/DV-bonus behavior for Upgraderr. sync-webhook and curatorr do not reference these keys.",
+  "codec": {
+    "av1":   250,
+    "hevc":  100,
+    "avc":   150,
+    "vc1":   100
+  },
+  "hevc_dv_bonus_hd":        200,
 
   "hevc_penalty_hd_no_hdr": -300,
   "size_bonus_per_gb":        10,
