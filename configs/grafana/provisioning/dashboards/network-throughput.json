@@ -1,0 +1,188 @@
+{
+  "title": "VPN / Network Throughput",
+  "uid": "mother-network",
+  "version": 1,
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "tags": ["mother", "network"],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "ens33 Throughput (VPN + all traffic)",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 10 },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 52428800 },
+              { "color": "red", "value": 94371840 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "TX (to Unraid)" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "RX (from Unraid)" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#5794F2", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "rate(node_network_transmit_bytes_total{device=\"ens33\"}[30s])",
+          "legendFormat": "TX (to Unraid)",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_network_receive_bytes_total{device=\"ens33\"}[30s])",
+          "legendFormat": "RX (from Unraid)",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Current TX",
+      "gridPos": { "x": 0, "y": 10, "w": 4, "h": 4 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 10485760 },
+              { "color": "yellow", "value": 52428800 },
+              { "color": "red", "value": 94371840 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(node_network_transmit_bytes_total{device=\"ens33\"}[30s])",
+          "legendFormat": "TX",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Current RX",
+      "gridPos": { "x": 4, "y": 10, "w": 4, "h": 4 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 10485760 },
+              { "color": "yellow", "value": 52428800 },
+              { "color": "red", "value": 94371840 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_bytes_total{device=\"ens33\"}[30s])",
+          "legendFormat": "RX",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Peak TX (1h)",
+      "gridPos": { "x": 8, "y": 10, "w": 4, "h": 4 },
+      "options": { "reduceOptions": { "calcs": ["max"] }, "orientation": "auto", "colorMode": "value" },
+      "fieldConfig": { "defaults": { "unit": "Bps" } },
+      "targets": [
+        {
+          "expr": "rate(node_network_transmit_bytes_total{device=\"ens33\"}[30s])",
+          "legendFormat": "Peak TX",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "VPN Ceiling (Ali 800Mbps – IPsec overhead)",
+      "gridPos": { "x": 12, "y": 10, "w": 5, "h": 4 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "colorMode": "value" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "mappings": [{ "type": "special", "options": { "match": "null", "result": { "text": "~90 MB/s" } } }],
+          "color": { "mode": "fixed", "fixedColor": "gray" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "vector(94371840)",
+          "legendFormat": "~90 MB/s ceiling",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "sync-webhook — Active / Pending Jobs",
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 8 },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 5 }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Active Syncs" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Pending" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "#FADE2A", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "sync_webhook_active_syncs",
+          "legendFormat": "Active Syncs",
+          "refId": "A"
+        },
+        {
+          "expr": "sync_webhook_pending_jobs",
+          "legendFormat": "Pending",
+          "refId": "B"
+        }
+      ]
+    }
+  ]
+}
