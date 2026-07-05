@@ -106,3 +106,21 @@ configs/recyclarr/state/
 reports/*.csv
 data/curatorr/curatorr.db
 data/upgraderr*.db
+
+# Runtime data / backups / generated reports (large, not source)
+data/backrest/
+data/curatorr/backups/
+data/grafana/
+data/loki/
+data/prometheus/
+data/sync_jobs.db
+reports/archive/
+reports/*.html
+archive/pre-deployment-backups/
+
+# Live-updating stats file, not source
+traffic_stats/snapshots.csv
+
+# Claude Code local/personal settings — never shared, machine-specific
+.claude/settings.local.json
+.claude/*.lock
