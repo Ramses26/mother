@@ -253,6 +253,14 @@ async function resetCooldown(itemId, btn) {
   }
 }
 
+// ── Score breakdown toggle ────────────────────────────────────────────────
+
+function toggleBreakdown(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 async function apiFetch(url, method = 'GET', body = null) {

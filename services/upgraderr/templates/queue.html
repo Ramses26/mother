@@ -69,7 +69,14 @@
         <td><span class="badge badge-gray">{{ item.instance }}</span></td>
         <td><span class="badge tier-badge-{{ item.priority_tier }}">T{{ item.priority_tier }}</span></td>
         <td class="mono small">{{ item.upgrade_reason or '—' }}</td>
-        <td class="mono">{{ item.current_score }}</td>
+        <td class="mono">
+          {% if item.current_breakdown %}
+          <span class="score-link" style="cursor:pointer; text-decoration:underline dotted;"
+                onclick="toggleBreakdown('bd-q{{ item.id }}')" title="Click to see score breakdown">{{ item.current_score }}</span>
+          {% else %}
+          {{ item.current_score }}
+          {% endif %}
+        </td>
         <td>{{ item.search_count }}</td>
         <td><span class="result-badge result-{{ item.status }}">{{ item.status }}</span></td>
         <td class="mono small">{{ fmt_dt(item.cooldown_until) }}</td>
@@ -78,6 +85,21 @@
           <button class="btn btn-sm btn-ghost" onclick="resetCooldown({{ item.id }}, this)" title="Clear cooldown — item will be picked up on next sweep">↺</button>
         </td>
       </tr>
+      {% if item.current_breakdown %}
+      <tr id="bd-q{{ item.id }}" class="breakdown-row" style="display:none">
+        <td colspan="9" class="mono small" style="color:var(--text-secondary,#888)">
+          resolution {{ '%+d'|format(item.current_breakdown.resolution) }} ·
+          source {{ '%+d'|format(item.current_breakdown.source) }} ·
+          hdr {{ '%+d'|format(item.current_breakdown.hdr) }} ·
+          audio {{ '%+d'|format(item.current_breakdown.audio) }} ·
+          codec {{ '%+d'|format(item.current_breakdown.codec) }} ·
+          hevc adj {{ '%+d'|format(item.current_breakdown.hevc_adjustment) }} ·
+          size {{ '%+d'|format(item.current_breakdown.size_bonus) }} ·
+          <strong>= {{ item.current_breakdown.total }}</strong>
+          <span title="Score computed from the filename recorded when this item was first queued — may lag current_score if the file changed since.">(as queued)</span>
+        </td>
+      </tr>
+      {% endif %}
       {% else %}
       <tr><td colspan="9" class="empty">No items match the current filter.</td></tr>
       {% endfor %}

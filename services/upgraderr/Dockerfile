@@ -11,9 +11,10 @@ COPY services/upgraderr/app.py app.py
 COPY services/upgraderr/templates/ templates/
 COPY services/upgraderr/static/ static/
 
-# Copy shared quality scoring library
+# Copy shared quality scoring library (JSON-backed, configs/scoring/trash_scoring.json
+# mounted at runtime via docker-compose volume — see docker-compose.yml)
 COPY scripts/lib/__init__.py lib/__init__.py
-COPY scripts/lib/quality_scoring.py lib/quality_scoring.py
+COPY scripts/lib/trash_scoring_json.py lib/trash_scoring_json.py
 
 RUN useradd -m -u 1000 upgraderruser && \
     mkdir -p /data && \

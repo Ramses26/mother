@@ -6,6 +6,7 @@ upgrades across all 4 Radarr/Sonarr instances.
 """
 
 import os
+import re
 import sys
 import json
 import time
@@ -76,6 +77,13 @@ DOWNLOADS_PER_DAY  = int(os.environ.get('UPGRADERR_DOWNLOADS_PER_DAY', '10'))
 COOLDOWN_HOURS     = int(os.environ.get('UPGRADERR_COOLDOWN_HOURS', '24'))
 SWEEP_MINUTES      = int(os.environ.get('UPGRADERR_SWEEP_MINUTES', '30'))
 JITTER_MAX         = int(os.environ.get('UPGRADERR_JITTER_MAX_SECONDS', '30'))
+
+# tier5_audio-only recheck backoff (days) for items already resolved (status='found').
+# Every other tier stays permanently resolved once found — see Profile Authority /
+# 2026-07 incidents in CLAUDE.md for why tier7 etc. must never auto-reopen. Audio is
+# the one exception: a surround release for an old title is a rare, slow-moving event,
+# so we check back on a long, escalating cadence instead of never checking again.
+TIER5_RECHECK_DAYS = [30, 60, 90, 180]
 MIN_SCORE          = int(os.environ.get('UPGRADERR_MIN_SCORE', '200'))
 SEASON_THRESHOLD       = int(os.environ.get('UPGRADERR_SEASON_THRESHOLD', '50'))
 NO_SOURCE_SYNC_THRESHOLD = int(os.environ.get('UPGRADERR_NO_SOURCE_SYNC_THRESHOLD', '2'))
@@ -120,14 +128,23 @@ except Exception as _e:
 
 sys.path.insert(0, '/app')
 try:
-    from lib.quality_scoring import parse_quality_from_filename, calculate_quality_score
-    log.info("Quality scoring library loaded OK")
-except ImportError as e:
-    log.warning(f"Could not load quality_scoring: {e}")
+    from lib.trash_scoring_json import (
+        parse_quality_from_filename, calculate_quality_score, calculate_quality_score_breakdown,
+    )
+    log.info("Quality scoring library loaded OK (shared JSON config)")
+except (ImportError, FileNotFoundError) as e:
+    # FileNotFoundError catches a missing/misconfigured trash_scoring.json volume
+    # mount, since _load_scoring_config() raises that (not ImportError) at module
+    # import time — without this, a mount misconfiguration crash-loops the whole
+    # service instead of degrading gracefully like this fallback is meant to.
+    log.warning(f"Could not load trash_scoring_json: {e}")
     def parse_quality_from_filename(fn):
         return {'resolution': '', 'source': '', 'hdr': '', 'audio': '', 'codec': '', 'release_group': ''}
     def calculate_quality_score(*a, **kw):
         return 0
+    def calculate_quality_score_breakdown(*a, **kw):
+        return {'resolution': 0, 'source': 0, 'hdr': 0, 'audio': 0, 'codec': 0,
+                'hevc_adjustment': 0, 'size_bonus': 0, 'total': 0}
 
 # ---------------------------------------------------------------------------
 # Timezone helpers
@@ -261,7 +278,8 @@ def init_database():
     conn.commit()
 
     # Migrate upgrade_queue: add before_quality, before_score columns if missing
-    for col, coldef in [('before_quality', 'TEXT'), ('before_score', 'INTEGER')]:
+    for col, coldef in [('before_quality', 'TEXT'), ('before_score', 'INTEGER'),
+                        ('recheck_count', 'INTEGER DEFAULT 0')]:
         try:
             conn.execute(f"ALTER TABLE upgrade_queue ADD COLUMN {col} {coldef}")
             conn.commit()
@@ -414,6 +432,7 @@ NOTIFY_KEYS = {
     'notify_sweep_summary': ('Sweep complete summary',                 'true'),
     'notify_pause_resume':  ('Pause / Resume events',                  'true'),
     'notify_errors':        ('Errors (instance unreachable, etc.)',    'true'),
+    'notify_bad_import':    ('Bad release imported (CRITICAL — keep on)',  'true'),
 }
 
 def _notify_enabled(category):
@@ -620,6 +639,23 @@ def get_current_score(filename, is_4k=False, media_type='movie'):
         is_4k=is_4k, media_type=media_type,
     )
 
+def _breakdown_for(filename, instance, media_type):
+    """Score component breakdown for a stored quality filename — powers the
+    expandable score breakdown on /upgrades and /queue. Returns None for
+    empty/missing filenames so templates can skip rendering a row."""
+    if not filename:
+        return None
+    is_4k = '4k' in (instance or '').lower()
+    mtype = 'tv' if media_type and media_type != 'movie' else 'movie'
+    q = parse_quality_from_filename(filename)
+    return calculate_quality_score_breakdown(
+        resolution=q.get('resolution') or 'Unknown',
+        source=q.get('source') or 'Unknown',
+        hdr=q.get('hdr', ''), audio=q.get('audio', ''),
+        codec=q.get('codec', ''), size_gb=0,
+        is_4k=is_4k, media_type=mtype,
+    )
+
 # ---------------------------------------------------------------------------
 # TMDB helpers (Tier 4 — BluRay release detection)
 # ---------------------------------------------------------------------------
@@ -818,10 +854,38 @@ def _db_mark_searching(instance, media_id, media_type, search_count, cooldown_un
 def _db_get_queue_entry(instance, media_id, media_type):
     db = get_db()
     return db.execute(
-        "SELECT search_count, cooldown_until, status FROM upgrade_queue "
-        "WHERE instance=? AND media_id=? AND media_type=?",
+        "SELECT search_count, cooldown_until, status, searched_at, recheck_count "
+        "FROM upgrade_queue WHERE instance=? AND media_id=? AND media_type=?",
         (instance, media_id, media_type)
     ).fetchone()
+
+def _tier5_recheck_due(row) -> bool:
+    """True if a resolved (status='found') tier5_audio row is due for its next
+    long-interval recheck. Escalates 30 -> 60 -> 90 -> 180 days (capped) so a movie
+    that genuinely has no surround release gets checked less and less often instead
+    of never again."""
+    last_check = row['searched_at']
+    if not last_check:
+        return False
+    try:
+        checked_at = datetime.fromisoformat(last_check)
+    except Exception:
+        return False
+    idx = min(row['recheck_count'] or 0, len(TIER5_RECHECK_DAYS) - 1)
+    wait_days = TIER5_RECHECK_DAYS[idx]
+    return (datetime.utcnow() - checked_at).days >= wait_days
+
+def _db_rearm_tier5(instance, media_id, media_type):
+    """Reopen a resolved tier5_audio row for one more search attempt, bumping the
+    recheck counter so the next backoff interval is longer."""
+    db = get_db()
+    with _db_lock:
+        db.execute(
+            """UPDATE upgrade_queue SET status='pending', recheck_count=COALESCE(recheck_count,0)+1
+               WHERE instance=? AND media_id=? AND media_type=?""",
+            (instance, media_id, media_type)
+        )
+        db.commit()
 
 def _adaptive_cooldown(search_count):
     if search_count <= 1: return int(get_cfg('cooldown_hours', str(COOLDOWN_HOURS)))
@@ -957,7 +1021,17 @@ def _trigger_fallback_sync(container_path: str, title: str, media_type: str, qua
 
 
 def _build_profile_allowed(inst):
-    """Return dict: profile_id → frozenset of allowed quality IDs for this *arr instance."""
+    """Return dict: profile_id → frozenset of allowed quality IDs for this *arr instance.
+
+    PROFILE AUTHORITY (see CLAUDE.md): the assigned Radarr/Sonarr quality profile is
+    the single source of truth for what quality a movie should be — never overridden
+    by a raw TRaSH/quality-score comparison. A Remux sitting in a profile that doesn't
+    allow Remux is wrong regardless of the fact that a Remux is objectively "better"
+    footage — the profile assignment wins, and Tier 7 exists to bring the file into
+    compliance with it. (Previously this file had a "goodness" comparison that skipped
+    Tier 7 when the file's raw quality exceeded the profile's cutoff — that inverted
+    the actual project rule and was reverted 2026-07-02.)
+    """
     raw = arr_get(inst, '/qualityprofile') or []
     result = {}
     for p in raw:
@@ -1013,6 +1087,20 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
         # so cutoffNotMet stays false — we must force a search.
         # Tier 7 (lowest priority): the file is watchable, just wrong for the profile.
         # Run after all real quality problems (T1-T6) are addressed.
+        #
+        # PROFILE AUTHORITY: this fires regardless of whether the current file is
+        # objectively "better" or "worse" than the profile's cutoff — the assigned
+        # profile is the source of truth for what quality this movie should be, full
+        # stop (see CLAUDE.md). A Remux is not "safe" here just because it scores
+        # higher; if the profile doesn't want Remux, Tier 7 forces a search to bring
+        # it into compliance. Radarr's own grab/import flow only deletes the current
+        # file after a new one successfully imports, so this never leaves a movie
+        # without a file. The actual 2026-07 incident (Varsity Blues -> BHDStudio MP4,
+        # Mazinger Z -> 720p) was NOT caused by this tier firing — it was caused by the
+        # local recyclarr custom formats (BHDStudio, Bad Container MP4) using
+        # release-title regexes that never matched, so Radarr had no way to reject a
+        # garbage release once Tier 7 (correctly) forced a search. That regex bug is
+        # fixed in configs/recyclarr/custom-formats/radarr/.
         file_quality_id = ((mfile.get('quality') or {}).get('quality') or {}).get('id')
         profile_id = movie.get('qualityProfileId')
         if (file_quality_id and profile_id and profile_id in quality_profile_allowed
@@ -1042,7 +1130,12 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
 
         row = _db_get_queue_entry(inst_name, mid, 'movie')
         if row and row['status'] == 'found':
-            continue
+            if top_reason != 'tier5_audio' or not _tier5_recheck_due(row):
+                continue
+            log.info(f"[{inst_name}] {full_title}: tier5_audio long-interval recheck "
+                     f"(recheck #{(row['recheck_count'] or 0) + 1})")
+            _db_rearm_tier5(inst_name, mid, 'movie')
+            row = _db_get_queue_entry(inst_name, mid, 'movie')
         if row and row['cooldown_until']:
             if datetime.utcnow().isoformat() < row['cooldown_until']:
                 continue
@@ -1100,6 +1193,12 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
     all_tags = {t['id']: t['label'].lower() for t in (arr_get(inst, '/tag') or [])}
     skip_tag_ids = {tid for tid, lbl in all_tags.items() if lbl in ('upgraderr-skip',)}
 
+    # Quality profile map for Tier 7 (profile mismatch) — see Profile Authority in
+    # CLAUDE.md. Added 2026-07-02: Sonarr had no equivalent to Radarr's Tier 7 at all,
+    # a real gap — verified live (48 episodes across 5 shows had a Remux file sitting
+    # in a non-Remux-allowed profile, e.g. WEB-1080p, with nothing to ever correct it).
+    quality_profile_allowed = _build_profile_allowed(inst)
+
     random.shuffle(series_list)
     season_threshold = int(get_cfg('season_threshold', str(SEASON_THRESHOLD)))
 
@@ -1142,6 +1241,22 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
             snum = ep['seasonNumber']
             fn   = epfile.get('relativePath', '') or epfile.get('path', '')
             tiers = classify_tiers(fn, year=year, is_4k=is_4k, media_type='tv')
+
+            # Tier 7 (profile mismatch) — see Profile Authority in CLAUDE.md and the
+            # matching Radarr check above. Fires regardless of whether the current
+            # file is "better" than the profile allows (e.g. a Remux in a WEB-1080p
+            # profile) — the assigned profile is authoritative, full stop.
+            file_quality_id = ((epfile.get('quality') or {}).get('quality') or {}).get('id')
+            profile_id = series.get('qualityProfileId')
+            if (file_quality_id and profile_id and profile_id in quality_profile_allowed
+                    and file_quality_id not in quality_profile_allowed[profile_id]):
+                tiers.append((7, 'tier7_profile_mismatch'))
+                log.info(
+                    f"[{inst_name}] {stitle} S{snum:02d}E{ep.get('episodeNumber','?')}: "
+                    f"quality profile mismatch (Tier 7) — file quality ID {file_quality_id} "
+                    f"not in profile {profile_id} allowed IDs {quality_profile_allowed[profile_id]}"
+                )
+
             tiers = [(t, r) for (t, r) in tiers if _tier_enabled(t)]
             if not tiers:
                 continue
@@ -1196,7 +1311,12 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
             composite_id = sid * 10000 + snum
             row = _db_get_queue_entry(inst_name, composite_id, 'season')
             if row and row['status'] == 'found':
-                continue
+                if top_reason != 'tier5_audio' or not _tier5_recheck_due(row):
+                    continue
+                log.info(f"[{inst_name}] {title}: tier5_audio long-interval recheck "
+                         f"(recheck #{(row['recheck_count'] or 0) + 1})")
+                _db_rearm_tier5(inst_name, composite_id, 'season')
+                row = _db_get_queue_entry(inst_name, composite_id, 'season')
             if row and row['cooldown_until']:
                 if datetime.utcnow().isoformat() < row['cooldown_until']:
                     continue
@@ -1301,7 +1421,7 @@ def _validate_stale_queue():
     reliably detectable from the filename. tier4 (BluRay wait), tier6 (score), and
     tier7 (profile mismatch) are left to the sweep since they need profile context.
     """
-    SIMPLE_TIERS = {'tier1_m2ts', 'tier2_container', 'tier3_720p', 'tier3_profile_mismatch', 'tier5_audio'}
+    SIMPLE_TIERS = {'tier1_m2ts', 'tier2_container', 'tier3_720p', 'tier5_audio'}
 
     def _still_valid(fn: str, reason: str) -> bool:
         if not fn:
@@ -1312,7 +1432,7 @@ def _validate_stale_queue():
             return ext == '.m2ts'
         if reason == 'tier2_container':
             return ext in ('.avi', '.mp4', '.ts', '.wmv', '.m4v', '.divx', '.xvid')
-        if reason in ('tier3_720p', 'tier3_profile_mismatch'):
+        if reason == 'tier3_720p':
             return bool(re.search(r'\b(720p|480p|576p)\b', name))
         if reason == 'tier5_audio':
             audio = ''
@@ -1340,8 +1460,7 @@ def _validate_stale_queue():
                 FROM upgrade_queue
                 WHERE instance=? AND media_type='season'
                   AND status IN ('pending','searching')
-                  AND upgrade_reason IN ('tier1_m2ts','tier2_container','tier3_720p',
-                                         'tier3_profile_mismatch','tier5_audio')
+                  AND upgrade_reason IN ('tier1_m2ts','tier2_container','tier3_720p','tier5_audio')
             """, (inst_name,)).fetchall()
 
             by_series: dict = {}
@@ -1377,8 +1496,7 @@ def _validate_stale_queue():
                 FROM upgrade_queue
                 WHERE instance=? AND media_type='movie'
                   AND status IN ('pending','searching')
-                  AND upgrade_reason IN ('tier1_m2ts','tier2_container','tier3_720p',
-                                         'tier3_profile_mismatch','tier5_audio')
+                  AND upgrade_reason IN ('tier1_m2ts','tier2_container','tier3_720p','tier5_audio')
             """, (inst_name,)).fetchall()
 
             for e in entries:
@@ -1615,10 +1733,19 @@ def queue_page():
     wc = ("WHERE " + " AND ".join(where)) if where else ""
 
     total = db.execute(f"SELECT COUNT(*) as cnt FROM upgrade_queue {wc}", params).fetchone()['cnt']
-    items = db.execute(
+    items = [dict(r) for r in db.execute(
         f"SELECT * FROM upgrade_queue {wc} ORDER BY {sort_col} {sort_dir}, {secondary} LIMIT ? OFFSET ?",
         params + [per, (page - 1) * per]
-    ).fetchall()
+    ).fetchall()]
+    for item in items:
+        # NOTE: upgrade_queue.current_quality is never actually written (dead column —
+        # _db_upsert_queue has no current_quality in its INSERT list). before_quality is
+        # the real stored filename, frozen at first-insert time (matches before_score,
+        # which current_score was also initialized to before any later sweep refreshed
+        # it) — the closest real data available for a breakdown, though it may lag
+        # current_score if the file changed since this item was first queued.
+        item['current_breakdown'] = _breakdown_for(
+            item.get('before_quality'), item.get('instance'), item.get('media_type'))
 
     return render_template('queue.html',
         items=items, page=page, per_page=per, total=total,
@@ -2121,6 +2248,107 @@ def get_instance(name):
     row = db.execute("SELECT * FROM instances WHERE name=?", (name,)).fetchone()
     return dict(row) if row else None
 
+def _tag_upgraderr_skip(inst, media_type, media_id):
+    """Add the 'upgraderr-skip' tag to a movie/series so it won't be auto-searched
+    again until a human reviews it. Creates the tag if it doesn't exist yet."""
+    entity_path = '/movie' if media_type == 'movie' else '/series'
+    try:
+        tags = arr_get(inst, '/tag') or []
+        tag_id = next((t['id'] for t in tags if t['label'].lower() == 'upgraderr-skip'), None)
+        if tag_id is None:
+            created = arr_post(inst, '/tag', {'label': 'upgraderr-skip'})
+            if not created:
+                return False
+            tag_id = created['id']
+        entity = arr_get(inst, f'{entity_path}/{media_id}')
+        if not entity:
+            return False
+        if tag_id in (entity.get('tags') or []):
+            return True
+        entity['tags'] = (entity.get('tags') or []) + [tag_id]
+        return arr_put(inst, f'{entity_path}/{media_id}', entity) is not None
+    except Exception as e:
+        log.error(f"[downgrade-guard] Failed to tag {media_type} {media_id}: {e}")
+        return False
+
+
+# Encode/release groups Ali has explicitly called out as unacceptable regardless of
+# container or resolution — see CLAUDE.md "Profile Authority & Known-Bad Releases".
+# Checked independently of recyclarr's custom formats so a future CF regex bug (like
+# the one that caused the 2026-07 incident) can't silently let these back in.
+BAD_RELEASE_GROUPS = {'bhdstudio'}
+
+
+def _is_known_bad_release(filename):
+    fn = (filename or '').lower()
+    m = re.search(r'-([a-z0-9]+)(?:\.[a-z0-9]{2,4})?$', fn)
+    group = m.group(1) if m else ''
+    return group in BAD_RELEASE_GROUPS
+
+
+def _flag_if_bad_import(inst, media_type, media_id, title, before_quality, before_score,
+                         after_quality, after_score, tier, year=None):
+    """Post-import safety net — independent of Tier 7's profile-authority logic.
+
+    PROFILE AUTHORITY (see CLAUDE.md): a Tier-7-triggered swap from a Remux to a
+    profile-compliant Bluray-1080p is CORRECT behavior, not a bug, even though the
+    raw TRaSH score drops. This does NOT alert on score drop alone (an earlier version
+    of this check did, and that was reverted 2026-07-02 — see incident memory: it
+    would have flagged every legitimate profile-enforced swap as a false alarm).
+
+    It alerts only when the newly imported file is itself objectively bad — matches
+    any of Tiers 1-6 (m2ts, bad container, 720p/480p, no surround audio, low score)
+    or comes from a known-bad release group (BHDStudio) — regardless of what it
+    replaced. That is the one thing that's never acceptable, whatever the profile says.
+
+    tier5_audio is handled differently from every other tier here: unlike a bad
+    container/release group, "no surround release was available" is an expected,
+    common outcome, not a malfunction — and the sweep's own long-interval recheck
+    (TIER5_RECHECK_DAYS) already re-evaluates these periodically. So an audio-only
+    result gets logged and reported, but NOT tagged upgraderr-skip — tagging it would
+    permanently block that recheck from ever running. Any OTHER tier hit here (bad
+    container, bad group, m2ts, 720p) still gets the permanent tag + manual review,
+    since those are real Radarr/recyclarr malfunctions, not "nothing better exists."
+    """
+    is_4k = '4k' in (inst.get('name') or '').lower()
+    ct_media_type = 'movie' if media_type == 'movie' else 'tv'
+    bad_tiers = classify_tiers(after_quality, year=year, is_4k=is_4k, media_type=ct_media_type)
+    bad_group = _is_known_bad_release(after_quality)
+
+    if not bad_tiers and not bad_group:
+        return  # imported file is clean — a score drop here is expected profile enforcement
+
+    reasons = [r for _, r in bad_tiers]
+    if bad_group:
+        reasons.append('known_bad_release_group')
+    reason_str = ', '.join(reasons)
+    audio_only = reasons == ['tier5_audio']
+
+    log.warning(
+        f"[import-guard] {title}: imported file still has a quality problem "
+        f"({reason_str}) — before={before_quality!r} after={after_quality!r}"
+    )
+
+    if audio_only:
+        send_telegram(
+            f"🔈 Upgraderr: no surround-audio release found for {title}\n"
+            f"File: {(after_quality or '?').split('/')[-1]}\n"
+            f"Will keep checking on a long interval (30/60/90/180 days) — no action needed.",
+            category='notify_bad_import'
+        )
+        return
+
+    tagged = _tag_upgraderr_skip(inst, media_type, media_id)
+    send_telegram(
+        f"⚠️ Upgraderr imported a BAD release: {title}\n"
+        f"File: {(after_quality or '?').split('/')[-1]}\n"
+        f"Problem: {reason_str}\n"
+        + ("Tagged upgraderr-skip — won't auto-search again until reviewed."
+           if tagged else "Could NOT tag upgraderr-skip — review and tag manually!"),
+        category='notify_bad_import'
+    )
+
+
 def _check_instance_health(inst) -> bool:
     """Quick health check — returns True if instance responds within 3s."""
     try:
@@ -2219,6 +2447,12 @@ def webhook_radarr():
     db.commit()
 
     log.info(f"[webhook] Radarr import ({source}): {full_title} -> {new_path}")
+
+    inst = get_instance(inst_name)
+    if inst:
+        _flag_if_bad_import(inst, 'movie', mid, full_title, before_quality, before_score,
+                           new_path, after_score, tier, year=year or None)
+
     return jsonify({'status': 'recorded'}), 200
 
 
@@ -2304,6 +2538,14 @@ def webhook_sonarr():
     db.commit()
 
     log.info(f"[webhook] Sonarr import ({source}): {season_title} -> {new_path}")
+
+    inst = get_instance(inst_name)
+    if inst:
+        # Tags at the series level (Sonarr has no per-season tag) — coarser than
+        # ideal, but consistent with the existing series-level upgraderr-skip check.
+        _flag_if_bad_import(inst, 'series', sid, season_title, before_quality, before_score,
+                           new_path, after_score, tier, year=year or None)
+
     return jsonify({'status': 'recorded'}), 200
 
 # ---------------------------------------------------------------------------
@@ -2419,10 +2661,15 @@ def upgrades_page():
     wc = ("WHERE " + " AND ".join(where)) if where else ""
 
     total = db.execute(f"SELECT COUNT(*) as cnt FROM upgrade_history {wc}", params).fetchone()['cnt']
-    items = db.execute(
+    items = [dict(r) for r in db.execute(
         f"SELECT * FROM upgrade_history {wc} ORDER BY {order_expr} {sort_dir} LIMIT ? OFFSET ?",
         params + [per_page, (page - 1) * per_page]
-    ).fetchall()
+    ).fetchall()]
+    for item in items:
+        item['before_breakdown'] = _breakdown_for(
+            item.get('before_quality'), item.get('instance'), item.get('media_type'))
+        item['after_breakdown'] = _breakdown_for(
+            item.get('after_quality'), item.get('instance'), item.get('media_type'))
 
     return render_template('upgrades.html', items=items, total=total,
                            page=page, per_page=per_page, fmt_dt=fmt_dt,

@@ -60,29 +60,58 @@
     <tbody>
       {% for item in items %}
       {% set score_delta = (item.after_score or 0) - (item.before_score or 0) %}
+      {% set has_breakdown = item.before_breakdown or item.after_breakdown %}
       <tr>
         <td class="mono">{{ fmt_dt(item.imported_at) }}</td>
         <td><span class="badge badge-gray">{{ item.instance or '&mdash;' }}</span></td>
         <td>{{ item.title or '&mdash;' }}</td>
         <td>{% if item.tier %}<span class="badge tier-badge-{{ item.tier }}">T{{ item.tier }}</span>{% else %}&mdash;{% endif %}</td>
-        <td class="mono small" style="color:var(--text-muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ item.before_quality or '' }}">
+        <td class="mono small" style="color:var(--text-muted);min-width:260px;white-space:normal;word-break:break-word">
           {{ item.before_quality.split('/')[-1] if item.before_quality else '&mdash;' }}
         </td>
-        <td class="mono small" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ item.after_quality or '' }}">
+        <td class="mono small" style="min-width:260px;white-space:normal;word-break:break-word">
           {{ item.after_quality.split('/')[-1] if item.after_quality else '&mdash;' }}
         </td>
         <td>
           {% if item.before_score is not none and item.after_score is not none %}
-            {% if score_delta > 0 %}
-              <span style="color:var(--success)">+{{ score_delta }}</span>
-            {% elif score_delta < 0 %}
-              <span style="color:var(--danger)">{{ score_delta }}</span>
-            {% else %}
-              <span style="color:var(--text-muted)">0</span>
-            {% endif %}
-          {% else %}&mdash;{% endif %}
+            {% set delta_span %}
+              {% if score_delta > 0 %}<span style="color:var(--success)">+{{ score_delta }}</span>
+              {% elif score_delta < 0 %}<span style="color:var(--danger)">{{ score_delta }}</span>
+              {% else %}<span style="color:var(--text-muted)">0</span>
+              {% endif %}
+            {% endset %}
+          {% elif item.after_score is not none %}
+            {% set delta_span %}<span style="color:var(--text-muted)">new</span>{% endset %}
+          {% else %}
+            {% set delta_span %}&mdash;{% endset %}
+          {% endif %}
+          {% if has_breakdown %}
+          <span class="score-link" style="cursor:pointer; text-decoration:underline dotted;"
+                onclick="toggleBreakdown('bd-h{{ item.id }}')" title="Click to see score breakdown">{{ delta_span }}</span>
+          {% else %}{{ delta_span }}{% endif %}
         </td>
       </tr>
+      {% if has_breakdown %}
+      <tr id="bd-h{{ item.id }}" class="breakdown-row" style="display:none">
+        <td colspan="7" class="mono small" style="color:var(--text-secondary,#888)">
+          {% for label, bd in [('Before', item.before_breakdown), ('After', item.after_breakdown)] %}
+          {% if bd %}
+          <div>
+            <strong>{{ label }}:</strong>
+            resolution {{ '%+d'|format(bd.resolution) }} ·
+            source {{ '%+d'|format(bd.source) }} ·
+            hdr {{ '%+d'|format(bd.hdr) }} ·
+            audio {{ '%+d'|format(bd.audio) }} ·
+            codec {{ '%+d'|format(bd.codec) }} ·
+            hevc adj {{ '%+d'|format(bd.hevc_adjustment) }} ·
+            size {{ '%+d'|format(bd.size_bonus) }} ·
+            <strong>= {{ bd.total }}</strong>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </td>
+      </tr>
+      {% endif %}
       {% endfor %}
       {% if not items %}
       <tr><td colspan="7" class="empty">No upgrades match the current filter.</td></tr>
