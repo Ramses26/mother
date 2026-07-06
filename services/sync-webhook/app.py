@@ -2713,6 +2713,25 @@ def _dedup_norm_title(title: str) -> str:
     return re.sub(r'[^a-z0-9]+', '', t)
 
 
+def _dedup_fetch_tier7_pending(instance: str) -> set:
+    """Normalized movie titles Upgraderr currently has an active tier7_profile_mismatch
+    entry for, per instance — read from a plain JSON export Upgraderr writes after
+    each sweep (/opt/mother/data/upgraderr/tier7_pending.json), NOT a live SQLite read
+    against upgraderr.db: a read-only bind mount can't create the -shm file WAL mode
+    needs, so direct cross-container SQLite reads intermittently failed with "unable
+    to open database file." This mirrors the trash_scoring.json pattern already used
+    for read-only cross-service config sharing in this codebase.
+
+    Raises on failure rather than returning set() — this is the automated,
+    unattended dedup path (see nightly_unraid_dedup's fail-closed handling below);
+    an empty set must mean "genuinely nothing pending," never "the file was
+    unreadable.\""""
+    path = os.environ.get('TIER7_PENDING_PATH', '/data/upgraderr_ro/tier7_pending.json')
+    with open(path) as f:
+        data = json.load(f)
+    return {_dedup_norm_title(t) for t in data.get(instance, []) if t}
+
+
 def _dedup_fetch_radarr_tracked(url: str, api_key: str) -> dict:
     """normalized movie title -> Radarr's currently tracked filename (lowercase).
 
@@ -2768,7 +2787,8 @@ def _dedup_fetch_sonarr_tracked(url: str, api_key: str) -> dict:
 
 
 def _dedup_enforce_profile_authority(groups: list, tracked_by_title: dict = None,
-                                      tracked_by_episode: dict = None, media_type: str = 'movie') -> None:
+                                      tracked_by_episode: dict = None, media_type: str = 'movie',
+                                      tier7_pending: set = None) -> None:
     """Re-rank each duplicate group in place so the file Radarr/Sonarr is currently
     tracking is always first (kept), regardless of raw TRaSH score — see CLAUDE.md
     Profile Authority. Without this, the automatic nightly dedup could delete the
@@ -2777,6 +2797,14 @@ def _dedup_enforce_profile_authority(groups: list, tracked_by_title: dict = None
     32 of 305 Unraid HD movie duplicate groups had exactly this mismatch before this
     fix (found via the equivalent fix in curatorr/routes/duplicates.py — mirrored
     here since this dedup job calls the Unraid Agent directly, not through Curatorr).
+
+    tier7_pending (movies only): normalized titles Upgraderr currently has an active
+    tier7_profile_mismatch entry for — Radarr's tracked file (the one kept here)
+    itself violates its assigned profile and a search for a replacement is already
+    underway. Deleting the "duplicate" alternates in that window means Radarr will
+    likely re-download essentially the same thing shortly after — pure waste. Marks
+    non-kept versions un-deletable until Tier 7 resolves (see
+    scripts/resolve_tier7_remux_duplicates.py).
     """
     for grp in groups:
         versions = grp.get('versions') or []
@@ -2796,13 +2824,20 @@ def _dedup_enforce_profile_authority(groups: list, tracked_by_title: dict = None
         tracked_idx = next(
             (i for i, v in enumerate(versions) if v['filename'].lower() == tracked_fname), None
         )
-        if tracked_idx is None or tracked_idx == 0:
+        if tracked_idx is None:
             continue
 
-        tracked_version = versions.pop(tracked_idx)
-        tracked_version['kept_reason'] = 'profile_authority'
-        versions.insert(0, tracked_version)
-        grp['versions'] = versions
+        if tracked_idx != 0:
+            tracked_version = versions.pop(tracked_idx)
+            tracked_version['kept_reason'] = 'profile_authority'
+            versions.insert(0, tracked_version)
+            grp['versions'] = versions
+
+        if (media_type == 'movie' and tier7_pending
+                and _dedup_norm_title(grp['title']) in tier7_pending):
+            for v in versions[1:]:
+                v['safe_to_delete'] = False
+                v['pending_tier7'] = True
 
 
 def nightly_unraid_dedup():
@@ -2930,9 +2965,15 @@ def nightly_unraid_dedup():
         radarr_4k_tracked = _dedup_fetch_radarr_tracked(RADARR_4K_URL, RADARR_4K_API_KEY)
         sonarr_hd_tracked = _dedup_fetch_sonarr_tracked(SONARR_HD_URL, SONARR_HD_API_KEY)
         sonarr_4k_tracked = _dedup_fetch_sonarr_tracked(SONARR_4K_URL, SONARR_4K_API_KEY)
+        # tier7_pending: same fail-closed treatment as the tracked-file fetches above —
+        # this is the unattended automated path, so if we can't confirm what Upgraderr
+        # currently has an active profile-mismatch search out for, we must not assume
+        # nothing does. See _dedup_enforce_profile_authority()'s tier7_pending docstring.
+        radarr_hd_tier7 = _dedup_fetch_tier7_pending('radarr-hd')
+        radarr_4k_tier7 = _dedup_fetch_tier7_pending('radarr-4k')
         unraid_groups = scan_data.get('unraid', {})
-        _dedup_enforce_profile_authority(unraid_groups.get('hd_movies', []), tracked_by_title=radarr_hd_tracked, media_type='movie')
-        _dedup_enforce_profile_authority(unraid_groups.get('4k_movies', []), tracked_by_title=radarr_4k_tracked, media_type='movie')
+        _dedup_enforce_profile_authority(unraid_groups.get('hd_movies', []), tracked_by_title=radarr_hd_tracked, media_type='movie', tier7_pending=radarr_hd_tier7)
+        _dedup_enforce_profile_authority(unraid_groups.get('4k_movies', []), tracked_by_title=radarr_4k_tracked, media_type='movie', tier7_pending=radarr_4k_tier7)
         _dedup_enforce_profile_authority(unraid_groups.get('hd_tv', []), tracked_by_episode=sonarr_hd_tracked, media_type='tv')
         _dedup_enforce_profile_authority(unraid_groups.get('4k_tv', []), tracked_by_episode=sonarr_4k_tracked, media_type='tv')
     except Exception as e:

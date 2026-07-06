@@ -507,6 +507,62 @@ def _fetch_radarr_tracked(inst_name: str) -> dict:
     return out
 
 
+def _movie_title_from_path(path: str) -> str:
+    """Extract the movie folder name from a file path (e.g.
+    '/mnt/user/Media/Movies/Ninja Assassin (2009)/file.mkv' -> 'Ninja Assassin (2009)'),
+    stripping any {tmdb-...} suffix if present."""
+    folder = os.path.basename(os.path.dirname(path))
+    return re.sub(r'\s*\{tmdb-\d+\}', '', folder).strip()
+
+
+def _reject_tier7_pending_items(items) -> tuple:
+    """Server-side enforcement, not just a UI nicety — a stale client-side selection
+    (made before a re-scan flagged a file pending_tier7) would otherwise still reach
+    the delete endpoint unfiltered, since the frontend only disables the checkbox.
+    Returns (safe_items, rejected_results) — safe_items is what should actually be
+    deleted; rejected_results are pre-formatted {'file_path','ok':False,'error':...}
+    entries for anything currently tier7-pending, to merge into the response as-is.
+
+    Fails open (returns items unfiltered) on fetch error — this is the interactive,
+    human-confirmed delete path, not the automated nightly job; the scan itself
+    already surfaced tier7_guard.ok=False to the human if the check couldn't run, so
+    silently blocking every delete here on a transient DB read hiccup would be worse
+    than the (already-flagged-to-the-human) risk of a rare unguarded delete."""
+    try:
+        tier7 = _fetch_tier7_pending('radarr-hd') | _fetch_tier7_pending('radarr-4k')
+    except Exception as e:
+        log.warning(f"Tier7-pending check failed during delete (proceeding unfiltered): {e}")
+        return items, []
+
+    safe, rejected = [], []
+    for item in items:
+        title = _movie_title_from_path(item.file_path)
+        if title and _norm_title(title) in tier7:
+            rejected.append({'file_path': item.file_path, 'ok': False,
+                              'error': 'Blocked: Upgraderr has an active Tier 7 replacement pending for this movie'})
+        else:
+            safe.append(item)
+    return safe, rejected
+
+
+def _fetch_tier7_pending(instance: str) -> set:
+    """Normalized movie titles Upgraderr currently has an active tier7_profile_mismatch
+    entry for, per instance — read from a plain JSON export Upgraderr writes after
+    each sweep (/opt/mother/data/upgraderr/tier7_pending.json), NOT a live SQLite read
+    against upgraderr.db: a read-only bind mount can't create the -shm file WAL mode
+    needs, so direct cross-container SQLite reads intermittently failed with "unable
+    to open database file." This mirrors the trash_scoring.json pattern already used
+    for read-only cross-service config sharing in this codebase.
+
+    Raises on failure rather than returning set() — same convention as
+    _fetch_radarr_tracked: an empty set must mean "genuinely nothing pending," never
+    "the file was unreadable," or the guard silently no-ops."""
+    path = os.environ.get('TIER7_PENDING_PATH', '/data/upgraderr_ro/tier7_pending.json')
+    with open(path) as f:
+        data = json.load(f)
+    return {_norm_title(t) for t in data.get(instance, []) if t}
+
+
 def _fetch_sonarr_tracked(inst_name: str) -> dict:
     """(tvdbId, 'S####E####') -> Sonarr's currently tracked episode filename (lowercase).
 
@@ -546,7 +602,8 @@ def _fetch_sonarr_tracked(inst_name: str) -> dict:
 
 
 def _enforce_profile_authority(groups: list, tracked_by_title: dict = None,
-                                tracked_by_episode: dict = None, media_type: str = 'movie') -> None:
+                                tracked_by_episode: dict = None, media_type: str = 'movie',
+                                tier7_pending: set = None) -> None:
     """Re-rank each duplicate group in place so the file Radarr/Sonarr is currently
     tracking is always first (kept), regardless of raw TRaSH score — see CLAUDE.md
     Profile Authority. Without this, a stray higher-scoring orphan (e.g. a leftover
@@ -555,6 +612,17 @@ def _enforce_profile_authority(groups: list, tracked_by_title: dict = None,
     that caused the 2026-07 sync-webhook incident, just via the duplicate scanner
     instead of the reconcile job. Confirmed live 2026-07-02: 32 of 305 Unraid HD
     movie duplicate groups had this exact mismatch before this fix.
+
+    tier7_pending (movies only): normalized titles Upgraderr currently has an active
+    tier7_profile_mismatch entry for — i.e. Radarr's tracked file (the one we're about
+    to keep here) itself violates its assigned profile and Radarr has already been
+    told to search for a replacement. Found live 2026-07-06: 140 of 196 Unraid HD
+    movie duplicate groups keeping a Remux were in this exact state — deleting the
+    "duplicate" Bluray alternates in that window is pure waste, since Radarr will
+    otherwise re-download essentially the same thing via Tier 7 shortly after. Marks
+    the non-kept versions un-deletable and flagged until Tier 7 resolves (see
+    scripts/resolve_tier7_remux_duplicates.py and the incident-flagged plan this was
+    added for).
     """
     for grp in groups:
         versions = grp.get('versions') or []
@@ -581,12 +649,18 @@ def _enforce_profile_authority(groups: list, tracked_by_title: dict = None,
             # Authority is still the reason it's kept, so the UI badge should say
             # so rather than defaulting to "kept: highest score" for this common case.
             versions[0]['kept_reason'] = 'profile_authority'
-            continue
+        else:
+            tracked_version = versions.pop(tracked_idx)
+            tracked_version['kept_reason'] = 'profile_authority'
+            versions.insert(0, tracked_version)
+            grp['versions'] = versions
 
-        tracked_version = versions.pop(tracked_idx)
-        tracked_version['kept_reason'] = 'profile_authority'
-        versions.insert(0, tracked_version)
-        grp['versions'] = versions
+        if (media_type == 'movie' and tier7_pending
+                and _norm_title(grp['title']) in tier7_pending):
+            for v in versions[1:]:
+                v['safe_to_delete'] = False
+                v['pending_tier7'] = True
+
         grp['deletable_size_bytes'] = sum(
             v['file_size_bytes'] for v in versions[1:]
             if v.get('safe_to_delete', True)
@@ -652,14 +726,28 @@ def _do_filesystem_scan(refresh_unraid: bool = False) -> dict:
     # pure filesystem) know what Radarr/Sonarr currently tracks — they only sort by
     # raw TRaSH score. Re-rank every group here so the actively-tracked file always
     # wins, regardless of score. See _enforce_profile_authority() docstring.
+    # tier7_pending fetch is a separate concern from Profile Authority itself (it can
+    # fail independently) — see _enforce_profile_authority()'s tier7_pending docstring.
+    # Fails open (scan still returns, tier7_guard.ok=False signals the UI) since this
+    # is a human-reviewed page, not automated deletion — same risk tier as
+    # profile_authority.ok above.
+    try:
+        radarr_hd_tier7 = _fetch_tier7_pending('radarr-hd')
+        radarr_4k_tier7 = _fetch_tier7_pending('radarr-4k')
+        result['tier7_guard'] = {'ok': True}
+    except Exception as e:
+        log.error(f"Tier 7 pending-check failed (duplicates won't be flagged as tier7-pending this scan): {e}")
+        radarr_hd_tier7 = radarr_4k_tier7 = set()
+        result['tier7_guard'] = {'ok': False, 'error': str(e)}
+
     try:
         radarr_hd_tracked = _fetch_radarr_tracked('radarr-hd')
         radarr_4k_tracked = _fetch_radarr_tracked('radarr-4k')
         sonarr_hd_tracked = _fetch_sonarr_tracked('sonarr-hd')
         sonarr_4k_tracked = _fetch_sonarr_tracked('sonarr-4k')
         for src in ('synology', 'unraid'):
-            _enforce_profile_authority(result[src]['hd_movies'], tracked_by_title=radarr_hd_tracked, media_type='movie')
-            _enforce_profile_authority(result[src]['4k_movies'], tracked_by_title=radarr_4k_tracked, media_type='movie')
+            _enforce_profile_authority(result[src]['hd_movies'], tracked_by_title=radarr_hd_tracked, media_type='movie', tier7_pending=radarr_hd_tier7)
+            _enforce_profile_authority(result[src]['4k_movies'], tracked_by_title=radarr_4k_tracked, media_type='movie', tier7_pending=radarr_4k_tier7)
             _enforce_profile_authority(result[src]['hd_tv'], tracked_by_episode=sonarr_hd_tracked, media_type='tv')
             _enforce_profile_authority(result[src]['4k_tv'], tracked_by_episode=sonarr_4k_tracked, media_type='tv')
         result['profile_authority'] = {'ok': True}
@@ -765,10 +853,10 @@ async def bulk_delete_duplicates(body: BulkDeleteRequest, _auth=Depends(require_
     """
     from app.notifications import send_notification
 
-    results = []
+    safe_items, results = _reject_tier7_pending_items(body.items)
     total_freed = 0
 
-    for item in body.items:
+    for item in safe_items:
         path = item.file_path
 
         # Issue 5 fix: bulk_delete only handles Synology paths.
@@ -852,12 +940,20 @@ async def unraid_delete_duplicates(body: BulkDeleteRequest, _auth=Depends(requir
     import urllib.request
     import urllib.error
 
-    payload = _json.dumps({'paths': [item.file_path for item in body.items]}).encode()
-    url = f"{UNRAID_AGENT_URL.rstrip('/')}/delete"
+    safe_items, rejected = _reject_tier7_pending_items(body.items)
+
     if body.dry_run:
         # Agent doesn't support dry_run — simulate from size lookups
-        return {'deleted': 0, 'failed': 0, 'total_freed_bytes': 0, 'dry_run': True,
-                'results': [{'file_path': i.file_path, 'ok': True, 'dry_run': True} for i in body.items]}
+        results = [{'file_path': i.file_path, 'ok': True, 'dry_run': True} for i in safe_items] + rejected
+        return {'deleted': 0, 'failed': len(rejected), 'total_freed_bytes': 0, 'dry_run': True,
+                'results': results}
+
+    if not safe_items:
+        return {'deleted': 0, 'failed': len(rejected), 'total_freed_bytes': 0, 'dry_run': False,
+                'results': rejected}
+
+    payload = _json.dumps({'paths': [item.file_path for item in safe_items]}).encode()
+    url = f"{UNRAID_AGENT_URL.rstrip('/')}/delete"
 
     try:
         req = urllib.request.Request(url, data=payload, method='POST',
@@ -883,10 +979,11 @@ async def unraid_delete_duplicates(body: BulkDeleteRequest, _auth=Depends(requir
     errors = agent_result.get('errors', [])
     results = [{'file_path': p, 'ok': True, 'freed_bytes': 0} for p in agent_result.get('deleted', [])]
     results += [{'file_path': e['path'], 'ok': False, 'error': e['error']} for e in errors]
+    results += rejected
 
     return {
         'deleted': ok_count,
-        'failed': len(errors),
+        'failed': len(errors) + len(rejected),
         'total_freed_bytes': freed,
         'dry_run': False,
         'results': results,

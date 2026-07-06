@@ -997,6 +997,38 @@ def _run_sweep(trigger):
             f"Upgraderr sweep complete: {budget.total} searches triggered ({tier_summary})"
         )
     log.info(f"Sweep done: {budget.total} searches triggered across all instances")
+    _export_tier7_pending()
+
+
+def _export_tier7_pending():
+    """Write the current tier7_profile_mismatch titles per instance to a plain JSON
+    file for Curatorr/sync-webhook to read (their duplicate-scanner/dedup Profile
+    Authority guard needs to know what Radarr already has a pending profile-mismatch
+    replacement search out for, so they don't delete an alternate that might resolve
+    it — see scripts/resolve_tier7_remux_duplicates.py).
+
+    Deliberately a flat JSON export, not direct cross-container SQLite access to
+    upgraderr.db: a read-only bind mount can't create the -shm file WAL mode needs,
+    so cross-process reads intermittently fail with "unable to open database file."
+    A plain file (write-temp-then-rename for atomicity) mirrors the same pattern
+    already used for configs/scoring/trash_scoring.json — the proven, simple approach
+    in this codebase for read-only cross-service data sharing.
+    """
+    try:
+        db = get_db()
+        rows = db.execute(
+            "SELECT DISTINCT instance, title FROM upgrade_queue WHERE upgrade_reason='tier7_profile_mismatch'"
+        ).fetchall()
+        by_instance = {}
+        for r in rows:
+            by_instance.setdefault(r['instance'], []).append(r['title'])
+        out_path = os.environ.get('TIER7_PENDING_EXPORT_PATH', '/data/tier7_pending.json')
+        tmp_path = out_path + '.tmp'
+        with open(tmp_path, 'w') as f:
+            json.dump(by_instance, f)
+        os.replace(tmp_path, out_path)
+    except Exception as e:
+        log.error(f"Failed to export tier7_pending.json: {e}")
 
 
 def _is_paused():

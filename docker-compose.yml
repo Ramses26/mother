@@ -626,6 +626,7 @@ services:
       - UNRAID_AGENT_API_KEY=${UNRAID_AGENT_API_KEY:-}
       - ALI_PLEX_USERNAME=${ALI_PLEX_USERNAME:-}
       - CHRIS_PLEX_USERNAME=${CHRIS_PLEX_USERNAME:-}
+      - TIER7_PENDING_PATH=${TIER7_PENDING_PATH:-/data/upgraderr_ro/tier7_pending.json}
     volumes:
       - /opt/mother/data/curatorr:/data
       - /opt/mother/data/logs/curatorr:/logs
@@ -634,6 +635,12 @@ services:
       - /mnt/synology/rs-tv:/mnt/synology/rs-tv
       - /mnt/synology/rs-4kmedia:/mnt/synology/rs-4kmedia
       - /opt/mother/configs/scoring/trash_scoring.json:/app/scoring/trash_scoring.json:ro
+      # Read-only cross-service access to Upgraderr's tier7_profile_mismatch queue —
+      # a plain JSON export (written by Upgraderr after each sweep), not direct
+      # cross-container SQLite access: a read-only bind mount can't create the -shm
+      # file WAL mode needs, so cross-process SQLite reads intermittently failed with
+      # "unable to open database file." Mirrors the trash_scoring.json pattern below.
+      - /opt/mother/data/upgraderr/tier7_pending.json:/data/upgraderr_ro/tier7_pending.json:ro
     restart: unless-stopped
     logging: *default-logging
     networks:
@@ -704,6 +711,7 @@ services:
       - DEDUP_DRY_RUN=${DEDUP_DRY_RUN:-false}
       - DEDUP_WARN_MINUTES=${DEDUP_WARN_MINUTES:-10}
       - DEDUP_MIN_AGE_HOURS=${DEDUP_MIN_AGE_HOURS:-24}
+      - TIER7_PENDING_PATH=${TIER7_PENDING_PATH:-/data/upgraderr_ro/tier7_pending.json}
     volumes:
       # Synology NFS mounts (rw: source for forward sync, destination for reverse sync)
       - /mnt/synology/rs-movies:/mnt/synology/rs-movies
@@ -716,6 +724,12 @@ services:
       - ${CONFIG_PATH}/sync-webhook/data:/data
       # Shared TRaSH scoring config (single source of truth across all services)
       - /opt/mother/configs/scoring/trash_scoring.json:/app/scoring/trash_scoring.json:ro
+      # Read-only cross-service access to Upgraderr's tier7_profile_mismatch queue —
+      # a plain JSON export (written by Upgraderr after each sweep), not direct
+      # cross-container SQLite access: a read-only bind mount can't create the -shm
+      # file WAL mode needs, so cross-process SQLite reads intermittently failed with
+      # "unable to open database file." Mirrors the trash_scoring.json pattern above.
+      - /opt/mother/data/upgraderr/tier7_pending.json:/data/upgraderr_ro/tier7_pending.json:ro
     ports:
       - "${SYNC_WEBHOOK_PORT:-5001}:5000"
     restart: unless-stopped

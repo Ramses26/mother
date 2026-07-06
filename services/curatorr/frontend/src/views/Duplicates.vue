@@ -53,6 +53,15 @@
           <span class="text-red-300">({{ scanData.profile_authority.error }})</span>
         </div>
 
+        <!-- Tier 7 pending-check failed — can't confirm whether any "Delete" picks are about to be
+             replaced by Upgraderr's own search anyway; they just won't be flagged this scan -->
+        <div v-if="scanData?.tier7_guard?.ok === false"
+          class="mb-5 p-3 rounded-lg bg-amber-900/20 border border-amber-700/50 text-xs text-amber-400">
+          ⚠️ Couldn't check Upgraderr's pending Tier 7 replacements this scan — some "Delete" picks below might be
+          about to be replaced by Radarr anyway (wasted re-download if deleted now). Review carefully.
+          <span class="text-amber-300">({{ scanData.tier7_guard.error }})</span>
+        </div>
+
         <!-- Agent unavailable notice for Unraid tabs -->
         <div v-if="currentTab.server === 'unraid' && scanData?.unraid_agent?.ok === false"
           class="text-center py-16 text-slate-500">
@@ -116,7 +125,9 @@
                       :class="idx === 0 ? 'border-green-700/50 bg-green-900/10' : 'border-surface-300 bg-surface-100'">
 
                       <div class="pt-0.5 w-5 flex-shrink-0">
-                        <input v-if="idx > 0" type="checkbox" class="accent-violet-500 w-4 h-4 cursor-pointer"
+                        <input v-if="idx > 0" type="checkbox" class="accent-violet-500 w-4 h-4"
+                          :class="v.pending_tier7 ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'"
+                          :disabled="v.pending_tier7"
                           :checked="selected.has(v.file_path)"
                           @change="toggleFile(v)" />
                         <span v-else class="text-green-500 text-xs leading-5">✓</span>
@@ -140,7 +151,12 @@
 
                       <div class="flex-shrink-0 self-start pt-0.5 text-right">
                         <span v-if="idx === 0" class="text-green-500 text-xs font-medium">Keep</span>
+                        <span v-else-if="v.pending_tier7" class="text-amber-400 text-xs font-medium">Delete</span>
                         <span v-else class="text-red-400 text-xs">Delete</span>
+                        <div v-if="idx > 0 && v.pending_tier7" class="text-[10px] mt-0.5 text-amber-400"
+                          title="Upgraderr already has an active Tier 7 (profile mismatch) search out for this movie's tracked file — this copy may be the resolution for it, don't delete yet. See scripts/resolve_tier7_remux_duplicates.py.">
+                          ⏳ pending tier7
+                        </div>
                         <div v-if="idx === 0" class="text-[10px] mt-0.5"
                           :class="v.kept_reason === 'profile_authority' ? 'text-violet-400' : 'text-slate-500'"
                           :title="v.kept_reason === 'profile_authority'
@@ -263,6 +279,25 @@ const _pollOnce = () => {
     try {
       const res = await axios.get('/api/duplicates/scan', { params: { refresh: false } })
       scanData.value = res.data
+      // Fresh data may flag previously-selected files as pending_tier7 (a scan that
+      // started before this poll landed) — the delete endpoint rejects these
+      // server-side regardless, but drop them from the visible selection too so the
+      // toolbar count doesn't promise something that will partially fail.
+      if (selected.value.size > 0) {
+        const stillPending = new Set()
+        for (const ftype of Object.keys(res.data[currentTab.value?.server] || {})) {
+          for (const g of res.data[currentTab.value.server][ftype] || []) {
+            for (const v of g.versions || []) {
+              if (v.pending_tier7 && selected.value.has(v.file_path)) stillPending.add(v.file_path)
+            }
+          }
+        }
+        if (stillPending.size > 0) {
+          const s = new Set(selected.value)
+          for (const p of stillPending) s.delete(p)
+          selected.value = s
+        }
+      }
       if (res.data.scanning) {
         _pollTimer = setTimeout(_pollOnce, 6000)
       } else {
@@ -327,7 +362,10 @@ const toggleFile = (v) => {
 
 const sectionCandidates = (ftypeKey) => {
   if (!serverData.value?.[ftypeKey]) return []
-  return serverData.value[ftypeKey].flatMap(g => g.versions.slice(1))
+  // Exclude pending_tier7 versions — "select all" must respect the same guard as
+  // the individual (disabled) checkboxes, or it silently re-includes files a stale
+  // selection could otherwise sneak past the per-row disable.
+  return serverData.value[ftypeKey].flatMap(g => g.versions.slice(1)).filter(v => !v.pending_tier7)
 }
 
 const sectionSelectedCount = (ftypeKey) =>
