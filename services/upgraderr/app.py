@@ -428,11 +428,12 @@ def check_login_rate(ip):
 
 # Notification category keys (stored in config table)
 NOTIFY_KEYS = {
-    'notify_each_search':   ('Each individual search triggered',       'false'),  # Very noisy — off by default
-    'notify_sweep_summary': ('Sweep complete summary',                 'true'),
-    'notify_pause_resume':  ('Pause / Resume events',                  'true'),
-    'notify_errors':        ('Errors (instance unreachable, etc.)',    'true'),
-    'notify_bad_import':    ('Bad release imported (CRITICAL — keep on)',  'true'),
+    'notify_each_search':    ('Each individual search triggered',       'false'),  # Very noisy — off by default
+    'notify_sweep_summary':  ('Sweep complete summary',                 'true'),
+    'notify_pause_resume':   ('Pause / Resume events',                 'true'),
+    'notify_errors':         ('Errors (instance unreachable, etc.)',    'true'),
+    'notify_bad_import':     ('Bad release imported (CRITICAL — keep on)',  'true'),
+    'notify_no_source_found': ('No acceptable release found (informational, long-interval recheck)', 'true'),
 }
 
 def _notify_enabled(category):
@@ -2379,7 +2380,7 @@ def _flag_if_bad_import(inst, media_type, media_id, title, before_quality, befor
             f"🔈 Upgraderr: no surround-audio release found for {title}\n"
             f"File: {(after_quality or '?').split('/')[-1]}\n"
             f"Will keep checking on a long interval (30/60/90/180 days) — no action needed.",
-            category='notify_bad_import'
+            category='notify_no_source_found'
         )
         return
 
