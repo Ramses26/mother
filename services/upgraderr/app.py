@@ -916,8 +916,10 @@ def _cleanup_stale_queue(inst):
     db = get_db()
 
     if inst_type == 'radarr':
+        # Includes 'found' status — see the matching comment in _sweep_radarr for why
+        # excluding it left resolved entries stuck forever.
         pending = db.execute(
-            "SELECT media_id FROM upgrade_queue WHERE instance=? AND media_type='movie' AND status IN ('pending','searching')",
+            "SELECT media_id FROM upgrade_queue WHERE instance=? AND media_type='movie'",
             (inst_name,)
         ).fetchall()
         is_4k = '4k' in inst_name.lower()
@@ -1147,7 +1149,16 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
         tiers = [(t, r) for (t, r) in tiers if _tier_enabled(t)]
         if not tiers:
             row = _db_get_queue_entry(inst_name, mid, 'movie')
-            if row and row['status'] in ('pending', 'searching'):
+            # Clear regardless of status (including 'found') — a webhook-triggered
+            # import that didn't actually fix the flagged tier previously froze the
+            # row at status='found' forever, since only 'pending'/'searching' rows
+            # were eligible for this clear-on-resolve delete. Confirmed live 2026-07-06:
+            # a genuinely-resolved tier7_profile_mismatch entry (Ninja Assassin, fixed
+            # via manual reverse-sync + import) stayed stuck at status='found' from a
+            # stale 2026-06-29 search, never re-evaluated or cleared by any sweep in
+            # between — undermining the tier7_pending guard's "row exists = still
+            # pending" assumption in duplicates.py/_dedup_fetch_tier7_pending.
+            if row:
                 db = get_db()
                 with _db_lock:
                     db.execute("DELETE FROM upgrade_queue WHERE instance=? AND media_id=? AND media_type='movie'",
@@ -1300,11 +1311,13 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
                 seasons[snum]['top_tier'] = top_tier
                 seasons[snum]['top_reason'] = top_reason
 
-        # Clean up stale season entries for this series (seasons that no longer qualify)
+        # Clean up stale season entries for this series (seasons that no longer qualify).
+        # Includes 'found' status — see the matching movie-side comment in _sweep_radarr
+        # for why excluding it left resolved entries stuck forever.
         db = get_db()
         stale_rows = db.execute(
             "SELECT media_id FROM upgrade_queue WHERE instance=? AND media_id BETWEEN ? AND ? "
-            "AND media_type='season' AND status IN ('pending','searching')",
+            "AND media_type='season'",
             (inst_name, sid * 10000 + 1, sid * 10000 + 9999)
         ).fetchall()
         for stale_row in stale_rows:

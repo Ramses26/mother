@@ -3897,6 +3897,66 @@ def manual_sync():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/sync/reverse', methods=['POST'])
+def sync_reverse():
+    """
+    Queue a reverse sync (Unraid -> Synology) with explicit source/dest paths,
+    bypassing translate_path() (which only computes the forward direction).
+
+    Built for one-off resolution tools — e.g. scripts/resolve_tier7_remux_duplicates.py
+    copying an existing Unraid alternate back to Synology so Radarr can import it
+    without a new indexer download. delete_after_sync is intentionally NOT exposed
+    here: the caller decides cleanup timing (e.g. only after confirming Radarr's
+    manual import succeeded), so this endpoint never deletes anything — it only
+    copies. Reuses background_sync()'s existing dedup check, job tracking, retry,
+    and stall-watchdog infrastructure like every other sync path in this file.
+
+    JSON body:
+        source: full Unraid CIFS source path (file) (required)
+        dest: full Synology NFS destination folder (required)
+        title: display title for notifications (default: source basename)
+        media_type: 'Movie' or 'Episode' (default: 'Movie')
+    Returns 202 immediately; sync runs in background.
+    """
+    try:
+        data = request.json or {}
+        source = data.get('source')
+        dest = data.get('dest')
+        if not source or not dest:
+            return jsonify({'error': 'source and dest required'}), 400
+        if not os.path.exists(source):
+            return jsonify({'error': f'source not found: {source}'}), 404
+
+        title = data.get('title') or os.path.basename(source)
+        media_type = data.get('media_type', 'Movie')
+        quality = 'MovieReverseSync' if media_type == 'Movie' else 'TVReverseSync'
+        try:
+            file_size = os.path.getsize(source)
+        except OSError:
+            file_size = 0
+
+        logger.info(f"Manual reverse sync queued: {source} -> {dest} ({title})")
+        background_sync(source, dest, title, quality, file_size, media_type, delete_after_sync=None)
+
+        # background_sync() inserts the sync_jobs row synchronously (before spawning
+        # the copy thread) so it's already present by the time we look it up here —
+        # return the id so callers (e.g. the batch resolution script) can poll
+        # GET /jobs/<id> for completion instead of guessing at timing.
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        row = conn.execute(
+            "SELECT id FROM sync_jobs WHERE source_path=? AND status IN ('pending','in_progress') "
+            "ORDER BY id DESC LIMIT 1", (source,)
+        ).fetchone()
+        conn.close()
+        job_id = row[0] if row else None
+
+        return jsonify({'status': 'queued', 'source': source, 'dest': dest, 'job_id': job_id}), 202
+
+    except Exception as e:
+        logger.exception("Error in reverse sync")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/backup/list')
 def api_backup_list():
     return jsonify(list_backups())

@@ -639,8 +639,20 @@ services:
       # a plain JSON export (written by Upgraderr after each sweep), not direct
       # cross-container SQLite access: a read-only bind mount can't create the -shm
       # file WAL mode needs, so cross-process SQLite reads intermittently failed with
-      # "unable to open database file." Mirrors the trash_scoring.json pattern below.
-      - /opt/mother/data/upgraderr/tier7_pending.json:/data/upgraderr_ro/tier7_pending.json:ro
+      # "unable to open database file." Mirrors the trash_scoring.json pattern below —
+      # with one difference: this file is rewritten automatically every 30 min via
+      # Upgraderr's own os.replace()-based atomic swap (new inode each write), whereas
+      # trash_scoring.json is only ever hand-edited (rare, always followed by a
+      # documented container restart). Docker single-FILE bind mounts follow the
+      # inode at mount time, not the path — confirmed live 2026-07-06: after the
+      # first os.replace(), this container kept serving the original (now-stale)
+      # inode's content indefinitely, silently diverging from the host file, while
+      # Upgraderr's own container (which performs the write, not a bind-mount read of
+      # it) saw the fresh content immediately. Mounting the containing DIRECTORY
+      # instead resolves this: directory bind mounts follow the current directory
+      # entry for a given filename, so a replaced inode is visible on the next read
+      # without a container restart.
+      - /opt/mother/data/upgraderr:/data/upgraderr_ro:ro
     restart: unless-stopped
     logging: *default-logging
     networks:
@@ -728,8 +740,20 @@ services:
       # a plain JSON export (written by Upgraderr after each sweep), not direct
       # cross-container SQLite access: a read-only bind mount can't create the -shm
       # file WAL mode needs, so cross-process SQLite reads intermittently failed with
-      # "unable to open database file." Mirrors the trash_scoring.json pattern above.
-      - /opt/mother/data/upgraderr/tier7_pending.json:/data/upgraderr_ro/tier7_pending.json:ro
+      # "unable to open database file." Mirrors the trash_scoring.json pattern above —
+      # with one difference: this file is rewritten automatically every 30 min via
+      # Upgraderr's own os.replace()-based atomic swap (new inode each write), whereas
+      # trash_scoring.json is only ever hand-edited (rare, always followed by a
+      # documented container restart). Docker single-FILE bind mounts follow the
+      # inode at mount time, not the path — confirmed live 2026-07-06: after the
+      # first os.replace(), this container kept serving the original (now-stale)
+      # inode's content indefinitely, silently diverging from the host file, while
+      # Upgraderr's own container (which performs the write, not a bind-mount read of
+      # it) saw the fresh content immediately. Mounting the containing DIRECTORY
+      # instead resolves this: directory bind mounts follow the current directory
+      # entry for a given filename, so a replaced inode is visible on the next read
+      # without a container restart.
+      - /opt/mother/data/upgraderr:/data/upgraderr_ro:ro
     ports:
       - "${SYNC_WEBHOOK_PORT:-5001}:5000"
     restart: unless-stopped
