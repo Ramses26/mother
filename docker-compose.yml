@@ -132,11 +132,14 @@ services:
       - UN_SONARR_1_API_KEY=${SONARR_4K_API_KEY}
       - UN_SONARR_1_PATHS_0=/downloads/sonarr-4k
       - UN_SONARR_1_PROTOCOLS=torrent
-      # Telegram notifications
+      # Telegram notifications — errors only (EXTRACTFAILED=3, DELETEFAILED=7).
+      # Was EVENTS_0=0 (all events: queued/extracting/extracted/imported/deleting/
+      # deleted too) which fired on every normal extraction, not just failures.
       - UN_WEBHOOK_0_URL=https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage
       - UN_WEBHOOK_0_NICKNAME=${TELEGRAM_CHAT_ID}
       - UN_WEBHOOK_0_TEMPLATE=telegram
-      - UN_WEBHOOK_0_EVENTS_0=0
+      - UN_WEBHOOK_0_EVENTS_0=3
+      - UN_WEBHOOK_0_EVENTS_1=7
     networks:
       - mother_network
 
