@@ -253,6 +253,21 @@ async function resetCooldown(itemId, btn) {
   }
 }
 
+// ── Skip-tag review ───────────────────────────────────────────────────────
+
+async function clearSkip(instance, mediaType, mediaId, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Clearing…';
+  try {
+    await apiFetch(`/api/skipped/${instance}/${mediaType}/${mediaId}/clear`, 'POST');
+    const row = btn.closest('tr');
+    if (row) row.remove();
+  } catch (e) {
+    btn.textContent = '✗ Error';
+    btn.disabled = false;
+  }
+}
+
 // ── Score breakdown toggle ────────────────────────────────────────────────
 
 function toggleBreakdown(id) {

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Skipped — Upgraderr{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Skipped Items</h1>
+  <span class="stat-badge">{{ items|length }} items</span>
+</div>
+
+<p class="help-text">
+  Movies/series tagged <code>upgraderr-skip</code> — Upgraderr found a real quality
+  problem (bad container, known-bad release group, etc.) in the file it imported and
+  won't auto-search this title again until you review it here. This is a separate,
+  stricter list than the normal upgrade queue: routine "no better release found yet"
+  cases (720p-only shows, no surround audio available) are <em>not</em> tagged —
+  those just keep rechecking on a long interval automatically, no action needed.
+  Clearing the tag re-enables normal tier searches on the next sweep.
+</p>
+
+{% if errors %}
+<div class="alert alert-warning">Could not reach: {{ errors|join(', ') }} — its skipped items aren't shown below.</div>
+{% endif %}
+
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Instance</th>
+        <th>Type</th>
+        <th>Current File</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.title }}</td>
+        <td><span class="badge badge-gray">{{ item.instance }}</span></td>
+        <td class="mono small">{{ item.media_type }}</td>
+        <td class="mono small">{{ item.quality or '—' }}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-sm btn-ghost"
+                  onclick="clearSkip('{{ item.instance }}', '{{ item.media_type }}', {{ item.id }}, this)">
+            Clear & re-enable
+          </button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty">Nothing currently skipped.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

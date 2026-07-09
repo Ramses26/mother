@@ -87,7 +87,15 @@ TIER5_RECHECK_DAYS = [30, 60, 90, 180]
 MIN_SCORE          = int(os.environ.get('UPGRADERR_MIN_SCORE', '200'))
 SEASON_THRESHOLD       = int(os.environ.get('UPGRADERR_SEASON_THRESHOLD', '50'))
 NO_SOURCE_SYNC_THRESHOLD = int(os.environ.get('UPGRADERR_NO_SOURCE_SYNC_THRESHOLD', '2'))
-SYNC_WEBHOOK_URL       = os.environ.get('SYNC_WEBHOOK_URL', 'http://sync-webhook:5001')
+# Container-internal port (5000), NOT the host-mapped port (5001 = SYNC_WEBHOOK_PORT
+# in docker-compose.yml, only for connections from outside the Docker network).
+# Was wrongly defaulted to :5001 — confirmed live 2026-07-09 via `docker exec upgraderr`
+# that port 5001 gets "Connection refused" from inside the network while 5000 works.
+# This silently broke _trigger_fallback_sync() (the no-source-found fallback that's
+# supposed to sync current quality to Unraid) for as long as this default existed —
+# every call failed with a caught, log.warning-only exception, while the Telegram
+# notification claiming the sync was queued still fired unconditionally.
+SYNC_WEBHOOK_URL       = os.environ.get('SYNC_WEBHOOK_URL', 'http://sync-webhook:5000')
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 UPGRADERR_TG_CHAT  = os.environ.get('UPGRADERR_TELEGRAM_CHAT_ID', '')
 TMDB_BASE          = 'https://api.themoviedb.org/3'
@@ -765,6 +773,25 @@ def _sync_is_active() -> bool:
     except Exception:
         return False
 
+SYNC_QUEUE_PAUSE_THRESHOLD = int(os.environ.get('UPGRADERR_SYNC_QUEUE_PAUSE_THRESHOLD', '1000'))
+
+def _sync_queue_is_large() -> bool:
+    """True if sync-webhook has more than SYNC_QUEUE_PAUSE_THRESHOLD pending jobs.
+
+    Upgraderr's searches are the main indirect driver of sync-webhook's queue size
+    (every Radarr/Sonarr import a search leads to fires a webhook sync) — deferring
+    new searches while the queue is already backed up avoids compounding a backlog
+    sync-webhook is still working through. Fails open (returns False, i.e. sweep
+    proceeds normally) on any error — an unreachable sync-webhook must never silently
+    wedge Upgraderr's own sweep."""
+    try:
+        threshold = int(get_cfg('sync_queue_pause_threshold', str(SYNC_QUEUE_PAUSE_THRESHOLD)))
+        r = requests.get(f"{SYNC_WEBHOOK_URL}/api/pending-count", timeout=5)
+        r.raise_for_status()
+        return r.json().get('pending', 0) > threshold
+    except Exception:
+        return False
+
 # ---------------------------------------------------------------------------
 # Sweep rate limiting — in-memory counter (reliable, no DB-read race conditions)
 # ---------------------------------------------------------------------------
@@ -951,6 +978,11 @@ def _cleanup_stale_queue(inst):
 def _run_sweep(trigger):
     if _sync_is_active():
         log.info("Batch sync is active — deferring sweep to avoid conflicts")
+        return
+
+    if _sync_queue_is_large():
+        log.info(f"sync-webhook queue above {SYNC_QUEUE_PAUSE_THRESHOLD} pending — deferring sweep "
+                  f"to avoid compounding the backlog (will retry next scheduled sweep)")
         return
 
     _reload_config()
@@ -1801,6 +1833,79 @@ def queue_page():
         sort_col=sort_col, sort_dir=sort_dir,
     )
 
+@app.route('/skipped')
+@require_auth
+def skipped_page():
+    """Lists every movie/series currently tagged 'upgraderr-skip' across all
+    instances. This tag lives purely on Radarr/Sonarr's own tag system (see
+    _tag_upgraderr_skip) — Upgraderr's own DB has no record of it — so this reads
+    live from each *arr's API rather than a local table, same approach the tier
+    logic itself uses."""
+    items = []
+    errors = []
+    for inst_name, inst in get_instances_request().items():
+        if not inst.get('api_key'):
+            continue
+        tags = arr_get(inst, '/tag')
+        if tags is None:
+            errors.append(inst_name)
+            continue
+        skip_tag_id = next((t['id'] for t in tags if t['label'].lower() == 'upgraderr-skip'), None)
+        if skip_tag_id is None:
+            continue
+        if inst['type'] == 'radarr':
+            movies = arr_get(inst, '/movie') or []
+            for m in movies:
+                if skip_tag_id in (m.get('tags') or []):
+                    mf = m.get('movieFile') or {}
+                    items.append({
+                        'instance': inst_name, 'media_type': 'movie', 'id': m['id'],
+                        'title': f"{m['title']} ({m.get('year', '')})",
+                        'quality': os.path.basename(mf.get('relativePath', '') or mf.get('path', '') or ''),
+                    })
+        else:
+            series = arr_get(inst, '/series') or []
+            for s in series:
+                if skip_tag_id in (s.get('tags') or []):
+                    items.append({
+                        'instance': inst_name, 'media_type': 'series', 'id': s['id'],
+                        'title': f"{s['title']} ({s.get('year', '')})",
+                        'quality': '',
+                    })
+    items.sort(key=lambda x: x['title'].lower())
+    return render_template('skipped.html', items=items, errors=errors)
+
+
+@app.route('/api/skipped/<instance>/<media_type>/<int:media_id>/clear', methods=['POST'])
+@require_auth
+def api_clear_skip(instance, media_type, media_id):
+    """Remove the 'upgraderr-skip' tag so the item is eligible for normal tier
+    searches again on the next sweep. Does not touch cooldown_until on any existing
+    upgrade_queue row — if one exists and its cooldown has passed, the next sweep
+    picks it up normally; if none exists, a fresh row is created like any other
+    newly-detected tier match."""
+    inst = get_instance(instance)
+    if not inst:
+        return jsonify({'error': 'unknown instance'}), 404
+    entity_path = '/movie' if media_type == 'movie' else '/series'
+    tags = arr_get(inst, '/tag')
+    if tags is None:
+        return jsonify({'error': 'could not reach instance'}), 502
+    tag_id = next((t['id'] for t in tags if t['label'].lower() == 'upgraderr-skip'), None)
+    if tag_id is None:
+        return jsonify({'status': 'ok', 'message': 'no upgraderr-skip tag exists on this instance'})
+    entity = arr_get(inst, f'{entity_path}/{media_id}')
+    if not entity:
+        return jsonify({'error': 'not found'}), 404
+    if tag_id not in (entity.get('tags') or []):
+        return jsonify({'status': 'ok', 'message': 'already untagged'})
+    entity['tags'] = [t for t in entity['tags'] if t != tag_id]
+    result = arr_put(inst, f'{entity_path}/{media_id}', entity)
+    if result is None:
+        return jsonify({'error': 'failed to update tags via *arr API'}), 502
+    return jsonify({'status': 'cleared'})
+
+
 @app.route('/history')
 @require_auth
 def history_page():
@@ -1853,6 +1958,7 @@ def settings_page():
         'min_score':         get_config('min_score',         str(MIN_SCORE)),
         'season_threshold':           get_config('season_threshold',           str(SEASON_THRESHOLD)),
         'no_source_sync_threshold':   get_config('no_source_sync_threshold',   str(NO_SOURCE_SYNC_THRESHOLD)),
+        'sync_queue_pause_threshold': get_config('sync_queue_pause_threshold', str(SYNC_QUEUE_PAUSE_THRESHOLD)),
         'max_searches_per_day':       get_config('max_searches_per_day',       '0'),
         'display_tz':        get_config('display_tz',        DISPLAY_TZ),
         'backup_schedule_hour': get_config('backup_schedule_hour', '3'),
@@ -2004,7 +2110,7 @@ def api_settings():
     data = request.get_json() or {}
     numeric = ['searches_per_hour','downloads_per_day','cooldown_hours',
                'sweep_minutes','min_score','season_threshold','backup_schedule_hour',
-               'no_source_sync_threshold','max_searches_per_day']
+               'no_source_sync_threshold','sync_queue_pause_threshold','max_searches_per_day']
     for key in numeric:
         if key in data:
             set_config(key, data[key])

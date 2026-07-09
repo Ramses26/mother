@@ -286,21 +286,25 @@ def log_sync_job(job_type, source, dest, title, status, duration=None, error=Non
         logger.error(f"Could not log sync job: {e}")
 
 
-def start_sync_job(job_type, source, dest, title, quality, file_size, retry_count=0, status='in_progress', delete_after_sync=None):
+def start_sync_job(job_type, source, dest, title, quality, file_size, retry_count=0, status='in_progress', delete_after_sync=None, priority=0):
     """Create a job entry with the given status and return the job_id.
 
     Pass status='pending' to create the row before the semaphore is acquired
     so the history scanner and auto-retry see it immediately and skip duplicates.
     Promote to 'in_progress' via _update_job_status() once the semaphore is held.
     Pass delete_after_sync=path to remove an old Unraid file after successful sync.
+    priority: lower sorts first (same column/semantics as the manual "rush" button,
+    which sets -1). Webhook handlers pass -1 for first-time imports (isUpgrade=False)
+    so a new episode/movie a user is waiting on doesn't sit behind a backlog of
+    routine quality-upgrade syncs; upgrades keep the default 0.
     """
     try:
         conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO sync_jobs (job_type, source_path, dest_path, title, quality, file_size, status, retry_count, delete_after_sync)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (job_type, source, dest, title, quality, file_size, status, retry_count, delete_after_sync))
+            INSERT INTO sync_jobs (job_type, source_path, dest_path, title, quality, file_size, status, retry_count, delete_after_sync, priority)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (job_type, source, dest, title, quality, file_size, status, retry_count, delete_after_sync, priority))
         job_id = cursor.lastrowid
         conn.commit()
         conn.close()
@@ -1010,7 +1014,7 @@ def format_size(size_bytes: int) -> str:
     return f"{size_bytes:.1f} PB"
 
 
-def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, dest_base: str = None, retry_count: int = 0, delete_after_sync: str = None):
+def background_sync(source: str, dest: str, title: str, quality: str, file_size: int, media_type: str, dest_base: str = None, retry_count: int = 0, delete_after_sync: str = None, priority: int = 0):
     """
     Run rsync in background thread and send notification when complete.
     This allows the webhook to return immediately.
@@ -1025,6 +1029,9 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
         dest_base: Base destination path for Plex section lookup (e.g., /mnt/unraid/media/TV Shows)
         retry_count: Current retry attempt (0 = first try, 1 = first retry, etc.)
         delete_after_sync: Unraid path of old file to delete after successful sync (version replacement)
+        priority: lower sorts first in the pending queue (default 0). Webhook handlers
+            pass -1 for first-time imports so new content jumps ahead of routine
+            quality-upgrade syncs — see start_sync_job()'s docstring.
     """
     job_type = 'movie' if media_type == 'Movie' else 'episode'
     # Fall back to extracting dest_base from dest if not provided (for retries from database)
@@ -1039,7 +1046,7 @@ def background_sync(source: str, dest: str, title: str, quality: str, file_size:
     # Create the DB row as 'pending' NOW, before the semaphore.  This makes
     # the item visible to the history scanner and auto-retry immediately so
     # neither will re-queue it while it waits for a free slot.
-    job_id = start_sync_job(job_type, source, dest, title, quality, file_size, retry_count, status='pending', delete_after_sync=delete_after_sync)
+    job_id = start_sync_job(job_type, source, dest, title, quality, file_size, retry_count, status='pending', delete_after_sync=delete_after_sync, priority=priority)
 
     def do_sync():
         # Acquire semaphore to limit concurrent syncs (prevents overwhelming NFS)
@@ -3384,6 +3391,20 @@ def health():
     })
 
 
+@app.route('/api/pending-count', methods=['GET'])
+def api_pending_count():
+    """True all-time pending sync_jobs count (not the 24h-windowed figure /health
+    reports in jobs_24h). Built for Upgraderr's sweep to check before triggering new
+    searches — see _sync_queue_is_large() in services/upgraderr/app.py."""
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        count = conn.execute("SELECT COUNT(*) FROM sync_jobs WHERE status='pending'").fetchone()[0]
+        conn.close()
+        return jsonify({'pending': count})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/stats', methods=['GET'])
 def get_stats():
     """Get sync statistics"""
@@ -3599,6 +3620,7 @@ def radarr_webhook():
             file_size=file_size,
             media_type="Movie",
             dest_base=dest_base,
+            priority=-1 if not is_upgrade else 0,
         )
 
         # Return immediately - sync happens in background
@@ -3729,6 +3751,7 @@ def sonarr_webhook():
             quality=quality,
             file_size=file_size,
             media_type="Episode",
+            priority=-1 if not is_upgrade else 0,
         )
 
         # Return immediately - sync happens in background

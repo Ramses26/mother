@@ -154,6 +154,12 @@
              value="{{ cfg.no_source_sync_threshold }}" min="1" max="20">
       <small>Sync current quality (720p/SD) to Ali if no upgrade found after this many searches. Prevents permanent gaps when no 1080p source exists.</small>
     </div>
+    <div class="form-group">
+      <label>Sync Queue Pause Threshold</label>
+      <input type="number" name="sync_queue_pause_threshold" class="form-control"
+             value="{{ cfg.sync_queue_pause_threshold }}" min="100" max="10000" step="100">
+      <small>Defer new searches (skip the whole sweep) when sync-webhook has more than this many pending jobs, so Upgraderr doesn't keep piling onto an already-backed-up sync queue. Retries next scheduled sweep automatically.</small>
+    </div>
   </div>
 </div>
 
