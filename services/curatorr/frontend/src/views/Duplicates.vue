@@ -415,7 +415,22 @@ const confirmBulkDelete = async () => {
     selected.value = new Set()
     await load(tab.value, false)
     if (res.data.failed > 0) {
-      alert(`Deleted ${res.data.deleted}, failed ${res.data.failed}. Check logs.`)
+      // The backend already returns a reason per failed item (e.g. the Agent's own
+      // error, or "Blocked: Upgraderr has an active Tier 7 replacement pending") —
+      // show it instead of a bare count + "check logs", which pointed at logs that
+      // don't actually contain this per-item detail.
+      const failures = (res.data.results || []).filter(r => !r.ok)
+      const grouped = {}
+      for (const f of failures) {
+        const reason = f.error || 'Unknown error'
+        ;(grouped[reason] ||= []).push(f.file_path.split('/').pop())
+      }
+      const lines = Object.entries(grouped).map(([reason, files]) => {
+        const shown = files.slice(0, 5).join('\n    ')
+        const more = files.length > 5 ? `\n    …and ${files.length - 5} more` : ''
+        return `${reason} (${files.length}):\n    ${shown}${more}`
+      })
+      alert(`Deleted ${res.data.deleted}, failed ${res.data.failed}:\n\n${lines.join('\n\n')}`)
     }
   } catch (e) {
     alert(e?.response?.data?.detail || 'Bulk delete failed')
