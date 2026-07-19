@@ -3095,6 +3095,7 @@ def nightly_unraid_dedup(force=False):
         # versions[0] is the keeper — either Radarr/Sonarr's actively-tracked file
         # (Profile Authority correction above) or, absent a tracked-file match,
         # highest raw TRaSH score as sorted by the Agent.
+        keeper_path = versions[0].get('file_path', '')
         for version in versions[1:]:
             if not version.get('safe_to_delete', True):
                 logger.debug(f"Dedup: skipping unsafe {version.get('file_path')}")
@@ -3103,6 +3104,19 @@ def nightly_unraid_dedup(force=False):
                 break
             file_path = version.get('file_path', '')
             if not file_path:
+                continue
+            # Independent sanity check — added 2026-07-19 alongside the known-bad
+            # guard. Doesn't rely on versions[1:] excluding the keeper by
+            # construction: if a future bug ever duplicated a path in the group or
+            # left the tracked file out of position 0, this refuses the delete
+            # rather than trusting the loop bounds alone.
+            if keeper_path and file_path == keeper_path:
+                logger.error(
+                    f"Dedup: REFUSING to delete '{file_path}' — matches the group's "
+                    f"own kept/tracked file. This should be impossible; investigate "
+                    f"before this group is processed again."
+                )
+                errors.append(file_path)
                 continue
             freed = version.get('file_size_bytes', 0)
 

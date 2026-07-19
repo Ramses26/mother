@@ -224,6 +224,8 @@ def _do_synology_dedup() -> None:
                 skipped += 1
                 continue
 
+            keeper_path = versions[0].get('file_path', '')
+
             # versions[0] = keep (highest trash_score); versions[1:] = delete candidates
             for v in versions[1:]:
                 if deleted >= MAX_PER_RUN:
@@ -231,6 +233,21 @@ def _do_synology_dedup() -> None:
 
                 path = v.get('file_path', '')
                 if not path:
+                    continue
+
+                # Independent sanity check — added 2026-07-19 alongside the
+                # safe_to_delete fix above. Doesn't rely on the versions[1:] slice
+                # excluding the keeper by construction: if a future bug ever put the
+                # same path in the group twice, or a ranking bug left the tracked file
+                # out of position 0, this stops it from being deleted rather than
+                # trusting the loop bounds alone.
+                if keeper_path and path == keeper_path:
+                    log.error(
+                        f"Synology dedup: REFUSING to delete '{path}' — matches the "
+                        f"group's own kept/tracked file. This should be impossible; "
+                        f"investigate before this group is processed again."
+                    )
+                    errors += 1
                     continue
 
                 # Respect safe_to_delete flag — covers TV shared-episode-number cases,
