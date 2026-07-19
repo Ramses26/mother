@@ -233,8 +233,15 @@ def _do_synology_dedup() -> None:
                 if not path:
                     continue
 
-                # TV: respect safe_to_delete flag (covers shared-episode-number cases)
-                if group.get('media_type') == 'tv' and not v.get('safe_to_delete', True):
+                # Respect safe_to_delete flag — covers TV shared-episode-number cases,
+                # tier7_pending protection, and the known-bad-tracked-file guard added
+                # 2026-07-19 (_enforce_profile_authority). Found live 2026-07-19: this
+                # check used to only apply `if media_type == 'tv'`, so movie groups never
+                # respected safe_to_delete at all in this specific scheduled job — the
+                # known-bad guard (and the older tier7_pending guard) silently had no
+                # effect here even though the same check works correctly for the
+                # sync-webhook Unraid dedup and the manual UI duplicate scanner.
+                if not v.get('safe_to_delete', True):
                     skipped += 1
                     continue
 
