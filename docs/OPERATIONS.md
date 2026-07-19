@@ -1,6 +1,6 @@
 # Project Mother — Operations Guide
 
-**Last Updated**: 2026-06-27
+**Last Updated**: 2026-07-19
 
 This document covers day-to-day operations, monitoring, and troubleshooting for Project Mother in its current **steady-state** configuration. Batch syncs are complete; ongoing sync is driven entirely by webhooks and nightly scheduled jobs.
 
@@ -19,7 +19,10 @@ This document covers day-to-day operations, monitoring, and troubleshooting for 
 
 - Movie batch sync **permanently disabled** — sentinel `/opt/mother/DISABLE_MOVIE_SYNC` present
 - TV batch sync (`screen tvsync`) **completed June 17 2026** — screen session no longer needed
-- Dedup runs daily at **8:00 AM ET** — currently **paused** (`/opt/mother/PAUSE_DEDUP` exists)
+- Dedup runs daily at **8:00 AM ET** (not paused — `PAUSE_DEDUP` was removed 2026-07-02) plus a
+  weekly guaranteed-drain run Sunday 9:00 AM ET; `DEDUP_MIN_AGE_HOURS` lowered from 24→6 and
+  `DEDUP_SAFETY_LIMIT` temporarily raised to 3500 on 2026-07-19 to drain an 11-day backlog — see
+  root `CLAUDE.md`'s Dedup Safety Controls section for the live values
 
 ### Active Services
 

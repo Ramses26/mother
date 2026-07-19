@@ -37,6 +37,7 @@ LOG_LEVEL = os.environ.get('SYNC_LOG_LEVEL', 'INFO')
 LOG_PATH = os.environ.get('SYNC_LOG_PATH', '/logs')
 DB_PATH   = os.environ.get('SYNC_DB_PATH', '/data/sync_jobs.db')
 BACKUP_DIR = os.environ.get('SYNC_BACKUP_DIR', '/data/backups')
+DEDUP_STATUS_FILE = os.environ.get('DEDUP_STATUS_FILE', '/data/dedup_status.json')
 
 # Shared TRaSH scoring config — single source of truth across all services.
 # Mounted at /app/scoring/trash_scoring.json via docker-compose volume.
@@ -2847,7 +2848,25 @@ def _dedup_enforce_profile_authority(groups: list, tracked_by_title: dict = None
                 v['pending_tier7'] = True
 
 
-def nightly_unraid_dedup():
+def _write_dedup_status(outcome, reason='', deleted=0, freed=0):
+    """Persist the outcome of the most recent dedup attempt so daily_report.py can show
+    real status instead of just checking the PAUSE_DEDUP sentinel. Found 2026-07-19:
+    the Telegram report said "Enabled" every day for 11+ days while dedup silently
+    deferred daily — this makes that visible instead of invisible."""
+    try:
+        with open(DEDUP_STATUS_FILE, 'w') as f:
+            json.dump({
+                'timestamp': datetime.utcnow().isoformat(),
+                'outcome': outcome,   # 'ran' | 'deferred' | 'paused' | 'blocked' | 'error'
+                'reason': reason,
+                'deleted': deleted,
+                'freed_bytes': freed,
+            }, f)
+    except Exception as e:
+        logger.warning(f"Unraid dedup: could not write status file: {e}")
+
+
+def nightly_unraid_dedup(force=False):
     """
     Nightly Unraid duplicate cleanup.
 
@@ -2867,6 +2886,11 @@ def nightly_unraid_dedup():
       DEDUP_MIN_AGE_HOURS block dedup if any gap-sync job completed in the last N hours
                           (default 24); dedup is already separated from gap scan by scheduling
                           (03:00 scan → 12:00 dedup), so this adds a second layer of protection
+
+    force: when True, skips the DEDUP_MIN_AGE_HOURS "recent gap job" defer (check 2b below)
+      but still honors PAUSE_DEDUP and the in-progress-job check (2a) — used by the weekly
+      guaranteed-drain job so a sustained restore project (which completes a gap-sync job
+      almost every day) can't starve dedup indefinitely the way it did 2026-07-09 to 07-19.
     """
     # ── 1. PAUSE_DEDUP sentinel ────────────────────────────────────────────────
     pause_file = os.environ.get('PAUSE_DEDUP_FILE', '/opt/mother/PAUSE_DEDUP')
@@ -2875,6 +2899,7 @@ def nightly_unraid_dedup():
         logger.warning(f"Unraid dedup: {msg}")
         send_notification(title="Unraid Dedup PAUSED", body=msg,
                           notify_type=apprise.NotifyType.WARNING)
+        _write_dedup_status('paused', msg)
         return
 
     # ── 2. Skip if gap-sync jobs are running OR recently completed ───────────
@@ -2916,15 +2941,20 @@ def nightly_unraid_dedup():
         logger.warning(f"Unraid dedup: {msg}")
         send_notification(title="Unraid Dedup DEFERRED", body=msg,
                           notify_type=apprise.NotifyType.WARNING)
+        _write_dedup_status('deferred', msg)
         return
 
-    if recent_gap_jobs > 0:
+    if recent_gap_jobs > 0 and not force:
         msg = (f"Skipping dedup: {recent_gap_jobs} gap-sync job(s) completed in the last "
                f"{DEDUP_MIN_AGE_HOURS}h — waiting for rsync queue to fully settle.")
         logger.warning(f"Unraid dedup: {msg}")
         send_notification(title="Unraid Dedup DEFERRED", body=msg,
                           notify_type=apprise.NotifyType.WARNING)
+        _write_dedup_status('deferred', msg)
         return
+    elif recent_gap_jobs > 0 and force:
+        logger.info(f"Unraid dedup: {recent_gap_jobs} recent gap-sync job(s) present, but "
+                     f"force=True (weekly guaranteed-drain run) — proceeding anyway.")
 
     DRY_RUN = os.environ.get('DEDUP_DRY_RUN', 'false').lower() == 'true'
     # R3: Pre-dedup notification with pause window.
@@ -2960,6 +2990,7 @@ def nightly_unraid_dedup():
         scan_data = resp.json()
     except Exception as e:
         logger.error(f"Unraid dedup: Agent scan failed: {e}")
+        _write_dedup_status('error', f"Agent scan failed: {e}")
         return
 
     # ── Profile Authority correction ──────────────────────────────────────────
@@ -2986,6 +3017,7 @@ def nightly_unraid_dedup():
     except Exception as e:
         logger.error(f"Unraid dedup: Profile Authority correction failed — aborting run rather than risk deleting an actively-tracked file: {e}")
         send_notification(title="Unraid Dedup ABORTED", body=f"Profile Authority correction failed: {e}", notify_type=apprise.NotifyType.FAILURE)
+        _write_dedup_status('error', f"Profile Authority correction failed: {e}")
         return
 
     total_deleted = 0
@@ -3008,6 +3040,7 @@ def nightly_unraid_dedup():
         logger.error(f"Unraid dedup: {msg}")
         send_notification(title="Unraid Dedup BLOCKED", body=msg,
                           notify_type=apprise.NotifyType.FAILURE)
+        _write_dedup_status('blocked', msg)
         return
 
     # ── 5. Per-run cap ────────────────────────────────────────────────────────
@@ -3077,6 +3110,7 @@ def nightly_unraid_dedup():
     if errors:
         summary += f" | {len(errors)} error(s)"
     logger.info(f"Unraid dedup: {summary}")
+    _write_dedup_status('ran', summary, deleted=total_deleted, freed=total_freed)
 
     if total_deleted > 0 or DRY_RUN:
         # Include up to 10 largest deletions in the notification for visibility
@@ -3309,6 +3343,26 @@ scheduler.add_job(
     replace_existing=True
 )
 logger.info("Unraid dedup enabled - runs daily at 8:00 AM ET")
+
+# Weekly guaranteed-drain dedup — Sunday 9:00 AM ET, force=True (bypasses only the
+# DEDUP_MIN_AGE_HOURS "recent gap job" defer, still honors PAUSE_DEDUP and the
+# active-in-progress-job check). Added 2026-07-19 after finding the daily job had
+# silently deferred every single day for 11+ days straight during the TV restore
+# project, since that project completes a gap-sync job almost every day and the daily
+# job never gets a quiet window. This guarantees the backlog can't grow unbounded even
+# if the daily heuristic keeps missing.
+scheduler.add_job(
+    func=nightly_unraid_dedup,
+    kwargs={'force': True},
+    trigger='cron',
+    day_of_week='sun',
+    hour=9,
+    minute=0,
+    id='unraid_dedup_weekly_forced',
+    name='Weekly guaranteed Unraid duplicate cleanup (bypasses recent-gap-job defer)',
+    replace_existing=True
+)
+logger.info("Unraid weekly guaranteed dedup enabled - runs Sunday 9:00 AM ET (force=True)")
 
 scheduler.start()
 logger.info("Scheduler started - daily summary at 00:05, auto-retry every 15 min")

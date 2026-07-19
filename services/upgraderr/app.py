@@ -191,6 +191,13 @@ def get_db():
         _db_local.conn = sqlite3.connect(DB_PATH, check_same_thread=False)
         _db_local.conn.row_factory = sqlite3.Row
         _db_local.conn.execute("PRAGMA journal_mode=WAL")
+        # No busy_timeout was set anywhere in this file (found 2026-07-19 while
+        # investigating live `disk I/O error`/OperationalError bursts) — the default
+        # is 0, so any lock contention between this long-lived thread-local connection
+        # and per-request connections (get_request_db below) fails immediately instead
+        # of waiting briefly. 10s covers a slow write/checkpoint without masking a
+        # genuine hang.
+        _db_local.conn.execute("PRAGMA busy_timeout=10000")
     return _db_local.conn
 
 _db_local = threading.local()
@@ -201,6 +208,7 @@ def get_request_db():
         g.db = sqlite3.connect(DB_PATH, check_same_thread=False)
         g.db.row_factory = sqlite3.Row
         g.db.execute("PRAGMA journal_mode=WAL")
+        g.db.execute("PRAGMA busy_timeout=10000")
     return g.db
 
 @app.teardown_appcontext
@@ -214,6 +222,7 @@ def init_database():
     Path(BACKUP_DIR).mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=10000")
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS instances (
             name    TEXT PRIMARY KEY,
@@ -551,6 +560,17 @@ def test_instance_connection(inst):
         return True, f"Connected — {inst['type'].capitalize()} v{version}"
     return False, "Connection failed — check URL and API key"
 
+# Queue error patterns that mean a download is permanently dead (not just slow or
+# waiting its turn) — these must never block Upgraderr from searching that title
+# again. A single stalled torrent from months ago was found blocking Upgraderr from
+# ever touching an entire series/movie again (confirmed live 2026-07-19: Grey's
+# Anatomy S15 sat un-searched since March because 4 dead S11 downloads never cleared
+# from Sonarr's queue). Import-pipeline issues (import pending/blocked, parse
+# failures) are deliberately NOT included here — those mean a release was already
+# grabbed and needs to actually land, so re-triggering another search would just grab
+# a redundant duplicate release on top of the stuck one.
+_DEAD_QUEUE_PATTERNS = ('stalled',)
+
 def get_queue_ids(inst):
     data = arr_get(inst, '/queue', params={'pageSize': 500})
     if not data:
@@ -559,8 +579,12 @@ def get_queue_ids(inst):
     ids = set()
     for r in records:
         mid = r.get('movieId') if inst['type'] == 'radarr' else r.get('seriesId')
-        if mid:
-            ids.add(mid)
+        if not mid:
+            continue
+        error_msg = (r.get('errorMessage') or '').lower()
+        if any(p in error_msg for p in _DEAD_QUEUE_PATTERNS):
+            continue
+        ids.add(mid)
     return ids
 
 # ---------------------------------------------------------------------------

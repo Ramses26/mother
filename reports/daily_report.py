@@ -35,6 +35,7 @@ UPGRADERR_API = "http://localhost:9706"
 PAUSE_DEDUP_FILE = "/opt/mother/PAUSE_DEDUP"
 DISABLE_TV_SYNC_FILE = "/opt/mother/DISABLE_TV_SYNC"
 DELETED_TV_COUNT_CACHE = "/opt/mother/data/deleted_tv_count.json"
+DEDUP_STATUS_FILE = "/opt/mother/configs/sync-webhook/data/dedup_status.json"
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────
@@ -141,6 +142,18 @@ def get_deleted_tv_count() -> int | None:
         return None, None, None
 
 
+def get_dedup_status() -> dict | None:
+    """Read the actual outcome of the last dedup attempt (written by sync-webhook's
+    nightly_unraid_dedup on every run/defer/error). Added 2026-07-19 — the previous
+    report only checked the PAUSE_DEDUP sentinel, which said "Enabled" every single
+    day for 11+ days while dedup was silently deferring daily behind the scenes."""
+    try:
+        with open(DEDUP_STATUS_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
 # ── VPN ping status ──────────────────────────────────────────────────────────
 
 def vpn_is_up() -> bool:
@@ -183,7 +196,29 @@ def generate_report(snapshots_file: Path) -> tuple[str, str, str]:
     if os.path.exists(PAUSE_DEDUP_FILE):
         lines.append("  ⏸ PAUSED (PAUSE_DEDUP sentinel active)")
     else:
-        lines.append("  ✅ Enabled — runs daily at 12:00 UTC (limit: 50/run, abort if >200)")
+        dedup_status = get_dedup_status()
+        if not dedup_status:
+            lines.append("  ⚪ Enabled, but no run recorded yet")
+        else:
+            outcome = dedup_status.get('outcome')
+            reason = dedup_status.get('reason', '')
+            try:
+                ts = datetime.fromisoformat(dedup_status['timestamp'])
+                ago = time_ago(ts)
+            except Exception:
+                ago = "unknown time"
+            if outcome == 'ran':
+                deleted = dedup_status.get('deleted', 0)
+                freed = bytes_to_human(dedup_status.get('freed_bytes', 0))
+                lines.append(f"  ✅ Ran {ago} — removed {deleted} duplicate(s), freed {freed}")
+            elif outcome == 'deferred':
+                lines.append(f"  ⏭ Deferred {ago} — {reason}")
+            elif outcome == 'blocked':
+                lines.append(f"  🚫 BLOCKED {ago} — {reason}")
+            elif outcome == 'error':
+                lines.append(f"  ❌ Errored {ago} — {reason}")
+            else:
+                lines.append(f"  ⚪ {outcome} {ago}")
     lines.append("")
 
     # ── Restoration Progress ────────────────────────────────────────────────

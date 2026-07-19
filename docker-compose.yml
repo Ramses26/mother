@@ -403,6 +403,31 @@ services:
       - DOZZLE_LEVEL=info
       - DOZZLE_TAILSIZE=300
       - DOZZLE_FILTER=status=running
+      - DOZZLE_REMOTE_AGENT=10.0.1.203:7007
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - mother_network
+
+  # Decluttarr - Radarr/Sonarr/qBittorrent queue hygiene (stalled/failed/orphaned
+  # removal). Deployed 2026-07-19 in test_run (dry-run) mode — review logs before
+  # flipping general.test_run to false in configs/decluttarr/config.yaml. Deliberately
+  # does NOT own search-triggering (search_unmet_cutoff/search_missing) — Upgraderr
+  # already owns that decision for this stack via its 7-tier classification.
+  decluttarr:
+    image: ghcr.io/manimatter/decluttarr:latest
+    container_name: decluttarr
+    volumes:
+      - ${CONFIG_PATH}/decluttarr:/app/config
+    environment:
+      - TZ=${TZ}
+      - SONARR_HD_API_KEY=${SONARR_HD_API_KEY}
+      - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}
+      - RADARR_HD_API_KEY=${RADARR_HD_API_KEY}
+      - RADARR_4K_API_KEY=${RADARR_4K_API_KEY}
+      - QBITMANAGE_QBT_HOST=${QBITMANAGE_QBT_HOST}
+      - QBITMANAGE_QBT_USER=${QBITMANAGE_QBT_USER}
+      - QBITMANAGE_QBT_PASS=${QBITMANAGE_QBT_PASS}
     restart: unless-stopped
     logging: *default-logging
     networks:

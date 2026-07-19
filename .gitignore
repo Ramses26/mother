@@ -12,7 +12,7 @@ configs/*/*.db
 configs/*/*.db-shm
 configs/*/*.db-wal
 
-# Ignore all configs EXCEPT recyclarr, apprise, qbitmanage, observability stack, and shared scoring
+# Ignore all configs EXCEPT recyclarr, apprise, qbitmanage, observability stack, decluttarr, and shared scoring
 configs/*
 !configs/recyclarr/
 !configs/apprise/
@@ -22,6 +22,7 @@ configs/*
 !configs/prometheus/
 !configs/grafana/
 !configs/scoring/
+!configs/decluttarr/
 
 # Logs
 *.log

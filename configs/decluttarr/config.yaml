@@ -1,0 +1,55 @@
+general:
+  log_level: INFO
+  test_run: true # DRY RUN — review logs before flipping to false. See Phase 5 of the
+                 # 2026-07-19 ops-cleanup plan. Do not flip live until Phase 3's manual
+                 # orphaned_data recovery is done (remove_failed_imports below would
+                 # otherwise race with recovering the Pursuit of Happyness-style files).
+  timer: 10
+
+job_defaults:
+  max_strikes: 3
+  min_days_between_searches: 7
+  max_concurrent_searches: 3
+
+# Deliberately NOT enabling search_unmet_cutoff / search_missing — Upgraderr already
+# owns the "when to trigger a search" decision for this stack (7-tier classification +
+# Profile Authority). Decluttarr here is queue/download hygiene only: remove things
+# that are permanently stuck so they stop blocking Upgraderr (see the queue-starvation
+# fix in services/upgraderr/app.py get_queue_ids()) and stop wasting disk.
+jobs:
+  remove_stalled:
+  remove_failed_downloads:
+  remove_failed_imports:
+    message_patterns:
+      - "Not a Custom Format upgrade for existing*"
+      - "Not an upgrade for existing*"
+      - "*Found potentially dangerous file with extension*"
+      - "Invalid video file*"
+      - "No files found are eligible for import*" # matches the qbitmanage orphan-race
+                                                    # failures found 2026-07-19 (see
+                                                    # Phase 3) — once Phase 3's root-cause
+                                                    # fix lands this should stop firing;
+                                                    # until then this at least stops the
+                                                    # queue entry from blocking forever.
+      - "One or more episodes expected in this release were not imported or missing from the release"
+  remove_metadata_missing:
+  remove_missing_files:
+  remove_orphans:
+
+instances:
+  sonarr:
+    - base_url: "http://sonarr-hd:8989"
+      api_key: !ENV SONARR_HD_API_KEY
+    - base_url: "http://sonarr-4k:8989"
+      api_key: !ENV SONARR_4K_API_KEY
+  radarr:
+    - base_url: "http://radarr-hd:7878"
+      api_key: !ENV RADARR_HD_API_KEY
+    - base_url: "http://radarr-4k:7878"
+      api_key: !ENV RADARR_4K_API_KEY
+
+download_clients:
+  qbittorrent:
+    - base_url: !ENV QBITMANAGE_QBT_HOST
+      username: !ENV QBITMANAGE_QBT_USER
+      password: !ENV QBITMANAGE_QBT_PASS

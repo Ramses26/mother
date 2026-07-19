@@ -273,18 +273,69 @@ The nightly dedup (`nightly_unraid_dedup` in `app.py`) caused a mass-deletion in
 | Safety limit | `DEDUP_SAFETY_LIMIT` | 200 | Aborts + alerts if more than N deletable files found. Prevents runaway. |
 | Per-run cap | `DEDUP_MAX_PER_RUN` | 50 | Max deletions per run (enforced across all library types via flat loop). Remaining deferred. |
 | Dry-run mode | `DEDUP_DRY_RUN` | false | Set `true` to preview deletions without executing. |
-| Min age | `DEDUP_MIN_AGE_HOURS` | 24 | Skips dedup if any gap-sync job completed in last N hours OR is still in_progress/pending. |
+| Min age | `DEDUP_MIN_AGE_HOURS` | 6 (was 24 until 2026-07-19) | Skips dedup if any gap-sync job completed in last N hours OR is still in_progress/pending. |
 | Active job check | (code) | always | Skips dedup if any TVGapSync/GapSync/TVVersionSync/MovieVersionSync jobs are `in_progress` OR `pending`. |
 | Agent confirm | (code) | always | Counts deletion as success only if path appears in Agent `deleted[]` — not just HTTP 200. |
+| Weekly forced run | APScheduler job `unraid_dedup_weekly_forced` | Sunday 9:00 AM ET | Calls `nightly_unraid_dedup(force=True)` — bypasses only the min-age defer (2b), still honors PAUSE_DEDUP and the active-job check. Added 2026-07-19 after dedup silently deferred every single day for 11+ days straight (2026-07-09 to 07-19) because the TV restore project completes a gap-sync job almost daily, so the 24h quiet window never happened. |
 
 **PAUSE_DEDUP should exist while the batch sync screen is running.** Remove it only once the batch sync is complete and verified. **Status: `PAUSE_DEDUP` was removed 2026-07-02** — it had been continuously active since 2026-06-17 (2+ weeks), meaning dedup had not run at all in that window regardless of any `DEDUP_*` env var tuning.
 
-**IMPORTANT — the `DEDUP_*` env vars in this table were documented and set in `.env` but never actually wired into `docker-compose.yml`'s `sync-webhook` service** until 2026-07-02 — the container always ran on the Python code's hardcoded defaults (200/50/false/10/24) no matter what `.env` said. Fixed by adding explicit `environment:` entries for all five in `docker-compose.yml`. **If you change any `DEDUP_*` value in `.env`, you must `docker compose up -d sync-webhook` to recreate the container — editing `.env` alone does nothing.** `DEDUP_SAFETY_LIMIT` raised to **700** on 2026-07-02 specifically to drain a 669-file backlog that accumulated during the `PAUSE_DEDUP` window (would otherwise abort the first run outright). Revert to a lower steady-state value (200 or similar) once the backlog is confirmed drained — 700 is a one-time drain setting, not the intended long-term steady-state limit.
+**IMPORTANT — the `DEDUP_*` env vars in this table were documented and set in `.env` but never actually wired into `docker-compose.yml`'s `sync-webhook` service** until 2026-07-02 — the container always ran on the Python code's hardcoded defaults (200/50/false/10/24) no matter what `.env` said. Fixed by adding explicit `environment:` entries for all five in `docker-compose.yml`. **If you change any `DEDUP_*` value in `.env`, you must `docker compose up -d sync-webhook` to recreate the container — editing `.env` alone does nothing.** `DEDUP_SAFETY_LIMIT` raised to **700** on 2026-07-02 specifically to drain a 669-file backlog that accumulated during the `PAUSE_DEDUP` window. That backlog was **not** drained before this doc was last touched — dedup then went silent for 11 more days (see Min age row above), and a 2026-07-19 dry-run found the backlog had grown to **3,134** deletable duplicates, tripping the 700 limit outright. Raised to **3500** on 2026-07-19 as a one-time drain (same pattern as before) — **revert to 200 once confirmed drained, check this before assuming 3500 is still needed.**
+
+**Dedup status reporting**: `reports/daily_report.py`'s Dedup section used to only check the `PAUSE_DEDUP` sentinel and always said "✅ Enabled" — this is why the 11-day silent defer above went unnoticed. Fixed 2026-07-19: `nightly_unraid_dedup()` now writes its actual outcome (ran/deferred/paused/blocked/error + reason) to `configs/sync-webhook/data/dedup_status.json` on every attempt, and the report reads it. If you ever see "no run recorded yet" in the report, the status file is missing or stale — check `sync-webhook` logs directly.
 
 **PAUSE_VERSION_SYNC** (`/opt/mother/PAUSE_VERSION_SYNC`) — blocks both TV and movie version reconcile. Use during major library reorganization to prevent version sync from interfering.
 
 ### Upgraderr Tier Priority Note
 The sweep randomizes movie order within each instance (`random.shuffle`), so there is no natural tier ordering. To prioritize 720p upgrades (Tier 3), disable Tiers 4–6 in the Settings UI (`http://mother:9706/settings`). This concentrates search budget on Tiers 1–3 only. Re-enable 4–6 once Tier 3 queue is empty.
+
+### Upgraderr Queue-Starvation Bug — Fixed 2026-07-19 (READ BEFORE TOUCHING `get_queue_ids()`)
+
+`get_queue_ids()` in `services/upgraderr/app.py` used to include **every** ID present anywhere in
+Sonarr/Radarr's own download queue — including permanently dead entries ("stalled with no
+connections"). `_sweep_sonarr`/`_sweep_radarr` skip a series/movie entirely if its ID is in that set,
+regardless of which season/item is stalled. **Found live 2026-07-19**: Grey's Anatomy had 4 dead
+season-11 downloads sitting in Sonarr's queue since 2026-07-09, which blocked *every* season —
+including a Tier-3 (720p) job for season 15 that had been queued since **March 19** and never once
+searched (`search_count=0`). Confirmed **14 Sonarr-HD series and 14 Radarr-HD movies** were stuck this
+way, some since April. Fixed by filtering `errorMessage` for `'stalled'` before adding an ID to the
+blocking set (`_DEAD_QUEUE_PATTERNS`) — a stalled download no longer blocks re-searching its title.
+Deliberately does **not** filter `importPending`/`importBlocked`/parse-failure states — those mean a
+release already landed and needs to actually finish importing, so re-triggering a search would just
+grab a redundant duplicate on top of the stuck one; that class of problem is handled by Decluttarr's
+`remove_failed_imports` job instead (see below) and the orphaned_data fix. One-time cleanup removed 54
+dead queue entries from Sonarr-HD/Radarr-HD via `DELETE /api/v3/queue/{id}` the same session.
+
+### qbitmanage Orphaned-Data Race Condition (READ BEFORE MANUALLY RECOVERING A STUCK IMPORT)
+
+**Root cause of most "unable to parse"/stuck-import complaints, found 2026-07-19**: qbitmanage runs
+on the download Synology (10.0.1.203) with `QBT_REM_ORPHANED=true` on a 30-minute schedule
+(`QBT_SCHEDULE=30`, config at `/volume1/docker/qbitmanage/config.yml` on that host). If a torrent
+completes and gets removed from qBittorrent's active list before Radarr/Sonarr finishes importing it
+(share-limit/cross-seed timing), qbitmanage's next sweep sees "file with no matching torrent" and
+quarantines it into `/downloads/orphaned_data/<category>/`. Verified live: 287GB backlogged (227GB
+radarr-hd + 60GB sonarr-hd), including releases Radarr/Sonarr were actively waiting to import (e.g.
+The Pursuit of Happyness GPRS WEB-DL, grabbed 7/16, silently quarantined).
+
+**`orphaned.empty_after_x_days` in that same config.yml auto-deletes this folder's contents** — was
+60 days (oldest backlogged files were already 56.9 days old, ~3 days from permanent loss when found),
+raised to **120 days** 2026-07-19 to match the seeding-retention theme (see torrent retention below).
+This is a *different* setting from `share_limits`' `max_seeding_time` (also 120d for tracker groups) —
+one governs the orphan quarantine folder, the other governs active torrent seeding/cleanup. Don't
+conflate them.
+
+**DO NOT just move a file back from `orphaned_data` to its expected download-client path and trigger
+a `DownloadedMoviesScan`/`DownloadedEpisodesScan` and assume it's recovered** — confirmed live 2026-07-19
+this does not reliably re-correlate to the pending queue grab (Radarr's scan matches by download
+ID/history, not just "any video file present"), and worse, if qbitmanage's next 30-min cycle runs
+before Sonarr/Radarr's import completes, **it will re-orphan the file you just moved back** — observed
+happening in real time, with unpackerr additionally mangling the recovered file into a nested
+duplicate-name folder in the process. **The reliable recovery path**: move the file back, then use
+`POST /api/v3/command` with `name: "ManualImport"` and an explicit `files: [{path, movieId or
+(seriesId + episodeIds), quality, languages}]` payload — this imports directly by path in one atomic
+call without depending on qBittorrent/queue state at all, so it isn't subject to the race.
+Stopping/pausing qbitmanage during recovery was considered but not done without explicit operator
+sign-off, since it's a shared production service on that host.
 
 ### Key Path Mappings (Container → NFS → Destination)
 
@@ -714,6 +765,54 @@ Note: sync-webhook times are Eastern (America/New_York, DST-aware). Other servic
 - qBittorrent — migrated to Synology RS2821RP+ at `10.0.1.203:8080`
 - qbit-manage — migrated to Synology
 - Unraid Agent — runs ON Unraid at `192.168.1.10:8100` (separate compose project)
+
+### Download Synology (10.0.1.203) — SSH access added 2026-07-19
+
+SSH access from Mother: `ssh synology-dl` (config in `~/.ssh/config`, key `~/.ssh/synology_dl_key`,
+user `alig`, in the `administrators` group). Required enabling DSM's "User Home" service first
+(Control Panel → User & Group → Advanced) — without it `/var/services/homes/<user>` doesn't exist and
+`authorized_keys` has nowhere to live. `docker`/`docker-compose` aren't on the default PATH for
+non-interactive SSH sessions — use the full path `/usr/local/bin/docker`, and it needs `sudo` (alig's
+group membership alone isn't enough for the Docker socket).
+
+Runs (per `configs/dockhand/stacks/Synology-Downloaders/qbittorrentstack/docker-compose.yml`, a stored
+reference copy — the live stack runs directly on that Synology, not managed by Mother's compose):
+`qbittorrent`, `qui` (modern multi-instance WebUI, port 7476), `cross-seed` (hardlink cross-seeding,
+port 2468, no deletion logic of its own), `qbitmanage` (tags/categories/share-limits/orphan cleanup,
+config at `/volume1/docker/qbitmanage/config.yml` on that host, runs every 30 min). Retention: all
+tracker-based `share_limits` groups use `max_seeding_time: 120d` with `cleanup: true`; a torrent won't
+actually get cut off at 120d if it's had peer activity within its group's `min_last_active` window
+(varies 2–90 days per tracker — this, not a broken purge, is why some very old torrents are still
+present). `orphaned.empty_after_x_days: 120` (raised from 60 on 2026-07-19) separately auto-deletes
+the orphan quarantine folder — see the qbitmanage race-condition section above.
+
+**`decluttarr`** (`ghcr.io/manimatter/decluttarr`) — added to Mother's own `docker-compose.yml`
+2026-07-19 for Radarr/Sonarr/qBittorrent queue hygiene (stalled/failed-import/orphaned/metadata-missing
+removal). Config at `configs/decluttarr/config.yaml`. Deliberately does **not** own search-triggering
+(`search_unmet_cutoff`/`search_missing` left disabled) — Upgraderr already owns that decision for this
+stack. Started in `test_run: true` (dry-run); flip to `false` only after reviewing logs.
+
+**`hawser`** (`ghcr.io/finsys/hawser`) — Dockhand's own remote-agent, already deployed on this Synology
+(not something we added) but **found stopped for 6 days** on 2026-07-19 (`Exited (0)`, clean shutdown,
+`FinishedAt` both prior stops at ~08:00 — looks tied to a periodic DSM/Container Manager restart, not a
+crash) despite `restart: always`. This is *why* Dockhand couldn't manage/auto-update this Synology's
+containers — its logs showed constant `Unable to connect` errors to `10.0.1.203:2376` the whole time.
+Started back up 2026-07-19 (`docker start hawser` via SSH) — Dockhand reconnected within the next poll
+cycle. **If Dockhand logs show `hawser` connection errors again, check `docker ps -a --filter
+name=hawser` on that host first** — this exact silent-exit pattern is the known failure mode.
+`docker inspect hawser` confirmed `RestartPolicy: always`, so the daemon-restart theory needs one more
+occurrence to confirm; no fix attempted beyond restarting it, since the root cause of the *original*
+6-day-old exit is still unconfirmed. Uptime Kuma monitoring for it (Docker-container monitor type,
+already supported) was **not** set up via automation — Uptime Kuma has no plain REST API for adding
+monitors (Socket.IO-only), and scripting around that risked touching its live DB. **Add this monitor
+manually**: Uptime Kuma → Add New Monitor → Docker Container → host `10.0.1.203:2376` (or via hawser's
+own proxy) → container `hawser`.
+
+**`dozzle-agent`** (`amir20/dozzle:latest agent`, port 7007) — deployed 2026-07-19 via direct `docker
+run --restart always` on 10.0.1.203 (no live compose file was found for that host's stack to add it
+to). Mother's `dozzle` service now has `DOZZLE_REMOTE_AGENT=10.0.1.203:7007` — confirmed working via
+its startup log (`"clients":2`). This Synology's containers (qbittorrent, cross-seed, qbitmanage, qui,
+hawser, dozzle-agent itself) now show up in Mother's existing Dozzle UI at the usual port.
 
 ## Python Dependencies
 
