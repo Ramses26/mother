@@ -2794,6 +2794,26 @@ def _dedup_fetch_sonarr_tracked(url: str, api_key: str) -> dict:
     return out
 
 
+_DEDUP_PART_RE = re.compile(r'\bpart\s*\d+\b', re.IGNORECASE)
+
+
+def _dedup_is_multipart_group(group: dict) -> bool:
+    """Mirrors Curatorr's _is_multipart_group() (services/curatorr/app/scheduler.py) —
+    kept as a separate copy for the same reason as _dedup_is_known_bad_release below.
+    Found live 2026-07-19 the hard way: this check existed in Curatorr's Synology dedup
+    but NOT here, so a real 50-item Unraid dedup run destroyed 4 of 5 parts of a
+    user-made multi-part fan edit ("Marvel's Infinity Saga - The Sacred Timeline Cut"),
+    treating PART 2-5 as duplicates of PART 1. Recovered from Synology (the original
+    source, still intact) the same session. Applies to every duplicate group processed
+    by this function, not just that one title — this was a real, general gap."""
+    versions = group.get('versions', [])
+    part_count = sum(
+        1 for v in versions
+        if _DEDUP_PART_RE.search(os.path.basename(v.get('file_path', '') or ''))
+    )
+    return part_count >= 2
+
+
 _DEDUP_BAD_RELEASE_GROUPS = {'bhdstudio'}
 _DEDUP_BAD_CONTAINERS = ('.avi', '.mp4', '.ts', '.wmv', '.m4v', '.divx', '.xvid')
 
@@ -3091,6 +3111,9 @@ def nightly_unraid_dedup(force=False):
             break
         versions = group.get('versions', [])
         if len(versions) < 2:
+            continue
+        if _dedup_is_multipart_group(group):
+            logger.debug(f"Dedup: skipping multi-part group '{group.get('title', '')}'")
             continue
         # versions[0] is the keeper — either Radarr/Sonarr's actively-tracked file
         # (Profile Authority correction above) or, absent a tracked-file match,
