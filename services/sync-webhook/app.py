@@ -2794,6 +2794,23 @@ def _dedup_fetch_sonarr_tracked(url: str, api_key: str) -> dict:
     return out
 
 
+_DEDUP_BAD_RELEASE_GROUPS = {'bhdstudio'}
+_DEDUP_BAD_CONTAINERS = ('.avi', '.mp4', '.ts', '.wmv', '.m4v', '.divx', '.xvid')
+
+
+def _dedup_is_known_bad_release(filename: str) -> bool:
+    """Mirrors Upgraderr's _is_known_bad_release() + Tier 2 container check
+    (services/upgraderr/app.py) — kept as a separate small copy here since dedup
+    lives in a different service, not because the criteria should ever diverge.
+    See CLAUDE.md's Known-Bad Releases table."""
+    fn = (filename or '').lower()
+    if fn.endswith(_DEDUP_BAD_CONTAINERS):
+        return True
+    m = re.search(r'-([a-z0-9]+)(?:\.[a-z0-9]{2,4})?$', fn)
+    group = m.group(1) if m else ''
+    return group in _DEDUP_BAD_RELEASE_GROUPS
+
+
 def _dedup_enforce_profile_authority(groups: list, tracked_by_title: dict = None,
                                       tracked_by_episode: dict = None, media_type: str = 'movie',
                                       tier7_pending: set = None) -> None:
@@ -2813,6 +2830,18 @@ def _dedup_enforce_profile_authority(groups: list, tracked_by_title: dict = None
     likely re-download essentially the same thing shortly after — pure waste. Marks
     non-kept versions un-deletable until Tier 7 resolves (see
     scripts/resolve_tier7_remux_duplicates.py).
+
+    Known-bad-release guard — added 2026-07-19 after a live dry-run caught this
+    exact gap: Profile Authority governs resolution/source TIER, not release
+    *quality control* (see CLAUDE.md — these are explicitly orthogonal). Without
+    this check, a movie whose tracked file is a known-bad release (BHDStudio group,
+    or a non-MKV container like the observed BHDStudio .mp4 case) would have its
+    only clean alternative deleted to preserve the bad file — confirmed live for
+    Mortal Kombat II (2026), The Devil Wears Prada 2 (2026), and The Man from Earth
+    (2007), all BHDStudio .mp4. If the kept/tracked file matches this check, every
+    other version in the group is marked un-deletable instead of ranked — Radarr's
+    own custom formats / Upgraderr's Tier 2+BAD_RELEASE_GROUPS are what should
+    eventually replace the bad file, not this dedup job destroying the fallback.
     """
     for grp in groups:
         versions = grp.get('versions') or []
@@ -2840,6 +2869,16 @@ def _dedup_enforce_profile_authority(groups: list, tracked_by_title: dict = None
             tracked_version['kept_reason'] = 'profile_authority'
             versions.insert(0, tracked_version)
             grp['versions'] = versions
+
+        if _dedup_is_known_bad_release(versions[0].get('filename', '')):
+            for v in versions[1:]:
+                v['safe_to_delete'] = False
+                v['known_bad_tracked_file'] = True
+            logger.warning(
+                f"Dedup: '{grp.get('title', '')}' tracked file is a known-bad release "
+                f"({versions[0].get('filename', '')}) — protecting {len(versions)-1} "
+                f"alternate(s) from deletion instead of deleting them to preserve it."
+            )
 
         if (media_type == 'movie' and tier7_pending
                 and _dedup_norm_title(grp['title']) in tier7_pending):

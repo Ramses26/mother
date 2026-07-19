@@ -132,8 +132,24 @@ addition to, profile authority.
 
 | Pattern | Why | Enforced by |
 |---|---|---|
-| Release group `BHDStudio` | Low-quality encode group | `configs/recyclarr/custom-formats/{radarr,sonarr}/bhdstudio.json` (CF score -50, **both services** as of 2026-07-02 — Sonarr had none before) **and** Upgraderr's `BAD_RELEASE_GROUPS` set + `_flag_if_bad_import()` in `services/upgraderr/app.py` (independent check — doesn't rely on recyclarr) |
-| MP4 container | Can't hold lossless audio (TrueHD/DTS-HD MA) | `configs/recyclarr/custom-formats/{radarr,sonarr}/bad-container-mp4.json` (CF score -1000, both services) **and** Upgraderr Tier 2 (file-extension check in `classify_tiers()`) |
+| Release group `BHDStudio` | Low-quality encode group | `configs/recyclarr/custom-formats/{radarr,sonarr}/bhdstudio.json` (CF score -50, **both services** as of 2026-07-02 — Sonarr had none before) **and** Upgraderr's `BAD_RELEASE_GROUPS` set + `_flag_if_bad_import()` in `services/upgraderr/app.py` (independent check — doesn't rely on recyclarr) **and** the dedup known-bad guard (see below) |
+| MP4 container | Can't hold lossless audio (TrueHD/DTS-HD MA) | `configs/recyclarr/custom-formats/{radarr,sonarr}/bad-container-mp4.json` (CF score -1000, both services) **and** Upgraderr Tier 2 (file-extension check in `classify_tiers()`) **and** the dedup known-bad guard (see below) |
+
+**Dedup known-bad guard — added 2026-07-19 (a fourth enforcement point, found live).**
+Both dedup engines (`_dedup_enforce_profile_authority()` in `services/sync-webhook/app.py`
+and `_enforce_profile_authority()` in `services/curatorr/app/routes/duplicates.py`) apply
+Profile Authority — always keep whatever Radarr/Sonarr currently tracks — but neither used
+to cross-check that tracked file against this Known-Bad-Releases list before deciding what
+to delete. A live dry-run caught the gap: Mortal Kombat II (2026), The Devil Wears Prada 2
+(2026), and 11 other movies + 6 old Looney Tunes episodes all had a known-bad file
+(BHDStudio `.mp4`, or `.avi`) as the *tracked* file, with a clean alternative sitting right
+next to it that dedup was about to delete to preserve the bad one. Fixed in both services:
+if the kept/tracked file matches the known-bad check, every other version in that group is
+marked un-deletable instead of ranked below it (`known_bad_tracked_file` flag) — the fix for
+the *tracked* file being bad is Recyclarr's CFs / Upgraderr's Tier 2+BAD_RELEASE_GROUPS
+above, not dedup destroying the fallback copy. Verified live: a real 50-item Unraid dedup
+run after this fix correctly protected all 19 known-bad groups found and deleted 50
+genuine duplicates (484.7GB) with zero mistakes.
 
 Local custom format JSON files require a matching `resource_providers` entry in
 `configs/recyclarr/settings.yml` per service (`radarr` and `sonarr` are registered
@@ -756,8 +772,7 @@ Note: sync-webhook times are Eastern (America/New_York, DST-aware). Other servic
 | Service | Port | Purpose |
 |---|---|---|
 | `nginx-proxy-manager` | 80/443/81 | Reverse proxy + SSL termination |
-| `portainer` | 9000/9443 | Docker management UI |
-| `dockhand` | 3000 | Container auto-update watcher |
+| `dockhand` | 3000 | Container auto-update watcher (removed Portainer 2026-07-19 — redundant, Dockhand covers this) |
 | `apprise` | 8000 | Notification hub (Telegram via `http://apprise:8000/notify/apprise`) |
 | `backrest` | 9898 | Restic backup UI (replaced Duplicati) |
 

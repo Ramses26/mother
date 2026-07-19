@@ -33,7 +33,6 @@ APPRISE_TAG = "media"
 WEBHOOK_API = "http://localhost:5001"
 UPGRADERR_API = "http://localhost:9706"
 PAUSE_DEDUP_FILE = "/opt/mother/PAUSE_DEDUP"
-DISABLE_TV_SYNC_FILE = "/opt/mother/DISABLE_TV_SYNC"
 DELETED_TV_COUNT_CACHE = "/opt/mother/data/deleted_tv_count.json"
 DEDUP_STATUS_FILE = "/opt/mother/configs/sync-webhook/data/dedup_status.json"
 
@@ -210,7 +209,10 @@ def generate_report(snapshots_file: Path) -> tuple[str, str, str]:
             if outcome == 'ran':
                 deleted = dedup_status.get('deleted', 0)
                 freed = bytes_to_human(dedup_status.get('freed_bytes', 0))
-                lines.append(f"  ✅ Ran {ago} — removed {deleted} duplicate(s), freed {freed}")
+                is_dry_run = '[DRY RUN]' in reason
+                icon = "🧪" if is_dry_run else "✅"
+                tag = " (DRY RUN — nothing actually deleted)" if is_dry_run else ""
+                lines.append(f"  {icon} Ran {ago}{tag} — removed {deleted} duplicate(s), freed {freed}")
             elif outcome == 'deferred':
                 lines.append(f"  ⏭ Deferred {ago} — {reason}")
             elif outcome == 'blocked':
@@ -258,17 +260,6 @@ def generate_report(snapshots_file: Path) -> tuple[str, str, str]:
             if parts:
                 lines.append(f"  {' | '.join(parts)}")
         lines.append("")
-
-    # ── Sentinel flags ───────────────────────────────────────────────────────
-    flags = []
-    if os.path.exists(PAUSE_DEDUP_FILE):
-        flags.append("⏸ PAUSE_DEDUP")
-    if os.path.exists(DISABLE_TV_SYNC_FILE):
-        flags.append("🛑 TV sync disabled")
-    if os.path.exists("/opt/mother/DISABLE_MOVIE_SYNC"):
-        flags.append("🛑 Movie sync disabled")
-    if flags:
-        lines.append("Sentinels: " + " | ".join(flags))
 
     title = "Mother Status"
     body = "\n".join(lines)

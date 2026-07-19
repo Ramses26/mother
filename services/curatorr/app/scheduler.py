@@ -286,6 +286,10 @@ def _do_synology_dedup() -> None:
         msg += f", {skipped} skipped (unsafe/recent/multi-part)"
     if errors:
         msg += f", {errors} errors (see logs)"
+    # Log the summary unconditionally — previously only sent via Telegram, so a
+    # silently-broken notification (found 2026-07-19: every send failed for at
+    # least a week due to a chat-ID bug) left zero record of actual results.
+    log.info(f"Synology dedup: {msg}")
     if top_deletions:
         top_deletions.sort(reverse=True)
         msg += "\nTop deletions:"

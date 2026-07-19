@@ -12,6 +12,7 @@ import json
 import time
 import random
 import shutil
+import signal
 import logging
 import sqlite3
 import threading
@@ -1620,6 +1621,69 @@ def _validate_stale_queue():
         log.error(f"[validate] Stale queue validation failed: {exc}")
 
 # ---------------------------------------------------------------------------
+# DB health monitoring — see the scheduler job comment below for why this exists.
+# ---------------------------------------------------------------------------
+
+_last_db_health_ok = True
+
+def _db_health_check():
+    global _last_db_health_ok
+    try:
+        db_size = os.path.getsize(DB_PATH) if os.path.exists(DB_PATH) else 0
+        wal_path = DB_PATH + '-wal'
+        wal_size = os.path.getsize(wal_path) if os.path.exists(wal_path) else 0
+
+        conn = sqlite3.connect(DB_PATH, timeout=10)
+        result = conn.execute("PRAGMA quick_check").fetchone()[0]
+        conn.close()
+
+        ok = (result == 'ok')
+        log.info(f"[db_health] quick_check={result} db_size={db_size} wal_size={wal_size}")
+
+        if not ok and _last_db_health_ok:
+            # Edge-triggered: alert once when it flips bad, not every 15 min after.
+            msg = (f"🚨 Upgraderr DB health check FAILED: {result}\n"
+                   f"db_size={db_size} wal_size={wal_size}\n"
+                   f"Restore from /data/backups/ — do not wait for the next scheduled backup.")
+            log.error(f"[db_health] {msg}")
+            send_telegram(msg, category='notify_errors')
+        _last_db_health_ok = ok
+    except Exception as exc:
+        log.error(f"[db_health] Health check itself failed: {exc}")
+
+# ---------------------------------------------------------------------------
+# Graceful shutdown — added 2026-07-19 alongside the health check above, after
+# noticing (per Ali) that DB corruption incidents seem to cluster around when
+# we're actively deploying fixes, i.e. restarting this container. No SIGTERM
+# handler existed at all before this — Docker's SIGTERM/SIGKILL on `docker
+# compose up -d` could hit mid-write with no chance to checkpoint the WAL.
+# WAL mode is designed to survive an abrupt kill safely, so this may not be
+# the actual root cause, but it costs nothing and removes it as a suspect.
+# ---------------------------------------------------------------------------
+
+_original_sigterm_handler = signal.getsignal(signal.SIGTERM)
+
+def _graceful_shutdown(signum, frame):
+    log.info("SIGTERM received — checkpointing SQLite WAL before shutdown")
+    try:
+        scheduler.shutdown(wait=False)
+    except Exception as exc:
+        log.warning(f"Scheduler shutdown error: {exc}")
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=5)
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        conn.close()
+        log.info("WAL checkpoint complete")
+    except Exception as exc:
+        log.error(f"WAL checkpoint on shutdown failed: {exc}")
+    if callable(_original_sigterm_handler):
+        _original_sigterm_handler(signum, frame)
+    else:
+        sys.exit(0)
+
+signal.signal(signal.SIGTERM, _graceful_shutdown)
+
+# ---------------------------------------------------------------------------
 # APScheduler
 # ---------------------------------------------------------------------------
 
@@ -1657,6 +1721,22 @@ def start_scheduler():
         _validate_stale_queue,
         'cron', hour=5, minute=0,
         id='validate_stale_queue', replace_existing=True,
+    )
+
+    # DB health check — added 2026-07-19 while investigating a recurring corruption
+    # pattern (5 incidents over ~2 months, always fixed by restoring the daily
+    # backup, root cause never confirmed). Runs quick_check every 15 min and logs
+    # DB/WAL file size so Promtail/Loki/Grafana pick it up automatically (no new
+    # monitoring app needed — this stack already ships full log observability).
+    # Fires an immediate Telegram alert the moment corruption is detected, instead
+    # of only finding out when a user-facing request throws — this preserves
+    # WAL/journal state closer to the actual failure for analysis, and lets us
+    # correlate the exact timestamp against recent deploys/restarts.
+    scheduler.add_job(
+        _db_health_check,
+        'interval', minutes=15,
+        id='db_health_check', replace_existing=True,
+        next_run_time=datetime.utcnow() + timedelta(minutes=1),
     )
 
     scheduler.start()

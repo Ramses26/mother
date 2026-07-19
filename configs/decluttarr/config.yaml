@@ -1,9 +1,8 @@
 general:
   log_level: INFO
-  test_run: true # DRY RUN — review logs before flipping to false. See Phase 5 of the
-                 # 2026-07-19 ops-cleanup plan. Do not flip live until Phase 3's manual
-                 # orphaned_data recovery is done (remove_failed_imports below would
-                 # otherwise race with recovering the Pursuit of Happyness-style files).
+  test_run: false # Went live 2026-07-19 after reviewing dry-run output (correctly flagged
+                 # the same stalled/failed-import items found manually, with sensible
+                 # 3-strike patience) and completing Phase 3's orphaned_data recovery.
   timer: 10
 
 job_defaults:

@@ -601,6 +601,22 @@ def _fetch_sonarr_tracked(inst_name: str) -> dict:
     return out
 
 
+_BAD_RELEASE_GROUPS = {'bhdstudio'}
+_BAD_CONTAINERS = ('.avi', '.mp4', '.ts', '.wmv', '.m4v', '.divx', '.xvid')
+
+
+def _is_known_bad_release(filename: str) -> bool:
+    """Mirrors Upgraderr's _is_known_bad_release() + Tier 2 container check
+    (services/upgraderr/app.py) and sync-webhook's copy of the same. See CLAUDE.md's
+    Known-Bad Releases table."""
+    fn = (filename or '').lower()
+    if fn.endswith(_BAD_CONTAINERS):
+        return True
+    m = re.search(r'-([a-z0-9]+)(?:\.[a-z0-9]{2,4})?$', fn)
+    group = m.group(1) if m else ''
+    return group in _BAD_RELEASE_GROUPS
+
+
 def _enforce_profile_authority(groups: list, tracked_by_title: dict = None,
                                 tracked_by_episode: dict = None, media_type: str = 'movie',
                                 tier7_pending: set = None) -> None:
@@ -623,6 +639,14 @@ def _enforce_profile_authority(groups: list, tracked_by_title: dict = None,
     the non-kept versions un-deletable and flagged until Tier 7 resolves (see
     scripts/resolve_tier7_remux_duplicates.py and the incident-flagged plan this was
     added for).
+
+    Known-bad-release guard — added 2026-07-19 after a live sync-webhook dry-run
+    caught this exact gap (Mortal Kombat II, The Devil Wears Prada 2, The Man from
+    Earth — all BHDStudio .mp4 tracked, with a clean alternative sitting right next
+    to it that would have been deleted). Profile Authority governs resolution/source
+    TIER, not release quality control — these are explicitly orthogonal per CLAUDE.md.
+    If the kept/tracked file is itself a known-bad release, every other version in
+    the group is marked un-deletable instead of ranked below it.
     """
     for grp in groups:
         versions = grp.get('versions') or []
@@ -654,6 +678,17 @@ def _enforce_profile_authority(groups: list, tracked_by_title: dict = None,
             tracked_version['kept_reason'] = 'profile_authority'
             versions.insert(0, tracked_version)
             grp['versions'] = versions
+
+        if _is_known_bad_release(versions[0].get('filename', '')):
+            for v in versions[1:]:
+                v['safe_to_delete'] = False
+                v['known_bad_tracked_file'] = True
+            log.warning(
+                f"Duplicate scan: '{grp.get('title', '')}' tracked file is a known-bad "
+                f"release ({versions[0].get('filename', '')}) — protecting "
+                f"{len(versions)-1} alternate(s) from deletion instead of deleting "
+                f"them to preserve it."
+            )
 
         if (media_type == 'movie' and tier7_pending
                 and _norm_title(grp['title']) in tier7_pending):
