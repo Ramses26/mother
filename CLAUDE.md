@@ -278,6 +278,23 @@ Project Mother is a media management and synchronization system consolidating tw
 
 4. **Upgraderr** — Custom quality upgrade automation service (replaces Huntarr). Active once initial sync reaches ~99%+. See `services/upgraderr/`. UI at port 9706.
 
+### Dedup ↔ Upgraderr Loop Safety (why this can't turn into an upgrade loop)
+
+Asked explicitly 2026-07-19: could dedup deleting a file cause Upgraderr to think content
+is missing and re-trigger a search, which re-downloads and re-triggers dedup, forever?
+**Unraid-side dedup (`nightly_unraid_dedup`) cannot cause this by architecture** — Unraid
+is a one-way sync *destination* (Synology → Unraid only, see Webhook Sync above); nothing
+on Mother ever reads Unraid's state back into a decision. Upgraderr, Radarr, and Sonarr
+only ever look at Synology. **Synology-side dedup (Curatorr's `_do_synology_dedup`) is the
+one that could, in principle** — it deletes from the library Radarr/Sonarr actually track.
+This is exactly what Profile Authority (never delete the tracked file) exists to prevent,
+and it's now backed by an independent verification in both dedup engines (added
+2026-07-19): every deletion candidate is checked against the group's own keeper path right
+before deletion, refusing and logging an error if they ever match — not just trusting the
+ranking logic upstream. If you ever see `"REFUSING to delete ... matches the group's own
+kept/tracked file"` in the logs, that's this safety net catching a real bug — stop and
+investigate immediately, don't just note it and move on.
+
 ### Dedup Safety Controls (CRITICAL — READ BEFORE MODIFYING)
 
 The nightly dedup (`nightly_unraid_dedup` in `app.py`) caused a mass-deletion incident in June 2026 (6,038 files / 11 TB deleted). Multiple safety layers are now in place — **do not remove them**:
@@ -765,8 +782,8 @@ Note: sync-webhook times are Eastern (America/New_York, DST-aware). Other servic
 | `tracearr` | 3002 | Stream analytics; Node.js + TimescaleDB + Redis |
 | `tracearr-db` | — | TimescaleDB (PostgreSQL 18 + TimescaleDB 2.25) |
 | `tracearr-redis` | — | Redis 8 (Tracearr session cache) |
-| `uptime-kuma` | 3001 | Service uptime monitoring |
-| `dozzle` | 8080 | Live Docker log viewer (web UI) |
+| `uptime-kuma` | 3001 | Service uptime monitoring — image tag `louislam/uptime-kuma:2` (upgraded from 1.23.17 to 2.4.0 on 2026-07-19; `:latest` does NOT track 2.x, use `:2` explicitly). Had monitors configured for Terminus's own network but none for Mother's own resources until this session — see monitor list sent to Ali 2026-07-19. No REST API for scripting monitor management (Socket.IO only); `uptime-kuma-api` PyPI package doesn't support 2.x — add/edit monitors via the UI. |
+| `dozzle` | 8080 | Live Docker log viewer (web UI). `DOZZLE_REMOTE_AGENT=10.0.1.203:7007` added 2026-07-19 — see Download Synology section below for the agent side. |
 
 **Infrastructure:**
 | Service | Port | Purpose |
@@ -799,7 +816,19 @@ tracker-based `share_limits` groups use `max_seeding_time: 120d` with `cleanup: 
 actually get cut off at 120d if it's had peer activity within its group's `min_last_active` window
 (varies 2–90 days per tracker — this, not a broken purge, is why some very old torrents are still
 present). `orphaned.empty_after_x_days: 120` (raised from 60 on 2026-07-19) separately auto-deletes
-the orphan quarantine folder — see the qbitmanage race-condition section above.
+the orphan quarantine folder — see the qbitmanage race-condition section above. **`orphaned.
+min_file_age_minutes` raised 0→180 on 2026-07-19** — this was the actual root-cause knob for the
+qbitmanage race condition: with 0, a file completed seconds ago could be swept into orphaned_data
+before Radarr/Sonarr's own import cycle ever got a chance to see it. 180 min gives that cycle real
+headroom. Config at `/volume1/docker/qbitmanage/config.yml` on 10.0.1.203 (backed up to `.backups/`
+before editing — do the same for any future change there).
+
+**cross-seed** (`/volume1/docker/cross-seed/config.js` on 10.0.1.203) — `includeSingleEpisodes`
+flipped false→true 2026-07-19 for broader cross-seed coverage (matches individual TV episodes, not
+just full releases/season packs). Note: cross-seed itself warns this combination
+("includeSingleEpisodes is not recommended when using announce") isn't the officially-recommended
+setup for an announce/RSS-based config like this one — left on per Ali's explicit choice, just
+flagging the caveat for future reference if cross-seed behavior ever looks off.
 
 **`decluttarr`** (`ghcr.io/manimatter/decluttarr`) — added to Mother's own `docker-compose.yml`
 2026-07-19 for Radarr/Sonarr/qBittorrent queue hygiene (stalled/failed-import/orphaned/metadata-missing
