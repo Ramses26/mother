@@ -652,7 +652,16 @@ Added 2026-04-14. All three custom services (curatorr, upgraderr, sync-webhook) 
 | `node-exporter` | 9100 | host network mode | Host CPU/RAM/disk/network metrics |
 | `cadvisor` | 8090 | — | Per-container CPU/RAM/network metrics |
 
-**File logging**: Each custom service writes to `/logs/<service>.log` inside container, mapped to `/opt/mother/data/logs/<service>/` on host. Promtail picks these up alongside Docker log scraping.
+**File logging**: Each custom service writes rotating log files inside its container. Host mount paths
+are **not uniform** — check the actual `docker-compose.yml` volume mount before assuming a path, since
+this was previously undocumented incorrectly (see below). `curatorr` and `upgraderr` map to
+`/opt/mother/data/logs/<service>/`; `sync-webhook` maps to `/opt/mother/configs/sync-webhook/logs/`
+instead (a legacy path from before `data/logs/` existed — functions correctly, Promtail's config points
+at the right place for each, just don't assume the `data/logs/` pattern applies to sync-webhook too).
+All three keep **7 files total** (current + 6 rotated backups, `backupCount=6` in each service's
+`RotatingFileHandler`/`RotatingFileHandler` setup — standardized 2026-07-19, was previously 10-11 files
+for upgraderr/curatorr and 5-10 for sync-webhook's two log streams). Promtail picks all of these up
+alongside Docker's own container-log scraping (see `configs/promtail/promtail-config.yml`).
 
 ### `reports/daily_report.py`
 Unified status report (sync progress, VPN traffic, errors, Upgraderr queue summary). Sends via Apprise to Telegram. Runs from cron every 2 hours. Auto-discovers the most recent sync scripts by embedded timestamp.

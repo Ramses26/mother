@@ -129,7 +129,7 @@ try:
     import pathlib as _pl
     _log_dir = _pl.Path('/logs')
     _log_dir.mkdir(parents=True, exist_ok=True)
-    _fh = _RFH(_log_dir / 'upgraderr.log', maxBytes=20 * 1024 * 1024, backupCount=10)
+    _fh = _RFH(_log_dir / 'upgraderr.log', maxBytes=20 * 1024 * 1024, backupCount=6)
     _fh.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s'))
     logging.getLogger().addHandler(_fh)
 except Exception as _e:
@@ -2594,7 +2594,28 @@ def _flag_if_bad_import(inst, media_type, media_id, title, before_quality, befor
         )
         return
 
+    # If this title was already tagged upgraderr-skip before this import (e.g. a
+    # long-running series like Dragon Ball Z where every new/reprocessed episode
+    # re-triggers this check), a human has already acknowledged "nothing better
+    # exists" once — re-alerting on every subsequent import of the same series is
+    # just repeat noise, not new information. Log it for visibility but don't spam
+    # Telegram again. A fresh alert still fires the first time a title is flagged.
+    already_skipped = False
+    try:
+        entity_path = '/movie' if media_type == 'movie' else '/series'
+        tags = arr_get(inst, '/tag') or []
+        skip_tag_id = next((t['id'] for t in tags if t['label'].lower() == 'upgraderr-skip'), None)
+        if skip_tag_id is not None:
+            entity = arr_get(inst, f'{entity_path}/{media_id}')
+            already_skipped = bool(entity) and skip_tag_id in (entity.get('tags') or [])
+    except Exception as e:
+        log.error(f"[import-guard] Failed to check existing upgraderr-skip tag for {title}: {e}")
+
     tagged = _tag_upgraderr_skip(inst, media_type, media_id)
+    if already_skipped:
+        log.info(f"[import-guard] {title} already tagged upgraderr-skip — suppressing repeat Telegram alert")
+        return
+
     send_telegram(
         f"⚠️ Upgraderr imported a BAD release: {title}\n"
         f"File: {(after_quality or '?').split('/')[-1]}\n"

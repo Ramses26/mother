@@ -149,7 +149,7 @@ try:
     file_handler = RotatingFileHandler(
         log_dir / 'sync_webhook.log',
         maxBytes=10*1024*1024,  # 10MB
-        backupCount=5
+        backupCount=6
     )
     file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logger.addHandler(file_handler)
@@ -158,7 +158,7 @@ try:
     history_handler = RotatingFileHandler(
         log_dir / 'sync_history.log',
         maxBytes=10*1024*1024,
-        backupCount=10
+        backupCount=6
     )
     history_handler.setFormatter(logging.Formatter('%(message)s'))
     history_logger = logging.getLogger('sync_history')

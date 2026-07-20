@@ -31,7 +31,7 @@ try:
     from logging.handlers import RotatingFileHandler as _RFH
     _log_dir = Path('/logs')
     _log_dir.mkdir(parents=True, exist_ok=True)
-    _fh = _RFH(_log_dir / 'curatorr.log', maxBytes=20 * 1024 * 1024, backupCount=10)
+    _fh = _RFH(_log_dir / 'curatorr.log', maxBytes=20 * 1024 * 1024, backupCount=6)
     _fh.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s'))
     logging.getLogger().addHandler(_fh)
 except Exception as _e:
