@@ -805,13 +805,47 @@ user `alig`, in the `administrators` group). Required enabling DSM's "User Home"
 (Control Panel → User & Group → Advanced) — without it `/var/services/homes/<user>` doesn't exist and
 `authorized_keys` has nowhere to live. `docker`/`docker-compose` aren't on the default PATH for
 non-interactive SSH sessions — use the full path `/usr/local/bin/docker`, and it needs `sudo` (alig's
-group membership alone isn't enough for the Docker socket).
+group membership alone isn't enough for the Docker socket). `sudo` requires a real TTY for non-`docker`
+commands (`mkdir`, `tee`, etc. all fail non-interactively) — plain user permissions cover
+`/volume1/docker/**` for file writes; reserve `sudo` for the `docker` binary itself.
 
-Runs (per `configs/dockhand/stacks/Synology-Downloaders/qbittorrentstack/docker-compose.yml`, a stored
-reference copy — the live stack runs directly on that Synology, not managed by Mother's compose):
-`qbittorrent`, `qui` (modern multi-instance WebUI, port 7476), `cross-seed` (hardlink cross-seeding,
-port 2468, no deletion logic of its own), `qbitmanage` (tags/categories/share-limits/orphan cleanup,
-config at `/volume1/docker/qbitmanage/config.yml` on that host, runs every 30 min). Retention: all
+**Migrated off DSM Container Manager to a real docker-compose stack, 2026-07-19.** Previously this
+host's 6 containers (`qbittorrent`, `qui`, `cross-seed`, `qbitmanage`, `hawser`, `dozzle-agent`) were
+GUI-managed by DSM's Container Manager with no on-disk compose file (confirmed via exhaustive
+filesystem search — DSM keeps project state in its own internal DB, not a plain YAML). Now managed via
+`/volume1/docker/qbittorrentstack/docker-compose.yml`, project name `mother-dlstack` (deliberately
+**not** `qbittorrentstack` — that name collided with DSM's old internal project tracking during the
+cutover, see incident below), secrets in a sibling `.env` (`QBITMANAGE_QBT_USER/PASS`, `HAWSER_TOKEN`).
+Deploy/update: `ssh synology-dl "cd /volume1/docker/qbittorrentstack && sudo /usr/local/bin/docker
+compose -p mother-dlstack up -d"`. All bind-mounted data (`/volume1/Downloads`, `/volume1/docker/*`)
+is unaffected by container recreation — only the container *instances* changed, not the underlying
+files.
+
+**2026-07-19 migration incident — ~50 min of download-stack downtime, root cause found via `strace`.**
+After the DSM→compose cutover, qBittorrent crash-looped continuously (new process every 5–60s, clean
+`exit_group(0)` with no signal ever delivered — ruled out via `strace -f`, so not an OOM/kill/DSM
+reconciliation issue despite that being the leading theory for a while). Root cause: a **stale
+single-instance lockfile** (`/config/qBittorrent/lockfile`, holding the *old* container's hostname/PID)
+survived the container swap. Every fresh qBittorrent-nox process detected the lock, tried to hand off
+via `/config/qBittorrent/ipc-socket`, got `ECONNREFUSED` (no real process holds it), and — rather than
+recovering — chose to exit gracefully. This produces **zero trace in `docker events`** since it's an
+internal application decision, not something Docker or the host ever sees. Fix: `rm -f
+/config/qBittorrent/lockfile /config/qBittorrent/ipc-socket` then restart. **If qBittorrent (or likely
+any single-instance-locking app) ever crash-loops right after a container recreate/host move with no
+Docker-level restart count increasing, check for a stale lockfile before anything else** — ruled out
+first, in order: Dockhand (stopped it entirely, no change), DSM Container Manager project-name
+collision (renamed the compose project, no change — though *did* independently confirm DSM's Container
+Manager was fighting something, since the user ultimately had to clear stale container records from its
+GUI before the compose stack could even come up cleanly a second time), memory/ulimits (fine, 29GB free
+host memory throughout), and the torrent resume data itself (BT_backup) — a fresh empty profile started
+fine, which correctly pointed at *some* file under `/config/qBittorrent/config`/`lockfile` rather than
+BT_backup, narrowing it down. Confirmed fully recovered: all 8939 torrents reloaded, cross-seed and
+qbitmanage both reconnected without further intervention.
+
+Services: `qbittorrent`, `qui` (modern multi-instance WebUI, port 7476), `cross-seed` (hardlink
+cross-seeding, port 2468, no deletion logic of its own), `qbitmanage` (tags/categories/share-limits/
+orphan cleanup, config at `/volume1/docker/qbitmanage/config.yml` on that host, runs every 30 min).
+Retention: all
 tracker-based `share_limits` groups use `max_seeding_time: 120d` with `cleanup: true`; a torrent won't
 actually get cut off at 120d if it's had peer activity within its group's `min_last_active` window
 (varies 2–90 days per tracker — this, not a broken purge, is why some very old torrents are still
@@ -829,6 +863,19 @@ just full releases/season packs). Note: cross-seed itself warns this combination
 ("includeSingleEpisodes is not recommended when using announce") isn't the officially-recommended
 setup for an announce/RSS-based config like this one — left on per Ali's explicit choice, just
 flagging the caveat for future reference if cross-seed behavior ever looks off.
+
+**qbitmanage `rem_unregistered` matching gap — found and fixed 2026-07-19.** 235 torrents sat
+permanently tagged `issue` but never removed, despite `rem_unregistered: true`. Root cause: qbitmanage's
+built-in `UNREGISTERED_MSGS` list (in `/app/modules/util.py`) requires phrases like `"TORRENT NOT
+FOUND"` — but TorrentLeech (and a couple other trackers) return bare `"Not Found"`, which never matches
+that substring check (225 of the 235 cases; the remaining ~10 use phrasing that should already match and
+weren't investigated further). Fixed via a **local override**: `qbitmanage_util_override.py` (a copy of
+upstream's `util.py` with `"NOT FOUND"` added to `UNREGISTERED_MSGS`) bind-mounted over
+`/app/modules/util.py` in the compose file — this is a strict superset of the upstream match list, so it
+can't introduce new false-negatives, only catch cases upstream already misses. **Re-diff
+`qbitmanage_util_override.py` against a fresh image's `/app/modules/util.py` before ever bumping the
+`qbitmanage` image version** — if upstream restructures this file, the override could silently stop
+applying or (worse) revert to an older match list.
 
 **`decluttarr`** (`ghcr.io/manimatter/decluttarr`) — added to Mother's own `docker-compose.yml`
 2026-07-19 for Radarr/Sonarr/qBittorrent queue hygiene (stalled/failed-import/orphaned/metadata-missing
@@ -852,11 +899,12 @@ monitors (Socket.IO-only), and scripting around that risked touching its live DB
 manually**: Uptime Kuma → Add New Monitor → Docker Container → host `10.0.1.203:2376` (or via hawser's
 own proxy) → container `hawser`.
 
-**`dozzle-agent`** (`amir20/dozzle:latest agent`, port 7007) — deployed 2026-07-19 via direct `docker
-run --restart always` on 10.0.1.203 (no live compose file was found for that host's stack to add it
-to). Mother's `dozzle` service now has `DOZZLE_REMOTE_AGENT=10.0.1.203:7007` — confirmed working via
-its startup log (`"clients":2`). This Synology's containers (qbittorrent, cross-seed, qbitmanage, qui,
-hawser, dozzle-agent itself) now show up in Mother's existing Dozzle UI at the usual port.
+**`dozzle-agent`** (`amir20/dozzle:latest agent`, port 7007) — originally deployed via a standalone
+`docker run --restart always` (no compose file existed yet at the time); now part of the
+`mother-dlstack` compose project along with the other 5 services (see migration note above). Mother's
+`dozzle` service has `DOZZLE_REMOTE_AGENT=10.0.1.203:7007` — confirmed working via its startup log
+(`"clients":2`). This Synology's containers now show up in Mother's existing Dozzle UI at the usual
+port.
 
 ## Python Dependencies
 
