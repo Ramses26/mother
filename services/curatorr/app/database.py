@@ -203,6 +203,8 @@ async def _migrate_columns():
         ("ALTER TABLE tv_shows ADD COLUMN poster_url TEXT",),
         ("ALTER TABLE tv_shows ADD COLUMN tmdb_status TEXT",),
         ("ALTER TABLE tv_shows ADD COLUMN size_on_disk INTEGER DEFAULT 0",),
+        ("ALTER TABLE movies ADD COLUMN title_slug TEXT",),
+        ("ALTER TABLE tv_shows ADD COLUMN title_slug TEXT",),
         ("CREATE TABLE IF NOT EXISTS collection_members (id INTEGER PRIMARY KEY AUTOINCREMENT, collection_tmdb_id INTEGER, movie_tmdb_id INTEGER, title TEXT, year TEXT, poster_url TEXT, overview TEXT, vote_average REAL, UNIQUE(collection_tmdb_id, movie_tmdb_id))",),
         ("CREATE INDEX IF NOT EXISTS idx_collection_members ON collection_members(collection_tmdb_id)",),
     ]

@@ -440,7 +440,12 @@ const radarrUrl = computed(() => {
     ? (urls.radarr_4k || '')
     : (urls.radarr_hd || '')
   if (!base) return null
-  return `${base}/movie/${props.item.radarr_id}`
+  // Radarr's UI resolves by titleSlug, not the numeric DB id — a numeric-id
+  // link 404s inside the app even though the id itself is valid via the API
+  // (found 2026-07-22). Fall back to the numeric id only for rows synced
+  // before title_slug was captured.
+  const path = props.item.title_slug || props.item.radarr_id
+  return `${base}/movie/${path}`
 })
 
 const plexChrisUrl = computed(() => {
@@ -466,7 +471,9 @@ const sonarrUrl = computed(() => {
     ? (urls.sonarr_4k || '')
     : (urls.sonarr_hd || '')
   if (!base) return null
-  return `${base}/series/${props.item.sonarr_id}`
+  // Same titleSlug requirement as radarrUrl above.
+  const path = props.item.title_slug || props.item.sonarr_id
+  return `${base}/series/${path}`
 })
 </script>
 

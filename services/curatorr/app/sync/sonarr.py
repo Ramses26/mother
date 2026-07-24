@@ -39,6 +39,7 @@ async def sync_all_shows(db):
 
         log.info(f"[{inst['name']}] Syncing {len(shows)} shows")
         count = 0
+        live_ids = {s.get('id') for s in shows}
 
         for i, s in enumerate(shows):
             if i > 0 and i % 100 == 0:
@@ -84,8 +85,8 @@ async def sync_all_shows(db):
                         title, sort_title, year, genres, runtime_min,
                         content_rating, network, summary, original_language,
                         status, total_seasons, total_episodes, size_on_disk,
-                        monitored, poster_url, last_synced, updated_at
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+                        monitored, poster_url, title_slug, last_synced, updated_at
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
                     ON CONFLICT(sonarr_id, sonarr_instance) DO UPDATE SET
                         tmdb_id=excluded.tmdb_id, tvdb_id=excluded.tvdb_id,
                         imdb_id=excluded.imdb_id, title=excluded.title,
@@ -96,6 +97,7 @@ async def sync_all_shows(db):
                         status=excluded.status, total_seasons=excluded.total_seasons,
                         total_episodes=excluded.total_episodes, size_on_disk=excluded.size_on_disk,
                         monitored=excluded.monitored, poster_url=excluded.poster_url,
+                        title_slug=excluded.title_slug,
                         last_synced=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
                 """, (
                     s.get('id'), inst['name'],
@@ -106,7 +108,7 @@ async def sync_all_shows(db):
                     s.get('network'), s.get('overview', ''),
                     s.get('originalLanguage', {}).get('name', '') if isinstance(s.get('originalLanguage'), dict) else s.get('originalLanguage', ''),
                     status, total_seasons, total_episodes, size_on_disk,
-                    1 if s.get('monitored') else 0, poster_url,
+                    1 if s.get('monitored') else 0, poster_url, s.get('titleSlug'),
                 ))
 
                 # Get show DB ID
@@ -150,6 +152,31 @@ async def sync_all_shows(db):
 
         await db.commit()
 
+        # ── Prune shows Sonarr no longer tracks ─────────────────────────────
+        # Found live 2026-07-22: this sync only ever upserted — a show deleted
+        # from Sonarr (or removed for any other reason) left its row in
+        # tv_shows forever, e.g. "The Continental (2018)" Spanish (sonarr_id 897
+        # on sonarr-hd, 1537 on sonarr-ali), stale since 2026-06-16 with no file
+        # anywhere. A full API fetch (`shows`) is the authoritative current list
+        # for this instance, so anything in our DB for this instance but not in
+        # that list no longer exists in Sonarr and should be removed.
+        async with db.execute(
+            "SELECT id, sonarr_id, title, year FROM tv_shows WHERE sonarr_instance=?",
+            (inst['name'],)
+        ) as cur:
+            db_rows = await cur.fetchall()
+        orphans = [r for r in db_rows if r[1] not in live_ids]
+        for orphan_id, sonarr_id, title, year in orphans:
+            await db.execute("DELETE FROM tv_seasons WHERE show_id=?", (orphan_id,))
+            await db.execute("DELETE FROM tv_shows WHERE id=?", (orphan_id,))
+            log.info(f"[{inst['name']}] Pruned stale show no longer in Sonarr: "
+                     f"{title} ({year}) sonarr_id={sonarr_id}")
+        if orphans:
+            await db.commit()
+            await log_event(db, 'sync', inst['name'],
+                            f"Pruned {len(orphans)} show(s) no longer in Sonarr",
+                            detail={'titles': [f"{t} ({y})" for _, _, t, y in orphans]})
+
         # Update purge/composite scores
         await update_tv_scores(db, inst['name'])
 
@@ -159,7 +186,8 @@ async def sync_all_shows(db):
         """, (inst['name'], count))
         await db.commit()
 
-        log.info(f"[{inst['name']}] Synced {count} shows")
+        log.info(f"[{inst['name']}] Synced {count} shows"
+                 + (f", pruned {len(orphans)}" if orphans else ""))
         await log_event(db, 'sync', inst['name'], f"Synced {count} shows")
         await db.commit()
         total += count

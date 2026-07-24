@@ -81,6 +81,7 @@ async def sync_all_movies(db):
 
         log.info(f"[{inst['name']}] Syncing {len(movies)} movies")
         count = 0
+        live_ids = {m.get('id') for m in movies}
 
         for i, m in enumerate(movies):
             # Commit every 100 movies to release write lock periodically
@@ -136,9 +137,9 @@ async def sync_all_movies(db):
                         collection_tmdb_id, collection_name,
                         resolution, video_codec, audio_codec, audio_channels,
                         hdr_format, file_size_bytes, file_path,
-                        quality_profile, monitored, poster_url,
+                        quality_profile, monitored, poster_url, title_slug,
                         radarr_added_at, last_synced, updated_at
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
                     ON CONFLICT(radarr_id, radarr_instance) DO UPDATE SET
                         tmdb_id=excluded.tmdb_id, imdb_id=excluded.imdb_id,
                         title=excluded.title, sort_title=excluded.sort_title,
@@ -154,6 +155,7 @@ async def sync_all_movies(db):
                         hdr_format=excluded.hdr_format, file_size_bytes=excluded.file_size_bytes,
                         file_path=excluded.file_path, quality_profile=excluded.quality_profile,
                         monitored=excluded.monitored, poster_url=excluded.poster_url,
+                        title_slug=excluded.title_slug,
                         last_synced=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
                 """, (
                     m.get('id'), inst['name'],
@@ -167,13 +169,33 @@ async def sync_all_movies(db):
                     resolution, video_codec, audio_codec, audio_channels,
                     hdr_format, file_size, file_path,
                     m.get('qualityProfileId'), 1 if m.get('monitored') else 0,
-                    poster_url, added_at,
+                    poster_url, m.get('titleSlug'), added_at,
                 ))
                 count += 1
             except Exception as e:
                 log.error(f"[{inst['name']}] Error upserting movie {m.get('title', '?')}: {e}")
 
         await db.commit()
+
+        # ── Prune movies Radarr no longer tracks ────────────────────────────
+        # See sonarr.py's identical prune step for the 2026-07-22 context — this
+        # sync only ever upserted, so a movie deleted from Radarr left its row
+        # in `movies` forever.
+        async with db.execute(
+            "SELECT id, radarr_id, title, year FROM movies WHERE radarr_instance=?",
+            (inst['name'],)
+        ) as cur:
+            db_rows = await cur.fetchall()
+        orphans = [r for r in db_rows if r[1] not in live_ids]
+        for orphan_id, radarr_id, title, year in orphans:
+            await db.execute("DELETE FROM movies WHERE id=?", (orphan_id,))
+            log.info(f"[{inst['name']}] Pruned stale movie no longer in Radarr: "
+                     f"{title} ({year}) radarr_id={radarr_id}")
+        if orphans:
+            await db.commit()
+            await log_event(db, 'sync', inst['name'],
+                            f"Pruned {len(orphans)} movie(s) no longer in Radarr",
+                            detail={'titles': [f"{t} ({y})" for _, _, t, y in orphans]})
 
         # Now update purge scores and composite scores for this instance
         await update_scores(db, inst['name'])
@@ -184,7 +206,8 @@ async def sync_all_movies(db):
         """, (inst['name'], count))
         await db.commit()
 
-        log.info(f"[{inst['name']}] Synced {count} movies")
+        log.info(f"[{inst['name']}] Synced {count} movies"
+                 + (f", pruned {len(orphans)}" if orphans else ""))
         await log_event(db, 'sync', inst['name'], f"Synced {count} movies")
         await db.commit()
         total += count

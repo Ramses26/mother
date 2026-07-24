@@ -307,7 +307,7 @@ async def list_tv(
             SELECT id, title, sort_title, year, tmdb_id, imdb_id, tvdb_id,
                    status, tmdb_status, network, total_seasons, total_episodes,
                    original_language, content_rating, runtime_min,
-                   monitored, sonarr_id, sonarr_instance,
+                   monitored, sonarr_id, sonarr_instance, title_slug,
                    imdb_rating, rt_critics, metacritic, tmdb_rating,
                    mdblist_score, trakt_rating, composite_score, purge_score,
                    season_completion_pct, merged_size AS size_on_disk,

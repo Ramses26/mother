@@ -316,7 +316,7 @@ async def list_movies(
                    resolution, video_codec, audio_codec, audio_channels, hdr_format,
                    merged_size AS file_size_bytes, file_path, trash_score, quality_profile,
                    original_language, content_rating, runtime_min,
-                   monitored, radarr_id, radarr_instance,
+                   monitored, radarr_id, radarr_instance, title_slug,
                    imdb_rating, rt_critics, metacritic, tmdb_rating,
                    mdblist_score, trakt_rating, letterboxd_rating,
                    composite_score, purge_score,

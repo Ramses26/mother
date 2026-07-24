@@ -80,7 +80,8 @@ async def fetch_ratings(imdb_id: str, db, media_type: str = 'movie', _api_key: s
 
     result = {}
     try:
-        imdb_rating = float(data.get('imdbRating', 0) or 0)
+        imdb_rating_raw = data.get('imdbRating', 0) or 0
+        imdb_rating = float(imdb_rating_raw) if str(imdb_rating_raw).replace('.', '', 1).isdigit() else 0
         if imdb_rating > 0:
             result['imdb_rating'] = imdb_rating
         imdb_votes_str = (data.get('imdbVotes', '') or '').replace(',', '')

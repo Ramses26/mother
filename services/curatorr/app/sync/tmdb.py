@@ -48,6 +48,7 @@ async def fetch_movie_details(tmdb_id: int, db, _api_key: str = None, _client=No
         'original_language': data.get('original_language', ''),
         'runtime_min': data.get('runtime'),
         'genres': json.dumps([g['name'] for g in data.get('genres', [])]),
+        'imdb_id': data.get('imdb_id') or None,
     }
 
     # Collection
@@ -78,7 +79,7 @@ async def fetch_tv_details(tmdb_id: int, db, _api_key: str = None, _client=None)
     try:
         r = await client.get(
             f"{TMDB_BASE}/tv/{tmdb_id}",
-            params={'api_key': api_key},
+            params={'api_key': api_key, 'append_to_response': 'external_ids'},
         )
         r.raise_for_status()
         data = r.json()
@@ -105,6 +106,7 @@ async def fetch_tv_details(tmdb_id: int, db, _api_key: str = None, _client=None)
         'tmdb_status': status,
         'genres': json.dumps([g['name'] for g in data.get('genres', [])]),
         'network': data.get('networks', [{}])[0].get('name', '') if data.get('networks') else '',
+        'imdb_id': data.get('external_ids', {}).get('imdb_id') or None,
     }
 
     await set_cache(db, 'tv', str(tmdb_id), 'tmdb', result, CACHE_TTL_DAYS)
@@ -207,6 +209,92 @@ async def fill_missing_tv_ids(db):
 
     await db.commit()
     log.info(f"[tmdb] Filled missing tmdb_id for {found} TV shows")
+    return found
+
+
+async def fill_missing_imdb_ids(db, limit: int = 200):
+    """For movies with tmdb_id but no imdb_id, backfill via TMDB movie details.
+
+    Added 2026-07-22: OMDB/MDBList ratings sync both hard-require imdb_id, so any
+    movie Radarr never resolved an imdb_id for (89 found live at the time) could
+    never get an IMDb/MDBList rating, permanently capping ratings coverage below
+    100% regardless of quota or scheduling. TMDB's own movie details response
+    includes imdb_id directly, and Radarr movies always have a tmdb_id, so this
+    closes the gap without needing a new external source."""
+    _api_key = await get_config('tmdb_api_key', TMDB_API_KEY) or TMDB_API_KEY
+    if not _api_key:
+        return 0
+
+    async with db.execute(
+        "SELECT id, tmdb_id, title FROM movies WHERE tmdb_id IS NOT NULL "
+        f"AND (imdb_id IS NULL OR imdb_id = '') LIMIT {limit}"
+    ) as cur:
+        movies = await cur.fetchall()
+
+    found = 0
+    async with httpx.AsyncClient(timeout=10) as client:
+        for movie in movies:
+            try:
+                # Bypass any pre-existing tmdb cache entry — entries cached before
+                # imdb_id was added to fetch_movie_details' result lack the key
+                # entirely, which would silently look like "TMDB has no imdb_id"
+                # for every already-cached title instead of a fresh lookup.
+                await db.execute(
+                    "DELETE FROM ratings_cache WHERE media_type='movie' AND external_id=? AND source='tmdb'",
+                    (str(movie['tmdb_id']),)
+                )
+                data = await fetch_movie_details(movie['tmdb_id'], db, _api_key=_api_key, _client=client)
+                imdb_id = data.get('imdb_id')
+                if imdb_id:
+                    await db.execute(
+                        "UPDATE movies SET imdb_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                        (imdb_id, movie['id'])
+                    )
+                    found += 1
+            except Exception as e:
+                log.debug(f"fill_missing_imdb_ids: {movie['title']}: {e}")
+
+    await db.commit()
+    log.info(f"[tmdb] Filled missing imdb_id for {found} movies")
+    return found
+
+
+async def fill_missing_tv_imdb_ids(db, limit: int = 200):
+    """For TV shows with tmdb_id but no imdb_id, backfill via TMDB external_ids.
+    See fill_missing_imdb_ids (movies) for the 2026-07-22 context — same gap,
+    24 shows found live for TV."""
+    _api_key = await get_config('tmdb_api_key', TMDB_API_KEY) or TMDB_API_KEY
+    if not _api_key:
+        return 0
+
+    async with db.execute(
+        "SELECT id, tmdb_id, title FROM tv_shows WHERE tmdb_id IS NOT NULL "
+        f"AND (imdb_id IS NULL OR imdb_id = '') LIMIT {limit}"
+    ) as cur:
+        shows = await cur.fetchall()
+
+    found = 0
+    async with httpx.AsyncClient(timeout=10) as client:
+        for show in shows:
+            try:
+                # See fill_missing_imdb_ids (movies) for why this cache bypass is needed.
+                await db.execute(
+                    "DELETE FROM ratings_cache WHERE media_type='tv' AND external_id=? AND source='tmdb'",
+                    (str(show['tmdb_id']),)
+                )
+                data = await fetch_tv_details(show['tmdb_id'], db, _api_key=_api_key, _client=client)
+                imdb_id = data.get('imdb_id')
+                if imdb_id:
+                    await db.execute(
+                        "UPDATE tv_shows SET imdb_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                        (imdb_id, show['id'])
+                    )
+                    found += 1
+            except Exception as e:
+                log.debug(f"fill_missing_tv_imdb_ids: {show['title']}: {e}")
+
+    await db.commit()
+    log.info(f"[tmdb] Filled missing imdb_id for {found} TV shows")
     return found
 
 
