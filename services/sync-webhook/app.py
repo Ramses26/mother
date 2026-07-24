@@ -2814,6 +2814,20 @@ def _dedup_is_multipart_group(group: dict) -> bool:
     return part_count >= 2
 
 
+_DEDUP_ALWAYS_PROTECTED_TITLES = ('sacred timeline cut', 'infinity saga')
+
+
+def _dedup_is_always_protected_title(title: str) -> bool:
+    """Belt-and-suspenders guard for known fan-edit/multi-part titles by name,
+    independent of _dedup_is_multipart_group's PART-number regex — added 2026-07-22
+    alongside a bug that caught the same "Sacred Timeline Cut" title being silently
+    unprotected in Curatorr's manual duplicate-scanner route (duplicates.py had no
+    multipart guard at all, unlike this file and scheduler.py). If a future rename
+    ever breaks the PART-number pattern match, this name-based check still holds."""
+    t = (title or '').lower()
+    return any(name in t for name in _DEDUP_ALWAYS_PROTECTED_TITLES)
+
+
 _DEDUP_BAD_RELEASE_GROUPS = {'bhdstudio'}
 _DEDUP_BAD_CONTAINERS = ('.avi', '.mp4', '.ts', '.wmv', '.m4v', '.divx', '.xvid')
 
@@ -2940,16 +2954,24 @@ def nightly_unraid_dedup(force=False):
     Env vars:
       PAUSE_DEDUP_FILE  path to sentinel (default /opt/mother/PAUSE_DEDUP)
       DEDUP_SAFETY_LIMIT  abort threshold (default 200)
+      DEDUP_SAFETY_LIMIT_WEEKLY  abort threshold used instead of DEDUP_SAFETY_LIMIT when
+                          force=True (default 500) — added 2026-07-22, see force below
       DEDUP_MAX_PER_RUN   max deletions per run (default 50)
       DEDUP_DRY_RUN       'true' to preview without deleting (default false)
-      DEDUP_MIN_AGE_HOURS block dedup if any gap-sync job completed in the last N hours
-                          (default 24); dedup is already separated from gap scan by scheduling
-                          (03:00 scan → 12:00 dedup), so this adds a second layer of protection
+      DEDUP_MIN_AGE_HOURS block dedup if a *forward* gap/version-sync job (writes to Unraid)
+                          completed in the last N hours (default 24); dedup is already
+                          separated from gap scan by scheduling (03:00 scan → 12:00 dedup), so
+                          this adds a second layer of protection. TVReverseSync/MovieReverseSync
+                          (Unraid -> Synology) are excluded from this lookback since they never
+                          leave a new file on Unraid — see check 2b below.
 
     force: when True, skips the DEDUP_MIN_AGE_HOURS "recent gap job" defer (check 2b below)
-      but still honors PAUSE_DEDUP and the in-progress-job check (2a) — used by the weekly
+      and uses DEDUP_SAFETY_LIMIT_WEEKLY instead of DEDUP_SAFETY_LIMIT (check 4) — but still
+      honors PAUSE_DEDUP and the in-progress-job check (2a) — used by the weekly
       guaranteed-drain job so a sustained restore project (which completes a gap-sync job
-      almost every day) can't starve dedup indefinitely the way it did 2026-07-09 to 07-19.
+      almost every day, and can grow the backlog past the daily limit over several days)
+      can't starve dedup indefinitely the way it did 2026-07-09 to 07-19, and again
+      2026-07-19 to 07-22 via a different false-trigger (see check 2b's docstring).
     """
     # ── 1. PAUSE_DEDUP sentinel ────────────────────────────────────────────────
     pause_file = os.environ.get('PAUSE_DEDUP_FILE', '/opt/mother/PAUSE_DEDUP')
@@ -2980,9 +3002,16 @@ def nightly_unraid_dedup(force=False):
         )
         active_gap_jobs = cursor.fetchone()[0]
         # Use UTC-aware comparison (completed_at now stored as UTC via datetime.utcnow)
+        # Deliberately excludes TVReverseSync/MovieReverseSync here (unlike the
+        # active-job check above): reverse syncs copy Unraid -> Synology, so a
+        # *completed* one never leaves a new/changed file on Unraid for dedup to
+        # race against. Including them caused a false-positive defer every single
+        # day 2026-07-19 to 07-22 while the known-bad-release restore project was
+        # running (it completes a ReverseSync most nights), silently growing the
+        # real duplicate backlog past DEDUP_SAFETY_LIMIT with zero dedup runs.
         cursor.execute(
             "SELECT COUNT(*) FROM sync_jobs WHERE quality IN ('TVGapSync','GapSync',"
-            "'TVVersionSync','MovieVersionSync','TVReverseSync','MovieReverseSync') "
+            "'TVVersionSync','MovieVersionSync') "
             "AND status = 'success' "
             "AND completed_at > datetime('now', ?)",
             (f'-{DEDUP_MIN_AGE_HOURS} hours',)
@@ -3085,7 +3114,18 @@ def nightly_unraid_dedup(force=False):
     top_freed: list = []  # (bytes, path) for Telegram sample
 
     # ── 4. Safety limit: abort if too many duplicates ─────────────────────────
+    # force=True (the weekly guaranteed-drain run) uses its own, higher ceiling —
+    # added 2026-07-22 after the daily 8am run went 3 straight days without a
+    # single real deletion (false-positive defer, see check 2b above) and the
+    # backlog silently grew to 268, past the daily limit of 200. A sustained
+    # restore/recovery project can keep generating a modest surplus like that
+    # for days; the daily limit should stay tight (catches real scoring-bug/
+    # stale-cache blowups fast), but the weekly run exists specifically so that
+    # kind of ordinary backlog growth still drains on its own without requiring
+    # a human to notice and manually raise DEDUP_SAFETY_LIMIT every time.
     DEDUP_SAFETY_LIMIT = int(os.environ.get('DEDUP_SAFETY_LIMIT', '200'))
+    if force:
+        DEDUP_SAFETY_LIMIT = int(os.environ.get('DEDUP_SAFETY_LIMIT_WEEKLY', '500'))
     all_groups = [(ftype, group) for ftype, groups in scan_data.get('unraid', {}).items()
                   for group in groups if len(group.get('versions', [])) >= 2]
     total_deletable = sum(
@@ -3094,8 +3134,8 @@ def nightly_unraid_dedup(force=False):
     )
     if total_deletable > DEDUP_SAFETY_LIMIT:
         msg = (f"Dedup safety limit hit: {total_deletable} deletable duplicates found "
-               f"(limit={DEDUP_SAFETY_LIMIT}). Skipping all deletions. "
-               f"Raise DEDUP_SAFETY_LIMIT or investigate — may indicate ongoing batch sync.")
+               f"(limit={DEDUP_SAFETY_LIMIT}{' weekly' if force else ''}). Skipping all deletions. "
+               f"Raise DEDUP_SAFETY_LIMIT{'_WEEKLY' if force else ''} or investigate — may indicate ongoing batch sync.")
         logger.error(f"Unraid dedup: {msg}")
         send_notification(title="Unraid Dedup BLOCKED", body=msg,
                           notify_type=apprise.NotifyType.FAILURE)
@@ -3112,8 +3152,8 @@ def nightly_unraid_dedup(force=False):
         versions = group.get('versions', [])
         if len(versions) < 2:
             continue
-        if _dedup_is_multipart_group(group):
-            logger.debug(f"Dedup: skipping multi-part group '{group.get('title', '')}'")
+        if _dedup_is_multipart_group(group) or _dedup_is_always_protected_title(group.get('title', '')):
+            logger.debug(f"Dedup: skipping multi-part/protected group '{group.get('title', '')}'")
             continue
         # versions[0] is the keeper — either Radarr/Sonarr's actively-tracked file
         # (Profile Authority correction above) or, absent a tracked-file match,

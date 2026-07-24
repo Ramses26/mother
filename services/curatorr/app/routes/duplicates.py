@@ -604,6 +604,46 @@ def _fetch_sonarr_tracked(inst_name: str) -> dict:
 _BAD_RELEASE_GROUPS = {'bhdstudio'}
 _BAD_CONTAINERS = ('.avi', '.mp4', '.ts', '.wmv', '.m4v', '.divx', '.xvid')
 
+_PART_RE = re.compile(r'\bpart\s*\d+\b', re.IGNORECASE)
+_ALWAYS_PROTECTED_TITLES = ('sacred timeline cut', 'infinity saga')
+
+
+def _is_multipart_group(group: dict) -> bool:
+    """Mirrors sync-webhook's _dedup_is_multipart_group() / scheduler.py's
+    _is_multipart_group() — kept as a separate copy for the same reason as
+    _is_known_bad_release above. Found live 2026-07-22: this manual duplicate-
+    scanner route (used by the Curatorr UI's bulk-delete) had NO multipart guard
+    at all, unlike the two automatic dedup engines — the exact gap that let the
+    2026-07-19 "Infinity Saga" 4/5-parts-destroyed incident happen in the first
+    place, just reachable here via a human clicking bulk-delete instead of an
+    automated job. Continuation files (PART 1, PART 2, ...) are not duplicates."""
+    versions = group.get('versions') or []
+    part_count = sum(
+        1 for v in versions
+        if _PART_RE.search(os.path.basename(v.get('filename', '') or v.get('file_path', '') or ''))
+    )
+    return part_count >= 2
+
+
+def _is_always_protected_title(title: str) -> bool:
+    """Belt-and-suspenders guard for known fan-edit/multi-part titles by name,
+    independent of _is_multipart_group's PART-number regex."""
+    t = (title or '').lower()
+    return any(name in t for name in _ALWAYS_PROTECTED_TITLES)
+
+
+def _filter_protected_groups(groups: list) -> list:
+    """Drop multi-part / always-protected groups entirely before they ever reach
+    the UI or a bulk-delete call — matches the other two dedup engines' behavior
+    of skipping such groups rather than merely flagging them."""
+    kept = []
+    for grp in groups:
+        if _is_multipart_group(grp) or _is_always_protected_title(grp.get('title', '')):
+            log.debug(f"Duplicate scan: excluding protected multi-part group '{grp.get('title', '')}'")
+            continue
+        kept.append(grp)
+    return kept
+
 
 def _is_known_bad_release(filename: str) -> bool:
     """Mirrors Upgraderr's _is_known_bad_release() + Tier 2 container check
@@ -755,6 +795,13 @@ def _do_filesystem_scan(refresh_unraid: bool = False) -> dict:
     else:
         result['unraid_agent'] = {'ok': False, 'error': 'Agent unreachable or not configured'}
         log.warning('Unraid agent scan unavailable — Unraid tabs will show placeholder')
+
+    # ── Multi-part / always-protected filter ──────────────────────────────────
+    # Must run before Profile Authority correction so protected groups never reach
+    # the UI or a bulk-delete call at all — see _filter_protected_groups docstring.
+    for src in ('synology', 'unraid'):
+        for ftype in ('hd_movies', '4k_movies', 'hd_tv', '4k_tv'):
+            result[src][ftype] = _filter_protected_groups(result[src][ftype])
 
     # ── Profile Authority correction ──────────────────────────────────────────
     # Neither the Synology scan (pure filesystem) nor the Unraid Agent scan (also

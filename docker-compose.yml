@@ -730,6 +730,7 @@ services:
       # defaults (200/50/false/10/24) regardless of .env. Added so .env changes
       # actually take effect.
       - DEDUP_SAFETY_LIMIT=${DEDUP_SAFETY_LIMIT:-200}
+      - DEDUP_SAFETY_LIMIT_WEEKLY=${DEDUP_SAFETY_LIMIT_WEEKLY:-500}
       - DEDUP_MAX_PER_RUN=${DEDUP_MAX_PER_RUN:-50}
       - DEDUP_DRY_RUN=${DEDUP_DRY_RUN:-false}
       - DEDUP_WARN_MINUTES=${DEDUP_WARN_MINUTES:-10}

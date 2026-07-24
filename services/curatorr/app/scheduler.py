@@ -65,10 +65,12 @@ async def _refresh_ratings():
         await db.execute("PRAGMA journal_mode=WAL")
         from app.sync.omdb import sync_all_ratings as omdb_sync, sync_tv_ratings as omdb_tv_sync
         from app.sync.mdblist import sync_all_ratings as mdb_sync, sync_tv_ratings as mdb_tv_sync
-        from app.sync.tmdb import refresh_stale_ratings, refresh_stale_tv_ratings, sync_collections, fill_missing_tv_ids
+        from app.sync.tmdb import (refresh_stale_ratings, refresh_stale_tv_ratings, sync_collections,
+                                    fill_missing_tv_ids, fill_missing_imdb_ids, fill_missing_tv_imdb_ids)
         from app.sync.radarr import update_scores
         from app.sync.sonarr import update_tv_scores
-        for fn in [fill_missing_tv_ids, omdb_sync, omdb_tv_sync, mdb_sync, mdb_tv_sync,
+        for fn in [fill_missing_tv_ids, fill_missing_imdb_ids, fill_missing_tv_imdb_ids,
+                   omdb_sync, omdb_tv_sync, mdb_sync, mdb_tv_sync,
                    refresh_stale_ratings, refresh_stale_tv_ratings,
                    sync_collections, update_scores, update_tv_scores]:
             try:
@@ -165,6 +167,7 @@ def _job_filesystem_scan():
 
 
 _PART_RE = re.compile(r'\bpart\s*\d+\b', re.IGNORECASE)
+_ALWAYS_PROTECTED_TITLES = ('sacred timeline cut', 'infinity saga')
 
 
 def _is_multipart_group(group: dict) -> bool:
@@ -173,6 +176,15 @@ def _is_multipart_group(group: dict) -> bool:
     versions = group.get('versions', [])
     part_count = sum(1 for v in versions if _PART_RE.search(os.path.basename(v.get('file_path', ''))))
     return part_count >= 2
+
+
+def _is_always_protected_title(title: str) -> bool:
+    """Belt-and-suspenders guard for known fan-edit/multi-part titles by name,
+    independent of _is_multipart_group's PART-number regex — see sync-webhook's
+    copy of the same for the 2026-07-22 context (Curatorr's manual duplicate-
+    scanner route had no multipart guard at all, unlike this file)."""
+    t = (title or '').lower()
+    return any(name in t for name in _ALWAYS_PROTECTED_TITLES)
 
 
 def _do_synology_dedup() -> None:
@@ -219,8 +231,8 @@ def _do_synology_dedup() -> None:
                 continue
 
             # Skip multi-part files (e.g. "Infinity Saga PART 1 / PART 2 / ...")
-            if _is_multipart_group(group):
-                log.debug(f"Synology dedup: skipping multi-part group '{group.get('title', '')}'")
+            if _is_multipart_group(group) or _is_always_protected_title(group.get('title', '')):
+                log.debug(f"Synology dedup: skipping multi-part/protected group '{group.get('title', '')}'")
                 skipped += 1
                 continue
 
