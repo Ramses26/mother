@@ -851,6 +851,68 @@ fine, which correctly pointed at *some* file under `/config/qBittorrent/config`/
 BT_backup, narrowing it down. Confirmed fully recovered: all 8939 torrents reloaded, cross-seed and
 qbitmanage both reconnected without further intervention.
 
+**2026-07-24 recurrence — same stale-lockfile bug, now fixed permanently, plus monitoring gaps
+closed.** The exact 2026-07-19 failure mode recurred: qBittorrent's container was recreated
+(`RestartCount: 0` — a fresh container, not a crash-restarted one; trigger still unconfirmed,
+`journalctl` on this host returns "No journal files were found" everywhere because
+`journald.conf` has `Storage=volatile` and the relevant boot's ring buffer was already gone by
+the time this was checked — not a permissions issue, a real dead end for retroactive
+investigation) and the leftover `lockfile`/`ipc-socket` from the previous container blocked
+every new qBittorrent-nox process from starting, crash-looping every ~1s. Radarr and decluttarr
+both threw continuous connection errors against the dead WebUI for hours before it was noticed.
+**Permanent fix, deployed same session**: this compose project is now git-tracked at
+`/opt/mother/remote-hosts/download-synology/` (mirrors the live `/volume1/docker/qbittorrentstack/`
+1:1 — deploy by editing the repo copy first, then `ssh synology-dl "cat > <host path>" < <repo
+path>` per file since `scp`'s SFTP subsystem is unreliable on this host — plain SSH exec always
+works — then `ssh synology-dl "cd /volume1/docker/qbittorrentstack && sudo /usr/local/bin/docker
+compose -p mother-dlstack up -d"`). Three additions closed this failure mode for good:
+1) `qbittorrent-init/clear-stale-lock.sh` mounted at `/custom-cont-init.d/` (LinuxServer.io's s6
+   hook that runs once before the app starts) unconditionally deletes `lockfile`/`ipc-socket` —
+   safe because every container recreation is guaranteed to be the only live process against that
+   `/config` volume, so any lockfile present at startup is by definition stale, never a real
+   conflict.
+2) A Docker `HEALTHCHECK` on `qbittorrent` (curls the WebUI API; `start_period: 300s` since 8900+
+   torrents take ~4min to restore from `BT_backup` on a fresh start — confirmed live 2026-07-24,
+   don't shrink this without re-checking against current torrent count). **Required companion
+   setting, not in the compose file**: qBittorrent returned 403 to the in-container healthcheck
+   until `WebUI\LocalHostAuth=false` was set (qBittorrent's own preference, "bypass auth for
+   localhost clients" — inverted boolean naming) via `POST /api/v2/app/setPreferences
+   '{"bypass_local_auth": true}'`. The existing `AuthSubnetWhitelist` (10.0.0.0/23, 192.168.0.0/23,
+   172.16.0.0/12) covers Mother/Unraid and the Docker bridge range but never covered `127.0.0.1`,
+   which is what a healthcheck running *inside* the container uses. This persists in
+   `qBittorrent.conf` on the `/config` volume, so it survives container recreation — but if
+   `/config` is ever rebuilt from scratch, this has to be re-applied via the API call above or the
+   healthcheck (and therefore autoheal) silently goes blind again.
+3) An `autoheal` sidecar (`willfarrell/autoheal`, `AUTOHEAL_CONTAINER_LABEL=all`) added to this
+   compose file — restarts any container Docker marks `unhealthy`. Safe to watch "all" here since
+   `qbittorrent` is the only service in this stack with a healthcheck defined.
+`qbitmanage/config.yml` and `qbitmanage_util_override.py` are also now mirrored into the repo
+under `remote-hosts/download-synology/qbitmanage/` (the Notifiarr API key in `config.yml` is
+redacted in the repo copy — real value stays host-only). **The "600 notifications" Ali received
+during this incident were not from decluttarr or Radarr directly** — verified neither has any
+Telegram/Apprise notification connection configured for this, and the Apprise hub logged zero
+inbound requests during the whole outage window. The real source is almost certainly Dockhand's
+own `container_events`/activity feed: it already tracks both Mother and this host (environment
+id 2, `Synology-Downloaders`, connected via `hawser`) and logged a `health_status`/`die` pair
+for decluttarr roughly every 30s throughout — that reads as "hundreds of notifications" if you're
+watching Dockhand's UI, even though it wasn't an actual push alert (Dockhand's one configured
+Apprise notification channel, id 1 "Server Notifications", has `event_types: []` — enabled but
+subscribed to nothing, so it has never actually fired). See monitoring-architecture note below.
+
+**Monitoring/alerting architecture decision, 2026-07-24 (don't re-litigate without re-reading this):**
+Dockhand already does cross-host container-event capture (via `hawser` agents) and has an Apprise
+channel wired to the same Telegram pipe every other service uses — it just isn't subscribed to any
+`event_types` yet. It does **not** do health-triggered auto-restart itself (no such table/feature
+found in its schema); that's what `autoheal` is for, added above. Recommended split going forward:
+Dockhand = cross-host container/image lifecycle visibility + alerting (once `event_types` is
+configured for `health_status`/`die`/image-update events — UI-only, no API access without a login
+session, do this via the Dockhand web UI at `http://mother:3000`, not by writing to
+`configs/dockhand/db/dockhand.db` directly, which is a live SQLite DB and editing it out-of-band
+risks the same class of corruption documented in [[upgraderr_db_corruption_pattern]]). Uptime Kuma =
+independent black-box HTTP/TCP/ping checks (catches an outage even if Docker's own health-check
+pipeline is itself the thing broken) plus non-Docker service monitoring. They're complementary, not
+redundant — don't replace one with the other.
+
 Services: `qbittorrent`, `qui` (modern multi-instance WebUI, port 7476), `cross-seed` (hardlink
 cross-seeding, port 2468, no deletion logic of its own), `qbitmanage` (tags/categories/share-limits/
 orphan cleanup, config at `/volume1/docker/qbitmanage/config.yml` on that host, runs every 30 min).

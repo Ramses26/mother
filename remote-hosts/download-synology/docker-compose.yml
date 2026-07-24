@@ -1,0 +1,147 @@
+services:
+  qbittorrent:
+    image: ghcr.io/linuxserver/qbittorrent
+    container_name: qbittorrent
+    restart: unless-stopped
+    environment:
+      - PUID=1028
+      - PGID=100
+      - TZ=America/New_York
+      - WEBUI_PORT=8080
+    volumes:
+      - /volume1/docker/qbittorrent:/config
+      - /volume1/Downloads:/downloads
+      - ./qbittorrent-init:/custom-cont-init.d:ro
+    ports:
+      - "52525:52525/tcp"
+      - "52525:52525/udp"
+      - "8080:8080/tcp"
+    networks:
+      - media_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v2/app/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      # 8900+ torrents take several minutes to restore from BT_backup on a fresh
+      # start -- keep this well above observed worst case (~4min on 2026-07-24)
+      # so autoheal never restarts a container that's still loading normally.
+      start_period: 300s
+
+  qui:
+    image: ghcr.io/autobrr/qui:latest
+    container_name: qui
+    restart: unless-stopped
+    command: ["serve"]
+    volumes:
+      - /volume1/docker/qui:/config
+    ports:
+      - "7476:7476/tcp"
+    networks:
+      - media_net
+
+  cross-seed:
+    image: ghcr.io/cross-seed/cross-seed:latest
+    container_name: cross-seed
+    restart: unless-stopped
+    command: ["daemon"]
+    environment:
+      - TZ=America/New_York
+      - CONFIG_DIR=/config
+      - DOCKER_ENV=true
+    volumes:
+      - /volume1/Downloads:/downloads
+      - /volume1/4KMovies:/media/4kmovies:ro
+      - /volume1/4KTV:/media/4ktv:ro
+      - /volume1/docker/qbittorrent/qBittorrent/BT_backup:/torrents:ro
+      - /volume1/docker/cross-seed:/config
+    ports:
+      - "2468:2468/tcp"
+    networks:
+      - media_net
+
+  qbitmanage:
+    image: ghcr.io/stuffanthings/qbit_manage:latest
+    container_name: qbitmanage
+    restart: unless-stopped
+    environment:
+      - QBT_CONFIG_DIR=/config
+      - QBT_WEB_SERVER=false
+      - PUID=1028
+      - PGID=100
+      - TZ=America/New_York
+      - QBT_LOGFILE=/config/logs/qbit_manage.log
+      - QBT_SCHEDULE=30
+      - QBT_RUN=false
+      - QBT_SHARE_LIMITS=true
+      - QBT_REM_ORPHANED=true
+      - QBT_TAG_NOHARDLINKS=true
+      - QBT_TAG_TRACKER_ERROR=true
+      - QBT_REM_UNREGISTERED=true
+      - QBT_STARTUP_DELAY=60
+      - QBITMANAGE_QBT_HOST=http://qbittorrent:8080
+      - QBITMANAGE_QBT_USER=${QBITMANAGE_QBT_USER}
+      - QBITMANAGE_QBT_PASS=${QBITMANAGE_QBT_PASS}
+    volumes:
+      - /volume1/docker/qbitmanage:/config
+      - /volume1/Downloads:/downloads
+      - /volume1/docker/qbittorrent/qBittorrent/BT_backup:/bt_backup:ro
+      # Local override: adds bare "Not Found" to UNREGISTERED_MSGS (TorrentLeech
+      # sends that instead of "Torrent Not Found") -- see /opt/mother/CLAUDE.md.
+      # Re-diff against upstream before ever bumping this image's version.
+      - ./qbitmanage/qbitmanage_util_override.py:/app/modules/util.py:ro
+    depends_on:
+      - qbittorrent
+    networks:
+      - media_net
+
+  hawser:
+    image: ghcr.io/finsys/hawser:latest
+    container_name: hawser
+    restart: always
+    network_mode: host
+    environment:
+      - TOKEN=${HAWSER_TOKEN}
+      - PORT=2376
+      - DOCKER_SOCKET=/var/run/docker.sock
+      - STACKS_DIR=/data/stacks
+      - HEARTBEAT_INTERVAL=30
+      - REQUEST_TIMEOUT=30
+      - RECONNECT_DELAY=1
+      - MAX_RECONNECT_DELAY=60
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /volume1/@docker/volumes/abcaf3ecdd1aec4f3295613255e24570229365724267f8270392cb80c98d6fc8/_data:/data/stacks
+
+  dozzle-agent:
+    image: amir20/dozzle:latest
+    container_name: dozzle-agent
+    restart: always
+    command: ["agent"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "7007:7007/tcp"
+    networks:
+      - media_net
+
+  # Watches Docker healthcheck status on this host and restarts any container
+  # Docker marks "unhealthy". Added 2026-07-24 after a stale-lockfile crash loop
+  # (see qbittorrent-init/clear-stale-lock.sh) took a manual SSH session + Mother
+  # reboot to notice and fix. Only qbittorrent has a healthcheck today; watching
+  # "all" is safe for the rest of this stack since none of the other services
+  # define one, so autoheal has nothing else to act on.
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    restart: always
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+      - AUTOHEAL_INTERVAL=30
+      - AUTOHEAL_START_PERIOD=300
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  media_net:
+    external: true
