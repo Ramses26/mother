@@ -98,6 +98,9 @@ reports/plex_dupes/
 
 # Upgraderr runtime data
 data/upgraderr/
+# Stray/orphaned path -- not the compose-mounted one (data/upgraderr/ above);
+# found empty and unreferenced by any current config, 2026-07-24.
+data/curatorr/upgraderr_ro/
 
 # Recyclarr managed cache (TRaSH guide data, auto-downloaded)
 configs/recyclarr/resources/
