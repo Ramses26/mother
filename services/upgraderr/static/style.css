@@ -19,6 +19,7 @@
   --tier5: #0891b2;
   --tier6: #7c3aed;
   --tier7: #db2777;
+  --tier8: #0d9488;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -245,6 +246,7 @@ body {
 .tier-5 .tier-count { color: var(--tier5); }
 .tier-6 .tier-count { color: var(--tier6); }
 .tier-7 .tier-count { color: var(--tier7); }
+.tier-8 .tier-count { color: var(--tier8); }
 .tier-card-link {
   display: block;
   text-decoration: none;
@@ -289,6 +291,7 @@ body {
 .tier-badge-5 { background: #0891b233; color: #67e8f9; }
 .tier-badge-6 { background: #7c3aed33; color: #c4b5fd; }
 .tier-badge-7 { background: #db277733; color: #f9a8d4; }
+.tier-badge-8 { background: #0d948833; color: #5eead4; }
 
 .result-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
 .result-triggered      { background: #22c55e22; color: #86efac; }

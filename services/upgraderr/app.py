@@ -653,6 +653,19 @@ def classify_tiers(filename, year=None, is_4k=False, media_type='movie', tmdb_id
                 r'\b(atmos|truehd|dts|dd\+|eac3)\b', fn_lower):
             tiers.append((5, 'tier5_audio'))
 
+    # Tier 8: 1080p x265 without HDR/DV. Sync Strategy (CLAUDE.md) excludes this class
+    # of file from ever being freshly synced, on the assumption Upgraderr would find a
+    # proper source — but neither Tier 3 (only fires below 1080p) nor Tier 6 (absolute
+    # score threshold — audio/source bonuses keep the total well above MIN_SCORE even
+    # with the -300 no-HDR penalty applied) ever catches it. Confirmed live 2026-07-23:
+    # ~4600 TV episodes across dozens of shows (NCIS, Gold Rush, Star Trek Voyager, etc)
+    # sat in exactly this state for weeks with nothing in Upgraderr ever queuing a
+    # search for them.
+    is_x265 = codec in ('HEVC', 'H.265', 'x265')
+    has_hdr = bool(hdr) and hdr not in ('', 'None', 'SDR')
+    if resolution == '1080p' and is_x265 and not has_hdr:
+        tiers.append((8, 'tier8_x265_no_hdr'))
+
     score = calculate_quality_score(
         resolution=resolution or 'Unknown', source=source or 'Unknown',
         hdr=hdr or '', audio=audio or '', codec=codec or '',
@@ -1258,9 +1271,13 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
 
         _db_mark_searching(inst_name, mid, 'movie', search_count, cooldown_until)
 
-        # After N failed searches, sync current quality so Ali isn't permanently missing content
+        # After N failed searches, sync current quality so Ali isn't permanently missing content.
+        # Tier 8 (x265 no HDR at 1080p) gets the same escape hatch as Tier 3 (720p) — both are
+        # cases where the sync-strategy quality filter blocks a fresh copy indefinitely unless
+        # Upgraderr finds something better, so an old catalog title with no HDR release available
+        # needs the same fallback instead of being permanently stuck un-synced.
         threshold = int(get_cfg('no_source_sync_threshold', str(NO_SOURCE_SYNC_THRESHOLD)))
-        if search_count >= threshold and top_tier == 3:
+        if search_count >= threshold and top_tier in (3, 8):
             movie_path = movie.get('path', '')
             if movie_path:
                 _trigger_fallback_sync(movie_path, full_title, 'movie', score)
@@ -1451,9 +1468,11 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
             cooldown_until = (datetime.utcnow() + timedelta(hours=cooldown_h)).isoformat()
             _db_mark_searching(inst_name, composite_id, 'season', search_count, cooldown_until)
 
-            # After N failed searches, sync current quality so Ali isn't permanently missing content
+            # After N failed searches, sync current quality so Ali isn't permanently missing content.
+            # Tier 8 (x265 no HDR at 1080p) gets the same escape hatch as Tier 3 (720p) — see the
+            # matching comment in _sweep_radarr.
             threshold = int(get_cfg('no_source_sync_threshold', str(NO_SOURCE_SYNC_THRESHOLD)))
-            if search_count >= threshold and top_tier == 3:
+            if search_count >= threshold and top_tier in (3, 8):
                 series_path = series.get('path', '')
                 if series_path:
                     season_score = get_current_score(sdata['fn'], is_4k=is_4k, media_type='tv')
@@ -2070,7 +2089,7 @@ def settings_page():
     }
     tier_enabled = {
         t: get_config(f'tier_enabled_{t}', 'true') == 'true'
-        for t in range(1, 8)
+        for t in range(1, 9)
     }
     instances = get_instances_request()
     backups   = list_backups()
@@ -2225,7 +2244,7 @@ def api_settings():
     if 'tmdb_api_key' in data:
         set_config('tmdb_api_key', str(data['tmdb_api_key']).strip())
 
-    for t in range(1, 8):
+    for t in range(1, 9):
         k = f'tier_enabled_{t}'
         if k in data:
             set_config(k, 'true' if data[k] else 'false')
@@ -2553,18 +2572,22 @@ def _flag_if_bad_import(inst, media_type, media_id, title, before_quality, befor
     would have flagged every legitimate profile-enforced swap as a false alarm).
 
     It alerts only when the newly imported file is itself objectively bad — matches
-    any of Tiers 1-6 (m2ts, bad container, 720p/480p, no surround audio, low score)
-    or comes from a known-bad release group (BHDStudio) — regardless of what it
-    replaced. That is the one thing that's never acceptable, whatever the profile says.
+    any of Tiers 1-8 (m2ts, bad container, 720p/480p, no surround audio, low score,
+    x265-without-HDR-at-1080p) or comes from a known-bad release group (BHDStudio) —
+    regardless of what it replaced. That is the one thing that's never acceptable,
+    whatever the profile says.
 
-    tier5_audio is handled differently from every other tier here: unlike a bad
-    container/release group, "no surround release was available" is an expected,
-    common outcome, not a malfunction — and the sweep's own long-interval recheck
-    (TIER5_RECHECK_DAYS) already re-evaluates these periodically. So an audio-only
-    result gets logged and reported, but NOT tagged upgraderr-skip — tagging it would
-    permanently block that recheck from ever running. Any OTHER tier hit here (bad
-    container, bad group, m2ts, 720p) still gets the permanent tag + manual review,
-    since those are real Radarr/recyclarr malfunctions, not "nothing better exists."
+    tier5_audio and tier8_x265_no_hdr are handled differently from every other tier
+    here: unlike a bad container/release group, "no surround release was available"
+    or "no HDR/non-x265 1080p release was available" are expected, common outcomes
+    for older catalog titles, not a malfunction. tier5_audio additionally gets the
+    sweep's own long-interval recheck (TIER5_RECHECK_DAYS); tier8 doesn't have that
+    special recheck wired up yet and just retries on the normal adaptive cooldown.
+    Either way, a result made up ONLY of these two reasons gets logged and reported,
+    but NOT tagged upgraderr-skip — tagging it would permanently block Tier 8/5 from
+    ever searching that title again. Any OTHER tier hit here (bad container, bad
+    group, m2ts, 720p) still gets the permanent tag + manual review, since those are
+    real Radarr/Sonarr/recyclarr malfunctions, not "nothing better exists."
     """
     is_4k = '4k' in (inst.get('name') or '').lower()
     ct_media_type = 'movie' if media_type == 'movie' else 'tv'
@@ -2578,18 +2601,24 @@ def _flag_if_bad_import(inst, media_type, media_id, title, before_quality, befor
     if bad_group:
         reasons.append('known_bad_release_group')
     reason_str = ', '.join(reasons)
-    audio_only = reasons == ['tier5_audio']
+    no_source_tiers = {'tier5_audio', 'tier8_x265_no_hdr'}
+    no_better_source = bool(reasons) and set(reasons) <= no_source_tiers
 
     log.warning(
         f"[import-guard] {title}: imported file still has a quality problem "
         f"({reason_str}) — before={before_quality!r} after={after_quality!r}"
     )
 
-    if audio_only:
+    if no_better_source:
+        reason_labels = {
+            'tier5_audio': 'no surround-audio release found',
+            'tier8_x265_no_hdr': 'no HDR/DV or non-x265 1080p release found',
+        }
+        note = ' + '.join(reason_labels[r] for r in reasons)
         send_telegram(
-            f"🔈 Upgraderr: no surround-audio release found for {title}\n"
+            f"🔈 Upgraderr: {note} for {title}\n"
             f"File: {(after_quality or '?').split('/')[-1]}\n"
-            f"Will keep checking on a long interval (30/60/90/180 days) — no action needed.",
+            f"Will keep retrying — no action needed.",
             category='notify_no_source_found'
         )
         return
