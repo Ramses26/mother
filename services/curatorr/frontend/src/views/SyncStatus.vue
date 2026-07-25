@@ -912,8 +912,8 @@ const tvTabs = computed(() => [
 
 const parityTabs = computed(() => [
   { key: 'missing',     label: 'Missing from Unraid',    count: parityData.value?.summary?.missing_count },
-  { key: 'unraid_pass', label: 'Unraid-only 1080p+',     count: parityData.value?.summary?.unraid_pass_count },
-  { key: 'unraid_filt', label: 'Unraid-only 720p/x265',  count: parityData.value?.summary?.unraid_filt_count },
+  { key: 'unraid_pass', label: 'Unraid-only',              count: parityData.value?.summary?.unraid_pass_count },
+  { key: 'unraid_filt', label: 'Unraid-only (retired)',    count: parityData.value?.summary?.unraid_filt_count },
   { key: 'mismatch',    label: 'Version Mismatch',       count: parityData.value?.summary?.mismatch_count },
 ])
 
