@@ -397,24 +397,27 @@ were *never actually resolved* in the first place).
 unchanged for weeks, check `upgrade_queue.status` for that row before assuming the sweep or
 search itself is broken** — `found` + no tag is the signature of this class of bug.
 
-### Upgraderr Search Budget Is Tiny Relative to Backlog Size (found 2026-07-25, not yet acted on)
+### Upgraderr Search Budget Was Tiny Relative to Backlog Size (raised 2026-07-25 — temporary)
 
-`SweepBudget` (`searches_per_hour` / `UPGRADERR_SEARCHES_PER_HOUR`, default **5** per instance,
-and `downloads_per_day` / `UPGRADERR_DOWNLOADS_PER_DAY`, default **10** global) resets fresh
-*every sweep run* (every 30 min) despite the env var name suggesting a daily/hourly cap — so it's
-really "~5 new series/movies per instance, ~10 total across all 4 instances, per 30-minute
-sweep." Critically, `_sweep_sonarr`/`_sweep_radarr` check this budget **before** calling
-`classify_tiers()` on a series/movie (`if not budget.can_search(...) and not has_stale: continue`)
-— so once budget is exhausted for that cycle, remaining series in that cycle's randomized order
-are never even classified, not just left unsearched. Confirmed live: Tier 8
-(x265-no-HDR-at-1080p, ~4600 episodes estimated when the tier was added 2026-07-23) had only
-accumulated **88 queued items after 26 hours** of the code being live — at that observed rate,
-fully classifying the backlog would take on the order of **months**, not days. This got
-considerably worse the same day once the stuck-`found`-row fix above reopened 147 more movies
-into the same budget-constrained queue. Not fixed yet — raising the budget is a judgment call
-(indexer load / bandwidth), not something to change unilaterally; flagged for Ali to decide,
-similar precedent to `DEDUP_SAFETY_LIMIT` being temporarily raised for backlog draining
-elsewhere in this doc.
+`SweepBudget` (`searches_per_hour` / `UPGRADERR_SEARCHES_PER_HOUR`, and `downloads_per_day` /
+`UPGRADERR_DOWNLOADS_PER_DAY`) resets fresh *every sweep run* (every 30 min) despite the env var
+name suggesting a daily/hourly cap — so it's really "N new series/movies per instance, M total
+across all 4 instances, per 30-minute sweep." Critically, `_sweep_sonarr`/`_sweep_radarr` check
+this budget **before** calling `classify_tiers()` on a series/movie
+(`if not budget.can_search(...) and not has_stale: continue`) — so once budget is exhausted for
+that cycle, remaining series in that cycle's randomized order are never even classified, not
+just left unsearched. Confirmed live: Tier 8 (x265-no-HDR-at-1080p, ~4600 episodes estimated
+when the tier was added 2026-07-23) had only accumulated **88 queued items after 26 hours** at
+the old default (5/instance, 10 global) — on the order of months to fully classify the backlog,
+worse once the stuck-`found`-row fix above reopened 147 more movies into the same queue.
+
+**Raised 2026-07-25**: `UPGRADERR_SEARCHES_PER_HOUR` 5→20, `UPGRADERR_DOWNLOADS_PER_DAY` 10→40
+in `.env`, specifically to drain this backlog — same temporary-bump pattern as
+`DEDUP_SAFETY_LIMIT` elsewhere in this doc. **Revert to 5/10 once the backlog is confirmed
+drained** (check `SELECT priority_tier, status, COUNT(*) FROM upgrade_queue GROUP BY 1,2` — once
+tier8 and the reopened `found` rows have worked through, there's no reason to keep searching
+this aggressively for ongoing steady-state). Don't assume 20/40 is the intended long-term value
+without checking this first.
 
 ### qbitmanage Orphaned-Data Race Condition (READ BEFORE MANUALLY RECOVERING A STUCK IMPORT)
 
