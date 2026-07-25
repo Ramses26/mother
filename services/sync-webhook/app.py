@@ -1946,8 +1946,10 @@ def scan_tv_gaps():
                 fname = f_entry.name
                 if not fname.lower().endswith(video_exts):
                     continue
-                if not _should_sync_tv_episode(fname):
-                    continue
+                # Quality filter removed 2026-07-25 -- Ali's explicit instruction: absolute
+                # parity between Synology and Unraid regardless of quality tier. Every
+                # Synology episode syncs to Unraid now, not just ones passing the old
+                # 720p/x265-no-HDR gate. See CLAUDE.md Sync Strategy section.
                 m = ep_re.search(fname)
                 if not m:
                     continue
@@ -2120,8 +2122,9 @@ def reconcile_tv_versions():
                 fname = f_entry.name
                 if not fname.lower().endswith(video_exts):
                     continue
-                if not _should_sync_tv_episode(fname):
-                    continue
+                # Quality filter removed 2026-07-25 -- see scan_tv_gaps' matching comment.
+                # Absolute parity: Synology's file always wins on mismatch regardless of
+                # tier, even if it's itself 720p/x265-no-HDR.
                 m = ep_re.search(fname)
                 if not m:
                     continue
@@ -2134,12 +2137,6 @@ def reconcile_tv_versions():
                 unraid_fname, unraid_path, unraid_size = unraid_ep_files[key]
                 if fname.lower() == unraid_fname.lower():
                     continue  # same file — in sync
-
-                # Bidirectional gate: skip if Unraid's file is also 720p/x265-no-HDR.
-                # Both sides having low quality means Upgraderr is handling the upgrade;
-                # don't create a reverse-sync job that would push 720p to Synology.
-                if not _should_sync_tv_episode(unraid_fname):
-                    continue
 
                 try:
                     syn_size = f_entry.stat().st_size
@@ -2158,7 +2155,19 @@ def reconcile_tv_versions():
                     )
                     mismatches.append(('syn_to_unraid', f_entry.path, unraid_path, display_title))
                 elif unraid_score > syn_score:
-                    # Unraid has a better version → push to Synology (reverse direction)
+                    # Unraid has a better version → push to Synology (reverse direction).
+                    # Gate only applies here, not to the Syn→Unraid branch above: pushing a
+                    # good Synology file down to replace a bad/excluded Unraid file is always
+                    # safe regardless of what disqualifies the OLD Unraid file. This check
+                    # used to run before either direction was chosen, which meant it also
+                    # silently skipped the Syn→Unraid direction any time Unraid's stale file
+                    # happened to be 720p/x265-no-HDR (common, since that's exactly the class
+                    # of legacy pre-quality-filter leftover this project has the most of) --
+                    # found live 2026-07-25: 729 Syn-better mismatches were sitting completely
+                    # unaddressed for this reason, while the nightly job logged "0 mismatches"
+                    # for 4 straight nights because they never even reached the mismatches list.
+                    if not _should_sync_tv_episode(unraid_fname):
+                        continue
                     logger.info(
                         f"TV version reconcile: mismatch {display_title} — "
                         f"Unraid score {unraid_score} > Synology score {syn_score} — "
@@ -2410,13 +2419,10 @@ def reconcile_movie_versions():
         if best_syn_fname.lower() == unraid_fname.lower():
             continue
 
-        # Quality gate: skip 720p/SD and x265-without-HDR — Upgraderr upgrades first.
-        if not _should_sync_tv_episode(radarr_fname):
-            logger.info(
-                f"Movie version reconcile: skipping '{movie_folder}' — "
-                f"Radarr file is 720p/x265-no-HDR ({radarr_fname!r}), Upgraderr will upgrade first"
-            )
-            continue
+        # Quality gate removed 2026-07-25 -- Ali's explicit instruction: absolute parity
+        # between Synology and Unraid regardless of quality tier, movies and TV alike.
+        # Radarr's tracked file now always syncs to Unraid even if it's itself
+        # 720p/SD or x265-without-HDR. See CLAUDE.md Sync Strategy section.
 
         # ── Direction: PROFILE AUTHORITY — Radarr's tracked file always wins ────────
         # See CLAUDE.md "Profile Authority" section. Reverted 2026-07-02: commit
@@ -2674,8 +2680,9 @@ def nightly_library_report():
                         fname = f_entry.name
                         if not fname.lower().endswith(video_exts):
                             continue
-                        if not _should_sync_tv_episode(fname):
-                            continue
+                        # Quality filter removed 2026-07-25 to match the gap scanner/reconcile
+                        # policy change -- this health report's "missing" count should reflect
+                        # the same absolute-parity definition those jobs now sync against.
                         m = ep_re.search(fname)
                         if not m:
                             continue
