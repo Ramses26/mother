@@ -1539,11 +1539,15 @@ def _validate_stale_queue():
     Deletes entries whose upgrade reason no longer applies — prevents stale entries
     from accumulating when shows are upgraded outside the normal sweep flow.
 
-    Only validates tier1-tier3 and tier5 (container, resolution, audio) — these are
-    reliably detectable from the filename. tier4 (BluRay wait), tier6 (score), and
-    tier7 (profile mismatch) are left to the sweep since they need profile context.
+    Also re-validates status='found' entries (added 2026-07-25) — see the "found-row
+    re-validation" block below for why this half was missing entirely until now.
+
+    Only validates tier1-tier3, tier5, and tier8 (container, resolution, audio,
+    x265-no-HDR) — these are reliably detectable from the filename. tier4 (BluRay
+    wait), tier6 (score), and tier7 (profile mismatch) are left to the sweep since
+    they need profile context.
     """
-    SIMPLE_TIERS = {'tier1_m2ts', 'tier2_container', 'tier3_720p', 'tier5_audio'}
+    SIMPLE_TIERS = {'tier1_m2ts', 'tier2_container', 'tier3_720p', 'tier5_audio', 'tier8_x265_no_hdr'}
 
     def _still_valid(fn: str, reason: str) -> bool:
         if not fn:
@@ -1567,29 +1571,71 @@ def _validate_stale_queue():
             if audio in SURROUND_AUDIO: return False
             if audio == 'DD' and has_surround: return False
             return True  # still bad audio
+        if reason == 'tier8_x265_no_hdr':
+            is_x265 = bool(re.search(r'\b(x265|h265|hevc|x\.265)\b', name))
+            has_hdr = bool(re.search(r'\b(hdr10\+?|hdr10|hdr|dv|dovi|dolby\.?vision|hlg|pq)\b', name))
+            return bool(re.search(r'\b1080p\b', name)) and is_x265 and not has_hdr
         return True  # tier4/6/7 — keep
+
+    def _detect_simple_tier(fn: str):
+        """For found-row re-validation: does the CURRENT file match any simple/
+        filename-detectable tier, regardless of what the row's stored upgrade_reason
+        was? Needed because a row's original reason can be tier4/6/7 (profile
+        mismatch etc) while the search that followed introduced an unrelated,
+        independently-detectable problem — e.g. Steamboy: stored reason was
+        tier7_profile_mismatch, but the resulting import was 720p (tier3), and
+        _still_valid(fn, 'tier7_profile_mismatch') always returns True (tier7 is
+        left to the sweep), so checking only the stored reason would never catch
+        this. Returns the matching reason string, or None if the file looks clean
+        by every simple check.
+        """
+        for reason in ('tier1_m2ts', 'tier2_container', 'tier3_720p', 'tier5_audio', 'tier8_x265_no_hdr'):
+            if _still_valid(fn, reason):
+                return reason
+        return None
 
     try:
         db = get_db()
         instances = get_instances_from_db()
         total_deleted = 0
+        total_reopened = 0
+
+        # Found-row re-validation, added 2026-07-25. A webhook 'Download' (isUpgrade=True)
+        # or any 'MovieFileRenamed' event marks status='found' unconditionally, without
+        # checking whether the newly-tracked file actually resolves anything. If the
+        # result was itself bad (a downgrade, or a rename with no real quality change)
+        # and _flag_if_bad_import didn't independently catch and tag it upgraderr-skip,
+        # the row froze at 'found' forever -- no other part of this function looks past
+        # pending/searching rows. Checked against ALL simple tiers regardless of the
+        # row's original stored reason, not just a re-check of that one reason: a row
+        # can be stored as e.g. tier7_profile_mismatch (profile context, not filename-
+        # detectable, left to the sweep) while the search that followed introduced an
+        # unrelated, independently-detectable problem. Confirmed live: Steamboy sat at
+        # 720p for 24 days after a 'found' webhook fired for a tier7-reason row --
+        # _still_valid(fn, 'tier7_profile_mismatch') always returns True for tier7, so
+        # only a reason-agnostic file check like _detect_simple_tier catches this.
 
         # ── TV seasons ─────────────────────────────────────────────────────
         sonarr_insts = {n: i for n, i in instances.items() if i.get('type') == 'sonarr'}
         for inst_name, inst in sonarr_insts.items():
-            entries = db.execute("""
-                SELECT id, media_id, upgrade_reason
+            pending_entries = db.execute("""
+                SELECT id, media_id, upgrade_reason, status
                 FROM upgrade_queue
                 WHERE instance=? AND media_type='season'
                   AND status IN ('pending','searching')
-                  AND upgrade_reason IN ('tier1_m2ts','tier2_container','tier3_720p','tier5_audio')
+                  AND upgrade_reason IN ('tier1_m2ts','tier2_container','tier3_720p','tier5_audio','tier8_x265_no_hdr')
+            """, (inst_name,)).fetchall()
+            found_entries = db.execute("""
+                SELECT id, media_id, upgrade_reason, status
+                FROM upgrade_queue
+                WHERE instance=? AND media_type='season' AND status='found'
             """, (inst_name,)).fetchall()
 
             by_series: dict = {}
-            for e in entries:
+            for e in list(pending_entries) + list(found_entries):
                 sid  = e['media_id'] // 10000
                 snum = e['media_id'] %  10000
-                by_series.setdefault(sid, []).append((snum, e['id'], e['upgrade_reason']))
+                by_series.setdefault(sid, []).append((snum, e['id'], e['upgrade_reason'], e['status']))
 
             for sid, seasons in by_series.items():
                 eps = arr_get(inst, '/episode',
@@ -1602,39 +1648,67 @@ def _validate_stale_queue():
                         fn = ef.get('relativePath', '') or ef.get('path', '')
                         if fn and sn not in season_files:
                             season_files[sn] = fn
-                for snum, eid, reason in seasons:
+                for snum, eid, reason, status in seasons:
                     fn = season_files.get(snum, '')
-                    if not _still_valid(fn, reason):
-                        db.execute("DELETE FROM upgrade_queue WHERE id=?", (eid,))
-                        total_deleted += 1
-                        log.debug(f"[validate] Removed stale {inst_name} S{snum:02d} "
-                                  f"(id={eid}, reason={reason}): {fn[:60]}")
+                    if status in ('pending', 'searching'):
+                        if not _still_valid(fn, reason):
+                            db.execute("DELETE FROM upgrade_queue WHERE id=?", (eid,))
+                            total_deleted += 1
+                            log.debug(f"[validate] Removed stale {inst_name} S{snum:02d} "
+                                      f"(id={eid}, reason={reason}): {fn[:60]}")
+                    else:  # status == 'found'
+                        new_reason = _detect_simple_tier(fn)
+                        if new_reason:
+                            db.execute(
+                                "UPDATE upgrade_queue SET status='pending', upgrade_reason=?, cooldown_until=NULL WHERE id=?",
+                                (new_reason, eid)
+                            )
+                            total_reopened += 1
+                            log.warning(f"[validate] Re-opened stuck 'found' {inst_name} S{snum:02d} "
+                                        f"(id={eid}, was={reason}, now={new_reason}): {fn[:60]}")
 
         # ── Movies ─────────────────────────────────────────────────────────
         radarr_insts = {n: i for n, i in instances.items() if i.get('type') == 'radarr'}
         for inst_name, inst in radarr_insts.items():
-            entries = db.execute("""
-                SELECT id, media_id, upgrade_reason
+            pending_entries = db.execute("""
+                SELECT id, media_id, upgrade_reason, status
                 FROM upgrade_queue
                 WHERE instance=? AND media_type='movie'
                   AND status IN ('pending','searching')
-                  AND upgrade_reason IN ('tier1_m2ts','tier2_container','tier3_720p','tier5_audio')
+                  AND upgrade_reason IN ('tier1_m2ts','tier2_container','tier3_720p','tier5_audio','tier8_x265_no_hdr')
+            """, (inst_name,)).fetchall()
+            found_entries = db.execute("""
+                SELECT id, media_id, upgrade_reason, status
+                FROM upgrade_queue
+                WHERE instance=? AND media_type='movie' AND status='found'
             """, (inst_name,)).fetchall()
 
-            for e in entries:
+            for e in list(pending_entries) + list(found_entries):
                 movie = arr_get(inst, f"/movie/{e['media_id']}") or {}
                 mf = movie.get('movieFile')
                 if not mf:
                     continue
                 fn = mf.get('relativePath', '') or mf.get('path', '')
-                if not _still_valid(fn, e['upgrade_reason']):
-                    db.execute("DELETE FROM upgrade_queue WHERE id=?", (e['id'],))
-                    total_deleted += 1
-                    log.debug(f"[validate] Removed stale {inst_name} movie "
-                              f"(id={e['id']}, reason={e['upgrade_reason']}): {fn[:60]}")
+                if e['status'] in ('pending', 'searching'):
+                    if not _still_valid(fn, e['upgrade_reason']):
+                        db.execute("DELETE FROM upgrade_queue WHERE id=?", (e['id'],))
+                        total_deleted += 1
+                        log.debug(f"[validate] Removed stale {inst_name} movie "
+                                  f"(id={e['id']}, reason={e['upgrade_reason']}): {fn[:60]}")
+                else:  # status == 'found'
+                    new_reason = _detect_simple_tier(fn)
+                    if new_reason:
+                        db.execute(
+                            "UPDATE upgrade_queue SET status='pending', upgrade_reason=?, cooldown_until=NULL WHERE id=?",
+                            (new_reason, e['id'])
+                        )
+                        total_reopened += 1
+                        log.warning(f"[validate] Re-opened stuck 'found' {inst_name} movie "
+                                    f"(id={e['id']}, was={e['upgrade_reason']}, now={new_reason}): {fn[:60]}")
 
         db.commit()
-        log.info(f"[validate] Stale queue validation complete — removed {total_deleted} resolved entries")
+        log.info(f"[validate] Stale queue validation complete — removed {total_deleted} resolved entries, "
+                 f"re-opened {total_reopened} stuck 'found' entries")
 
     except Exception as exc:
         log.error(f"[validate] Stale queue validation failed: {exc}")
