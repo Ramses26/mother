@@ -521,14 +521,14 @@
           <div class="rounded-lg p-4 text-center cursor-pointer hover:border-blue-500/50 transition-colors"
             style="background:#1a1d27; border:1px solid #2d3748;" @click="parityTab = 'unraid_pass'">
             <div class="text-2xl font-bold text-blue-400">{{ fmt(parityData.summary.unraid_pass_count) }}</div>
-            <div class="text-xs text-slate-400 mt-1">Unraid-only 1080p+</div>
+            <div class="text-xs text-slate-400 mt-1">Unraid-only</div>
             <div class="text-xs text-slate-600 mt-0.5">{{ gb(parityData.summary.unraid_pass_bytes) }}</div>
           </div>
           <div class="rounded-lg p-4 text-center cursor-pointer hover:border-amber-500/50 transition-colors"
             style="background:#1a1d27; border:1px solid #2d3748;" @click="parityTab = 'unraid_filt'">
             <div class="text-2xl font-bold text-amber-400">{{ fmt(parityData.summary.unraid_filt_count) }}</div>
-            <div class="text-xs text-slate-400 mt-1">Unraid-only 720p/x265</div>
-            <div class="text-xs text-slate-600 mt-0.5">{{ gb(parityData.summary.unraid_filt_bytes) }} · dedup cleans over time</div>
+            <div class="text-xs text-slate-400 mt-1">Unraid-only (retired category)</div>
+            <div class="text-xs text-slate-600 mt-0.5">always 0 since 2026-07-25 parity change</div>
           </div>
           <div class="rounded-lg p-4 text-center cursor-pointer hover:border-violet-500/50 transition-colors"
             style="background:#1a1d27; border:1px solid #2d3748;" @click="parityTab = 'mismatch'">
@@ -587,15 +587,17 @@
           </div>
         </template>
 
-        <!-- Unraid-only 1080p+ -->
+        <!-- Unraid-only -->
         <template v-else-if="parityTab === 'unraid_pass'">
           <div class="text-xs text-blue-400/80 mb-3 p-3 rounded" style="background:#0d1a2e; border:1px solid #1e3a5f;">
-            These episodes are on Unraid but NOT on Synology, and they pass the 1080p+ quality filter.
-            This is unusual — most likely Sonarr imported an upgraded version to a different filename on Synology
-            and the old file remains on Unraid. The nightly dedup will clean these up once the Synology version propagates.
+            These episodes are on Unraid but NOT on Synology. Most likely Sonarr imported an
+            upgraded version to a different filename on Synology and the old file remains on
+            Unraid. The nightly dedup will clean these up once the Synology version propagates.
+            (Since the 2026-07-25 absolute-parity change, this bucket covers every quality tier —
+            it's no longer split by resolution/codec.)
           </div>
           <div v-if="!parityData.unraid_only_pass?.length" class="text-center py-10 text-green-400">
-            No unexpected Unraid-only 1080p+ episodes.
+            No unexpected Unraid-only episodes.
           </div>
           <div v-for="s in parityData.unraid_only_pass" :key="s.show"
             class="mb-2 rounded-lg overflow-hidden" style="background:#1a1d27; border:1px solid #2d3748;">
@@ -619,17 +621,17 @@
           </div>
         </template>
 
-        <!-- Unraid-only 720p/x265-no-HDR -->
+        <!-- Retired category -->
         <template v-else-if="parityTab === 'unraid_filt'">
           <div class="text-xs text-amber-400/80 mb-3 p-3 rounded" style="background:#2d1f00; border:1px solid #4a3200;">
-            Episodes on Unraid that either don't exist on Synology OR exist only in lower-quality form
-            (720p, SD, x265-without-HDR). These were synced during the initial batch transfer before quality filters existed,
-            or Synology has since been upgraded to a different episode key.
-            Upgraderr will upgrade Synology → webhook propagates → nightly dedup removes these.
-            No action needed.
+            Retired 2026-07-25: this used to split out Unraid-only episodes that were 720p/SD/
+            x265-without-HDR, back when that quality tier was excluded from sync entirely. Since
+            the absolute-parity policy change, everything is "syncable," so this bucket is
+            permanently empty — see the "Unraid-only" tab instead, which now covers this content
+            too.
           </div>
-          <div v-if="!parityData.unraid_only_filt?.length" class="text-center py-10 text-green-400">
-            No 720p/x265-no-HDR Unraid-only episodes.
+          <div class="text-center py-10 text-green-400">
+            Retired — see "Unraid-only" for this content.
           </div>
           <div v-for="s in parityData.unraid_only_filt" :key="s.show"
             class="mb-2 rounded-lg overflow-hidden" style="background:#1a1d27; border:1px solid #2d3748;">
