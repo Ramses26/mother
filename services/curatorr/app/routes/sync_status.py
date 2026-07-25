@@ -514,14 +514,11 @@ def _tv_ep_key(fname: str):
 
 
 def _should_sync_tv(filename: str):
-    """Same quality gate as sync-webhook: skip 720p/SD and x265-no-HDR."""
-    name = filename.lower()
-    if re.search(r'\b(480p|576p|720p|sd)\b', name):
-        return False, '720p/SD'
-    is_hevc = bool(re.search(r'\b(x265|h265|hevc|x\.265)\b', name))
-    has_hdr  = bool(re.search(r'\b(hdr10\+?|hdr10|hdr|dv|dovi|dolby\.?vision|hlg|pq)\b', name))
-    if is_hevc and not has_hdr:
-        return False, 'x265-no-HDR'
+    """Quality gate removed 2026-07-25 -- Ali's explicit instruction: absolute parity
+    between Synology and Unraid regardless of quality tier. Kept as a function (always
+    returning sync_ok=True) rather than deleted so call sites / the unraid_only_pass
+    vs unraid_only_filt reporting split don't need restructuring -- unraid_only_filt
+    will just always be empty now, which is correct under the new policy."""
     return True, 'ok'
 
 
@@ -608,6 +605,14 @@ def _run_tv_parity_scan():
                         'syn_file': si['fname'],  'syn_score': syn_sc,  'syn_size_bytes': si['size'],
                         'unraid_file': ui['fname'], 'unraid_score': unr_sc, 'unraid_size_bytes': ui['size'],
                         'syn_better': syn_sc > unr_sc,
+                        # _group() sums 'size_bytes' generically across every bucket's entries --
+                        # this bucket never had that key (only the syn/unraid-prefixed variants),
+                        # so _group(mismatch_by_show) KeyError'd on the first mismatch found. Found
+                        # 2026-07-25: this made /sync-status/tv-parity fail every time there was at
+                        # least one version mismatch, which is the common case -- the endpoint had
+                        # never successfully returned data. Use the larger of the two as the
+                        # representative size for the group's total_bytes rollup.
+                        'size_bytes': max(si['size'], ui['size']),
                     })
 
         syn_keys = set(syn_eps.keys())
