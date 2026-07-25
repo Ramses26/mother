@@ -25,13 +25,35 @@ These rules define what gets synced and why. They are intentional design decisio
 
 ### What Is and Is NOT synced
 
+**Policy changed 2026-07-25 — Ali's explicit instruction: "I no longer care if there are
+lower quality on Unraid etc. I want absolute parity between synology and unraid for movies
+and tv shows."** The quality-tier exclusion below (720p/SD, x265-without-HDR) that used to
+block sync entirely for those files is **removed** for the Synology→Unraid direction. Every
+Synology file now syncs to Unraid regardless of resolution/codec — a 720p or x265-no-HDR file
+on Synology gets mirrored as-is rather than waiting indefinitely for Upgraderr to fix it
+first. Synology remains authoritative and protected: the reverse direction (Unraid→Syn, TV
+reconcile only) still refuses to push a quality-excluded Unraid file up to Synology.
+
 | Content type | Synced? | Reason |
 |---|---|---|
 | 1080p movies/TV (non-x265 or x265+HDR) | ✅ Yes | Primary sync target |
 | 4K movies/TV | ✅ Yes | Separate sync pass |
-| **720p / SD movies or TV** | ❌ **NO** | Upgraderr Tier 3 handles 720p→1080p upgrades on Chris's side first. Once upgraded to 1080p, the sync loop picks it up. Copying 720p cross-library forces Upgraderr to upgrade on both sides. |
-| **x265 without HDR/DV at 1080p** | ❌ **NO** | Recyclarr blocks these in quality profiles. Upgraderr finds proper 1080p source. Same reasoning as 720p. |
+| 720p / SD movies or TV | ✅ Yes (since 2026-07-25) | Previously excluded — see policy change above. Upgraderr still independently searches for a better source; this only affects whether Unraid gets a copy of whatever Synology currently has. |
+| x265 without HDR/DV at 1080p | ✅ Yes (since 2026-07-25) | Same as above. Recyclarr still blocks these at grab-time on Synology's side; this table entry is only about whether the file syncs to Unraid once it exists on Synology. |
 | 1080p x265 WITH DV or HDR | ✅ Yes | Recyclarr allows these; DV/HDR is the reason to keep x265 |
+
+**What did NOT change**: Recyclarr's quality profiles (still block 720p/x265-no-HDR at
+grab-time), Upgraderr's tiers (still search for better sources — this is *more* urgent now
+that Unraid mirrors Synology's current quality immediately), and dedup (still governed by
+Profile Authority below, unrelated concern). This change is purely about the sync/reconcile
+layer's willingness to copy a file, not about what Radarr/Sonarr are allowed to grab or what
+Upgraderr searches for.
+
+**Implementation**: `_should_sync_tv_episode()` (sync-webhook) and `_should_sync_tv()`
+(curatorr/sync_status.py) both now always return "syncable" — kept as functions rather than
+deleted so call sites don't need restructuring. See
+`services/sync-webhook/app.py`'s `reconcile_tv_versions()`/`reconcile_movie_versions()`/
+`scan_tv_gaps()` for the removed gates.
 
 ### Upgraderr → Sync Pipeline
 
@@ -338,6 +360,61 @@ release already landed and needs to actually finish importing, so re-triggering 
 grab a redundant duplicate on top of the stuck one; that class of problem is handled by Decluttarr's
 `remove_failed_imports` job instead (see below) and the orphaned_data fix. One-time cleanup removed 54
 dead queue entries from Sonarr-HD/Radarr-HD via `DELETE /api/v3/queue/{id}` the same session.
+
+### Upgraderr Stuck 'found' Status Bug — Fixed 2026-07-25 (READ BEFORE TOUCHING `_validate_stale_queue()`)
+
+The webhook handler (`/webhook/radarr`, `/webhook/sonarr`) marks an `upgrade_queue` row
+`status='found'` on *any* tracked import event — a `Download` with `isUpgrade=True`, or **any**
+`MovieFileRenamed`/episode-file-renamed event regardless of `isUpgrade` — without checking
+whether the new file actually resolves the original problem. Once `status='found'`, every sweep
+function skips the row entirely (`if row and row['status'] == 'found': continue`), and the old
+nightly `_validate_stale_queue()` (05:00 UTC) only ever looked at `pending`/`searching` rows —
+so a bad result just froze forever with zero path back into the queue, unless
+`_flag_if_bad_import()` happened to independently catch and tag it `upgraderr-skip` (it doesn't
+always fire — see below).
+
+**Found live 2026-07-25**: Steamboy (radarr-hd) went Remux-1080p → 1080p Bluray (2026-06-21,
+already a downgrade) → 720p Bluray (2026-07-01, a second downgrade) via two successive bad
+grabs. A `found` webhook fired after the second one, and the row sat completely unevaluated for
+24 days with **zero tags** — `_flag_if_bad_import` never caught it. The row's stored
+`upgrade_reason` was `tier7_profile_mismatch` (from *before* the regression), which is why simply
+re-checking the original reason isn't enough — the actual current problem (720p, tier3) is
+unrelated to the stored reason and only shows up if you check the file against *every* simple
+tier, not just the one it was originally queued for.
+
+**Fix**: `_validate_stale_queue()` now also processes `status='found'` rows via a new
+`_detect_simple_tier(fn)` helper that checks a file against all filename-detectable tiers
+(1/2/3/5/8) regardless of the row's stored reason. If any tier still matches, the row reopens to
+`pending` with the newly-detected reason and cleared cooldown. `tier8_x265_no_hdr` was added to
+the detectable set at the same time (it didn't exist when tier8 shipped the day before). Verified
+live: manually triggering validation reopened **147 previously-stuck 'found' movies** on
+radarr-hd alone, Steamboy included. This is a **different** bug from the 2026-07-06 fix
+mentioned elsewhere in this doc (that one was about clearing `found` rows that *were* already
+resolved elsewhere so they don't block re-checks forever; this one is about `found` rows that
+were *never actually resolved* in the first place).
+
+**If you ever see a title that Upgraderr should clearly be upgrading just sitting there
+unchanged for weeks, check `upgrade_queue.status` for that row before assuming the sweep or
+search itself is broken** — `found` + no tag is the signature of this class of bug.
+
+### Upgraderr Search Budget Is Tiny Relative to Backlog Size (found 2026-07-25, not yet acted on)
+
+`SweepBudget` (`searches_per_hour` / `UPGRADERR_SEARCHES_PER_HOUR`, default **5** per instance,
+and `downloads_per_day` / `UPGRADERR_DOWNLOADS_PER_DAY`, default **10** global) resets fresh
+*every sweep run* (every 30 min) despite the env var name suggesting a daily/hourly cap — so it's
+really "~5 new series/movies per instance, ~10 total across all 4 instances, per 30-minute
+sweep." Critically, `_sweep_sonarr`/`_sweep_radarr` check this budget **before** calling
+`classify_tiers()` on a series/movie (`if not budget.can_search(...) and not has_stale: continue`)
+— so once budget is exhausted for that cycle, remaining series in that cycle's randomized order
+are never even classified, not just left unsearched. Confirmed live: Tier 8
+(x265-no-HDR-at-1080p, ~4600 episodes estimated when the tier was added 2026-07-23) had only
+accumulated **88 queued items after 26 hours** of the code being live — at that observed rate,
+fully classifying the backlog would take on the order of **months**, not days. This got
+considerably worse the same day once the stuck-`found`-row fix above reopened 147 more movies
+into the same budget-constrained queue. Not fixed yet — raising the budget is a judgment call
+(indexer load / bandwidth), not something to change unilaterally; flagged for Ali to decide,
+similar precedent to `DEDUP_SAFETY_LIMIT` being temporarily raised for backlog draining
+elsewhere in this doc.
 
 ### qbitmanage Orphaned-Data Race Condition (READ BEFORE MANUALLY RECOVERING A STUCK IMPORT)
 
