@@ -1588,8 +1588,21 @@ def _validate_stale_queue():
         left to the sweep), so checking only the stored reason would never catch
         this. Returns the matching reason string, or None if the file looks clean
         by every simple check.
+
+        Deliberately excludes tier5_audio, unlike the SIMPLE_TIERS re-check above.
+        _still_valid's tier5_audio branch has no year parameter and defaults to
+        "still bad" whenever no recognized audio tag matches at all -- correct for
+        re-checking a row *already known* to have a tier5_audio problem, but wrong
+        here: classify_tiers() exempts pre-1992 movies from tier5_audio entirely
+        (get_pre_era_skip_tier5), so this reason-agnostic scan would incorrectly
+        flag old movies with perfectly fine stereo audio just because their
+        filename doesn't happen to include a recognized surround-audio tag.
+        tier5_audio 'found' rows already have their own year-aware long-interval
+        recheck (_tier5_recheck_due / _db_rearm_tier5, used directly in the sweep)
+        -- no need to duplicate that check here, and doing so without year context
+        is actively wrong.
         """
-        for reason in ('tier1_m2ts', 'tier2_container', 'tier3_720p', 'tier5_audio', 'tier8_x265_no_hdr'):
+        for reason in ('tier1_m2ts', 'tier2_container', 'tier3_720p', 'tier8_x265_no_hdr'):
             if _still_valid(fn, reason):
                 return reason
         return None
