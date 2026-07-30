@@ -341,6 +341,42 @@ The nightly dedup (`nightly_unraid_dedup` in `app.py`) caused a mass-deletion in
 
 **PAUSE_VERSION_SYNC** (`/opt/mother/PAUSE_VERSION_SYNC`) — blocks both TV and movie version reconcile. Use during major library reorganization to prevent version sync from interfering.
 
+### Orphaned Pending Jobs — Fixed 2026-07-30 (READ BEFORE `docker exec`-ing sync/reconcile functions directly)
+
+**Root cause of a 5-day-long silent failure.** Running `scan_tv_gaps()`/`reconcile_tv_versions()`/etc.
+via a detached `docker exec sync-webhook python3 -c "from app import ...; ..."` (instead of through
+the running app's own `/api/gap-scan/trigger` / `/api/reconcile/trigger` endpoints) spawns daemon
+threads that die the instant that separate exec'd process exits — confirmed via logs showing
+`"Waiting for sync slot"` with no matching `"Acquired sync slot"` ever following, for jobs whose
+thread had genuinely started. A concurrent flood of ~700 such threads from one exec'd session on
+2026-07-25 also left a handful of properly API-triggered jobs in the *live* process dead the same
+way (exact mechanism unconfirmed, plausibly a container-wide pid/thread limit — the fix doesn't
+depend on knowing the exact cause).
+
+A dead `pending`-status job is invisible to both `recover_interrupted_jobs()` (startup-only) and
+`auto_retry_failed()` (only ever looked at `status='failed'`) — it just sits as `pending` forever.
+Worse, `_is_already_queued()` then silently blocks every future legitimate attempt to sync that
+exact source path, since a `pending` row for it still exists. **Confirmed live: 748 rows, all
+created 2026-07-25, deferred the nightly Unraid dedup every single day for 5 straight days** — the
+Active job check row in the table above (any `pending`/`in_progress` gap-sync job blocks dedup)
+correctly did its job, but the count it was blocking on was frozen garbage, not real queue depth. A
+real backlog fluctuates as jobs complete; **an unchanging count night after night is the signature
+of orphaned rows, not genuine queue depth** — if you ever see this pattern, check for orphaned
+pending jobs before assuming it's just a big backlog. Also explains a recurring "Space Ghost Coast
+to Coast: 1 episode missing" nightly report — that specific episode's sync job was one of the 748.
+
+**Fix**: new `recover_orphaned_pending_jobs()`, scheduled every 15 min alongside auto-retry. A live,
+correctly-waiting thread would acquire a slot the instant one frees up, so it can't coexist with a
+fully-idle semaphore (`sync_semaphore._value == MAX_CONCURRENT_SYNCS`) for more than an instant — if
+idle and `pending` rows exist older than a short buffer, they're provably orphaned. Marks them
+`failed` so `auto_retry_failed()` picks them up next cycle. `in_progress` jobs aren't handled here;
+the existing stall watchdog already covers threads that die mid-rsync.
+
+**If you need to manually trigger a reconcile/gap-scan job for testing, use the HTTP API
+(`POST /api/reconcile/trigger?type=tv|movies|all`, `POST /api/gap-scan/trigger` for movies) or run it
+inside a `docker exec` session that you keep alive until the spawned threads finish** — never fire-and-forget
+via a one-shot `docker exec ... python3 -c "..."` for anything that queues background syncs.
+
 ### Upgraderr Tier Priority Note
 The sweep randomizes movie order within each instance (`random.shuffle`), so there is no natural tier ordering. To prioritize 720p upgrades (Tier 3), disable Tiers 4–6 in the Settings UI (`http://mother:9706/settings`). This concentrates search budget on Tiers 1–3 only. Re-enable 4–6 once Tier 3 queue is empty.
 
