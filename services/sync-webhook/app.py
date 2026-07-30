@@ -758,6 +758,19 @@ if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
 else:
     logger.warning("Telegram credentials not configured - notifications disabled")
 
+# Dedup-specific Apprise target, added 2026-07-30 (Ali's request): route Unraid dedup
+# notifications to the same Telegram chat Curatorr's own Synology dedup already uses
+# (CURATORR_TELEGRAM_CHAT_ID), instead of the general TELEGRAM_CHAT_ID every other
+# sync-webhook notification uses. Falls back to the general apobj if unconfigured.
+CURATORR_TELEGRAM_CHAT_ID = os.environ.get('CURATORR_TELEGRAM_CHAT_ID', '')
+dedup_apobj = apprise.Apprise()
+if TELEGRAM_BOT_TOKEN and CURATORR_TELEGRAM_CHAT_ID:
+    dedup_apobj.add(f"tgram://{TELEGRAM_BOT_TOKEN}/{CURATORR_TELEGRAM_CHAT_ID}/")
+    logger.info("Dedup notifications routed to Curatorr's Telegram chat")
+else:
+    logger.warning("CURATORR_TELEGRAM_CHAT_ID not configured - dedup notifications fall back to general chat")
+    dedup_apobj = None
+
 
 def send_notification(title: str, body: str, notify_type=apprise.NotifyType.INFO):
     """Send notification via Apprise"""
@@ -773,6 +786,24 @@ def send_notification(title: str, body: str, notify_type=apprise.NotifyType.INFO
             logger.warning("No notification services configured")
     except Exception as e:
         logger.error(f"Failed to send notification: {e}")
+
+
+def send_dedup_notification(title: str, body: str, notify_type=apprise.NotifyType.INFO):
+    """Send Unraid dedup notifications to Curatorr's Telegram chat (2026-07-30, Ali's
+    request) -- same destination Curatorr's own Synology dedup already notifies to, so
+    both dedup systems land in one place instead of Unraid's going to the general chat.
+    Falls back to send_notification's general chat if CURATORR_TELEGRAM_CHAT_ID isn't set."""
+    if dedup_apobj is None:
+        send_notification(title, body, notify_type)
+        return
+    try:
+        if len(dedup_apobj) > 0:
+            dedup_apobj.notify(title=title, body=body, notify_type=notify_type)
+            logger.info(f"Dedup notification sent (Curatorr chat): {title}")
+        else:
+            logger.warning("No dedup notification services configured")
+    except Exception as e:
+        logger.error(f"Failed to send dedup notification: {e}")
 
 
 def trigger_plex_scan(dest_path: str, specific_path: str = None):
@@ -3075,7 +3106,7 @@ def nightly_unraid_dedup(force=False):
     if os.path.exists(pause_file):
         msg = f"PAUSE_DEDUP sentinel exists ({pause_file}) — skipping dedup. Remove the file to re-enable."
         logger.warning(f"Unraid dedup: {msg}")
-        send_notification(title="Unraid Dedup PAUSED", body=msg,
+        send_dedup_notification(title="Unraid Dedup PAUSED", body=msg,
                           notify_type=apprise.NotifyType.WARNING)
         _write_dedup_status('paused', msg)
         return
@@ -3124,7 +3155,7 @@ def nightly_unraid_dedup(force=False):
         msg = (f"Skipping dedup: {active_gap_jobs} gap-sync job(s) currently in progress/pending. "
                f"Dedup will run tomorrow once the queue drains.")
         logger.warning(f"Unraid dedup: {msg}")
-        send_notification(title="Unraid Dedup DEFERRED", body=msg,
+        send_dedup_notification(title="Unraid Dedup DEFERRED", body=msg,
                           notify_type=apprise.NotifyType.WARNING)
         _write_dedup_status('deferred', msg)
         return
@@ -3133,7 +3164,7 @@ def nightly_unraid_dedup(force=False):
         msg = (f"Skipping dedup: {recent_gap_jobs} gap-sync job(s) completed in the last "
                f"{DEDUP_MIN_AGE_HOURS}h — waiting for rsync queue to fully settle.")
         logger.warning(f"Unraid dedup: {msg}")
-        send_notification(title="Unraid Dedup DEFERRED", body=msg,
+        send_dedup_notification(title="Unraid Dedup DEFERRED", body=msg,
                           notify_type=apprise.NotifyType.WARNING)
         _write_dedup_status('deferred', msg)
         return
@@ -3147,7 +3178,7 @@ def nightly_unraid_dedup(force=False):
     # if needed. Pause file is re-checked after the wait.
     DEDUP_WARN_MINUTES = int(os.environ.get('DEDUP_WARN_MINUTES', '10'))
     if not DRY_RUN and DEDUP_WARN_MINUTES > 0:
-        send_notification(
+        send_dedup_notification(
             title="Unraid Dedup Starting",
             body=f"Duplicate cleanup begins in {DEDUP_WARN_MINUTES} minute(s). "
                  f"Create /opt/mother/PAUSE_DEDUP to abort.",
@@ -3201,7 +3232,7 @@ def nightly_unraid_dedup(force=False):
         _dedup_enforce_profile_authority(unraid_groups.get('4k_tv', []), tracked_by_episode=sonarr_4k_tracked, media_type='tv')
     except Exception as e:
         logger.error(f"Unraid dedup: Profile Authority correction failed — aborting run rather than risk deleting an actively-tracked file: {e}")
-        send_notification(title="Unraid Dedup ABORTED", body=f"Profile Authority correction failed: {e}", notify_type=apprise.NotifyType.FAILURE)
+        send_dedup_notification(title="Unraid Dedup ABORTED", body=f"Profile Authority correction failed: {e}", notify_type=apprise.NotifyType.FAILURE)
         _write_dedup_status('error', f"Profile Authority correction failed: {e}")
         return
 
@@ -3234,7 +3265,7 @@ def nightly_unraid_dedup(force=False):
                f"(limit={DEDUP_SAFETY_LIMIT}{' weekly' if force else ''}). Skipping all deletions. "
                f"Raise DEDUP_SAFETY_LIMIT{'_WEEKLY' if force else ''} or investigate — may indicate ongoing batch sync.")
         logger.error(f"Unraid dedup: {msg}")
-        send_notification(title="Unraid Dedup BLOCKED", body=msg,
+        send_dedup_notification(title="Unraid Dedup BLOCKED", body=msg,
                           notify_type=apprise.NotifyType.FAILURE)
         _write_dedup_status('blocked', msg)
         return
@@ -3335,7 +3366,7 @@ def nightly_unraid_dedup(force=False):
         body = summary
         if sample:
             body += f"\n\nLargest removed:\n{sample}"
-        send_notification(
+        send_dedup_notification(
             title=f"Unraid Nightly Dedup{' (DRY RUN)' if DRY_RUN else ''}",
             body=body,
             notify_type=apprise.NotifyType.WARNING if DRY_RUN else apprise.NotifyType.INFO

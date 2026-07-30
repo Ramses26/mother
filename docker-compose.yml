@@ -690,6 +690,10 @@ services:
       - TZ=${TZ}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      # Unraid dedup notifications specifically route here instead of TELEGRAM_CHAT_ID
+      # (2026-07-30, Ali's request) -- same chat Curatorr's Synology dedup already uses,
+      # so both dedup systems' notifications land in one place.
+      - CURATORR_TELEGRAM_CHAT_ID=${CURATORR_TELEGRAM_CHAT_ID}
       - SYNC_DRY_RUN=${SYNC_DRY_RUN:-false}
       - SYNC_LOG_LEVEL=${SYNC_LOG_LEVEL:-INFO}
       - SYNC_LOG_PATH=/logs
