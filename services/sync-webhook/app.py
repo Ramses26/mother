@@ -1570,6 +1570,85 @@ def auto_retry_failed():
             _error_alert_sent['database'] = True
 
 
+def recover_orphaned_pending_jobs():
+    """Detect and recover 'pending' jobs whose do_sync thread died before ever
+    acquiring the sync semaphore -- added 2026-07-30.
+
+    Root cause found live: running reconcile/gap-scan functions via a detached
+    `docker exec` process (instead of through the running app's own API) spawns
+    daemon threads that die the instant that separate process exits, mid-flight,
+    sometimes while blocked on sync_semaphore.acquire() -- confirmed via logs
+    showing "Waiting for sync slot" with no matching "Acquired sync slot" ever
+    following, for jobs whose thread had genuinely started. A concurrent flood
+    of ~700 such threads from one exec'd session also appears to have caused a
+    handful of properly API-triggered jobs in the *live* process to die the same
+    way (exact mechanism unconfirmed -- plausibly a container-wide pid/thread
+    limit -- but the detection and recovery approach below doesn't depend on
+    knowing the exact cause).
+
+    A dead pending-job thread is invisible to both recover_interrupted_jobs()
+    (startup-only) and auto_retry_failed() (only looks at status='failed') --
+    it just sits as 'pending' forever. Worse, _is_already_queued() then
+    silently blocks every future legitimate attempt to sync that exact source
+    path, since a 'pending' row for it still exists. Confirmed live: 748 rows,
+    all created 2026-07-25, deferring the nightly Unraid dedup every single day
+    for 5 straight days (dedup refuses to run while any TVGapSync/GapSync/
+    TVVersionSync/MovieVersionSync/TVReverseSync/MovieReverseSync job is
+    pending/in_progress) with the exact same count night after night --
+    a real backlog would fluctuate as jobs complete; a frozen, unchanging count
+    is the signature of orphaned rows, not genuine queue depth.
+
+    Detection: a live, correctly-waiting thread would acquire a slot the
+    instant one frees up, so it cannot coexist with a fully-idle semaphore for
+    more than an instant. If sync_semaphore is currently at full capacity
+    (nothing running) and 'pending' rows still exist that are older than a
+    short buffer (avoids racing a job that's mid-way through queuing right
+    now), those rows are provably orphaned -- no live thread is waiting on
+    them. 'in_progress' jobs aren't handled here; the stall watchdog
+    (check_stalled_syncs) already covers threads that died mid-rsync.
+    """
+    try:
+        if sync_semaphore._value < MAX_CONCURRENT_SYNCS:
+            return  # syncs actively running -- pending rows may legitimately be waiting
+
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, title, source_path FROM sync_jobs
+            WHERE status = 'pending'
+            AND created_at < datetime('now', '-5 minutes')
+        """)
+        orphaned = [dict(row) for row in cursor.fetchall()]
+        if not orphaned:
+            conn.close()
+            return
+
+        for job in orphaned:
+            cursor.execute(
+                "UPDATE sync_jobs SET status = 'failed', "
+                "error_message = 'Orphaned pending job recovered (thread died before acquiring sync slot)', "
+                "completed_at = ? WHERE id = ?",
+                (datetime.utcnow().isoformat(), job['id'])
+            )
+        conn.commit()
+        conn.close()
+
+        logger.warning(
+            f"Recovered {len(orphaned)} orphaned pending job(s) (semaphore idle, no live thread) "
+            f"-- marked failed for auto-retry to pick up next cycle. Sample: "
+            f"{[j['title'] for j in orphaned[:5]]}"
+        )
+        send_notification(
+            title="Sync: Orphaned Jobs Recovered",
+            body=f"{len(orphaned)} pending job(s) had no live thread (semaphore was fully idle) — "
+                 f"marked failed, auto-retry will requeue them within 15 minutes.",
+            notify_type=apprise.NotifyType.WARNING
+        )
+    except Exception as e:
+        logger.error(f"recover_orphaned_pending_jobs failed: {e}")
+
+
 # Add auto-retry job (every 15 minutes)
 scheduler.add_job(
     func=auto_retry_failed,
@@ -1577,6 +1656,17 @@ scheduler.add_job(
     minutes=15,
     id='auto_retry',
     name='Auto retry failed syncs',
+    replace_existing=True
+)
+
+# Add orphaned-pending-job recovery (every 15 minutes, same cadence as auto-retry
+# since it feeds into it — see recover_orphaned_pending_jobs docstring)
+scheduler.add_job(
+    func=recover_orphaned_pending_jobs,
+    trigger='interval',
+    minutes=15,
+    id='recover_orphaned_pending',
+    name='Recover orphaned pending syncs',
     replace_existing=True
 )
 
