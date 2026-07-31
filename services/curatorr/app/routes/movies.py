@@ -99,32 +99,32 @@ def build_movie_query(params: dict) -> tuple[str, list]:
     # Time-based last-watched filters (mirrors TV logic)
     if params.get('ali_not_watched_days') is not None:
         days = int(params['ali_not_watched_days'])
-        conditions.append(f"(ali_last_watched IS NULL OR ali_last_watched < datetime('now', '-{days} days'))")
+        conditions.append(f"(ali_last_watched IS NULL OR ali_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))")
 
     if params.get('chris_not_watched_days') is not None:
         days = int(params['chris_not_watched_days'])
-        conditions.append(f"(chris_last_watched IS NULL OR chris_last_watched < datetime('now', '-{days} days'))")
+        conditions.append(f"(chris_last_watched IS NULL OR chris_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))")
 
     if params.get('either_not_watched_days') is not None:
         days = int(params['either_not_watched_days'])
         conditions.append(f"""(
-            (ali_last_watched IS NULL OR ali_last_watched < datetime('now', '-{days} days'))
-            AND (chris_last_watched IS NULL OR chris_last_watched < datetime('now', '-{days} days'))
+            (ali_last_watched IS NULL OR ali_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))
+            AND (chris_last_watched IS NULL OR chris_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))
         )""")
 
     if params.get('ali_abandoned_days') is not None:
         days = int(params['ali_abandoned_days'])
-        conditions.append(f"ali_play_count > 0 AND ali_last_watched IS NOT NULL AND ali_last_watched < datetime('now', '-{days} days')")
+        conditions.append(f"ali_play_count > 0 AND ali_last_watched IS NOT NULL AND ali_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days')")
 
     if params.get('chris_abandoned_days') is not None:
         days = int(params['chris_abandoned_days'])
-        conditions.append(f"chris_play_count > 0 AND chris_last_watched IS NOT NULL AND chris_last_watched < datetime('now', '-{days} days')")
+        conditions.append(f"chris_play_count > 0 AND chris_last_watched IS NOT NULL AND chris_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days')")
 
     if params.get('either_abandoned_days') is not None:
         days = int(params['either_abandoned_days'])
         conditions.append(f"""(
-            (ali_play_count > 0 AND ali_last_watched IS NOT NULL AND ali_last_watched < datetime('now', '-{days} days'))
-            OR (chris_play_count > 0 AND chris_last_watched IS NOT NULL AND chris_last_watched < datetime('now', '-{days} days'))
+            (ali_play_count > 0 AND ali_last_watched IS NOT NULL AND ali_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))
+            OR (chris_play_count > 0 AND chris_last_watched IS NOT NULL AND chris_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))
         )""")
 
     for field, col in [

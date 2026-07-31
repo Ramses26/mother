@@ -101,37 +101,37 @@ def build_tv_query(params: dict) -> tuple[str, list]:
     # ali_not_watched_days: shows where ali hasn't watched in N days (includes never watched)
     if params.get('ali_not_watched_days') is not None:
         days = int(params['ali_not_watched_days'])
-        conditions.append(f"(ali_last_watched IS NULL OR ali_last_watched < datetime('now', '-{days} days'))")
+        conditions.append(f"(ali_last_watched IS NULL OR ali_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))")
 
     # chris_not_watched_days: shows where chris hasn't watched in N days (includes never watched)
     if params.get('chris_not_watched_days') is not None:
         days = int(params['chris_not_watched_days'])
-        conditions.append(f"(chris_last_watched IS NULL OR chris_last_watched < datetime('now', '-{days} days'))")
+        conditions.append(f"(chris_last_watched IS NULL OR chris_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))")
 
     # either_not_watched_days: neither person has watched in N days
     if params.get('either_not_watched_days') is not None:
         days = int(params['either_not_watched_days'])
         conditions.append(f"""(
-            (ali_last_watched IS NULL OR ali_last_watched < datetime('now', '-{days} days'))
-            AND (chris_last_watched IS NULL OR chris_last_watched < datetime('now', '-{days} days'))
+            (ali_last_watched IS NULL OR ali_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))
+            AND (chris_last_watched IS NULL OR chris_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))
         )""")
 
     # ali_abandoned_days: ali watched at some point but stopped (has plays, last_watched is old)
     if params.get('ali_abandoned_days') is not None:
         days = int(params['ali_abandoned_days'])
-        conditions.append(f"ali_play_count > 0 AND ali_last_watched IS NOT NULL AND ali_last_watched < datetime('now', '-{days} days')")
+        conditions.append(f"ali_play_count > 0 AND ali_last_watched IS NOT NULL AND ali_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days')")
 
     # chris_abandoned_days: chris watched at some point but stopped
     if params.get('chris_abandoned_days') is not None:
         days = int(params['chris_abandoned_days'])
-        conditions.append(f"chris_play_count > 0 AND chris_last_watched IS NOT NULL AND chris_last_watched < datetime('now', '-{days} days')")
+        conditions.append(f"chris_play_count > 0 AND chris_last_watched IS NOT NULL AND chris_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days')")
 
     # either_abandoned_days: either person was watching but stopped
     if params.get('either_abandoned_days') is not None:
         days = int(params['either_abandoned_days'])
         conditions.append(f"""(
-            (ali_play_count > 0 AND ali_last_watched IS NOT NULL AND ali_last_watched < datetime('now', '-{days} days'))
-            OR (chris_play_count > 0 AND chris_last_watched IS NOT NULL AND chris_last_watched < datetime('now', '-{days} days'))
+            (ali_play_count > 0 AND ali_last_watched IS NOT NULL AND ali_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))
+            OR (chris_play_count > 0 AND chris_last_watched IS NOT NULL AND chris_last_watched < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-{days} days'))
         )""")
 
     for field, col in [
