@@ -377,6 +377,50 @@ the existing stall watchdog already covers threads that die mid-rsync.
 inside a `docker exec` session that you keep alive until the spawned threads finish** — never fire-and-forget
 via a one-shot `docker exec ... python3 -c "..."` for anything that queues background syncs.
 
+### `datetime('now', ...)` SQL Comparisons vs Python `.isoformat()` Timestamps — Fixed 2026-07-31 (READ BEFORE ADDING ANY NEW TIME-WINDOW QUERY)
+
+**A second, distinct root cause behind dedup deferring** — found the day after the orphaned-jobs
+fix above, when dedup was *still* deferring but for a different stated reason ("N gap-sync jobs
+completed in the last 6h" with N frozen-looking again). `sync_jobs`' `created_at`/`completed_at`
+columns are written via Python's `datetime.utcnow().isoformat()` — e.g.
+`"2026-07-31T01:41:27.852993"` (**T** separator). Every SQL-side time-window comparison used
+SQLite's own `datetime('now', ...)`, which produces a **space**-separated string — e.g.
+`"2026-07-31 10:00:11"`. These are plain `TEXT` columns, so SQLite compares them as strings, and
+`'T'` (ASCII 84) sorts *after* `' '` (ASCII 32). For two timestamps sharing the same calendar date,
+the comparison diverges right at that separator character — so a same-day comparison silently
+evaluates by `'T'` vs `' '` instead of by the actual time of day, rather than raising any error.
+
+Confirmed concretely: the dedup min-age check
+(`completed_at > datetime('now', '-6 hours')`) was effectively testing "completed on today's
+calendar date" instead of "completed in the last 6 hours" — it reported 653 jobs "completed in the
+last 6h" when the most recent completion was actually 14+ hours old. **Same bug, opposite
+direction, in `recover_orphaned_pending_jobs()` itself** (added the day before, see above):
+`created_at < datetime('now', '-5 minutes')` would never fire for a job created earlier the *same*
+calendar day, since a same-day T-format `created_at` always string-compares as "greater than" a
+space-format boundary — only jobs from a *previous* calendar date would ever have been caught. That
+fix was therefore only reliably protecting against recurrences after midnight UTC rolled over.
+
+**Fixed by switching every affected `datetime('now', ...)` to
+`strftime('%Y-%m-%dT%H:%M:%S', 'now', ...)`**, which produces a T-separated string in the same
+shape as the stored format — correct for `>`/`<` comparison purposes even though the fractional
+seconds don't match exactly (hour/day-granularity checks don't need sub-second precision). Fixed in
+all 9 sites in `sync-webhook/app.py` (`auto_retry_failed`'s multiple lookback queries,
+`get_job_counts` — the `jobs_24h` stat powering the Mother Status Telegram report, which had
+actually been counting "since midnight UTC today" rather than a true trailing 24h window — the
+manual retry-all endpoint, and the dedup min-age check) and in Curatorr's `routes/tv.py` /
+`routes/movies.py` (watch-history "not watched in N days" purge-scoring filters, same defect against
+`ali_last_watched`/`chris_last_watched`, day-granularity so a smaller blast radius but the identical
+bug). **`upgraderr` does NOT have this bug** — checked and confirmed it's internally consistent:
+`created_at`/`searched_at` use SQLite's own `datetime('now')` as the column `DEFAULT` at insert time
+(space-format on both the write and the compare side), while `cooldown_until` is Python-isoformat on
+both the write and compare side — no format ever gets crossed.
+
+**Before adding any new time-window query anywhere in this codebase**: check whether the column
+being compared was populated via Python's `datetime.utcnow().isoformat()` (T-separated) or SQLite's
+own `datetime('now')`/`CURRENT_TIMESTAMP` (space-separated), and make sure the comparison side uses
+a matching format. When in doubt, use `strftime('%Y-%m-%dT%H:%M:%S', 'now', ...)` to match Python's
+convention, since that's what the majority of this codebase's application-level timestamp writes use.
+
 ### Upgraderr Tier Priority Note
 The sweep randomizes movie order within each instance (`random.shuffle`), so there is no natural tier ordering. To prioritize 720p upgrades (Tier 3), disable Tiers 4–6 in the Settings UI (`http://mother:9706/settings`). This concentrates search budget on Tiers 1–3 only. Re-enable 4–6 once Tier 3 queue is empty.
 
