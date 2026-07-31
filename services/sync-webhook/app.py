@@ -660,7 +660,7 @@ def recover_interrupted_jobs():
             cursor.execute(f'''
                 SELECT f.* FROM sync_jobs f
                 WHERE f.status = 'failed'
-                AND f.created_at > datetime('now', ?)
+                AND f.created_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', ?)
                 AND (f.retry_count IS NULL OR f.retry_count < ?)
                 AND f.id NOT IN ({placeholders})
                 AND NOT EXISTS (
@@ -676,7 +676,7 @@ def recover_interrupted_jobs():
             cursor.execute('''
                 SELECT f.* FROM sync_jobs f
                 WHERE f.status = 'failed'
-                AND f.created_at > datetime('now', ?)
+                AND f.created_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', ?)
                 AND (f.retry_count IS NULL OR f.retry_count < ?)
                 AND NOT EXISTS (
                     SELECT 1 FROM sync_jobs s
@@ -1302,7 +1302,7 @@ def get_job_counts():
         cursor = conn.cursor()
         cursor.execute('''
             SELECT status, COUNT(*) FROM sync_jobs
-            WHERE created_at > datetime('now', '-24 hours')
+            WHERE created_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', '-24 hours')
             GROUP BY status
         ''')
         counts = dict(cursor.fetchall())
@@ -1388,12 +1388,12 @@ def send_daily_summary():
         cursor.execute('''
             SELECT DISTINCT title FROM sync_jobs
             WHERE status = 'failed'
-            AND created_at > datetime('now', ?)
+            AND created_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', ?)
             AND title NOT LIKE '[RETRY%'
             AND title NOT IN (
                 SELECT title FROM sync_jobs
                 WHERE status = 'success'
-                AND created_at > datetime('now', ?)
+                AND created_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', ?)
             )
             LIMIT 10
         ''', (lookback, lookback))
@@ -1509,7 +1509,7 @@ def auto_retry_failed():
         cursor.execute('''
             SELECT f.* FROM sync_jobs f
             WHERE f.status = 'failed'
-            AND f.created_at > datetime('now', ?)
+            AND f.created_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', ?)
             AND (f.retry_count IS NULL OR f.retry_count < ?)
             AND NOT EXISTS (
                 SELECT 1 FROM sync_jobs s
@@ -1648,7 +1648,7 @@ def recover_orphaned_pending_jobs():
         cursor.execute("""
             SELECT id, title, source_path FROM sync_jobs
             WHERE status = 'pending'
-            AND created_at < datetime('now', '-5 minutes')
+            AND created_at < strftime('%Y-%m-%dT%H:%M:%S', 'now', '-5 minutes')
         """)
         orphaned = [dict(row) for row in cursor.fetchall()]
         if not orphaned:
@@ -3141,7 +3141,7 @@ def nightly_unraid_dedup(force=False):
             "SELECT COUNT(*) FROM sync_jobs WHERE quality IN ('TVGapSync','GapSync',"
             "'TVVersionSync','MovieVersionSync') "
             "AND status = 'success' "
-            "AND completed_at > datetime('now', ?)",
+            "AND completed_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', ?)",
             (f'-{DEDUP_MIN_AGE_HOURS} hours',)
         )
         recent_gap_jobs = cursor.fetchone()[0]
@@ -4126,7 +4126,7 @@ def retry_all_failed():
         cursor.execute('''
             SELECT f.* FROM sync_jobs f
             WHERE f.status = 'failed'
-            AND f.created_at > datetime('now', ?)
+            AND f.created_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', ?)
             AND NOT EXISTS (
                 SELECT 1 FROM sync_jobs s
                 WHERE s.title = f.title
