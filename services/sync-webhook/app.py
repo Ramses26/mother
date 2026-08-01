@@ -4598,7 +4598,7 @@ def cancel_job(job_id):
         if row[0] not in ('pending', 'failed'):
             conn.close()
             return jsonify({'error': f'Job is {row[0]}, only pending/failed jobs can be cancelled'}), 400
-        cur.execute("UPDATE sync_jobs SET status='cancelled', completed_at=CURRENT_TIMESTAMP WHERE id=?", (job_id,))
+        cur.execute("UPDATE sync_jobs SET status='cancelled', completed_at=? WHERE id=?", (datetime.utcnow().isoformat(), job_id))
         conn.commit()
         conn.close()
         logger.info(f"Job {job_id} cancelled via UI")
@@ -4622,9 +4622,9 @@ def bulk_cancel_jobs():
         cur = conn.cursor()
         placeholders = ','.join('?' * len(ids))
         cur.execute(
-            f"UPDATE sync_jobs SET status='cancelled', completed_at=CURRENT_TIMESTAMP "
+            f"UPDATE sync_jobs SET status='cancelled', completed_at=? "
             f"WHERE id IN ({placeholders}) AND status IN ('pending', 'failed')",
-            ids
+            [datetime.utcnow().isoformat()] + ids
         )
         cancelled = cur.rowcount
         conn.commit()
@@ -4665,8 +4665,8 @@ def cancel_matching_jobs():
         conn = sqlite3.connect(DB_PATH, timeout=30)
         cur = conn.cursor()
         cur.execute(
-            f"UPDATE sync_jobs SET status='cancelled', completed_at=CURRENT_TIMESTAMP {where_sql}",
-            params
+            f"UPDATE sync_jobs SET status='cancelled', completed_at=? {where_sql}",
+            [datetime.utcnow().isoformat()] + params
         )
         cancelled = cur.rowcount
         conn.commit()
