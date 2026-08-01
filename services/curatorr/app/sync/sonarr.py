@@ -1,12 +1,16 @@
 """Sonarr sync — pull all TV shows from all Sonarr instances."""
 import json
 import logging
+import re
 from datetime import datetime
 
 import httpx
 from app.config import SONARR_INSTANCES
 from app.scoring import compute_composite_score, compute_purge_score
 from app.log_events import log_event
+
+_SUB_1080_RE = re.compile(r'\b(720p|480p|576p|sd|sdtv|dvd)\b', re.IGNORECASE)
+_HD_RE = re.compile(r'\b(1080p|2160p)\b', re.IGNORECASE)
 
 log = logging.getLogger('curatorr.sync.sonarr')
 
@@ -179,6 +183,9 @@ async def sync_all_shows(db):
 
         # Update purge/composite scores
         await update_tv_scores(db, inst['name'])
+        # Movie/TV parity (2026-08-01): compute a show-level quality score. Separate pass
+        # (one client, one episodefile call per show) so the big sync loop above stays untouched.
+        await update_tv_quality_scores(db, inst)
 
         await db.execute("""
             INSERT OR REPLACE INTO sync_log (source, last_sync, item_count, status, error_msg)
@@ -223,3 +230,61 @@ async def update_tv_scores(db, instance_name: str = None):
         )
 
     await db.commit()
+
+
+async def update_tv_quality_scores(db, inst):
+    """Compute a show-level TRaSH quality score for TV — the counterpart to movie
+    trash_score (movie/TV parity rule). Movies have one file → one score; a show has
+    many episodes at possibly different qualities, so we AGGREGATE: trash_score = the
+    AVERAGE of per-episode scores (the show's overall quality level), plus a count of
+    episodes below 1080p (sub_1080p_episodes) as an actionable audit signal. One
+    /api/v3/episodefile call per show (reuses the shared JSON scorer, media_type='tv').
+    Aggregation choice (average) is documented so it can be revisited — 'worst episode'
+    would be more conservative but noisier for the single-number UI field.
+    """
+    if not inst.get('api_key'):
+        return
+    from app.routes.sync_status import _score as _trash_score  # lazy: avoid routes<->sync cycle
+
+    async with db.execute(
+        "SELECT id, sonarr_id FROM tv_shows WHERE sonarr_instance=?", (inst['name'],)
+    ) as cur:
+        shows = await cur.fetchall()
+
+    updated = 0
+    async with httpx.AsyncClient(timeout=30) as client:
+        for i, show in enumerate(shows):
+            if i > 0 and i % 100 == 0:
+                await db.commit()
+            try:
+                r = await client.get(
+                    f"{inst['url']}/api/v3/episodefile",
+                    params={'seriesId': show['sonarr_id']},
+                    headers={'X-Api-Key': inst['api_key']},
+                )
+                r.raise_for_status()
+                files = r.json()
+            except Exception:
+                continue
+            scores, sub1080 = [], 0
+            for ef in files:
+                rp = ef.get('relativePath') or ef.get('path') or ''
+                if not rp:
+                    continue
+                fn = rp.rsplit('/', 1)[-1]
+                try:
+                    sc = _trash_score(fn, ef.get('size', 0) or 0, 'tv')
+                    if sc is not None:
+                        scores.append(sc)
+                except Exception:
+                    pass
+                if _SUB_1080_RE.search(fn) and not _HD_RE.search(fn):
+                    sub1080 += 1
+            trash = round(sum(scores) / len(scores)) if scores else None
+            await db.execute(
+                "UPDATE tv_shows SET trash_score=?, sub_1080p_episodes=? WHERE id=?",
+                (trash, sub1080, show['id'])
+            )
+            updated += 1
+    await db.commit()
+    log.info(f"[{inst['name']}] TV quality scores computed for {updated} shows")

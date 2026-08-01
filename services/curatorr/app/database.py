@@ -205,6 +205,10 @@ async def _migrate_columns():
         ("ALTER TABLE tv_shows ADD COLUMN size_on_disk INTEGER DEFAULT 0",),
         ("ALTER TABLE movies ADD COLUMN title_slug TEXT",),
         ("ALTER TABLE tv_shows ADD COLUMN title_slug TEXT",),
+        # Movie/TV parity (2026-08-01): movies have trash_score (quality); give TV a
+        # show-level quality score too, plus a count of episodes below 1080p for the audit.
+        ("ALTER TABLE tv_shows ADD COLUMN trash_score INTEGER",),
+        ("ALTER TABLE tv_shows ADD COLUMN sub_1080p_episodes INTEGER DEFAULT 0",),
         ("CREATE TABLE IF NOT EXISTS collection_members (id INTEGER PRIMARY KEY AUTOINCREMENT, collection_tmdb_id INTEGER, movie_tmdb_id INTEGER, title TEXT, year TEXT, poster_url TEXT, overview TEXT, vote_average REAL, UNIQUE(collection_tmdb_id, movie_tmdb_id))",),
         ("CREATE INDEX IF NOT EXISTS idx_collection_members ON collection_members(collection_tmdb_id)",),
     ]
