@@ -134,8 +134,9 @@ Env vars (wired through `docker-compose.yml`, like the `DEDUP_*` set):
 
 ## 8. Open questions / future
 
-- Sonarr/TV: same logic per `(series, S##E##)`; heavier (per-episode API) — phase 2 after movies
-  prove out.
+- Sonarr/TV: BUILT 2026-08-01 (`tracking_reconcile_tv`, 7:05 ET, flag-only) — same logic per
+  `(show, S##E##)`. Also added a Curatorr show-level TV quality score (`update_tv_quality_scores`)
+  as the movie-trash_score counterpart. Movie/TV parity closed for both.
 - Should a successful adoption also proactively clear the corresponding Upgraderr queue row
   (so Upgraderr stops re-searching a title we just fixed from an existing copy)? Likely yes.
 - Interaction with the "absolute parity" policy: once tracking is reliably correct, aggressive
