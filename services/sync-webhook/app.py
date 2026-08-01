@@ -3049,22 +3049,47 @@ def _dedup_enforce_profile_authority(groups: list, tracked_by_title: dict = None
                 v['pending_tier7'] = True
 
 
+DEDUP_STATUS_HISTORY_FILE = os.environ.get(
+    'DEDUP_STATUS_HISTORY_FILE',
+    os.path.join(os.path.dirname(DEDUP_STATUS_FILE), 'dedup_status_history.jsonl'))
+
+
 def _write_dedup_status(outcome, reason='', deleted=0, freed=0):
     """Persist the outcome of the most recent dedup attempt so daily_report.py can show
     real status instead of just checking the PAUSE_DEDUP sentinel. Found 2026-07-19:
     the Telegram report said "Enabled" every day for 11+ days while dedup silently
-    deferred daily — this makes that visible instead of invisible."""
+    deferred daily — this makes that visible instead of invisible.
+
+    2026-08-01: (a) dry-runs no longer clobber the real status file (a manual dry-run
+    used to overwrite it, masking the true last-run state in the daily report); and
+    (b) each real outcome is appended to a rolling history (last 30) so the stuck-state
+    alerter can detect "deferred/blocked N days in a row" — the exact silent-failure
+    pattern behind this week's incidents."""
+    # A dry-run must not overwrite the real last-run status or pollute history.
+    if os.environ.get('DEDUP_DRY_RUN', 'false').lower() == 'true':
+        return
+    rec = {
+        'timestamp': datetime.utcnow().isoformat(),
+        'outcome': outcome,   # 'ran' | 'deferred' | 'paused' | 'blocked' | 'error'
+        'reason': reason,
+        'deleted': deleted,
+        'freed_bytes': freed,
+    }
     try:
         with open(DEDUP_STATUS_FILE, 'w') as f:
-            json.dump({
-                'timestamp': datetime.utcnow().isoformat(),
-                'outcome': outcome,   # 'ran' | 'deferred' | 'paused' | 'blocked' | 'error'
-                'reason': reason,
-                'deleted': deleted,
-                'freed_bytes': freed,
-            }, f)
+            json.dump(rec, f)
     except Exception as e:
         logger.warning(f"Unraid dedup: could not write status file: {e}")
+    try:
+        lines = []
+        if os.path.exists(DEDUP_STATUS_HISTORY_FILE):
+            with open(DEDUP_STATUS_HISTORY_FILE) as f:
+                lines = f.readlines()[-29:]
+        lines.append(json.dumps(rec) + '\n')
+        with open(DEDUP_STATUS_HISTORY_FILE, 'w') as f:
+            f.writelines(lines)
+    except Exception as e:
+        logger.warning(f"Unraid dedup: could not append status history: {e}")
 
 
 def nightly_unraid_dedup(force=False):
@@ -3573,6 +3598,204 @@ scheduler.add_job(
 )
 logger.info("Library report enabled - runs nightly at 12:15 AM ET")
 
+STUCK_DEDUP_DAYS = int(os.environ.get('STUCK_DEDUP_DAYS', '3'))
+STUCK_PENDING_HOURS = int(os.environ.get('STUCK_PENDING_HOURS', '12'))
+
+# ── Tracking Reconciler (flag-only phase 1) — see docs/TRACKING_RECONCILER.md ──────
+RECONCILE_MODE = os.environ.get('RECONCILE_MODE', 'flag').lower()   # 'flag' | 'act'
+RECONCILE_REPORT_FILE = os.environ.get(
+    'RECONCILE_REPORT_FILE',
+    os.path.join(os.path.dirname(DEDUP_STATUS_FILE), 'tracking_reconcile.json'))
+
+
+def _resolution_tier(fname: str) -> int:
+    """Coarse resolution tier from a release filename (higher = better). Mirrors
+    _score_filename's resolution detection order (2160 before 1080 so a
+    '[4K Remaster]' edition label can't override the real 1080p tag)."""
+    n = fname.lower()
+    if re.search(r'\b2160p\b', n):
+        return 2160
+    if re.search(r'\b1080p\b', n):
+        return 1080
+    if re.search(r'\b720p\b', n):
+        return 720
+    if re.search(r'\b(480p|576p|sd|sdtv|dvd)\b', n):
+        return 480
+    return 1080  # unknown → assume 1080 so we never FLAG on a parse miss (fail safe)
+
+
+def tracking_reconcile_movies():
+    """Flag (phase 1) titles where Radarr tracks a lower-resolution file than a copy
+    that physically exists in EITHER library — the exact Steamboy/Sleuth class.
+
+    This is the missing structural piece (see docs/TRACKING_RECONCILER.md): nothing
+    else verifies Radarr is tracking the best copy that actually exists. Runs BEFORE
+    dedup (07:00 ET) so that once it graduates to act-mode it can adopt the good copy
+    while it still physically exists, before dedup/parity-enforcement removes it.
+
+    PHASE 1 IS FLAG-ONLY: read-only, reports to Telegram + a JSON file, takes NO
+    action regardless of RECONCILE_MODE. High-precision on purpose — it only flags a
+    strictly-higher *resolution* copy (720p tracked while a 1080p exists), the class
+    that has actually bitten us, not subtler same-resolution score deltas. Profile-rank
+    awareness and the actual adopt (reverse-sync + ManualImport) come with act-mode.
+    """
+    if not RADARR_HD_API_KEY:
+        return
+    started = datetime.utcnow()
+    flags = []
+    try:
+        # 1. Full Unraid movies inventory once (Agent — never CIFS bulk listing).
+        unraid_by_folder = {}
+        try:
+            resp = requests.get(f"{UNRAID_AGENT_URL}/inventory",
+                                params={'path': '/mnt/user/Media/Movies'},
+                                headers={'X-Api-Key': UNRAID_AGENT_API_KEY}, timeout=180)
+            resp.raise_for_status()
+            for it in resp.json().get('items', []):
+                parts = it.get('path', '').split('/')
+                if len(parts) < 7:
+                    continue
+                unraid_by_folder.setdefault(parts[5], []).append(parts[-1])
+        except Exception as e:
+            logger.warning(f"Tracking reconcile: Unraid inventory failed, using Synology-only pool: {e}")
+
+        # 2. Radarr movies.
+        movies = requests.get(f"{RADARR_HD_URL}/api/v3/movie",
+                              headers={'X-Api-Key': RADARR_HD_API_KEY}, timeout=120).json()
+        syn_root = '/mnt/synology/rs-movies'
+        video_exts = ('.mkv', '.mp4', '.avi', '.m4v', '.ts')
+
+        for m in movies:
+            mf = m.get('movieFile') or {}
+            tracked = mf.get('relativePath') or ''
+            if not tracked:
+                continue
+            folder = (m.get('path') or '').rstrip('/').split('/')[-1]
+            if not folder:
+                continue
+            tracked_tier = _resolution_tier(tracked)
+
+            # Candidate pool = Synology folder + Unraid folder copies (excluding the tracked file).
+            pool = []
+            try:
+                for e in os.scandir(os.path.join(syn_root, folder)):
+                    if e.is_file() and e.name.lower().endswith(video_exts):
+                        pool.append(e.name)
+            except OSError:
+                pass
+            pool += unraid_by_folder.get(folder, [])
+
+            best = None
+            best_tier = tracked_tier
+            for cand in pool:
+                if cand.lower() == tracked.lower():
+                    continue
+                t = _resolution_tier(cand)
+                if t > best_tier:
+                    best_tier, best = t, cand
+
+            if best:
+                where = 'unraid-only' if best in unraid_by_folder.get(folder, []) \
+                        and not os.path.exists(os.path.join(syn_root, folder, best)) else 'synology'
+                flags.append({
+                    'title': f"{m.get('title')} ({m.get('year')})",
+                    'tracked': tracked, 'tracked_tier': tracked_tier,
+                    'better': best, 'better_tier': best_tier, 'where': where,
+                })
+
+        # Report (flag-only — never acts in phase 1).
+        flags.sort(key=lambda f: -f['better_tier'])
+        report = {
+            'timestamp': started.isoformat(),
+            'mode': RECONCILE_MODE,
+            'flagged_count': len(flags),
+            'flags': flags[:200],
+        }
+        try:
+            with open(RECONCILE_REPORT_FILE, 'w') as f:
+                json.dump(report, f, indent=1)
+        except Exception as e:
+            logger.warning(f"Tracking reconcile: could not write report: {e}")
+
+        logger.info(f"Tracking reconcile (flag-only): {len(flags)} movie(s) where Radarr "
+                    f"tracks a lower resolution than an available copy")
+        if flags:
+            sample = '\n'.join(
+                f"• {f['title']}: tracks {f['tracked_tier']}p, {f['better_tier']}p available ({f['where']})"
+                for f in flags[:12])
+            more = f"\n…and {len(flags)-12} more" if len(flags) > 12 else ""
+            send_notification(
+                title=f"Tracking Reconcile: {len(flags)} movie(s) tracking a worse copy",
+                body=f"Radarr tracks a lower-resolution file than one that physically exists "
+                     f"(FLAG-ONLY — no action taken):\n{sample}{more}\n\n"
+                     f"Full list: {RECONCILE_REPORT_FILE}",
+                notify_type=apprise.NotifyType.WARNING)
+    except Exception as e:
+        logger.error(f"Tracking reconcile failed: {e}")
+
+
+def check_stuck_states():
+    """Escalate the silent-failure family to Telegram — added 2026-08-01.
+
+    The whole 2026-07/08 incident cluster shared one pattern: safety checks that
+    DEFER/SKIP silently instead of alerting loudly (dedup deferred 5–11+ days,
+    found-status frozen 24 days, orphaned jobs 5 days). Every one of those would have
+    surfaced in a day instead of weeks with this. Read-only except for the alert.
+
+    Two checks (more can be added as the reconciler etc. produce history):
+      1. Dedup hasn't successfully run in STUCK_DEDUP_DAYS: the last N real dedup
+         outcomes (from dedup_status_history.jsonl) are ALL non-'ran'
+         (deferred/blocked/paused/error). This is the exact 'frozen count night after
+         night' signature from the orphaned-jobs and datetime bugs.
+      2. Any sync job has sat 'pending' longer than STUCK_PENDING_HOURS — complements
+         recover_orphaned_pending_jobs (which only fires when the semaphore is fully
+         idle); this catches a job wedged pending even while other syncs run.
+    """
+    alerts = []
+    # 1. Dedup stuck
+    try:
+        if os.path.exists(DEDUP_STATUS_HISTORY_FILE):
+            with open(DEDUP_STATUS_HISTORY_FILE) as f:
+                recs = [json.loads(l) for l in f if l.strip()]
+            recent = recs[-STUCK_DEDUP_DAYS:]
+            if len(recent) >= STUCK_DEDUP_DAYS and all(r.get('outcome') != 'ran' for r in recent):
+                outcomes = ', '.join(f"{r.get('outcome')}" for r in recent)
+                last_reason = recent[-1].get('reason', '')
+                alerts.append(
+                    f"⚠️ Dedup has NOT run successfully in the last {len(recent)} attempts "
+                    f"({outcomes}). Latest reason: {last_reason[:200]}"
+                )
+    except Exception as e:
+        logger.warning(f"check_stuck_states: dedup history read failed: {e}")
+    # 2. Long-pending jobs
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT COUNT(*), MIN(created_at) FROM sync_jobs WHERE status='pending' "
+            "AND created_at < strftime('%Y-%m-%dT%H:%M:%S','now',?)",
+            (f'-{STUCK_PENDING_HOURS} hours',)
+        )
+        n, oldest = cur.fetchone()
+        conn.close()
+        if n and n > 0:
+            alerts.append(
+                f"⚠️ {n} sync job(s) stuck 'pending' > {STUCK_PENDING_HOURS}h "
+                f"(oldest since {oldest}). If the semaphore is idle, orphan-recovery should "
+                f"clear them within 15 min — if this persists, investigate a wedged queue."
+            )
+    except Exception as e:
+        logger.warning(f"check_stuck_states: pending-job check failed: {e}")
+
+    if alerts:
+        body = "\n\n".join(alerts)
+        logger.warning(f"Stuck-state alert:\n{body}")
+        send_notification(title="Sync/Dedup: Stuck State Detected", body=body,
+                          notify_type=apprise.NotifyType.WARNING)
+    else:
+        logger.info("check_stuck_states: no stuck states detected")
+
+
 # Unraid dedup — daily at 8:00 AM ET.
 # Gap scanners run at 11:00/11:30 PM ET and queue rsync jobs;
 # running dedup at 8 AM ET gives the 12-concurrent rsync queue ~8 hours to drain
@@ -3587,6 +3810,34 @@ scheduler.add_job(
     replace_existing=True
 )
 logger.info("Unraid dedup enabled - runs daily at 8:00 AM ET")
+
+# Stuck-state alerter — daily at 8:45 AM ET, right after the 8:00 dedup so it sees the
+# fresh outcome. Escalates the silent-failure family (dedup stuck N days, jobs pending
+# too long) that this week's incidents all shared.
+scheduler.add_job(
+    func=check_stuck_states,
+    trigger='cron',
+    hour=8,
+    minute=45,
+    id='check_stuck_states',
+    name='Stuck-state alerter (dedup stuck / long-pending jobs)',
+    replace_existing=True
+)
+logger.info("Stuck-state alerter enabled - runs daily at 8:45 AM ET")
+
+# Tracking Reconciler — daily at 7:00 AM ET, BEFORE the 8:00 dedup (ordering invariant:
+# adopt the best copy while it still physically exists, before dedup/parity removes it).
+# Phase 1 is flag-only (read-only report); see docs/TRACKING_RECONCILER.md.
+scheduler.add_job(
+    func=tracking_reconcile_movies,
+    trigger='cron',
+    hour=7,
+    minute=0,
+    id='tracking_reconcile_movies',
+    name='Tracking Reconciler (movies, flag-only phase 1) — runs before dedup',
+    replace_existing=True
+)
+logger.info(f"Tracking Reconciler enabled - runs daily at 7:00 AM ET (mode={RECONCILE_MODE})")
 
 # Weekly guaranteed-drain dedup — Sunday 9:00 AM ET, force=True (bypasses only the
 # DEDUP_MIN_AGE_HOURS "recent gap job" defer, still honors PAUSE_DEDUP and the

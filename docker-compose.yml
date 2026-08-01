@@ -740,6 +740,13 @@ services:
       - DEDUP_WARN_MINUTES=${DEDUP_WARN_MINUTES:-10}
       - DEDUP_MIN_AGE_HOURS=${DEDUP_MIN_AGE_HOURS:-24}
       - TIER7_PENDING_PATH=${TIER7_PENDING_PATH:-/data/upgraderr_ro/tier7_pending.json}
+      # Stuck-state alerter (2026-08-01) — escalate the silent-failure family to Telegram
+      - STUCK_DEDUP_DAYS=${STUCK_DEDUP_DAYS:-3}
+      - STUCK_PENDING_HOURS=${STUCK_PENDING_HOURS:-12}
+      # Tracking Reconciler (2026-08-01) — see docs/TRACKING_RECONCILER.md. Staged
+      # rollout: 'flag' (report only, no writes) -> 'act' (rate-limited adoptions).
+      - RECONCILE_MODE=${RECONCILE_MODE:-flag}
+      - RECONCILE_MAX_ADOPTIONS_PER_RUN=${RECONCILE_MAX_ADOPTIONS_PER_RUN:-10}
     volumes:
       # Synology NFS mounts (rw: source for forward sync, destination for reverse sync)
       - /mnt/synology/rs-movies:/mnt/synology/rs-movies
