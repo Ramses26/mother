@@ -3606,6 +3606,9 @@ RECONCILE_MODE = os.environ.get('RECONCILE_MODE', 'flag').lower()   # 'flag' | '
 RECONCILE_REPORT_FILE = os.environ.get(
     'RECONCILE_REPORT_FILE',
     os.path.join(os.path.dirname(DEDUP_STATUS_FILE), 'tracking_reconcile.json'))
+RECONCILE_HISTORY_FILE = os.environ.get(
+    'RECONCILE_HISTORY_FILE',
+    os.path.join(os.path.dirname(DEDUP_STATUS_FILE), 'tracking_reconcile_history.jsonl'))
 
 
 def _resolution_tier(fname: str) -> int:
@@ -3708,17 +3711,46 @@ def tracking_reconcile_movies():
         report = {
             'timestamp': started.isoformat(),
             'mode': RECONCILE_MODE,
+            'movies_scanned': len(movies),
+            'unraid_inventory_ok': bool(unraid_by_folder),
             'flagged_count': len(flags),
             'flags': flags[:200],
         }
+        # Latest full report (overwritten each run) — the current snapshot.
         try:
             with open(RECONCILE_REPORT_FILE, 'w') as f:
                 json.dump(report, f, indent=1)
         except Exception as e:
             logger.warning(f"Tracking reconcile: could not write report: {e}")
+        # Rolling history (append, last 60 runs) — added 2026-08-01 so the flag-only
+        # phase can be REVIEWED over days/weeks. Records every run, including quiet
+        # (0-flag) ones, so "did it run and stay quiet" is provable, not just "the
+        # latest run". One JSON object per line; keeps the flagged titles so a trend
+        # is auditable without needing Loki.
+        try:
+            hist_line = json.dumps({
+                'timestamp': report['timestamp'],
+                'mode': report['mode'],
+                'movies_scanned': report['movies_scanned'],
+                'unraid_inventory_ok': report['unraid_inventory_ok'],
+                'flagged_count': report['flagged_count'],
+                'flagged_titles': [
+                    f"{f['title']} [{f['tracked_tier']}p->{f['better_tier']}p {f['where']}]"
+                    for f in flags[:50]
+                ],
+            })
+            lines = []
+            if os.path.exists(RECONCILE_HISTORY_FILE):
+                with open(RECONCILE_HISTORY_FILE) as f:
+                    lines = f.readlines()[-59:]
+            lines.append(hist_line + '\n')
+            with open(RECONCILE_HISTORY_FILE, 'w') as f:
+                f.writelines(lines)
+        except Exception as e:
+            logger.warning(f"Tracking reconcile: could not append history: {e}")
 
-        logger.info(f"Tracking reconcile (flag-only): {len(flags)} movie(s) where Radarr "
-                    f"tracks a lower resolution than an available copy")
+        logger.info(f"Tracking reconcile (flag-only): scanned {len(movies)} movie(s), "
+                    f"{len(flags)} flagged (Radarr tracks a lower resolution than an available copy)")
         if flags:
             sample = '\n'.join(
                 f"• {f['title']}: tracks {f['tracked_tier']}p, {f['better_tier']}p available ({f['where']})"
