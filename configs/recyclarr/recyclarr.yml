@@ -48,7 +48,17 @@ radarr:
           # Tier 3's entire job is eliminating 720p; leaving it "allowed" here meant
           # Radarr could legitimately grab and keep a 720p release whenever that's
           # all an indexer search turned up (this is what happened to Mazinger Z).
+          #
+          # Remux-1080p added as ALLOWED 2026-08-01 (Ali: "quality over disk space").
+          # Ranked BELOW Bluray-1080p (still the preferred/cutoff target — prefer the
+          # space-efficient encode) but ABOVE everything unlisted, so Remux beats 720p
+          # in Radarr's upgrade math. This reverses the prior "profile 7 rejects Remux"
+          # stance: a Remux is now a valid keepable quality (better than a 720p when
+          # that's the only alternative), not a "legacy leftover to be replaced". See
+          # CLAUDE.md Profile Authority — the Tier-7 profile-mismatch check no longer
+          # fires for a Remux on this profile.
           - name: Bluray-1080p
+          - name: Remux-1080p
           - name: WEB 1080p
             qualities:
               - WEBDL-1080p

@@ -209,6 +209,32 @@ this gap (no 720p/480p in any of their allowed lists). **Before enabling upgrade
 on a profile or accepting a stock TRaSH template as-is, check its `allowed` items
 list for any quality this project's Sync Strategy says should never be kept.**
 
+**2026-08-01 — Remux-1080p now ALLOWED on profile 7 (semantic change; supersedes the
+"profile 7 rejects Remux" stance that appears throughout Profile Authority above).**
+Ali's explicit instruction ("quality over disk space"): the `qualities:` override for
+"HD Bluray + WEB" now lists `Remux-1080p` as allowed, ranked **below Bluray-1080p**
+(still the cutoff/preferred target — prefer the space-efficient encode) and **above the
+disabled Bluray-720p**. Final order: `Bluray-1080p > Remux-1080p > WEB-1080p > (720p
+disabled)`. Applied via recyclarr sync. **Consequences to know:**
+- **Upgraderr Tier 7 (profile mismatch) no longer fires for a Remux on profile 7** — a
+  Remux is now a valid, keepable quality on this profile, not a "legacy leftover to be
+  replaced." Much of the Profile Authority narrative above (Remux-in-Bluray-profile is
+  an anomaly, the incidents about Remux vs profile) is now **historical for profile 7
+  specifically**. It still holds conceptually for any profile that genuinely disallows a
+  quality — the principle (assigned profile is authoritative) is unchanged; only profile
+  7's *contents* changed.
+- Because Bluray-1080p is still ranked above Remux and remains the cutoff, a Remux-only
+  title stays below cutoff, so Radarr/Upgraderr may still *search* for a Bluray-1080p to
+  upgrade a Remux — but will **keep the Remux** in the meantime rather than flag it as
+  broken. That's the intended "prefer Bluray-1080p, accept Remux as a high-quality
+  fallback" behavior.
+- Why this was done: the trigger was **Sleuth (2007)** — Radarr tracked a `Bluray-720p`
+  (a real bug), the only better copy available anywhere was a `Remux-1080p`, and the old
+  profile ranked Remux *below* 720p so Radarr refused to import it ("not an upgrade").
+  Rather than a one-off, Ali chose to fix the profile ranking itself. **Steamboy (2004)**
+  (fixed the same session) had a profile-compliant `Bluray-1080p` available and did not
+  need this — it was imported directly.
+
 ### 2026-07-02 Full System Assessment (what was checked, what's confirmed)
 
 A comprehensive pass across every service, triggered by the incidents documented
