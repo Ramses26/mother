@@ -3609,6 +3609,18 @@ RECONCILE_REPORT_FILE = os.environ.get(
 RECONCILE_HISTORY_FILE = os.environ.get(
     'RECONCILE_HISTORY_FILE',
     os.path.join(os.path.dirname(DEDUP_STATUS_FILE), 'tracking_reconcile_history.jsonl'))
+RECONCILE_TV_REPORT_FILE = os.environ.get(
+    'RECONCILE_TV_REPORT_FILE',
+    os.path.join(os.path.dirname(DEDUP_STATUS_FILE), 'tracking_reconcile_tv.json'))
+RECONCILE_TV_HISTORY_FILE = os.environ.get(
+    'RECONCILE_TV_HISTORY_FILE',
+    os.path.join(os.path.dirname(DEDUP_STATUS_FILE), 'tracking_reconcile_tv_history.jsonl'))
+_RECONCILE_EP_RE = re.compile(r'\bS(\d{1,2})E(\d{1,4})\b', re.IGNORECASE)
+
+
+def _ep_key(fname: str):
+    m = _RECONCILE_EP_RE.search(fname)
+    return f"S{int(m.group(1)):02d}E{int(m.group(2)):03d}" if m else None
 
 
 def _resolution_tier(fname: str) -> int:
@@ -3766,6 +3778,148 @@ def tracking_reconcile_movies():
         logger.error(f"Tracking reconcile failed: {e}")
 
 
+def tracking_reconcile_tv():
+    """TV counterpart of tracking_reconcile_movies — the Steamboy-class safety net for
+    Sonarr, per the movie/TV parity rule (see docs/TRACKING_RECONCILER.md §8).
+
+    Flags episodes where Sonarr tracks a lower-resolution file than a copy that
+    physically exists in either library (Synology show folder or Unraid inventory).
+    PHASE 1 FLAG-ONLY: read-only, reports to Telegram + a JSON file + rolling history,
+    takes NO action regardless of RECONCILE_MODE. Same high-precision resolution-only
+    rule as the movie version. Runs after the movie reconciler, before dedup.
+    """
+    if not SONARR_HD_API_KEY:
+        return
+    started = datetime.utcnow()
+    flags = []
+    eps_scanned = 0
+    try:
+        # 1. Unraid TV inventory once → {(show_folder, ep_key): [filenames]}.
+        unraid_eps = {}
+        unraid_ok = False
+        try:
+            resp = requests.get(f"{UNRAID_AGENT_URL}/inventory",
+                                params={'path': '/mnt/user/Media/TV Shows'},
+                                headers={'X-Api-Key': UNRAID_AGENT_API_KEY}, timeout=240)
+            resp.raise_for_status()
+            for it in resp.json().get('items', []):
+                parts = it.get('path', '').split('/')
+                if len(parts) < 8:
+                    continue
+                show_folder, fname = parts[5], parts[-1]
+                ek = _ep_key(fname)
+                if ek:
+                    unraid_eps.setdefault((show_folder, ek), []).append(fname)
+            unraid_ok = True
+        except Exception as e:
+            logger.warning(f"TV tracking reconcile: Unraid inventory failed, Synology-only pool: {e}")
+
+        # 2. Sonarr series → per-series episodes (with file).
+        series_list = requests.get(f"{SONARR_HD_URL}/api/v3/series",
+                                   headers={'X-Api-Key': SONARR_HD_API_KEY}, timeout=120).json()
+        syn_root = '/mnt/synology/rs-tv'
+        video_exts = ('.mkv', '.mp4', '.avi', '.m4v', '.ts')
+
+        for s in series_list:
+            show_folder = (s.get('path') or '').rstrip('/').split('/')[-1]
+            if not show_folder:
+                continue
+            try:
+                episodes = requests.get(f"{SONARR_HD_URL}/api/v3/episode",
+                                        params={'seriesId': s['id'], 'includeEpisodeFile': 'true'},
+                                        headers={'X-Api-Key': SONARR_HD_API_KEY}, timeout=60).json()
+            except Exception:
+                continue
+
+            # Scan this show's Synology folder once → {ep_key: [fnames]} (reused per episode).
+            syn_eps = {}
+            try:
+                show_dir = os.path.join(syn_root, show_folder)
+                for season_e in os.scandir(show_dir):
+                    if not season_e.is_dir():
+                        continue
+                    for f in os.scandir(season_e.path):
+                        if f.is_file() and f.name.lower().endswith(video_exts):
+                            ek = _ep_key(f.name)
+                            if ek:
+                                syn_eps.setdefault(ek, []).append(f.name)
+            except OSError:
+                pass
+
+            for ep in episodes:
+                ef = ep.get('episodeFile')
+                if not ef or not ef.get('relativePath'):
+                    continue
+                tracked = os.path.basename(ef['relativePath'])
+                ek = _ep_key(tracked)
+                if not ek:
+                    continue
+                eps_scanned += 1
+                tracked_tier = _resolution_tier(tracked)
+
+                pool = list(syn_eps.get(ek, [])) + unraid_eps.get((show_folder, ek), [])
+                best, best_tier = None, tracked_tier
+                for cand in pool:
+                    if cand.lower() == tracked.lower():
+                        continue
+                    t = _resolution_tier(cand)
+                    if t > best_tier:
+                        best_tier, best = t, cand
+                if best:
+                    where = 'unraid-only' if best in unraid_eps.get((show_folder, ek), []) \
+                            and best not in syn_eps.get(ek, []) else 'synology'
+                    flags.append({
+                        'title': f"{s.get('title')} - {ek}",
+                        'tracked': tracked, 'tracked_tier': tracked_tier,
+                        'better': best, 'better_tier': best_tier, 'where': where,
+                    })
+
+        flags.sort(key=lambda f: -f['better_tier'])
+        report = {
+            'timestamp': started.isoformat(), 'mode': RECONCILE_MODE,
+            'episodes_scanned': eps_scanned, 'unraid_inventory_ok': unraid_ok,
+            'flagged_count': len(flags), 'flags': flags[:200],
+        }
+        try:
+            with open(RECONCILE_TV_REPORT_FILE, 'w') as f:
+                json.dump(report, f, indent=1)
+        except Exception as e:
+            logger.warning(f"TV tracking reconcile: could not write report: {e}")
+        try:
+            hist_line = json.dumps({
+                'timestamp': report['timestamp'], 'mode': report['mode'],
+                'episodes_scanned': eps_scanned, 'unraid_inventory_ok': unraid_ok,
+                'flagged_count': len(flags),
+                'flagged_titles': [f"{f['title']} [{f['tracked_tier']}p->{f['better_tier']}p {f['where']}]"
+                                   for f in flags[:50]],
+            })
+            lines = []
+            if os.path.exists(RECONCILE_TV_HISTORY_FILE):
+                with open(RECONCILE_TV_HISTORY_FILE) as f:
+                    lines = f.readlines()[-59:]
+            lines.append(hist_line + '\n')
+            with open(RECONCILE_TV_HISTORY_FILE, 'w') as f:
+                f.writelines(lines)
+        except Exception as e:
+            logger.warning(f"TV tracking reconcile: could not append history: {e}")
+
+        logger.info(f"TV tracking reconcile (flag-only): scanned {eps_scanned} episode(s), "
+                    f"{len(flags)} flagged (Sonarr tracks a lower resolution than an available copy)")
+        if flags:
+            sample = '\n'.join(
+                f"• {f['title']}: tracks {f['tracked_tier']}p, {f['better_tier']}p available ({f['where']})"
+                for f in flags[:12])
+            more = f"\n…and {len(flags)-12} more" if len(flags) > 12 else ""
+            send_notification(
+                title=f"TV Tracking Reconcile: {len(flags)} episode(s) tracking a worse copy",
+                body=f"Sonarr tracks a lower-resolution file than one that physically exists "
+                     f"(FLAG-ONLY — no action taken):\n{sample}{more}\n\n"
+                     f"Full list: {RECONCILE_TV_REPORT_FILE}",
+                notify_type=apprise.NotifyType.WARNING)
+    except Exception as e:
+        logger.error(f"TV tracking reconcile failed: {e}")
+
+
 def check_stuck_states():
     """Escalate the silent-failure family to Telegram — added 2026-08-01.
 
@@ -3870,6 +4024,18 @@ scheduler.add_job(
     replace_existing=True
 )
 logger.info(f"Tracking Reconciler enabled - runs daily at 7:00 AM ET (mode={RECONCILE_MODE})")
+
+# TV Tracking Reconciler — 7:05 AM ET (after movies, before dedup). Same flag-only phase 1.
+scheduler.add_job(
+    func=tracking_reconcile_tv,
+    trigger='cron',
+    hour=7,
+    minute=5,
+    id='tracking_reconcile_tv',
+    name='TV Tracking Reconciler (flag-only phase 1) — runs before dedup',
+    replace_existing=True
+)
+logger.info(f"TV Tracking Reconciler enabled - runs daily at 7:05 AM ET (mode={RECONCILE_MODE})")
 
 # Weekly guaranteed-drain dedup — Sunday 9:00 AM ET, force=True (bypasses only the
 # DEDUP_MIN_AGE_HOURS "recent gap job" defer, still honors PAUSE_DEDUP and the
