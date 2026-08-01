@@ -88,6 +88,14 @@ TIER5_RECHECK_DAYS = [30, 60, 90, 180]
 MIN_SCORE          = int(os.environ.get('UPGRADERR_MIN_SCORE', '200'))
 SEASON_THRESHOLD       = int(os.environ.get('UPGRADERR_SEASON_THRESHOLD', '50'))
 NO_SOURCE_SYNC_THRESHOLD = int(os.environ.get('UPGRADERR_NO_SOURCE_SYNC_THRESHOLD', '2'))
+# "No source will ever be found" handling (2026-08-01, Ali's "tag + rare recheck"): after
+# this many failed searches with no import, an item is treated as no-source — tagged
+# 'upgraderr-no-source' (visibility/review) and dropped to a long recheck cadence so it
+# stops the 30-day churn. It STILL rechecks every NO_SOURCE_RECHECK_DAYS in case a source
+# is released later (DS9, Golden Girls, comedy specials, old cartoons — "never" is risky to
+# hardcode). Applies to BOTH movies and TV (parity rule).
+NO_SOURCE_TAG_THRESHOLD  = int(os.environ.get('UPGRADERR_NO_SOURCE_TAG_THRESHOLD', '6'))
+NO_SOURCE_RECHECK_DAYS   = int(os.environ.get('UPGRADERR_NO_SOURCE_RECHECK_DAYS', '180'))
 # Container-internal port (5000), NOT the host-mapped port (5001 = SYNC_WEBHOOK_PORT
 # in docker-compose.yml, only for connections from outside the Docker network).
 # Was wrongly defaulted to :5001 — confirmed live 2026-07-09 via `docker exec upgraderr`
@@ -957,7 +965,9 @@ def _adaptive_cooldown(search_count):
     if search_count <= 1: return int(get_cfg('cooldown_hours', str(COOLDOWN_HOURS)))
     if search_count == 2: return 7 * 24
     if search_count == 3: return 14 * 24
-    return 30 * 24
+    if search_count < NO_SOURCE_TAG_THRESHOLD: return 30 * 24
+    # No source after NO_SOURCE_TAG_THRESHOLD tries — rare recheck instead of 30-day churn.
+    return NO_SOURCE_RECHECK_DAYS * 24
 
 # ---------------------------------------------------------------------------
 # Core sweep
@@ -1159,7 +1169,12 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
     is_4k = '4k' in inst_name.lower()
 
     all_tags = {t['id']: t['label'].lower() for t in (arr_get(inst, '/tag') or [])}
-    skip_tag_ids = {tid for tid, lbl in all_tags.items() if lbl in ('upgraderr-skip', 'upgraderr-no-source')}
+    # Only 'upgraderr-skip' is a HARD skip. 'upgraderr-no-source' is a visibility label —
+    # those items keep a long recheck cadence (NO_SOURCE_RECHECK_DAYS via _adaptive_cooldown)
+    # rather than being skipped forever, so a later-released source can still be caught.
+    # (Removed 'upgraderr-no-source' here 2026-08-01 — it made movies hard-skip while TV
+    # didn't; a real movie/TV asymmetry. Both now match.)
+    skip_tag_ids = {tid for tid, lbl in all_tags.items() if lbl in ('upgraderr-skip',)}
 
     # Quality profile map — used to detect files with quality not allowed by their profile
     # (e.g. Remux imported via batch sync into a Bluray-only profile)
@@ -1270,6 +1285,13 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
         cooldown_until = (datetime.utcnow() + timedelta(hours=cooldown_h)).isoformat()
 
         _db_mark_searching(inst_name, mid, 'movie', search_count, cooldown_until)
+
+        # No-source handling: at the threshold, tag for visibility/review (once). The long
+        # recheck cadence is already applied via _adaptive_cooldown above — see NO_SOURCE_*.
+        if search_count >= NO_SOURCE_TAG_THRESHOLD:
+            _tag_no_source(inst, 'movie', mid)
+            log.info(f"[{inst_name}] No-source after {search_count} searches: {full_title} "
+                     f"— tagged, dropping to {NO_SOURCE_RECHECK_DAYS}-day recheck")
 
         # After N failed searches, sync current quality so Ali isn't permanently missing content.
         # Tier 8 (x265 no HDR at 1080p) gets the same escape hatch as Tier 3 (720p) — both are
@@ -1467,6 +1489,14 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
             cooldown_h    = _adaptive_cooldown(search_count)
             cooldown_until = (datetime.utcnow() + timedelta(hours=cooldown_h)).isoformat()
             _db_mark_searching(inst_name, composite_id, 'season', search_count, cooldown_until)
+
+            # No-source handling (parity with movies): tag the series for visibility once a
+            # season hits the threshold. Recheck cadence is per-season via _adaptive_cooldown;
+            # the tag is label-only (not a hard skip), so other seasons are unaffected.
+            if search_count >= NO_SOURCE_TAG_THRESHOLD:
+                _tag_no_source(inst, 'tv', series.get('id'))
+                log.info(f"[{inst_name}] No-source after {search_count} searches: {title} "
+                         f"— tagged, dropping to {NO_SOURCE_RECHECK_DAYS}-day recheck")
 
             # After N failed searches, sync current quality so Ali isn't permanently missing content.
             # Tier 8 (x265 no HDR at 1080p) gets the same escape hatch as Tier 3 (720p) — see the
@@ -2610,15 +2640,15 @@ def get_instance(name):
     row = db.execute("SELECT * FROM instances WHERE name=?", (name,)).fetchone()
     return dict(row) if row else None
 
-def _tag_upgraderr_skip(inst, media_type, media_id):
-    """Add the 'upgraderr-skip' tag to a movie/series so it won't be auto-searched
-    again until a human reviews it. Creates the tag if it doesn't exist yet."""
+def _tag_arr(inst, media_type, media_id, label):
+    """Add a label tag to a movie/series (creates the tag if missing). Idempotent —
+    returns True if the tag is present after the call."""
     entity_path = '/movie' if media_type == 'movie' else '/series'
     try:
         tags = arr_get(inst, '/tag') or []
-        tag_id = next((t['id'] for t in tags if t['label'].lower() == 'upgraderr-skip'), None)
+        tag_id = next((t['id'] for t in tags if t['label'].lower() == label), None)
         if tag_id is None:
-            created = arr_post(inst, '/tag', {'label': 'upgraderr-skip'})
+            created = arr_post(inst, '/tag', {'label': label})
             if not created:
                 return False
             tag_id = created['id']
@@ -2630,8 +2660,21 @@ def _tag_upgraderr_skip(inst, media_type, media_id):
         entity['tags'] = (entity.get('tags') or []) + [tag_id]
         return arr_put(inst, f'{entity_path}/{media_id}', entity) is not None
     except Exception as e:
-        log.error(f"[downgrade-guard] Failed to tag {media_type} {media_id}: {e}")
+        log.error(f"Failed to tag {media_type} {media_id} '{label}': {e}")
         return False
+
+
+def _tag_upgraderr_skip(inst, media_type, media_id):
+    """Add the 'upgraderr-skip' tag so it won't be auto-searched until a human reviews it."""
+    return _tag_arr(inst, media_type, media_id, 'upgraderr-skip')
+
+
+def _tag_no_source(inst, media_type, media_id):
+    """Add the 'upgraderr-no-source' tag — repeatedly searched, no better source found.
+    Visibility/review label; the long recheck cadence (NO_SOURCE_RECHECK_DAYS via
+    _adaptive_cooldown) is what actually stops the churn, so this does NOT hard-skip
+    (both movie and TV sweeps only hard-skip 'upgraderr-skip')."""
+    return _tag_arr(inst, media_type, media_id, 'upgraderr-no-source')
 
 
 # Encode/release groups Ali has explicitly called out as unacceptable regardless of
