@@ -216,13 +216,21 @@ async def sync_all_movies(db):
 
 
 async def update_scores(db, instance_name: str = None):
-    """Recompute composite and purge scores for all movies (or one instance)."""
+    """Recompute composite, purge, and TRaSH quality scores for all movies (or one instance)."""
+    # trash_score was a dead column until 2026-08-01 — declared in the schema and read by
+    # the movies API/UI, but never written (composite_score/purge_score were, trash_score
+    # wasn't), so every movie showed a null quality score. Populate it here from the
+    # tracked filename using the shared JSON scorer (same one sync-webhook/dedup use).
+    # Lazy import to avoid any routes<->sync import cycle at module load.
+    from app.routes.sync_status import _score as _trash_score
+
     where = "WHERE radarr_instance=?" if instance_name else ""
     args = [instance_name] if instance_name else []
 
     async with db.execute(
         f"SELECT id, imdb_rating, rt_critics, metacritic, tmdb_rating, mdblist_score, "
-        f"ali_play_count, chris_play_count, resolution, plex_added_at, radarr_added_at, last_synced FROM movies {where}", args
+        f"ali_play_count, chris_play_count, resolution, plex_added_at, radarr_added_at, "
+        f"last_synced, file_path, file_size_bytes FROM movies {where}", args
     ) as cur:
         rows = await cur.fetchall()
 
@@ -235,9 +243,18 @@ async def update_scores(db, instance_name: str = None):
         )
         row['composite_score'] = composite
         purge = compute_purge_score(row)
+        # Quality score from the tracked filename (basename). None when no file.
+        fp = row.get('file_path') or ''
+        trash = None
+        if fp:
+            try:
+                trash = _trash_score(fp.rsplit('/', 1)[-1], row.get('file_size_bytes') or 0, 'movie')
+            except Exception:
+                trash = None
         await db.execute(
-            "UPDATE movies SET composite_score=?, purge_score=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-            (composite, purge, row['id'])
+            "UPDATE movies SET composite_score=?, purge_score=?, trash_score=?, "
+            "updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (composite, purge, trash, row['id'])
         )
 
     await db.commit()
