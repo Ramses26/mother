@@ -1,44 +1,40 @@
 #!/usr/bin/env bash
-# Ensure the Unraid media CIFS mount is up.
+# Single-attempt "is the Unraid CIFS mount up?" check, driven by
+# unraid-media-mount.service (Type=simple, Restart=on-failure).
 #
-# Why this exists: the IPsec tunnel to Ali's site lives on the gateway
-# (10.0.0.1), NOT on Mother. At boot, Mother's local network-online.target is
-# reached before the tunnel/remote Unraid is actually reachable, so the one-shot
-# fstab mount attempt fails with `mount error(115): Operation now in progress`
-# and — because a systemd .mount unit does not retry — stays failed forever with
-# nothing to remount it (observed 2026-08-12). This script, driven by
-# unraid-media-mount.timer, retries idempotently: it mounts once Unraid's SMB
-# port is reachable, and re-mounts after any later VPN blip that drops the share.
+# Why: the IPsec tunnel to Ali's site lives on the gateway (10.0.0.1), NOT on
+# Mother, and its public IP is dynamic. After a power outage everything is
+# powered back up by hand and the tunnel only re-establishes once the gateway
+# picks up its new dynamic IP — which can be well after Mother has finished
+# booting. Mother's boot-time fstab mount therefore races the tunnel and fails
+# with `mount error(115)`, and a systemd .mount unit does not retry on its own
+# (observed 2026-08-12).
 #
-# Pairs with the `rslave` bind propagation on the sync-webhook/curatorr volumes
-# in docker-compose.yml: the host mount is `shared`, so once this script mounts
-# it the mount propagates INTO the already-running containers automatically — no
-# container restart needed.
+# This script does ONE attempt and exits:
+#   0  -> mounted (or already mounted)         -> service completes, goes quiet
+#   1  -> tunnel/mount not up yet              -> systemd retries in 60s
+# So it only runs while the share is actually down (i.e. during an outage), and
+# stops the moment the tunnel is back and the mount succeeds. There is NO
+# steady-state polling once things are healthy.
+#
+# Pairs with `rslave` bind propagation on the sync-webhook/curatorr volumes: the
+# host mount is `shared`, so once this mounts it, it propagates INTO the running
+# containers automatically — no container restart needed.
 set -u
 
 MP=/mnt/unraid/media
 HOST=192.168.1.10
 PORT=445
 
-# Already mounted -> nothing to do.
+# Already mounted -> success, nothing to do (service will go inactive).
 if mountpoint -q "$MP"; then
     exit 0
 fi
 
-# Wait (briefly) for the tunnel/SMB to be reachable before attempting a mount.
-# If it never comes up this cycle, exit 0 quietly; the timer retries in 2 min.
-reachable=0
-for _ in $(seq 1 10); do
-    if timeout 2 bash -c "cat < /dev/null > /dev/tcp/$HOST/$PORT" 2>/dev/null; then
-        reachable=1
-        break
-    fi
-    sleep 2
-done
-
-if [ "$reachable" -ne 1 ]; then
-    echo "unraid-media-mount: $HOST:$PORT not reachable yet, will retry next cycle"
-    exit 0
+# Is the tunnel/SMB reachable yet? If not, fail so systemd retries later.
+if ! timeout 3 bash -c "cat < /dev/null > /dev/tcp/$HOST/$PORT" 2>/dev/null; then
+    echo "unraid-media-mount: $HOST:$PORT unreachable (VPN tunnel down?) — will retry in 60s"
+    exit 1
 fi
 
 # All mount options come from /etc/fstab (credentials, vers=3.0, _netdev, nofail).
@@ -46,10 +42,8 @@ mount "$MP" 2>&1
 
 if mountpoint -q "$MP"; then
     echo "unraid-media-mount: mounted $MP"
-else
-    echo "unraid-media-mount: mount of $MP did not succeed, will retry next cycle"
+    exit 0
 fi
 
-# Always succeed so the unit does not enter a 'failed' state on a transient VPN
-# outage; the timer handles retries and sync-webhook /health reports real status.
-exit 0
+echo "unraid-media-mount: reachable but mount of $MP failed — will retry in 60s"
+exit 1

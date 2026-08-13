@@ -1,14 +1,22 @@
 [Unit]
-Description=Ensure Unraid media CIFS mount is up (VPN/tunnel-aware retry)
+Description=Ensure Unraid media CIFS mount is up (retries until the VPN tunnel is back)
 Documentation=file:/opt/mother/deploy/host/ensure-unraid-mount.sh
 After=network-online.target
 Wants=network-online.target
-# Do not order before docker: with rslave propagation the mount self-attaches to
-# running containers whenever it comes up, so containers must NOT wait on this.
+# Disable start-rate limiting so it can keep retrying for the whole duration of
+# a long outage (e.g. gateway waiting on a new dynamic IP) without ever hitting
+# 'start-limit-hit' and giving up.
+StartLimitIntervalSec=0
 
 [Service]
-Type=oneshot
+Type=simple
 ExecStart=/usr/local/bin/ensure-unraid-mount.sh
+# Retry every 60s ONLY while the script fails (mount down / tunnel down). The
+# instant it succeeds (exit 0) the service goes inactive and stops retrying —
+# no steady-state polling. Do NOT order this before docker: with rslave
+# propagation the mount self-attaches to running containers whenever it comes up.
+Restart=on-failure
+RestartSec=60
 
 [Install]
 WantedBy=multi-user.target
