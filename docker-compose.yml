@@ -645,7 +645,10 @@ services:
     volumes:
       - /opt/mother/data/curatorr:/data
       - /opt/mother/data/logs/curatorr:/logs
-      - /mnt/unraid/media:/mnt/unraid/media
+      # rslave: host remount of this CIFS mount propagates into the running
+      # container (host mount is `shared`), so a VPN-blip/boot-race remount no
+      # longer needs a container restart. See deploy/host/ for the host-side unit.
+      - /mnt/unraid/media:/mnt/unraid/media:rslave
       - /mnt/synology/rs-movies:/mnt/synology/rs-movies
       - /mnt/synology/rs-tv:/mnt/synology/rs-tv
       - /mnt/synology/rs-4kmedia:/mnt/synology/rs-4kmedia
@@ -757,7 +760,9 @@ services:
       - /mnt/synology/rs-tv:/mnt/synology/rs-tv
       - /mnt/synology/rs-4kmedia:/mnt/synology/rs-4kmedia
       # Unraid CIFS mount (destination for forward sync, source for reverse sync)
-      - /mnt/unraid/media:/mnt/unraid/media
+      # rslave: host remount propagates in without a container restart (host
+      # mount is `shared`). See deploy/host/ for the host-side ensure-mount unit.
+      - /mnt/unraid/media:/mnt/unraid/media:rslave
       # Persistent logs and database
       - ${CONFIG_PATH}/sync-webhook/logs:/logs
       - ${CONFIG_PATH}/sync-webhook/data:/data

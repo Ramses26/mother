@@ -1,0 +1,13 @@
+[Unit]
+Description=Periodically ensure the Unraid media CIFS mount is up
+
+[Timer]
+# First check shortly after boot (covers the VPN/boot race), then every 2 min
+# (covers later tunnel blips that drop the share). The service is idempotent and
+# a no-op when already mounted.
+OnBootSec=30s
+OnUnitActiveSec=2min
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

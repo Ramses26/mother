@@ -1,0 +1,14 @@
+[Unit]
+Description=Ensure Unraid media CIFS mount is up (VPN/tunnel-aware retry)
+Documentation=file:/opt/mother/deploy/host/ensure-unraid-mount.sh
+After=network-online.target
+Wants=network-online.target
+# Do not order before docker: with rslave propagation the mount self-attaches to
+# running containers whenever it comes up, so containers must NOT wait on this.
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ensure-unraid-mount.sh
+
+[Install]
+WantedBy=multi-user.target
