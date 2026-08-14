@@ -2711,6 +2711,9 @@ def nightly_library_report():
     missing_movies: list = []
     missing_by_show: dict = {}
     total_missing_eps: int = 0
+    extra_movies: list = []
+    extra_by_show: dict = {}
+    total_extra_eps: int = 0
     ep_re = re.compile(r'S(\d{1,2})E(\d{1,4})', re.IGNORECASE)
     skip_names = {'#recycle', '@eaDir', '.DS_Store', 'testfile'}
     skip_suffixes = ('.lnk', '.txt', '.url')
@@ -2735,6 +2738,10 @@ def nightly_library_report():
             f for f in (syn_folders - unraid_folders)
             if f not in skip_names and not any(f.endswith(s) for s in skip_suffixes)
         )
+        extra_movies = sorted(
+            f for f in (unraid_folders - syn_folders)
+            if f not in skip_names and not any(f.endswith(s) for s in skip_suffixes)
+        )
 
         lines.append(f"🎬 *HD Movies*")
         lines.append(f"Synology: {len(syn_folders):,}  |  Unraid: {len(unraid_folders):,}")
@@ -2746,6 +2753,12 @@ def nightly_library_report():
                 lines.append(f"  • {title}")
             if len(missing_movies) > 15:
                 lines.append(f"  … and {len(missing_movies) - 15} more")
+        if extra_movies:
+            lines.append(f"⚠️ {len(extra_movies)} extra on Unraid (not on Synology):")
+            for title in extra_movies[:15]:
+                lines.append(f"  • {title}")
+            if len(extra_movies) > 15:
+                lines.append(f"  … and {len(extra_movies) - 15} more")
     except Exception as e:
         logger.error(f"Library report: movie section failed: {e}")
         lines.append("🎬 *HD Movies* — ❌ error fetching data")
@@ -2783,6 +2796,7 @@ def nightly_library_report():
 
         # Scan Synology TV — build (show, ep_key) set and per-show counts
         syn_shows: set = set()
+        syn_eps: set = set()
         missing_by_show: dict = defaultdict(list)
         syn_ep_total = 0
 
@@ -2809,10 +2823,17 @@ def nightly_library_report():
                             continue
                         syn_ep_total += 1
                         ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
+                        syn_eps.add((show_name, ep_key))
                         if (show_name, ep_key) not in unraid_eps:
                             missing_by_show[show_name].append(ep_key)
 
         total_missing_eps = sum(len(v) for v in missing_by_show.values())
+
+        # Reverse direction: episodes present on Unraid but absent from Synology
+        extra_by_show = defaultdict(list)
+        for show_name, ep_key in (unraid_eps - syn_eps):
+            extra_by_show[show_name].append(ep_key)
+        total_extra_eps = sum(len(v) for v in extra_by_show.values())
 
         lines.append(f"📺 *HD TV Shows*")
         lines.append(f"Synology: {len(syn_shows):,} shows, {syn_ep_total:,} syncable eps")
@@ -2831,16 +2852,28 @@ def nightly_library_report():
             if len(sorted_shows) > 12:
                 lines.append(f"  … and {len(sorted_shows) - 12} more shows")
 
+        if extra_by_show:
+            lines.append(f"⚠️ {total_extra_eps} extra ep(s) on Unraid (not on Synology) across {len(extra_by_show)} show(s):")
+            sorted_extra = sorted(extra_by_show.items(), key=lambda x: -len(x[1]))
+            for show, eps in sorted_extra[:12]:
+                display = show.split(' {')[0]
+                lines.append(f"  • {display}: {len(eps)} ep(s)")
+            if len(sorted_extra) > 12:
+                lines.append(f"  … and {len(sorted_extra) - 12} more shows")
+
     except Exception as e:
         logger.error(f"Library report: TV section failed: {e}")
         lines.append("📺 *HD TV* — ❌ error fetching data")
 
     body = "\n".join(lines)
-    has_gaps = bool(missing_movies) or bool(missing_by_show)
+    has_gaps = bool(missing_movies) or bool(missing_by_show) or bool(extra_movies) or bool(extra_by_show)
     notify_type = apprise.NotifyType.WARNING if has_gaps else apprise.NotifyType.SUCCESS
 
     send_notification(title="Library Health", body=body, notify_type=notify_type)
-    logger.info(f"Library report: sent — {len(missing_movies)} missing movies, {total_missing_eps} missing TV eps")
+    logger.info(
+        f"Library report: sent — {len(missing_movies)} missing movies, {total_missing_eps} missing TV eps, "
+        f"{len(extra_movies)} extra movies, {total_extra_eps} extra TV eps"
+    )
 
 
 def _dedup_norm_title(title: str) -> str:
