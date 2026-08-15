@@ -175,9 +175,10 @@
     6: ('Low TRaSH Score',     'Catch-all: score below the minimum threshold above.'),
     7: ('Profile Mismatch',    'File format not allowed by quality profile (e.g. Remux when profile says Blu-ray). Forces Radarr to search for the correct format.'),
     8: ('x265 No HDR/DV (1080p)', 'SDR x265 encode at 1080p — search for HDR/DV or a non-x265 1080p release.'),
+    9: ('Release-Group Quality', 'File not from a TRaSH Tier-1 release group for its source (or a known-bad group like BHDStudio). Upgrades toward a top-tier encode. Honors the Report-Only switch below.'),
   } %}
   <div class="settings-grid">
-    {% for t in range(1, 9) %}
+    {% for t in range(1, 10) %}
     {% set desc = tier_descs[t] %}
     <div class="form-group toggle-group">
       <div>
@@ -191,6 +192,16 @@
       </label>
     </div>
     {% endfor %}
+  </div>
+  <div class="form-group toggle-group" style="margin-top:1rem;border-top:1px solid var(--border,#333);padding-top:1rem;">
+    <div>
+      <strong>Tier 9: Report-Only (dry-run)</strong>
+      <small>When ON, Tier 9 records candidates (visible in the queue) but does not trigger searches. Turn OFF to go live. Does not affect Tiers 1–8.</small>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" name="tier9_report_only" {% if tier9_report_only %}checked{% endif %}>
+      <span class="toggle-slider"></span>
+    </label>
   </div>
 </div>
 

@@ -63,11 +63,13 @@ async function saveSettings() {
     if (el) data[name] = el.value.trim();
   });
 
-  // Tier toggles
-  for (let t = 1; t <= 6; t++) {
+  // Tier toggles (1–9; previously stopped at 6, so 7/8 never persisted)
+  for (let t = 1; t <= 9; t++) {
     const el = document.querySelector(`[name="tier_enabled_${t}"]`);
     if (el) data[`tier_enabled_${t}`] = el.checked;
   }
+  const reportOnly = document.querySelector('[name="tier9_report_only"]');
+  if (reportOnly) data['tier9_report_only'] = reportOnly.checked;
 
   // Notification toggles
   document.querySelectorAll('[name^="notify_"]').forEach(el => {

@@ -1162,6 +1162,103 @@ def _build_profile_allowed(inst):
     return result
 
 
+# ── Tier 9: release-group quality (TRaSH release-group tiers) ────────────────
+# A tracked file whose release group is not a TRaSH Tier-1 group for its source family
+# (or is a known-bad group) is a candidate for a same-quality-tier upgrade to a better
+# encode. This is the ONE upgrade class Radarr/Sonarr's own quality-tier logic never
+# catches (same resolution+source, only the group/CF score differs) — see CLAUDE.md
+# "Tier 9". The tier-group lists come straight from each instance's own custom formats
+# so they stay maintained by recyclarr/TRaSH rather than hardcoded here.
+#
+# SOURCE-FAMILY AWARE (important): TRaSH tier CFs are source-specific — "HD Bluray
+# Tier 0X", "WEB Tier 0X", "Remux Tier 0X". A file is assessed only against the tier
+# family matching its own source, and is SKIPPED (not flagged) when that family has no
+# tier CFs on the instance. Sonarr-HD, for example, only carries WEB tiers — without
+# this guard every Bluray-sourced TV episode from a good group would be falsely flagged.
+_group_tier_cache = {}          # inst_name -> {(family, level): [compiled regex]}
+_group_tier_cache_at = {}       # inst_name -> datetime of last load
+_GROUP_TIER_TTL = timedelta(hours=6)
+
+def _load_group_tier_map(inst):
+    inst_name = inst['name']
+    now = datetime.utcnow()
+    cached_at = _group_tier_cache_at.get(inst_name)
+    if cached_at and (now - cached_at) < _GROUP_TIER_TTL and inst_name in _group_tier_cache:
+        return _group_tier_cache[inst_name]
+    tiers = {}
+    for cf in (arr_get(inst, '/customformat') or []):
+        name = cf.get('name', '')
+        m = re.search(r'Tier 0(\d)', name)
+        if not m:
+            continue
+        level = int(m.group(1))
+        low = name.lower()
+        if 'web' in low:
+            family = 'web'
+        elif 'remux' in low:
+            family = 'remux'
+        elif 'bluray' in low:
+            family = 'bluray'
+        else:
+            continue
+        for spec in cf.get('specifications', []):
+            if spec.get('implementation') != 'ReleaseGroupSpecification':
+                continue
+            for f in (spec.get('fields') or []):
+                if f.get('name') == 'value' and isinstance(f.get('value'), str):
+                    try:
+                        tiers.setdefault((family, level), []).append(
+                            re.compile(f['value'], re.IGNORECASE))
+                    except re.error:
+                        pass
+    _group_tier_cache[inst_name] = tiers
+    _group_tier_cache_at[inst_name] = now
+    fams = sorted({k[0] for k in tiers})
+    log.info(f"[{inst_name}] Tier 9: loaded {sum(len(v) for v in tiers.values())} "
+             f"release-group regexes across families {fams}")
+    return tiers
+
+def _source_family(quality_name):
+    """Map a quality name to its TRaSH tier family, or None if it has no tier family."""
+    q = (quality_name or '').lower()
+    if 'remux' in q:
+        return 'remux'
+    if 'web' in q:                       # WEBDL / WEBRip
+        return 'web'
+    if 'bluray' in q or 'brrip' in q or 'bdrip' in q:
+        return 'bluray'
+    return None                          # HDTV / DVD / SDTV / etc — no group-tier concept
+
+def _tier9_candidate(inst, mediafile):
+    """Return a Tier-9 reason if this file should be searched for a better encode, else None.
+    - Remux is always kept (already the best possible video).
+    - Known-bad groups (BHDStudio) are always candidates, overriding TRaSH tiering.
+    - Otherwise assess the group against its source family's tiers: Tier-1 is kept;
+      Tier-2/3 or an unrecognized group is a candidate. Families with no tier CFs on
+      this instance are skipped (can't assess)."""
+    quality = (((mediafile.get('quality') or {}).get('quality') or {}).get('name') or '')
+    if 'remux' in quality.lower():
+        return None
+    group = mediafile.get('releaseGroup') or ''
+    if group and group.lower() in BAD_RELEASE_GROUPS:
+        return 'tier9_known_bad_group'
+    family = _source_family(quality)
+    if family is None:
+        return None
+    tiers = _load_group_tier_map(inst)
+    if not any(fam == family for (fam, _lvl) in tiers):
+        return None                      # no tier CFs for this source family — can't assess
+    for level in (1, 2, 3):
+        for rx in tiers.get((family, level), []):
+            if group and rx.search(group):
+                return None if level == 1 else 'tier9_release_group'
+    return 'tier9_release_group'         # unrecognized / no group in a family we can assess
+
+
+def _tier9_report_only():
+    return get_cfg('tier9_report_only', 'true') == 'true'
+
+
 def _sweep_radarr(inst, budget, trigger, tier_counts):
     inst_name = inst['name']
     movies = arr_get(inst, '/movie') or []
@@ -1180,7 +1277,12 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
     # (e.g. Remux imported via batch sync into a Bluray-only profile)
     quality_profile_allowed = _build_profile_allowed(inst)
 
-    random.shuffle(movies)
+    # Newest-first (Tier 9 rollout preference — Ali): newer titles are far likelier to
+    # have a Tier-1 release available, so the search budget hits the highest-yield items
+    # first and degrades into the old catalog last. Replaces the previous random.shuffle,
+    # whose only purpose was avoiding alphabetical tier-clustering — a year sort satisfies
+    # that too. Titles with no year sort last.
+    movies.sort(key=lambda m: (m.get('year') or 0), reverse=True)
 
     for movie in movies:
         if not budget.can_search(inst_name) and not _is_paused():
@@ -1232,6 +1334,13 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
                 f"{quality_profile_allowed[profile_id]}"
             )
 
+        # Tier 9 (release-group quality) — lowest priority; only becomes the top tier
+        # once T1-T7 have nothing to fix. See _tier9_candidate / CLAUDE.md.
+        if _tier_enabled(9):
+            t9_reason = _tier9_candidate(inst, mfile)
+            if t9_reason:
+                tiers.append((9, t9_reason))
+
         tiers = [(t, r) for (t, r) in tiers if _tier_enabled(t)]
         if not tiers:
             row = _db_get_queue_entry(inst_name, mid, 'movie')
@@ -1271,6 +1380,16 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
 
         _db_upsert_queue(inst_name, mid, 'movie', full_title, score, top_tier, top_reason, 'movie',
                          current_filename=filename)
+
+        # Tier 9 report-only: record the candidate (visible in /queue as pending) and
+        # count it for the sweep summary, but do NOT trigger a search yet. Lets us
+        # validate the candidate set before flipping to live searches. Only gates
+        # tier-9-as-top-tier — a real T1-T7 problem still searches normally.
+        if top_tier == 9 and _tier9_report_only():
+            tier_counts[9] = tier_counts.get(9, 0) + 1
+            log.debug(f"[{inst_name}] Tier 9 candidate (report-only, not searched): {full_title} "
+                      f"grp={mfile.get('releaseGroup') or '-'} — {top_reason}")
+            continue
 
         if _is_paused():
             continue
@@ -1339,7 +1458,8 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
     # in a non-Remux-allowed profile, e.g. WEB-1080p, with nothing to ever correct it).
     quality_profile_allowed = _build_profile_allowed(inst)
 
-    random.shuffle(series_list)
+    # Newest-first (Tier 9 rollout preference — Ali), same rationale as the movie sweep.
+    series_list.sort(key=lambda s: (s.get('year') or 0), reverse=True)
     season_threshold = int(get_cfg('season_threshold', str(SEASON_THRESHOLD)))
 
     # Pre-load series IDs that have stale pending/searching entries — always visit
@@ -1396,6 +1516,14 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
                     f"quality profile mismatch (Tier 7) — file quality ID {file_quality_id} "
                     f"not in profile {profile_id} allowed IDs {quality_profile_allowed[profile_id]}"
                 )
+
+            # Tier 9 (release-group quality) — per-episode; the season aggregation below
+            # takes the min tier, so a season is Tier-9 only when no episode has a
+            # higher-priority problem. Source-family aware — see _tier9_candidate.
+            if _tier_enabled(9):
+                t9_reason = _tier9_candidate(inst, epfile)
+                if t9_reason:
+                    tiers.append((9, t9_reason))
 
             tiers = [(t, r) for (t, r) in tiers if _tier_enabled(t)]
             if not tiers:
@@ -1467,6 +1595,13 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
             _db_upsert_queue(inst_name, composite_id, 'season', title, score,
                              top_tier, top_reason, search_type, snum,
                              current_filename=sdata['fn'])
+
+            # Tier 9 report-only (parity with movies): record + count, don't search.
+            if top_tier == 9 and _tier9_report_only():
+                tier_counts[9] = tier_counts.get(9, 0) + 1
+                log.debug(f"[{inst_name}] Tier 9 candidate (report-only, not searched): "
+                          f"{title} — {top_reason}")
+                continue
 
             if _is_paused():
                 continue
@@ -2206,7 +2341,7 @@ def settings_page():
     }
     tier_enabled = {
         t: get_config(f'tier_enabled_{t}', 'true') == 'true'
-        for t in range(1, 9)
+        for t in range(1, 10)
     }
     instances = get_instances_request()
     backups   = list_backups()
@@ -2219,6 +2354,7 @@ def settings_page():
     return render_template('settings.html',
         paused=paused, cfg=cfg,
         tier_enabled=tier_enabled,
+        tier9_report_only=get_config('tier9_report_only', 'true') == 'true',
         instances=instances,
         backups=backups,
         notify_cfg=notify_cfg,
@@ -2361,10 +2497,13 @@ def api_settings():
     if 'tmdb_api_key' in data:
         set_config('tmdb_api_key', str(data['tmdb_api_key']).strip())
 
-    for t in range(1, 9):
+    for t in range(1, 10):
         k = f'tier_enabled_{t}'
         if k in data:
             set_config(k, 'true' if data[k] else 'false')
+
+    if 'tier9_report_only' in data:
+        set_config('tier9_report_only', 'true' if data['tier9_report_only'] else 'false')
 
     for k in NOTIFY_KEYS:
         if k in data:
