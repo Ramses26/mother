@@ -37,8 +37,13 @@ async function retryAllFailed(btn) {
   btn.textContent = 'Queuing…';
   try {
     const data = await apiFetch('/queue/retry-failed', 'POST');
-    showToast(`${data.count} job(s) queued for retry ✓`, 'success');
-    setTimeout(() => location.reload(), 1500);
+    if (data.count > 0) {
+      showToast(`${data.count} job(s) queued for retry ✓`, 'success');
+    } else {
+      // 0 is not an error — usually every recent failure already recovered on its own.
+      showToast(data.message || 'Nothing to retry.', 'info');
+    }
+    setTimeout(() => location.reload(), 1800);
   } catch (e) {
     showToast(`Error: ${e.message}`, 'error');
     btn.disabled = false;

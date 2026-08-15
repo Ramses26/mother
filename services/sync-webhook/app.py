@@ -4213,9 +4213,14 @@ def get_stats():
         ''')
         current_stats['today_successful'] = cursor.fetchone()[0]
 
+        # Unresolved failures only (see ui_dashboard) — exclude failures a later retry recovered.
         cursor.execute('''
-            SELECT COUNT(*) FROM sync_jobs
-            WHERE status = "failed" AND date(created_at) = date('now')
+            SELECT COUNT(*) FROM sync_jobs f
+            WHERE f.status = "failed" AND date(f.created_at) = date('now')
+            AND NOT EXISTS (
+                SELECT 1 FROM sync_jobs s
+                WHERE s.title = f.title AND s.status = "success" AND s.created_at > f.created_at
+            )
         ''')
         current_stats['today_failed'] = cursor.fetchone()[0]
 
@@ -4619,10 +4624,23 @@ def retry_all_failed():
             LIMIT 500
         ''', (lookback,))
         failed_jobs = [dict(row) for row in cursor.fetchall()]
-        conn.close()
 
         if not failed_jobs:
-            return jsonify({'status': 'no_failed_jobs', 'count': 0})
+            # Distinguish "nothing failed" from "everything already recovered" so the UI
+            # can explain a 0 result instead of looking like a broken button.
+            cursor.execute(f'''
+                SELECT COUNT(*) FROM sync_jobs
+                WHERE status='failed'
+                AND created_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', '{lookback}')
+            ''')
+            recovered = cursor.fetchone()[0]
+            conn.close()
+            if recovered:
+                return jsonify({'status': 'all_recovered', 'count': 0,
+                                'message': f'{recovered} recent failure(s) already recovered on a later retry — nothing to do.'})
+            return jsonify({'status': 'no_failed_jobs', 'count': 0,
+                            'message': 'No failed jobs in the retry window.'})
+        conn.close()
 
         # Deduplicate by title
         seen_titles = set()
@@ -4860,7 +4878,17 @@ def ui_dashboard():
     active_count = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM sync_jobs WHERE status='success' AND date(COALESCE(completed_at, created_at))=date('now')")
     done_today = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM sync_jobs WHERE status='failed' AND date(created_at)=date('now')")
+    # Count only failures that are still UNRESOLVED (no later success for the same title).
+    # A failure that auto-retry/gap-scan later re-synced successfully is not actionable and
+    # must not inflate this card — otherwise the number disagrees with what "Retry Failed" does.
+    cur.execute("""
+        SELECT COUNT(*) FROM sync_jobs f
+        WHERE f.status='failed' AND date(f.created_at)=date('now')
+        AND NOT EXISTS (
+            SELECT 1 FROM sync_jobs s
+            WHERE s.title = f.title AND s.status='success' AND s.created_at > f.created_at
+        )
+    """)
     failed_today = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM sync_jobs WHERE status='success'")
     total_success = cur.fetchone()[0]
