@@ -13,7 +13,13 @@
 # - Unwanted release blockers
 # - Atmos/surround audio bonuses
 # - until_quality set to profile maximum (highest quality tier in each profile)
-# - until_score: -9999 (prevent Radarr CF-score-chasing autonomous searches)
+# - until_score: HD profiles raised off -9999 on 2026-08-14 to enable Upgraderr Tier 9
+#     (release-group quality) — radarr-hd=4300 (tier-1 group + lossless audio),
+#     sonarr-hd=2000 (tier-1 group + typical lossy TV audio). 4K stays -9999.
+#     Radarr won't mass-search on its own (no scheduled cutoff-unmet search); Upgraderr
+#     paces the searches and RSS only opportunistically upgrades recent titles. "new >
+#     current" always holds, so this can never grab a lower-scored release. See CLAUDE.md
+#     Tier 9 + memory tier9_release_group_quality_2026_08_14.
 # - Local CFs: BHDStudio (-50), Bad Container MP4 (-1000) for Radarr only
 #
 # Last Updated: 2026-06-25
@@ -40,7 +46,7 @@ radarr:
         upgrade:
           allowed: true
           until_quality: Bluray-1080p
-          until_score: -9999
+          until_score: 4300
         quality_sort: top
         qualities:
           # Overrides the stock TRaSH template's allowed list to exclude Bluray-720p.
@@ -70,7 +76,7 @@ radarr:
         upgrade:
           allowed: true
           until_quality: Remux-1080p
-          until_score: -9999
+          until_score: 4300
 
     custom_formats:
       # Movie Versions
@@ -347,7 +353,7 @@ sonarr:
         upgrade:
           allowed: true
           until_quality: WEB 1080p
-          until_score: -9999
+          until_score: 2000
         min_format_score: 0
         quality_sort: top
         qualities:
@@ -363,7 +369,7 @@ sonarr:
         upgrade:
           allowed: true
           until_quality: Bluray-1080p
-          until_score: -9999
+          until_score: 2000
         min_format_score: 0
         quality_sort: top
         qualities:
@@ -379,7 +385,7 @@ sonarr:
         upgrade:
           allowed: true
           until_quality: Bluray-1080p Remux
-          until_score: -9999
+          until_score: 2000
         min_format_score: 0
         quality_sort: top
         qualities:
