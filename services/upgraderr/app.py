@@ -559,6 +559,17 @@ def arr_put(inst, path, data, timeout=30):
         log.error(f"[{inst.get('name', '?')}] PUT {path}: {e}")
         return None
 
+def arr_delete(inst, path, params=None, timeout=30):
+    url = f"{inst['url']}/api/v3{path}"
+    try:
+        r = requests.delete(url, headers={'X-Api-Key': inst['api_key']},
+                            params=params, timeout=timeout)
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        log.error(f"[{inst.get('name', '?')}] DELETE {path}: {e}")
+        return False
+
 def test_instance_connection(inst):
     """Test connectivity. Returns (ok: bool, message: str)."""
     if not inst.get('url') or not inst.get('api_key'):
@@ -1229,16 +1240,44 @@ def _source_family(quality_name):
         return 'bluray'
     return None                          # HDTV / DVD / SDTV / etc — no group-tier concept
 
-def _tier9_candidate(inst, mediafile):
+def _remux_below_cutoff_profiles(inst):
+    """Set of profile ids where Remux is allowed but ranked BELOW the cutoff quality —
+    i.e. the profile prefers a Bluray-1080p encode, so a Remux should be replaced (Ali
+    2026-08-15). Profiles whose cutoff IS Remux keep their Remux. Radarr `items` are
+    ordered lowest→highest priority, so 'below cutoff' == earlier index than the cutoff."""
+    out = set()
+    for p in (arr_get(inst, '/qualityprofile') or []):
+        cutoff_id = p.get('cutoff')
+        order = []
+        for item in p.get('items', []):
+            if 'quality' in item:
+                order.append((item['quality']['id'], item['quality']['name'], item.get('allowed')))
+            for sub in item.get('items', []):
+                if 'quality' in sub:
+                    order.append((sub['quality']['id'], sub['quality']['name'], item.get('allowed')))
+        # Find the ALLOWED Remux (e.g. Remux-1080p) — not the first 'remux' string, which
+        # would be a disallowed Remux-2160p sitting lower in the list.
+        remux = next(((qid for qid, name, allowed in order
+                       if 'remux' in name.lower() and allowed)), None)
+        ids = [qid for qid, _n, _a in order]
+        if remux and cutoff_id in ids and remux in ids:
+            # Lowest→highest ordering: Remux BELOW the cutoff means a lower index.
+            if ids.index(remux) < ids.index(cutoff_id):
+                out.add(p['id'])
+    return out
+
+
+def _tier9_candidate(inst, mediafile, remux_below_cutoff=False):
     """Return a Tier-9 reason if this file should be searched for a better encode, else None.
-    - Remux is always kept (already the best possible video).
+    - Remux: kept UNLESS the assigned profile prefers Bluray-1080p over Remux
+      (`remux_below_cutoff`), in which case it's replaced with the best Bluray-1080p encode.
     - Known-bad groups (BHDStudio) are always candidates, overriding TRaSH tiering.
     - Otherwise assess the group against its source family's tiers: Tier-1 is kept;
       Tier-2/3 or an unrecognized group is a candidate. Families with no tier CFs on
       this instance are skipped (can't assess)."""
     quality = (((mediafile.get('quality') or {}).get('quality') or {}).get('name') or '')
     if 'remux' in quality.lower():
-        return None
+        return 'tier9_remux_below_cutoff' if remux_below_cutoff else None
     group = mediafile.get('releaseGroup') or ''
     if group and group.lower() in BAD_RELEASE_GROUPS:
         return 'tier9_known_bad_group'
@@ -1259,6 +1298,282 @@ def _tier9_report_only():
     return get_cfg('tier9_report_only', 'true') == 'true'
 
 
+# ── qBit-first quality upgrades (Tier 9 / Remux→Bluray replacement) ──────────
+# For a movie that needs a better copy, prefer importing a good copy that ALREADY
+# exists in qBittorrent (free — no re-download) over force-grabbing from indexers.
+# Proven live 2026-08-15 (Ice Age Remux→FraMeSToR Bluray). See CLAUDE.md Tier 9.
+#
+# CAUTION: a ManualImport is a slow (~10-15 min) cross-NAS copy — SERIALIZE them
+# (`_manual_import_lock`) and never double-submit. Only import a GOOD copy
+# (tier-1/2/3 group, not known-bad) — importing a scene/BHDStudio Bluray over a
+# Remux is a downgrade.
+_qbit_cache = {'at': None, 'torrents': None}
+_qbit_lock = threading.Lock()
+_manual_import_lock = threading.Lock()   # serialize slow cross-NAS imports
+_QBIT_TTL = timedelta(minutes=30)
+
+def _qbit_session():
+    """Authenticated requests.Session against qBittorrent + its base URL, or (None, None)."""
+    host = os.environ.get('QBITTORRENT_URL', '') or os.environ.get('QBITMANAGE_QBT_HOST', '')
+    if host and not host.startswith('http'):
+        host = 'http://' + host
+    user = os.environ.get('QBITTORRENT_USER', '') or os.environ.get('QBITMANAGE_QBT_USER', '')
+    pw   = os.environ.get('QBITTORRENT_PASS', '') or os.environ.get('QBITMANAGE_QBT_PASS', '')
+    if not host:
+        return None, None
+    s = requests.Session()
+    s.post(f"{host}/api/v2/auth/login", data={'username': user, 'password': pw},
+           headers={'Referer': host}, timeout=15).raise_for_status()
+    return s, host
+
+def _qbit_completed_torrents():
+    """Cached list of completed qBit torrents (30-min TTL). [] on any failure."""
+    with _qbit_lock:
+        now = datetime.utcnow()
+        if _qbit_cache['at'] and (now - _qbit_cache['at']) < _QBIT_TTL:
+            return _qbit_cache['torrents']
+        try:
+            s, host = _qbit_session()
+            if not s:
+                return []
+            r = s.get(f"{host}/api/v2/torrents/info", timeout=40)
+            r.raise_for_status()
+            done = [t for t in r.json() if t.get('progress', 0) >= 1.0]
+            _qbit_cache['at'] = now
+            _qbit_cache['torrents'] = done
+            log.info(f"[qbit-first] cached {len(done)} completed torrents")
+            return done
+        except Exception as e:
+            log.warning(f"[qbit-first] qBit fetch failed: {e}")
+            return []
+
+def _norm(s):
+    return re.sub(r'[^a-z0-9]+', ' ', (s or '').lower()).strip()
+
+def _release_group(name):
+    b = re.sub(r'\.(mkv|mp4|avi|ts|m2ts|wmv|m4v)$', '', name or '', flags=re.I)
+    m = re.search(r'-([A-Za-z0-9]+)$', b)
+    return m.group(1) if m else ''
+
+def _is_good_bluray(inst, name):
+    """True if a release/torrent name is a Bluray-1080p from a tier-1/2/3 group,
+    not known-bad, not a bad container. Used to decide qBit-first eligibility."""
+    nl = (name or '').lower()
+    if '1080p' not in nl or 'remux' in nl:
+        return False
+    if not ('bluray' in nl or 'blu ray' in nl or 'brrip' in nl or 'bdrip' in nl):
+        return False
+    if nl.endswith('.mp4') or nl.endswith('.avi'):
+        return False
+    grp = _release_group(name)
+    if not grp or grp.lower() in BAD_RELEASE_GROUPS:
+        return False
+    tiers = _load_group_tier_map(inst)
+    for lvl in (1, 2, 3):
+        for rx in tiers.get(('bluray', lvl), []):
+            if rx.search(grp):
+                return True
+    return False
+
+def _qbit_find_good_bluray(inst, title, year):
+    """Find a completed qBit torrent that is a GOOD Bluray-1080p for this movie.
+    Returns the torrent dict (with content_path) or None."""
+    tn = _norm(title)
+    words = [w for w in tn.split() if len(w) > 2]
+    yr = str(year or '')
+    best = None
+    for t in _qbit_completed_torrents():
+        n = _norm(t.get('name', ''))
+        if yr and yr not in n:
+            continue
+        if not all(w in n for w in words):
+            continue
+        if _is_good_bluray(inst, t.get('name', '')):
+            # prefer larger (usually better encode/audio) among good candidates
+            if best is None or t.get('size', 0) > best.get('size', 0):
+                best = t
+    return best
+
+def _radarr_manual_import(inst, movie_id, folder, dry_run=False):
+    """Import a file for movie_id from `folder` (a qBit content path) via Radarr
+    ManualImport. Serialized + polled (slow cross-NAS copy). Verifies the swap and
+    removes any duplicate/old movieFile so exactly one file remains. Returns a dict
+    describing the outcome."""
+    # Parse what Radarr sees in that folder
+    try:
+        items = arr_get(inst, '/manualimport',
+                        params={'folder': folder, 'filterExistingFiles': 'false'}) or []
+    except Exception as e:
+        return {'ok': False, 'reason': f'manualimport parse failed: {e}'}
+    vids = [it for it in items if it.get('quality') and (it.get('size', 0) > 50_000_000)]
+    if not vids:
+        return {'ok': False, 'reason': 'no importable video in folder'}
+    it = max(vids, key=lambda x: x.get('size', 0))
+    # Refuse if Radarr flags a real rejection (other than an "already imported" style note)
+    rej = [r.get('reason', '') for r in it.get('rejections', [])]
+    hard = [r for r in rej if 'existing' not in r.lower() and 'already' not in r.lower()]
+    if hard:
+        return {'ok': False, 'reason': f'rejected: {hard}'}
+    if dry_run:
+        return {'ok': True, 'dry_run': True,
+                'quality': it.get('quality', {}).get('quality', {}).get('name'),
+                'path': it.get('path')}
+
+    with _manual_import_lock:      # serialize — cross-NAS copy is slow
+        before = {f['id'] for f in (arr_get(inst, f'/moviefile', params={'movieId': movie_id}) or [])}
+        payload = {'name': 'ManualImport', 'importMode': 'copy', 'files': [{
+            'path': it['path'], 'movieId': movie_id,
+            'quality': it['quality'], 'languages': it.get('languages', [{'id': 1, 'name': 'English'}]),
+        }]}
+        cmd = arr_post(inst, '/command', payload)
+        cmd_id = (cmd or {}).get('id')
+        if not cmd_id:
+            return {'ok': False, 'reason': 'command not accepted'}
+        # Poll to completion (slow copy — allow up to 25 min)
+        deadline = datetime.utcnow() + timedelta(minutes=25)
+        status = 'started'
+        while datetime.utcnow() < deadline:
+            time.sleep(20)
+            try:
+                c = arr_get(inst, f'/command/{cmd_id}')
+                status = (c or {}).get('status')
+                if status in ('completed', 'failed'):
+                    break
+            except Exception:
+                pass
+        # Verify + de-dup. The keeper is a NEWLY-imported Bluray-1080p movieFile. We
+        # only ever delete OTHER (old) records once such a keeper is confirmed in hand —
+        # so a wrong selection can never destroy the good copy. Radarr usually replaces
+        # in place (no leftover), so this is a safety net for the dup case memory notes.
+        files = arr_get(inst, '/moviefile', params={'movieId': movie_id}) or []
+        new_files = [f for f in files if f['id'] not in before]
+        keeper = next((f for f in new_files
+                       if 'Bluray-1080p' in (f.get('quality', {}).get('quality', {}).get('name', '')
+                                             or '')), None)
+        if not keeper:
+            return {'ok': status == 'completed', 'status': status, 'kept': None,
+                    'removed': [], 'note': 'no new Bluray-1080p movieFile detected — left as-is'}
+        removed = []
+        for f in files:
+            if f['id'] != keeper['id']:
+                # Delete the old record AND its file (the Remux we are replacing) — safe
+                # because `keeper` is a verified fresh Bluray-1080p.
+                if arr_delete(inst, f'/moviefile/{f["id"]}', params={'deleteFiles': 'true'}):
+                    removed.append(f['id'])
+        return {'ok': True, 'status': status, 'kept': keeper['id'], 'removed': removed,
+                'quality': keeper.get('quality', {}).get('quality', {}).get('name')}
+
+
+def _radarr_force_grab(inst, movie_id, want_bluray_1080p=False, min_over_current=True, dry_run=False):
+    """Interactive-search a movie and grab the single best GRABBABLE release by
+    Radarr's own CF score. If want_bluray_1080p, restrict to Bluray-1080p (for
+    Remux→encode replacement, where a Remux would otherwise out-score it). Returns
+    a dict describing the pick. Radarr's grab hierarchy is Quality→CF score, and
+    `POST /release` auto-imports (proven clean live)."""
+    rel = arr_get(inst, '/release', params={'movieId': movie_id}, timeout=120) or []
+    cur_score = None
+    mv = arr_get(inst, f'/movie/{movie_id}')
+    if mv and mv.get('movieFile'):
+        cur_score = mv['movieFile'].get('customFormatScore')
+    cands = []
+    for r in rel:
+        if r.get('rejections'):
+            continue
+        qn = r.get('quality', {}).get('quality', {}).get('name', '')
+        if want_bluray_1080p:
+            if 'Bluray-1080p' not in qn:
+                continue
+        elif '1080p' not in qn:
+            continue
+        grp = (r.get('releaseGroup') or '').lower()
+        if grp in BAD_RELEASE_GROUPS:
+            continue
+        cands.append(r)
+    if not cands:
+        return {'ok': False, 'reason': 'no grabbable candidate'}
+    cands.sort(key=lambda r: r.get('customFormatScore', 0), reverse=True)
+    best = cands[0]
+    if dry_run:
+        return {'ok': True, 'dry_run': True, 'group': best.get('releaseGroup'),
+                'score': best.get('customFormatScore'),
+                'quality': best.get('quality', {}).get('quality', {}).get('name'),
+                'indexer': best.get('indexer')}
+    resp = arr_post(inst, '/release', {'guid': best['guid'], 'indexerId': best['indexerId']})
+    return {'ok': bool(resp), 'group': best.get('releaseGroup'),
+            'score': best.get('customFormatScore'),
+            'quality': best.get('quality', {}).get('quality', {}).get('name'),
+            'indexer': best.get('indexer')}
+
+
+def run_remux_qbit_backlog(dry_run=True, limit=None, do_force_grab=False):
+    """One-time backlog fixer: replace profile-7 Remux with a good Bluray-1080p.
+    Prefers a good copy already in qBit (free ManualImport); optionally force-grabs
+    from indexers when qBit has none (do_force_grab). Dry-run by default. Imports
+    are SERIALIZED and slow — call with a small `limit` and re-run.
+
+    Unraid propagation is handled downstream by sync-webhook's nightly movie version
+    reconcile (Profile Authority: Radarr's new Bluray is synced over Unraid's Remux).
+    For a large batch, bump VERSION_SYNC_MAX_PER_RUN on sync-webhook first."""
+    insts = get_instances_from_db()
+    inst = None
+    for name, i in insts.items():
+        if name == 'radarr-hd':
+            i['name'] = name; inst = i; break
+    if not inst:
+        return {'error': 'radarr-hd instance not found'}
+    movies = arr_get(inst, '/movie') or []
+    remux = [m for m in movies
+             if m.get('qualityProfileId') == 7 and m.get('movieFile')
+             and 'remux' in (m['movieFile'].get('quality', {}).get('quality', {}).get('name', '') or '').lower()]
+    out = {'total_remux': len(remux), 'from_qbit': [], 'force_grab': [], 'no_source': [], 'errors': []}
+    done = 0
+    for m in remux:
+        if limit and done >= limit:
+            break
+        title, year, mid = m['title'], m.get('year'), m['id']
+        tor = _qbit_find_good_bluray(inst, title, year)
+        if tor:
+            # Pass content_path AS-IS. Radarr's manualimport?folder= accepts a file
+            # path (single-file torrent) or a directory (multi-file) equally — proven
+            # live. Do NOT strip to the parent dir: single-file torrents live directly
+            # in a shared category/cross-seed folder, so the parent points at hundreds
+            # of unrelated movies and Radarr grabs the wrong file.
+            folder = tor.get('content_path') or tor.get('save_path')
+            res = _radarr_manual_import(inst, mid, folder, dry_run=dry_run)
+            entry = {'title': title, 'year': year, 'qbit': tor.get('name'), 'result': res}
+            (out['from_qbit'] if res.get('ok') else out['errors']).append(entry)
+            done += 1
+            if not dry_run:
+                log.info(f"[remux-backlog] qBit import {title} ({year}): {res}")
+        elif do_force_grab:
+            res = _radarr_force_grab(inst, mid, want_bluray_1080p=True, dry_run=dry_run)
+            entry = {'title': title, 'year': year, 'result': res}
+            (out['force_grab'] if res.get('ok') else out['no_source']).append(entry)
+            done += 1
+            if not dry_run:
+                log.info(f"[remux-backlog] force-grab {title} ({year}): {res}")
+        else:
+            out['no_source'].append({'title': title, 'year': year, 'reason': 'no good qBit copy'})
+    out['processed'] = done
+    return out
+
+
+@app.route('/api/qbit-remux-backlog', methods=['POST'])
+def api_qbit_remux_backlog():
+    if not _service_or_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+    dry = request.args.get('dry_run', 'true').lower() != 'false'
+    limit = request.args.get('limit', type=int)
+    force = request.args.get('force_grab', 'false').lower() == 'true'
+    # Run in a background thread (imports are slow); return immediately for live runs.
+    if dry:
+        return jsonify(run_remux_qbit_backlog(dry_run=True, limit=limit, do_force_grab=force))
+    threading.Thread(target=run_remux_qbit_backlog,
+                     kwargs={'dry_run': False, 'limit': limit, 'do_force_grab': force},
+                     daemon=True).start()
+    return jsonify({'status': 'started', 'note': 'live backlog run started in background (slow, serialized)'})
+
+
 def _sweep_radarr(inst, budget, trigger, tier_counts):
     inst_name = inst['name']
     movies = arr_get(inst, '/movie') or []
@@ -1276,6 +1591,8 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
     # Quality profile map — used to detect files with quality not allowed by their profile
     # (e.g. Remux imported via batch sync into a Bluray-only profile)
     quality_profile_allowed = _build_profile_allowed(inst)
+    # Profiles that prefer Bluray-1080p over Remux — their Remux files get replaced (Ali 2026-08-15)
+    remux_replace_profiles = _remux_below_cutoff_profiles(inst)
 
     # Newest-first (Tier 9 rollout preference — Ali): newer titles are far likelier to
     # have a Tier-1 release available, so the search budget hits the highest-yield items
@@ -1337,7 +1654,8 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
         # Tier 9 (release-group quality) — lowest priority; only becomes the top tier
         # once T1-T7 have nothing to fix. See _tier9_candidate / CLAUDE.md.
         if _tier_enabled(9):
-            t9_reason = _tier9_candidate(inst, mfile)
+            t9_reason = _tier9_candidate(inst, mfile,
+                                         remux_below_cutoff=(profile_id in remux_replace_profiles))
             if t9_reason:
                 tiers.append((9, t9_reason))
 
@@ -1368,12 +1686,27 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
 
         row = _db_get_queue_entry(inst_name, mid, 'movie')
         if row and row['status'] == 'found':
-            if top_reason != 'tier5_audio' or not _tier5_recheck_due(row):
+            if top_tier == 9:
+                # Found-pollution guard (2026-08-15): an unrelated import (RSS/webhook)
+                # marked this row 'found', but the CURRENT file is STILL a Tier 9 candidate
+                # (sub-tier-1 group or Remux-below-cutoff) — the upgrade never happened.
+                # Reopen and clear cooldown so the force-grab runs. Without this, one RSS
+                # grab freezes the row forever (the bug that stuck V for Vendetta).
+                db = get_db()
+                with _db_lock:
+                    db.execute("UPDATE upgrade_queue SET status='pending', cooldown_until=NULL "
+                               "WHERE instance=? AND media_id=? AND media_type='movie'",
+                               (inst_name, mid))
+                    db.commit()
+                row = _db_get_queue_entry(inst_name, mid, 'movie')
+                log.info(f"[{inst_name}] {full_title}: reopened stale Tier 9 'found' row ({top_reason})")
+            elif top_reason == 'tier5_audio' and _tier5_recheck_due(row):
+                log.info(f"[{inst_name}] {full_title}: tier5_audio long-interval recheck "
+                         f"(recheck #{(row['recheck_count'] or 0) + 1})")
+                _db_rearm_tier5(inst_name, mid, 'movie')
+                row = _db_get_queue_entry(inst_name, mid, 'movie')
+            else:
                 continue
-            log.info(f"[{inst_name}] {full_title}: tier5_audio long-interval recheck "
-                     f"(recheck #{(row['recheck_count'] or 0) + 1})")
-            _db_rearm_tier5(inst_name, mid, 'movie')
-            row = _db_get_queue_entry(inst_name, mid, 'movie')
         if row and row['cooldown_until']:
             if datetime.utcnow().isoformat() < row['cooldown_until']:
                 continue
@@ -1392,6 +1725,36 @@ def _sweep_radarr(inst, budget, trigger, tier_counts):
             continue
 
         if _is_paused():
+            continue
+
+        # Tier 9 (release-group / Remux-below-cutoff): FORCE-GRAB the best release
+        # deterministically — Upgraderr picks the highest-CF grabbable release itself
+        # rather than relying on Radarr's grab heuristics (fixes "grabbed a worse copy
+        # than was available"). For a Remux replacement, restrict to Bluray-1080p since
+        # a Remux would out-score any encode on the CF axis. See CLAUDE.md Tier 9.
+        if top_tier == 9:
+            remux_replace = top_reason == 'tier9_remux_below_cutoff'
+            # Don't re-download a Remux replacement if a good Bluray-1080p already sits
+            # in qBit — defer it to the qBit-first backlog job (free import, no download).
+            if remux_replace and _qbit_find_good_bluray(inst, title, year):
+                log.debug(f"[{inst_name}] {full_title}: good Bluray in qBit — deferring to qbit-remux-backlog")
+                continue
+            fg = _radarr_force_grab(inst, mid, want_bluray_1080p=remux_replace)
+            search_count = (row['search_count'] if row else 0) + 1
+            cooldown_until = (datetime.utcnow()
+                              + timedelta(hours=_adaptive_cooldown(search_count))).isoformat()
+            _db_mark_searching(inst_name, mid, 'movie', search_count, cooldown_until)
+            if fg.get('ok'):
+                budget.record(inst_name)
+                tier_counts[9] = tier_counts.get(9, 0) + 1
+                _db_log_search(inst_name, full_title, trigger, 'triggered', 9, 'movie')
+                _db_increment_daily(searches=1)
+                log.info(f"[{inst_name}] Tier 9 force-grab {full_title}: {fg.get('group')} "
+                         f"CF={fg.get('score')} [{fg.get('quality')}] via {fg.get('indexer')}")
+            else:
+                if search_count >= NO_SOURCE_TAG_THRESHOLD:
+                    _tag_no_source(inst, 'movie', mid)
+                _db_log_search(inst_name, full_title, trigger, 'no_source', 9, 'movie')
             continue
 
         jitter = random.randint(0, min(JITTER_MAX, 10))

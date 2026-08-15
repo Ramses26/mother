@@ -46,7 +46,7 @@ radarr:
         upgrade:
           allowed: true
           until_quality: Bluray-1080p
-          until_score: 4300
+          until_score: 5600
         quality_sort: top
         qualities:
           # Overrides the stock TRaSH template's allowed list to exclude Bluray-720p.
@@ -76,7 +76,7 @@ radarr:
         upgrade:
           allowed: true
           until_quality: Remux-1080p
-          until_score: 4300
+          until_score: 5600
 
     custom_formats:
       # Movie Versions
