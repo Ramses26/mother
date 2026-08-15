@@ -1399,15 +1399,23 @@ def _radarr_manual_import(inst, movie_id, folder, dry_run=False):
     ManualImport. Serialized + polled (slow cross-NAS copy). Verifies the swap and
     removes any duplicate/old movieFile so exactly one file remains. Returns a dict
     describing the outcome."""
-    # Parse what Radarr sees in that folder
-    try:
-        items = arr_get(inst, '/manualimport',
-                        params={'folder': folder, 'filterExistingFiles': 'false'}) or []
-    except Exception as e:
-        return {'ok': False, 'reason': f'manualimport parse failed: {e}'}
-    vids = [it for it in items if it.get('quality') and (it.get('size', 0) > 50_000_000)]
+    # Parse what Radarr sees in that folder. Radarr can transiently return an empty
+    # list when it is mid-import of a previous item (observed live in the backlog:
+    # Insomnia/Harley failed while Gravity was still copying, then parsed fine after).
+    # Retry a couple times with a short back-off before giving up.
+    vids = []
+    for attempt in range(3):
+        try:
+            items = arr_get(inst, '/manualimport',
+                            params={'folder': folder, 'filterExistingFiles': 'false'}) or []
+        except Exception:
+            items = []
+        vids = [it for it in items if it.get('quality') and (it.get('size', 0) > 50_000_000)]
+        if vids:
+            break
+        time.sleep(8)
     if not vids:
-        return {'ok': False, 'reason': 'no importable video in folder'}
+        return {'ok': False, 'reason': 'no importable video in folder (after retries)'}
     it = max(vids, key=lambda x: x.get('size', 0))
     # Refuse if Radarr flags a real rejection (other than an "already imported" style note)
     rej = [r.get('reason', '') for r in it.get('rejections', [])]
