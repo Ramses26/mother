@@ -2003,6 +2003,29 @@ def _should_sync_tv_episode(filename: str) -> bool:
     return True
 
 
+# Multi-episode-aware key extraction. The old single 'S(\d+)E(\d+)' regex registered only
+# the FIRST episode of a dual/multi file (e.g. 'S01E01-E02' -> S01E01 only), which caused:
+#  (a) false "extra on Unraid" reports — a leftover single 'S01E02' file looked missing from
+#      Synology when Synology actually held that episode inside a 'S01E01-E02' dual file, and
+#  (b) those stale single-episode files never getting cleaned, since the reconcile never
+#      matched the dual's second episode against them.
+# See Ariel (2024) / The Office (US) investigation 2026-08-16.
+_EP_RANGE_RE = re.compile(r'S(\d{1,2})E(\d{1,4})(?:[-\s]*E(\d{1,4}))?', re.IGNORECASE)
+
+def _episode_keys(fname):
+    """Set of S##E#### keys a filename covers, expanding 'S01E01-E02' -> {S01E0001, S01E0002}."""
+    keys = set()
+    for m in _EP_RANGE_RE.finditer(fname or ''):
+        s = int(m.group(1))
+        e1 = int(m.group(2))
+        e2 = int(m.group(3)) if m.group(3) else e1
+        if e2 < e1 or e2 - e1 > 30:      # guard against garbage/absurd ranges
+            e2 = e1
+        for e in range(e1, e2 + 1):
+            keys.add(f"S{s:02d}E{e:04d}")
+    return keys
+
+
 def scan_tv_gaps():
     """
     Nightly TV gap scanner — runs at 03:00 UTC.
@@ -2045,9 +2068,7 @@ def scan_tv_gaps():
             continue
         show_folder = parts[5]  # index 5 under /mnt/user/Media/TV Shows/
         fname = parts[-1]
-        m = ep_re.search(fname)
-        if m:
-            ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
+        for ep_key in _episode_keys(fname):
             unraid_eps.add((show_folder, ep_key))
 
     skip_names = {'#recycle', '@eaDir', '.DS_Store', '.lnk', '.txt'}
@@ -2071,11 +2092,13 @@ def scan_tv_gaps():
                 # parity between Synology and Unraid regardless of quality tier. Every
                 # Synology episode syncs to Unraid now, not just ones passing the old
                 # 720p/x265-no-HDR gate. See CLAUDE.md Sync Strategy section.
-                m = ep_re.search(fname)
-                if not m:
+                ep_keys = _episode_keys(fname)
+                if not ep_keys:
                     continue
-                ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
-                if (show_name, ep_key) not in unraid_eps:
+                # Multi-episode aware: queue the file once if ANY of the episodes it covers
+                # is missing from Unraid (a single 'S01E01-E02' file supplies both).
+                if any((show_name, ek) not in unraid_eps for ek in ep_keys):
+                    ep_key = sorted(ep_keys)[0]
                     to_queue.append((f_entry.path, show_name, ep_key))
 
     if not to_queue:
@@ -2217,14 +2240,13 @@ def reconcile_tv_versions():
             continue
         show_folder = parts[5]
         fname = parts[-1]
-        m = ep_re.search(fname)
-        if not m:
-            continue
-        ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
-        key = (show_folder, ep_key)
         size = item.get('size_bytes', 0)
-        if key not in unraid_ep_files or size > unraid_ep_files[key][2]:
-            unraid_ep_files[key] = (fname, path, size)
+        # Multi-episode aware: a dual 'S01E01-E02' file registers as BOTH E01 and E02, so a
+        # matching Synology dual won't be seen as a mismatch and stale singles don't win.
+        for ep_key in _episode_keys(fname):
+            key = (show_folder, ep_key)
+            if key not in unraid_ep_files or size > unraid_ep_files[key][2]:
+                unraid_ep_files[key] = (fname, path, size)
 
     skip_names = {'#recycle', '@eaDir', '.DS_Store', '.lnk', '.txt'}
     video_exts = ('.mkv', '.mp4', '.avi', '.ts', '.m4v')
@@ -2246,10 +2268,11 @@ def reconcile_tv_versions():
                 # Quality filter removed 2026-07-25 -- see scan_tv_gaps' matching comment.
                 # Absolute parity: Synology's file always wins on mismatch regardless of
                 # tier, even if it's itself 720p/x265-no-HDR.
-                m = ep_re.search(fname)
-                if not m:
+                ep_keys = _episode_keys(fname)
+                if not ep_keys:
                     continue
-                ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
+                # Compare the file once, keyed on its first episode (a dual matches a dual).
+                ep_key = sorted(ep_keys)[0]
                 key = (show_name, ep_key)
 
                 if key not in unraid_ep_files:
@@ -2789,9 +2812,7 @@ def nightly_library_report():
             show_folder = parts[5]
             unraid_shows.add(show_folder)
             fname = parts[-1]
-            m = ep_re.search(fname)
-            if m:
-                ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
+            for ep_key in _episode_keys(fname):
                 unraid_eps.add((show_folder, ep_key))
 
         # Scan Synology TV — build (show, ep_key) set and per-show counts
@@ -2818,14 +2839,14 @@ def nightly_library_report():
                         # Quality filter removed 2026-07-25 to match the gap scanner/reconcile
                         # policy change -- this health report's "missing" count should reflect
                         # the same absolute-parity definition those jobs now sync against.
-                        m = ep_re.search(fname)
-                        if not m:
+                        ep_keys = _episode_keys(fname)
+                        if not ep_keys:
                             continue
                         syn_ep_total += 1
-                        ep_key = f"S{int(m.group(1)):02d}E{int(m.group(2)):04d}"
-                        syn_eps.add((show_name, ep_key))
-                        if (show_name, ep_key) not in unraid_eps:
-                            missing_by_show[show_name].append(ep_key)
+                        for ep_key in ep_keys:
+                            syn_eps.add((show_name, ep_key))
+                            if (show_name, ep_key) not in unraid_eps:
+                                missing_by_show[show_name].append(ep_key)
 
         total_missing_eps = sum(len(v) for v in missing_by_show.values())
 
