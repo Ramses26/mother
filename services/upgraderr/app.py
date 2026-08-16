@@ -1406,8 +1406,11 @@ def _radarr_manual_import(inst, movie_id, folder, dry_run=False):
     vids = []
     for attempt in range(3):
         try:
+            # Long timeout — Radarr's manualimport scan is slow when it is busy importing
+            # (the 30s default timed out under load; see slow-down note in CLAUDE.md).
             items = arr_get(inst, '/manualimport',
-                            params={'folder': folder, 'filterExistingFiles': 'false'}) or []
+                            params={'folder': folder, 'filterExistingFiles': 'false'},
+                            timeout=120) or []
         except Exception:
             items = []
         vids = [it for it in items if it.get('quality') and (it.get('size', 0) > 50_000_000)]
