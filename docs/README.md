@@ -10,8 +10,12 @@ Project Mother is a media management and synchronization system consolidating tw
 
 | Document | Description |
 |----------|-------------|
+| [Architecture & Environment](ARCHITECTURE.md) | **Start here** — the two locations, every host, the Synology devices, and the cross-device import gotcha |
+| [Download Pipeline](DOWNLOAD_PIPELINE.md) | How a release flows: indexer → qBittorrent → import → Synology; qbitmanage, cross-seed, RSS vs Upgraderr |
+| [Quality Upgrades](QUALITY_UPGRADES.md) | Force-grab, qBit-first, Remux→Bluray, the 9 tiers — getting the best copy of everything |
+| [Profile Authority](PROFILE_AUTHORITY.md) | The #1 cross-cutting rule — assigned profile wins over raw score, everywhere |
+| [Service Reference](SERVICES.md) | Every container, its port, and how they fit together |
 | [Operations Guide](OPERATIONS.md) | Day-to-day operations, monitoring, troubleshooting |
-| [Quality Upgrades](QUALITY_UPGRADES.md) | **Force-grab, qBit-first, Remux→Bluray, Tier 9 — getting the best copy of everything** |
 | [Workflow Diagrams](WORKFLOW.md) | Full system data flow, Upgraderr pipeline, network topology |
 | [Sync Guide](SYNC_GUIDE.md) | Sync strategy, what is and is NOT synced, sentinel files |
 | [Curatorr Guide](CURATORR.md) | Curatorr navigation, scoring, sync status, duplicates, rules, deletion |
@@ -83,7 +87,7 @@ Classifies all media into **9 tiers** and acts on the highest-priority problem:
 | 1 | m2ts/BDMV raw disc → encode | Highest |
 | 2 | Non-MKV container → MKV | |
 | 3 | 720p/SD → 1080p | |
-| 4 | WEB-DL + TMDB BluRay ≥90 days available | |
+| 4 | WEB-DL + TMDB BluRay ≥7 days available | |
 | 5 | No surround audio → Atmos/DTS-HD | |
 | 6 | Low TRaSH score | |
 | 7 | Quality profile mismatch (Radarr won't search; Upgraderr forces it) | |

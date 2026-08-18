@@ -22,7 +22,7 @@ highest-priority problem it finds. Tiers 8 and 9 were added in July–August 202
 | 1 | m2ts/BDMV raw disc | Search for an encode |
 | 2 | Non-MKV container (mp4/avi/…) | Search for MKV |
 | 3 | 720p / SD | Search for 1080p |
-| 4 | WEB-DL where a physical BluRay is ≥90 days old (TMDB) | Search for BluRay |
+| 4 | WEB-DL where a physical BluRay is ≥7 days old (TMDB) | Search for BluRay |
 | 5 | No surround audio | Search for Atmos/DTS-HD |
 | 6 | Low absolute TRaSH score | Search |
 | 7 | Quality not allowed by the assigned profile | Force a search (Profile Authority) |
@@ -44,7 +44,7 @@ whether a Blu-ray actually *exists* first, via TMDB:
 
 1. Query `GET /movie/{tmdb_id}/release_dates`.
 2. Scan every country for **release type 5 = Physical** (Blu-ray/DVD); take the **earliest** date.
-3. Fire Tier 4 only once that physical date is **≥ `UPGRADERR_BLURAY_WAIT_DAYS` (90) days old**
+3. Fire Tier 4 only once that physical date is **≥ `UPGRADERR_BLURAY_WAIT_DAYS` (7) days old**
    — a deliberate buffer so a rip has had time to appear on the indexers.
 4. If TMDB shows releases but **no** physical date, the title is flagged **streaming-only** and
    Tier 4 is skipped (nothing to chase — e.g. a Netflix-exclusive).
