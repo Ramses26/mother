@@ -33,6 +33,43 @@ Tiers 1–8 trigger a normal Radarr/Sonarr search. **Tier 9 uses force-grab** (b
 
 ---
 
+## How the non-obvious tiers decide
+
+Most tiers are read straight from the filename (resolution, container, codec, audio). Three
+are worth understanding because they reach outside the file:
+
+### Tier 4 — "is the Blu-ray out yet?" (TMDB)
+Upgraderr does **not** blindly assume a WEB-DL movie can be upgraded to Blu-ray — it checks
+whether a Blu-ray actually *exists* first, via TMDB:
+
+1. Query `GET /movie/{tmdb_id}/release_dates`.
+2. Scan every country for **release type 5 = Physical** (Blu-ray/DVD); take the **earliest** date.
+3. Fire Tier 4 only once that physical date is **≥ `UPGRADERR_BLURAY_WAIT_DAYS` (90) days old**
+   — a deliberate buffer so a rip has had time to appear on the indexers.
+4. If TMDB shows releases but **no** physical date, the title is flagged **streaming-only** and
+   Tier 4 is skipped (nothing to chase — e.g. a Netflix-exclusive).
+
+Results are cached 7 days (`tmdb_cache` table), and a **nightly TMDB scan at 02:30 UTC**
+pre-caches eligibility so the sweep doesn't hammer the API. Requires `TMDB_API_KEY`;
+tunable via `UPGRADERR_BLURAY_WAIT_DAYS`.
+
+> A Blu-ray *scheduled in the future* won't trigger (its age is negative), so Upgraderr never
+> wastes searches hunting a release that isn't out.
+
+### Tier 7 — Profile Authority
+Fires when a file's quality **isn't in its assigned profile's allowed list** — *regardless of
+whether the current file is objectively "better."* A Remux sitting in a Bluray-only profile is
+wrong for that profile and gets replaced. The assigned profile is the source of truth, always.
+Radarr/Sonarr won't self-search these (`cutoffNotMet=false`), so Upgraderr forces it. Covers
+both Radarr and Sonarr.
+
+### Tier 8 — x265 without HDR
+1080p **x265/HEVC without HDR or Dolby Vision** is undesirable (the whole point of x265 is the
+HDR). Tier 3 (720p) and Tier 6 (absolute score) both miss this class, so Tier 8 catches it
+explicitly and searches for an HDR or non-x265 1080p release.
+
+---
+
 ## Force-Grab — Upgraderr picks the release, not Radarr
 
 **The problem it solves:** Radarr's RSS/search grabs the *best release currently in the
