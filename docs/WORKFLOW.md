@@ -1,5 +1,8 @@
 # Project Mother — System Workflow Diagram
-*Last Updated: 2026-06-18*
+*Last Updated: 2026-08-18*
+
+> See also: [Architecture](ARCHITECTURE.md) · [Download Pipeline](DOWNLOAD_PIPELINE.md) ·
+> [Quality Upgrades](QUALITY_UPGRADES.md) · [Profile Authority](PROFILE_AUTHORITY.md)
 
 ---
 
@@ -29,20 +32,18 @@
                            │ fires webhook   │         │ Scans all *arr   │
                            │ on import       │         │ instances        │
                            │                 │         │                  │
-                           │ Jobs queued in  │         │ 6 Tiers:         │
+                           │ Jobs queued in  │         │ 9 Tiers:         │
                            │ SQLite. rsync   │         │ T1 m2ts          │
                            │ over VPN.       │         │ T2 non-MKV       │
-                           │ Auto-retry ×20  │         │ T3 720p/SD ←NOW  │
-                           │                 │         │ T4 BluRay avail  │
+                           │ Auto-retry ×20  │         │ T3 720p/SD       │
+                           │ Multi-ep aware  │         │ T4 BluRay avail  │
                            └────────┬────────┘         │ T5 no surround   │
                                     │                  │ T6 low score     │
-                                    │                  │                  │
-                                    │                  │ Triggers search  │
-                                    │                  │ in *arr. After   │
-                                    │                  │ 2 failed tries → │
-                                    │                  │ fallback sync    │
-                                    │                  │ (sync 720p now,  │
-                                    │                  │ upgrade later)   │
+                                    │                  │ T7 profile mism. │
+                                    │                  │ T8 x265 no-HDR   │
+                                    │                  │ T9 best-release  │
+                                    │                  │   (FORCE-GRAB +  │
+                                    │                  │    qBit-first)   │
                                     │                  └─────────┬────────┘
                                     │                            │ (webhook fires
                                     │                            │  on upgrade)
@@ -71,43 +72,34 @@
 
 ## Upgraderr Quality Pipeline
 
-```
-Every 30 minutes:
-┌──────────────────────────────────────────────────────────────┐
-│                     UPGRADERR SWEEP                          │
-│                                                              │
-│  Query all 4 *arr instances → classify each file by tier     │
-│                                                              │
-│  ┌──────┐  ┌──────┐  ┌──────┐  ┌──────┐  ┌──────┐  ┌─────┐  ┌──────┐│
-│  │ T1   │  │ T2   │  │ T3   │  │ T4   │  │ T5   │  │ T6  │  │ T7   ││
-│  │m2ts  │  │non   │  │720p  │  │BluRay│  │no    │  │low  │  │prof. ││
-│  │      │  │MKV   │  │SD    │  │avail │  │surr. │  │score│  │mis-  ││
-│  │      │  │      │  │      │  │      │  │      │  │     │  │match ││
-│  └──┬───┘  └──┬───┘  └──┬───┘  └──┬───┘  └──┬───┘  └──┬──┘  └──┬───┘│
-│     └─────────┴──────────┴─────────┴──────────┴─────────┴─────────┘   │
-│                           │                                   │
-│              Budget: 5 searches/instance/sweep                │
-│              (random order within tier)                       │
-│                           │                                   │
-│              ┌────────────▼───────────────┐                  │
-│              │  Send MoviesSearch or       │                  │
-│              │  EpisodeSearch API call     │                  │
-│              │  to Radarr/Sonarr           │                  │
-│              └────────────┬───────────────┘                  │
-│                           │                                   │
-│              ┌────────────▼───────────────┐                  │
-│              │  search_count >= 2 AND      │                  │
-│              │  tier == 3 (720p)?          │                  │
-│              │                             │                  │
-│              │  YES → trigger fallback     │                  │
-│              │  sync: POST /sync/manual    │                  │
-│              │  (sync current 720p to Ali) │                  │
-│              └─────────────────────────────┘                  │
-└──────────────────────────────────────────────────────────────┘
+Full detail in **[Quality Upgrades](QUALITY_UPGRADES.md)**. Summary of the every-30-min sweep:
 
-  Radarr/Sonarr grabs upgrade → fires webhook → sync-webhook
-  syncs new file → Upgraderr /webhook/radarr records before/after
 ```
+Query all 4 *arr instances → classify each file into the highest-priority tier (1–9)
+        │
+        │  Budget: 2 searches/instance, 3 global per sweep  (deliberately slow —
+        │          the cross-device import copy is the bottleneck, not the download)
+        ▼
+   ┌───────────────────────────────┬────────────────────────────────────────┐
+   │  Tiers 1–8                     │  Tier 9 (best-release / Remux→Bluray)    │
+   │  → MoviesSearch/EpisodeSearch  │  → FORCE-GRAB the highest-CF release      │
+   │    (Radarr/Sonarr picks)       │    Upgraderr picks the exact release;     │
+   │                                │    qBit-FIRST imports an existing good    │
+   │                                │    copy for free when one exists          │
+   └───────────────────────────────┴────────────────────────────────────────┘
+        │
+        ▼
+   Radarr/Sonarr import (cross-device copy) → webhook → sync-webhook mirrors to Unraid
+   → Upgraderr /webhook records before/after and flags bad imports (_flag_if_bad_import)
+```
+
+Key points that changed in Aug 2026:
+- **9 tiers** (added T8 x265-no-HDR, T9 release-group quality).
+- **Tier 9 force-grabs** the genuinely-best release instead of a search-and-hope — because
+  RSS/normal search only grabs best-*in-feed*, not best-*available*.
+- **qBit-first** imports an existing good copy from qBittorrent instead of re-downloading.
+- **Pace cut to 2/3** and **`until_score` raised to 5600** (radarr-hd) so upgrades can climb to
+  the best releases. RSS = speed, Upgraderr = quality.
 
 ---
 
@@ -139,8 +131,9 @@ recyclarr.yml (configs/recyclarr/recyclarr.yml)
 │  ├── Bluray-2160p       cutoff=Bluray-2160p             │
 │  └── Remux-2160p        cutoff=Bluray-2160p Remux       │
 │                                                         │
-│  Key: until_score = -9999 on all profiles               │
-│  (prevents autonomous CF-score-chasing searches)        │
+│  until_score: radarr-hd profiles 7 & 8 = 5600 (lets      │
+│  upgrades reach the best releases); 4K + Sonarr vary.    │
+│  See Quality Upgrades → Pacing.                          │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -202,10 +195,17 @@ Chris's Location (10.0.0.0/23)              Ali's Location (192.168.1.0/24)
 
 ## What Is and Is NOT Synced
 
+**Since 2026-07-25 — absolute parity:** *every* Synology file syncs to Unraid regardless of
+quality tier. The old 720p / x265-no-HDR sync exclusions are **gone** — Upgraderr upgrades those
+independently, but Unraid mirrors whatever Synology currently has in the meantime.
+
 | Content | Synced? | Reason |
 |---|---|---|
 | 1080p movies/TV | ✅ Yes | Primary target |
 | 4K movies/TV | ✅ Yes | Separate sync pass |
 | 1080p x265 with DV/HDR | ✅ Yes | HDR justifies x265 |
-| **720p / SD** | ❌ No | Upgraderr handles upgrade on Chris's side first |
-| **x265 without HDR/DV** | ❌ No | Recyclarr blocks; Upgraderr finds proper source |
+| 720p / SD | ✅ Yes (since 2026-07-25) | Absolute parity; Upgraderr still searches for a better source |
+| x265 without HDR/DV | ✅ Yes (since 2026-07-25) | Absolute parity; recyclarr still blocks it at grab-time, Upgraderr Tier 8 upgrades it |
+
+> Note on direction: Synology remains authoritative and protected. The reverse direction
+> (Unraid→Synology) still refuses to push a quality-excluded Unraid file up to Synology.

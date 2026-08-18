@@ -1,6 +1,6 @@
 # Project Mother — Operations Guide
 
-**Last Updated**: 2026-07-19
+**Last Updated**: 2026-08-18
 
 This document covers day-to-day operations, monitoring, and troubleshooting for Project Mother in its current **steady-state** configuration. Batch syncs are complete; ongoing sync is driven entirely by webhooks and nightly scheduled jobs.
 
@@ -49,7 +49,7 @@ Three layers work together to keep Synology → Unraid in sync:
 Radarr and Sonarr fire `POST /sync/radarr` or `/sync/sonarr` webhooks to sync-webhook (port 5001) on every download/upgrade. The webhook:
 
 1. Translates container path → NFS path → Unraid destination
-2. Queues an rsync job (up to `SYNC_MAX_CONCURRENT=3` concurrent)
+2. Queues an rsync job (up to `SYNC_MAX_CONCURRENT=6` concurrent)
 3. Auto-retries failures with exponential backoff (15m → 1h → 4h → 12h)
 4. Sends Telegram on success/failure
 
@@ -67,9 +67,14 @@ Nightly jobs catch anything the webhook missed (container restart, race conditio
 | 11:45 PM | Movie version reconcile | Synology's TRaSH-scored best file vs Unraid; queues MovieVersionSync if Synology wins |
 | 12:15 AM | Library health report | Telegram summary of remaining gaps |
 
-**Quality filter**: 720p, SD, and x265-without-HDR/DV are **never** queued — Upgraderr upgrades Chris's side first, then the next gap scan picks up the upgraded version.
+**Absolute parity (since 2026-07-25)**: the old quality filter is **gone** — the gap scan and
+reconcile now sync *every* Synology episode/movie to Unraid regardless of tier (720p, SD,
+x265-no-HDR included). Upgraderr still independently upgrades those, but Unraid mirrors whatever
+Synology currently has. The gap scan/reconcile are also **multi-episode aware** (dual files like
+`S01E01-E02` expand to both episodes — fixed 2026-08-16), so kids'/anime shows no longer produce
+false "extra episode" reports.
 
-**Version reconcile scoring**: All scoring uses the shared `configs/scoring/trash_scoring.json` — resolution + source + HDR + audio + size bonus + custom format bonuses (`[Hybrid]`=+100, release group `-GROUP.ext`=+50, Proper/Repack=+25). Cap per run: `VERSION_SYNC_MAX_PER_RUN=100`.
+**Version reconcile scoring**: All scoring uses the shared `configs/scoring/trash_scoring.json` — resolution + source + HDR + audio + size bonus + custom format bonuses (`[Hybrid]`=+100, release group `-GROUP.ext`=+50, Proper/Repack=+25). Cap per run: `VERSION_SYNC_MAX_PER_RUN=500`.
 
 **Stale-entry guard**: Both the history scanner (every 30 min) and the auto-retry loop check `os.path.exists(source_path)` before queuing. If the source file no longer exists on Synology NFS (upgraded/replaced by Radarr), the job is automatically marked `success` with `error_message='stale: source file upgraded'` — preventing phantom jobs from recurring.
 
@@ -84,14 +89,22 @@ Upgraderr classifies all Radarr/Sonarr items into **9 upgrade tiers** (Tier 9 = 
 | 1 | m2ts/BDMV raw discs → proper encode | Highest priority |
 | 2 | Non-MKV container → MKV | |
 | 3 | 720p/SD → 1080p | |
-| 4 | TMDB physical release ≥90 days ago → BluRay | Checks TMDB release dates API |
+| 4 | TMDB physical release ≥7 days ago → BluRay | Checks TMDB release dates API |
 | 5 | No surround audio → Atmos/DTS-HD MA | Skips pre-1992 films |
 | 6 | Low TRaSH score → better quality | |
-| 7 | Quality profile mismatch → correct format | **Lowest priority** — file is watchable but outside Radarr profile (e.g. Remux when profile says Blu-ray) |
+| 7 | Quality profile mismatch → correct format | File is watchable but outside Radarr profile (e.g. Remux when profile says Blu-ray) |
+| 8 | 1080p x265 without HDR/DV → HDR or non-x265 | The point of x265 is the HDR |
+| 9 | Release-group quality / Remux→Bluray | **Lowest priority** — **force-grabs** the best release; **qBit-first** imports an existing good copy for free. See [Quality Upgrades](QUALITY_UPGRADES.md) |
 
 **Tier 7 detail**: Radarr won't auto-search for profile mismatches because the file quality is above the profile ceiling in Radarr's quality ordering (`cutoffNotMet=false`). Upgraderr detects this by fetching `GET /api/v3/qualityprofile` and checking if the file's quality ID is in the profile's `allowed` list. If not → Tier 7 search.
 
-To prioritize Tier 3 (720p upgrades): disable Tiers 4–7 in Settings UI.
+**Tier 9 detail**: unlike Tiers 1–8 (which trigger a normal search), Tier 9 runs an interactive
+search and **force-grabs the single highest-CF release itself** — Radarr's normal search only
+grabs best-*in-feed*, not best-*available*. It also checks qBittorrent first and imports an
+existing good copy rather than re-downloading. Pace is deliberately slow (`2`/`3` searches per
+sweep) because the cross-device import copy is the bottleneck.
+
+To prioritize Tier 3 (720p upgrades): disable Tiers 4–9 in Settings UI.
 
 UI: `http://mother:9706` (JWT login required)
 
@@ -103,14 +116,13 @@ These files control emergency pausing of specific operations. Create/remove them
 
 | File | Effect |
 |------|--------|
-| `/opt/mother/PAUSE_DEDUP` | Blocks nightly Unraid dedup (8:00 AM ET). **Currently present.** |
-| `/opt/mother/PAUSE_VERSION_SYNC` | Blocks nightly TV + movie version reconcile. Use during major library changes. |
-| `/opt/mother/DISABLE_MOVIE_SYNC` | Disables movie batch sync screen. **Permanently present.** |
+| `/opt/mother/PAUSE_DEDUP` | Blocks nightly Unraid dedup (8:00 AM ET). **Not present** — dedup runs normally (removed 2026-07-02). Create it if uncertain about library state. |
+| `/opt/mother/PAUSE_VERSION_SYNC` | Blocks nightly TV + movie version reconcile. Use during major library changes. Not present. |
+| `/opt/mother/DISABLE_MOVIE_SYNC` | Disables the obsolete movie batch-sync screen. **Permanently present** (batch sync complete). |
+| `/opt/mother/DISABLE_TV_SYNC` | Disables the obsolete TV batch-sync screen. **Permanently present** (batch sync complete). |
 | `/opt/mother/PAUSE_SYNC` | Pauses batch sync screens without killing running rsyncs. |
 
-**When to pause dedup**: Any time the gap scanner queue is large or you're running bulk file operations. The 8:00 AM timing (vs midnight before) was specifically chosen to let the overnight rsync queue drain first, but create `PAUSE_DEDUP` if you're uncertain.
-
-**Remove PAUSE_DEDUP** once: (1) all restorations from the June 2026 incident are confirmed, and (2) the gap scanner has had at least one clean nightly run with no new files queued.
+**When to pause dedup**: any time the gap scanner queue is large or you're running bulk file operations. The 8:00 AM timing (vs midnight before) lets the overnight rsync queue drain first, but create `PAUSE_DEDUP` if you're uncertain.
 
 ---
 
@@ -304,6 +316,15 @@ sudo umount -l /mnt/unraid/media && sudo mount /mnt/unraid/media
 
 **Note**: Sync operations use the Unraid Agent API (192.168.1.10:8100), not CIFS. CIFS is only used for direct file writes (rsync destination). The Agent API is unaffected by CIFS state.
 
+### rsync "close failed … Resource temporarily unavailable (11)"
+
+A transient CIFS **write** error on `close()` — `EAGAIN` from the SMB client when it's
+momentarily saturated (common during heavy Upgraderr upgrade load: many concurrent syncs to
+Unraid). It hits **different files each time**, and every one **self-heals on the auto-retry** —
+it is noise, not a stuck file or a data gap. Only act if it climbs sharply or starts leaving
+real gaps; the lever then is lowering `SYNC_MAX_CONCURRENT` (e.g. 6→4), which needs sign-off
+(it's VPN-tuned).
+
 ### sync-webhook DB Lock / 500 Errors
 
 ```bash
@@ -384,7 +405,7 @@ curl -s -H "X-Api-Key: $(grep UNRAID_AGENT_API_KEY /opt/mother/.env | cut -d= -f
 | 11:00 PM | TV gap scan | Missing HD TV episodes → Unraid |
 | 11:15 PM | TV version reconcile | Bidirectional: Synology→Unraid (TVVersionSync) or Unraid→Synology (TVReverseSync) based on TRaSH score |
 | 11:30 PM | Movie gap scan | Missing HD movie folders → Unraid |
-| 11:45 PM | Movie version reconcile | Bidirectional: MovieVersionSync or MovieReverseSync; cap: VERSION_SYNC_MAX_PER_RUN=100 |
+| 11:45 PM | Movie version reconcile | Bidirectional: MovieVersionSync or MovieReverseSync; cap: VERSION_SYNC_MAX_PER_RUN=500 |
 | 12:15 AM | Library health report | Telegram gap summary |
 | 8:00 AM | Unraid dedup | Delete lower-quality duplicates (multiple safety gates) |
 
@@ -396,7 +417,7 @@ curl -s -H "X-Api-Key: $(grep UNRAID_AGENT_API_KEY /opt/mother/.env | cut -d= -f
 2. **Active gap/version-sync jobs** — defers if any pending/in-progress
 3. **Recent gap/version-sync jobs** — defers if any completed within last 24h
 4. **Pre-run warning** (`DEDUP_WARN_MINUTES=10`) — Telegram N min before deletions; re-checks sentinel
-5. **Safety limit** (`DEDUP_SAFETY_LIMIT=200`) — aborts if more than N deletable files found
+5. **Safety limit** (`DEDUP_SAFETY_LIMIT=500`) — aborts if more than N deletable files found
 6. **Per-run cap** (`DEDUP_MAX_PER_RUN=50`) — max deletions per run
 7. **Dry-run mode** (`DEDUP_DRY_RUN=true`) — preview without executing
 8. **Agent confirmation** — counts success only if path appears in Agent `deleted[]`
