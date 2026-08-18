@@ -2,7 +2,7 @@
 
 Project Mother is a media management and synchronization system consolidating two users' (~160 TB each) media libraries across two locations connected by IPsec VPN.
 
-**Last updated**: 2026-06-27
+**Last updated**: 2026-08-18
 
 ---
 
@@ -11,6 +11,7 @@ Project Mother is a media management and synchronization system consolidating tw
 | Document | Description |
 |----------|-------------|
 | [Operations Guide](OPERATIONS.md) | Day-to-day operations, monitoring, troubleshooting |
+| [Quality Upgrades](QUALITY_UPGRADES.md) | **Force-grab, qBit-first, Remux→Bluray, Tier 9 — getting the best copy of everything** |
 | [Workflow Diagrams](WORKFLOW.md) | Full system data flow, Upgraderr pipeline, network topology |
 | [Sync Guide](SYNC_GUIDE.md) | Sync strategy, what is and is NOT synced, sentinel files |
 | [Curatorr Guide](CURATORR.md) | Curatorr navigation, scoring, sync status, duplicates, rules, deletion |
@@ -45,7 +46,7 @@ Ali's Location (192.168.1.0/24)          Chris's Location (10.0.0.0/23)
 
 ---
 
-## Sync Status: June 2026
+## Sync Status: August 2026
 
 | Library | Phase | Notes |
 |---------|-------|-------|
@@ -54,7 +55,7 @@ Ali's Location (192.168.1.0/24)          Chris's Location (10.0.0.0/23)
 | HD TV | ✅ Steady-state | Batch sync completed Jun 17 2026 |
 | 4K TV | ✅ Steady-state | Webhook only |
 
-**Sentinels active**: `DISABLE_MOVIE_SYNC`, `DISABLE_TV_SYNC`, `PAUSE_DEDUP`
+**Sentinels active**: `DISABLE_MOVIE_SYNC`, `DISABLE_TV_SYNC` (batch syncs complete). `PAUSE_DEDUP` was removed 2026-07-02; dedup runs daily at 8 AM ET behind its safety gates.
 
 ---
 
@@ -62,7 +63,7 @@ Ali's Location (192.168.1.0/24)          Chris's Location (10.0.0.0/23)
 
 ### 1. Webhook Sync (Real-Time)
 Radarr/Sonarr fire webhooks on every download → sync-webhook (port 5001) rsyncs immediately.
-**Append-only — never deletes from Unraid.** Max 3 concurrent rsyncs (`SYNC_MAX_CONCURRENT=3`).
+**Append-only — never deletes from Unraid.** Concurrent rsyncs capped by `SYNC_MAX_CONCURRENT=6`.
 
 ### 2. Nightly Reconciliation (11 PM – 12:15 AM ET)
 | Time | Job | Notes |
@@ -70,12 +71,12 @@ Radarr/Sonarr fire webhooks on every download → sync-webhook (port 5001) rsync
 | 11:00 PM | TV gap scan | Missing episodes Synology→Unraid |
 | 11:15 PM | TV version reconcile | TRaSH score comparison; TVVersionSync or TVReverseSync |
 | 11:30 PM | Movie gap scan | Missing movie folders Synology→Unraid |
-| 11:45 PM | Movie version reconcile | Synology folder scan vs Unraid; cap 100/run |
+| 11:45 PM | Movie version reconcile | Synology folder scan vs Unraid; Radarr's tracked file wins (Profile Authority); cap `VERSION_SYNC_MAX_PER_RUN=500`/run |
 | 12:15 AM | Library health report | Telegram summary |
 | 8:00 AM | Unraid dedup | Morning run after overnight queue drains; multiple safety gates |
 
 ### 3. Upgraderr Quality Sweep (Every 30 Min)
-Classifies all media into 7 tiers and triggers searches in Radarr/Sonarr:
+Classifies all media into **9 tiers** and acts on the highest-priority problem:
 
 | Tier | What | Priority |
 |------|------|----------|
@@ -85,7 +86,13 @@ Classifies all media into 7 tiers and triggers searches in Radarr/Sonarr:
 | 4 | WEB-DL + TMDB BluRay ≥90 days available | |
 | 5 | No surround audio → Atmos/DTS-HD | |
 | 6 | Low TRaSH score | |
-| 7 | Quality profile mismatch (Radarr won't search; Upgraderr forces it) | Lowest |
+| 7 | Quality profile mismatch (Radarr won't search; Upgraderr forces it) | |
+| 8 | 1080p x265 without HDR/DV | |
+| 9 | Release-group quality / Remux→Bluray → **force-grab the best release** | Lowest |
+
+Tiers 1–8 trigger a normal search; **Tier 9 force-grabs the best available release** (and
+imports an existing good copy from qBittorrent for free when one exists). This is the system
+that acquires the genuinely-best copy of every title — see **[Quality Upgrades](QUALITY_UPGRADES.md)**.
 
 Upgraderr also runs **nightly stale queue validation** (5 AM UTC) to remove entries whose upgrade reason no longer applies.
 
@@ -109,7 +116,7 @@ To tune: edit the JSON → `docker compose restart sync-webhook curatorr`. See [
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| Upgraderr | http://mother:9706 | Quality upgrade queue + 7-tier breakdown |
+| Upgraderr | http://mother:9706 | Quality upgrade queue + 9-tier breakdown |
 | Curatorr | http://mother:9707 | Library browser, sync status, duplicates |
 | Curatorr Sync Status | http://mother:9707/sync-status | Synology↔Unraid parity dashboard |
 | Grafana | http://mother:3003 | Metrics dashboards (login: admin) |
@@ -140,11 +147,13 @@ Use **"Reconcile Now"** button to trigger reconcile jobs immediately without wai
 
 1. **Synology is source of truth** — Radarr/Sonarr manage Synology; Unraid mirrors it
 2. **Webhooks are append-only** — never delete from Unraid via webhook
-3. **Never sync 720p/x265-no-HDR** — Upgraderr upgrades first, then gap scan copies the result
+3. **Absolute parity (since 2026-07-25)** — *every* Synology file syncs to Unraid regardless of quality tier; 720p/x265-no-HDR are no longer excluded from sync (Upgraderr independently upgrades them). Synology remains authoritative and protected on the reverse direction.
 4. **Never scan Unraid via CIFS** — always use Unraid Agent API (192.168.1.10:8100)
 5. **TRaSH scoring is unified** — one JSON config, three services, no drift
 6. **Stale-entry protection** — history scanner and auto-retry auto-detect replaced source files and mark them `success` instead of looping forever
-7. **SYNC_MAX_CONCURRENT=3** — never change this; tuned to avoid saturating the VPN during peak sync
+7. **SYNC_MAX_CONCURRENT** — never change this without confirmation; tuned to avoid saturating the VPN during peak sync
+8. **Multi-episode aware** — the gap scanner, reconcile, and health report expand dual files (`S01E01-E02` → both episodes) so kids'/anime shows don't produce false "extra episode" reports (fixed 2026-08-16)
+9. **Upgraderr owns *best-copy* upgrades** — RSS acquires fast, Upgraderr force-grabs the best release; see [Quality Upgrades](QUALITY_UPGRADES.md)
 
 ---
 

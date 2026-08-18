@@ -77,7 +77,7 @@ Both reconcile jobs call the Unraid Agent to delete the old file after rsync suc
 
 ### Layer 3: Upgraderr Quality Sweep (Every 30 Min)
 
-Upgraderr classifies all Radarr/Sonarr items into **7 upgrade tiers** and triggers searches:
+Upgraderr classifies all Radarr/Sonarr items into **9 upgrade tiers** (Tier 9 = force-grab the best release; see QUALITY_UPGRADES.md) and triggers searches:
 
 | Tier | Target | Notes |
 |------|--------|-------|
@@ -148,7 +148,7 @@ curl http://localhost:9706/health      # Upgraderr health
 
 - **Grafana**: `http://mother:3003` — service metrics + log streams
 - **Dozzle**: `http://mother:8080` — live Docker logs
-- **Upgraderr UI**: `http://mother:9706` — upgrade queue + 7-tier breakdown
+- **Upgraderr UI**: `http://mother:9706` — upgrade queue + 9-tier breakdown
 - **Curatorr UI**: `http://mother:9707` — library browser + sync status + duplicates
   - **Sync Status tab**: Shows In Sync / Missing / Version Mismatch / Radarr Out of Date / Not Downloaded for HD movies and TV episodes
 - **Uptime Kuma**: `http://mother:3001` — service availability
