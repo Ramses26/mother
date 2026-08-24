@@ -77,7 +77,15 @@ HISTORY_SCAN_INTERVAL = int(os.environ.get('SYNC_HISTORY_SCAN_INTERVAL', '30')) 
 
 # Stall watchdog settings
 RSYNC_STALL_MINUTES = int(os.environ.get('RSYNC_STALL_MINUTES', '15'))   # No I/O for this long = stalled
-RSYNC_MAX_MINUTES = int(os.environ.get('RSYNC_MAX_MINUTES', '240'))       # Absolute max runtime (4h)
+# Soft runtime cap: a job past this is killed ONLY if it's not currently making
+# progress. A large Bluray sharing a congested VPN with 5 other transfers can
+# legitimately take >4h while moving bytes the whole time — killing it there just
+# discards hours of partial progress and forces a from-scratch retry that, under
+# congestion, may never converge. See RSYNC_HARD_MAX_MINUTES for the absolute backstop.
+RSYNC_MAX_MINUTES = int(os.environ.get('RSYNC_MAX_MINUTES', '240'))       # Soft cap (4h) — only kills stalled jobs
+# Absolute backstop: kill regardless of progress. Guards against a pathological
+# case where the I/O counter creeps forever without the transfer ever completing.
+RSYNC_HARD_MAX_MINUTES = int(os.environ.get('RSYNC_HARD_MAX_MINUTES', '720'))  # 12h
 
 # Unraid Agent (for inventory lookups — avoids slow CIFS listing over VPN)
 UNRAID_AGENT_URL = os.environ.get('UNRAID_AGENT_URL', 'http://192.168.1.10:8100')
@@ -542,18 +550,22 @@ def check_stalled_syncs():
             if current_bytes is None:
                 continue  # Can't read /proc/io, skip this cycle
 
-            # Check absolute maximum runtime first
-            if running_minutes >= RSYNC_MAX_MINUTES:
-                reason = f"exceeded {RSYNC_MAX_MINUTES}m maximum runtime ({running_minutes:.0f}m elapsed)"
+            # Absolute backstop: kill regardless of progress. Catches a
+            # pathological transfer whose I/O counter creeps forever but never
+            # actually completes. Set high enough that a legitimately slow-but-
+            # progressing large transfer over a congested VPN is never hit here.
+            if running_minutes >= RSYNC_HARD_MAX_MINUTES:
+                reason = f"exceeded {RSYNC_HARD_MAX_MINUTES}m hard runtime limit ({running_minutes:.0f}m elapsed)"
                 _kill_stalled_job(c, job_id, pid, title, reason, running_minutes)
                 continue
 
-            # Check for stall (no I/O progress since last snapshot)
+            # Determine whether the transfer is making progress this cycle.
             last_bytes = job.get('last_progress_bytes')
             last_progress_at = job.get('last_progress_at')
+            progressing = last_bytes is not None and current_bytes != last_bytes
 
             if last_bytes is None or current_bytes != last_bytes:
-                # Progress made - update snapshot
+                # Progress made (or first sighting) - update snapshot, clear stall timer
                 c.execute(
                     "UPDATE sync_jobs SET last_progress_bytes = ?, last_progress_at = ? WHERE id = ?",
                     (current_bytes, now.isoformat(), job_id)
@@ -569,6 +581,7 @@ def check_stalled_syncs():
                         if stall_minutes >= RSYNC_STALL_MINUTES:
                             reason = f"no I/O activity for {stall_minutes:.0f}m (threshold: {RSYNC_STALL_MINUTES}m)"
                             _kill_stalled_job(c, job_id, pid, title, reason, running_minutes)
+                            continue
                         else:
                             logger.debug(f"Stall watchdog: '{title}' idle {stall_minutes:.0f}m/{RSYNC_STALL_MINUTES}m")
                     except (ValueError, TypeError):
@@ -579,6 +592,18 @@ def check_stalled_syncs():
                         "UPDATE sync_jobs SET last_progress_bytes = ?, last_progress_at = ? WHERE id = ?",
                         (current_bytes, now.isoformat(), job_id)
                     )
+
+            # Soft runtime cap: only kills a job past RSYNC_MAX_MINUTES if it is
+            # NOT currently progressing. A job that's still moving bytes is left
+            # alone (the stall detector above handles genuinely frozen ones, and
+            # the hard backstop above handles pathological creep). This is the fix
+            # for legitimately slow large transfers being killed at 4h and losing
+            # all partial progress during VPN bandwidth contention.
+            if running_minutes >= RSYNC_MAX_MINUTES and not progressing:
+                reason = (f"exceeded {RSYNC_MAX_MINUTES}m soft runtime cap while not progressing "
+                          f"({running_minutes:.0f}m elapsed)")
+                _kill_stalled_job(c, job_id, pid, title, reason, running_minutes)
+                continue
 
         conn.commit()
         conn.close()
@@ -1296,16 +1321,41 @@ def background_sync_with_retry(source: str, dest: str, title: str, quality: str,
 
 
 def get_job_counts():
-    """Get counts of jobs by status from database"""
+    """Counts for the status report.
+
+    'pending'/'in_progress' are a LIVE queue snapshot (current depth, no time
+    window) — the queue is often deep enough that jobs take >24h from creation
+    to completion, so a created_at window here would understate real depth.
+
+    'success'/'failed' count jobs COMPLETED in the last 24h, keyed on
+    completed_at (NOT created_at). The old implementation grouped everything by
+    created_at, so a saturated multi-day backlog reported "Done 24h: 0" even
+    while hundreds of jobs were finishing — the finished jobs had been created
+    more than 24h earlier. completed_at is stored as a Python isoformat
+    (T-separated) string, so the strftime T-format boundary compares correctly.
+    """
     try:
         conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
-        cursor.execute('''
-            SELECT status, COUNT(*) FROM sync_jobs
-            WHERE created_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', '-24 hours')
-            GROUP BY status
-        ''')
-        counts = dict(cursor.fetchall())
+        counts = {}
+        # Live queue snapshot
+        cursor.execute(
+            "SELECT status, COUNT(*) FROM sync_jobs "
+            "WHERE status IN ('pending','in_progress') GROUP BY status"
+        )
+        for status, n in cursor.fetchall():
+            counts[status] = n
+        counts.setdefault('pending', 0)
+        counts.setdefault('in_progress', 0)
+        # Completed in the last 24h, by completion time
+        cursor.execute(
+            "SELECT status, COUNT(*) FROM sync_jobs "
+            "WHERE status IN ('success','failed') "
+            "AND completed_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', '-24 hours') "
+            "GROUP BY status"
+        )
+        for status, n in cursor.fetchall():
+            counts[status] = n
         conn.close()
         return counts
     except Exception:
@@ -1710,7 +1760,7 @@ scheduler.add_job(
     name='Stall watchdog - detect and kill frozen rsync processes',
     replace_existing=True
 )
-logger.info(f"Stall watchdog enabled - stall threshold: {RSYNC_STALL_MINUTES}m, max runtime: {RSYNC_MAX_MINUTES}m")
+logger.info(f"Stall watchdog enabled - stall threshold: {RSYNC_STALL_MINUTES}m, soft cap: {RSYNC_MAX_MINUTES}m (only kills non-progressing), hard cap: {RSYNC_HARD_MAX_MINUTES}m")
 
 
 def scan_arr_history():
@@ -2903,6 +2953,86 @@ def _dedup_norm_title(title: str) -> str:
     return re.sub(r'[^a-z0-9]+', '', t)
 
 
+def _dedup_folder_from_agent_path(file_path: str) -> str:
+    """Library-relative top folder for an Agent scan path.
+
+    Agent paths look like /mnt/user/Media/<Library>/<folder>/<file...>, so the
+    movie folder / show folder is index 5. Returns '' if the path is too short.
+    Used to collide a duplicate group against in-flight sync targets.
+    """
+    parts = file_path.split('/')
+    return parts[5] if len(parts) >= 6 else ''
+
+
+def _dedup_active_folder_key(source_path: str, dest_path: str, job_type: str) -> str:
+    """The movie/show folder a sync job is writing into, for collision matching
+    against Agent scan folders (which use the same folder name under a different
+    mount prefix).
+
+    Returns the library-relative TOP folder — the movie folder or the show folder —
+    regardless of whether the job's paths point at a folder (gap sync) or a specific
+    file (version sync), and regardless of movie vs TV. This is what the Agent scan
+    exposes as the group folder (index 5 of its /mnt/user/Media/<lib>/<folder>/...
+    paths), so both sides of the collision check speak the same vocabulary.
+
+    Matching TV by show (not episode) is deliberately coarse — it protects the whole
+    show's duplicate groups while any one of its episodes is mid-sync, the safe
+    direction to err. Movie dest_path is only the library root (no folder), so the
+    folder must come from source_path; either path works via the markers below.
+    """
+    # Ordered longest-first so /rs-4kmedia/4kmovies/ wins over a naive /rs-4kmedia/.
+    MARKERS = (
+        '/rs-4kmedia/4kmovies/', '/rs-4kmedia/4ktv/', '/rs-movies/', '/rs-tv/',
+        '/media/4K Movies/', '/media/4K TV Shows/', '/media/Movies/', '/media/TV Shows/',
+    )
+    for p in (source_path, dest_path):
+        if not p:
+            continue
+        for m in MARKERS:
+            if m in p:
+                rest = p.split(m, 1)[1]
+                top = rest.split('/')[0].strip()
+                if top:
+                    return top
+    return ''
+
+
+def _dedup_protected_folders(db_path: str, settle_minutes: int = 30) -> set:
+    """Folder names dedup must NOT touch this run because a sync is writing to them.
+
+    Collision set = movie/show folders of every gap/version-sync job that is
+    in_progress, pending, or completed within the last `settle_minutes`. This
+    replaces the old all-or-nothing "any active gap job -> defer the entire run"
+    gate, which permanently starved dedup once constant Upgraderr-driven upgrades
+    kept the queue perpetually non-empty. Dedup now runs every day and skips only
+    the specific titles currently in flight; every other duplicate group is still
+    eligible, protected as before by Profile Authority + the per-deletion keeper
+    check + safe_to_delete + the known-bad guard.
+    """
+    protected = set()
+    try:
+        conn = sqlite3.connect(db_path, timeout=30)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT source_path, dest_path, job_type, status, completed_at FROM sync_jobs "
+            "WHERE quality IN ('TVGapSync','GapSync','TVVersionSync','MovieVersionSync',"
+            "'TVReverseSync','MovieReverseSync') "
+            "AND (status IN ('in_progress','pending') "
+            "     OR (status='success' AND completed_at > strftime('%Y-%m-%dT%H:%M:%S','now',?)))",
+            (f'-{settle_minutes} minutes',)
+        )
+        for source_path, dest_path, job_type, status, completed_at in cur.fetchall():
+            key = _dedup_active_folder_key(source_path, dest_path, job_type)
+            if key:
+                protected.add(key)
+        conn.close()
+    except Exception as e:
+        # Fail closed: an unreadable job table must not silently produce an empty
+        # protected set. Signal the caller to skip this run rather than dedup blind.
+        raise RuntimeError(f"could not build dedup protected-folder set: {e}")
+    return protected
+
+
 def _dedup_fetch_tier7_pending(instance: str) -> set:
     """Normalized movie titles Upgraderr currently has an active tier7_profile_mismatch
     entry for, per instance — read from a plain JSON export Upgraderr writes after
@@ -3190,66 +3320,35 @@ def nightly_unraid_dedup(force=False):
         _write_dedup_status('paused', msg)
         return
 
-    # ── 2. Skip if gap-sync jobs are running OR recently completed ───────────
-    # Gap sync jobs create new files on Unraid. Dedup must not run while the
-    # queue is draining. Two conditions both trigger a skip:
-    #   a) Any gap job currently in_progress OR pending (not yet dispatched)
-    #   b) Any gap job completed within DEDUP_MIN_AGE_HOURS (default 24h)
-    DEDUP_MIN_AGE_HOURS = int(os.environ.get('DEDUP_MIN_AGE_HOURS', '24'))
+    # ── 2. Build the in-flight collision set (was: all-or-nothing defer) ──────
+    # Gap/version-sync jobs create or replace files on Unraid, so dedup must not
+    # race them for a title that's currently syncing. The OLD design deferred the
+    # ENTIRE run if ANY such job was in_progress/pending or completed in the last
+    # DEDUP_MIN_AGE_HOURS. That worked until Upgraderr-driven upgrades kept the
+    # queue permanently non-empty — after which the blanket gate meant dedup
+    # effectively never ran (deferred every day; even the weekly force=True run
+    # was blocked by the in_progress/pending count, which force never bypassed).
+    #
+    # NEW design: dedup always proceeds, but skips only the specific duplicate
+    # groups whose movie/show folder is currently in flight (see _dedup_protected_
+    # folders — in_progress + pending + completed within DEDUP_SETTLE_MINUTES).
+    # Every other group is still processed, protected exactly as before by Profile
+    # Authority + the per-deletion keeper check + safe_to_delete + known-bad guard.
+    # protected_folders is consumed in the deletion loop below.
+    DEDUP_SETTLE_MINUTES = int(os.environ.get('DEDUP_SETTLE_MINUTES', '30'))
     try:
-        conn = sqlite3.connect(DB_PATH, timeout=30)
-        cursor = conn.cursor()
-        # Issue 3 fix: include 'pending' — jobs waiting for semaphore count as active
-        # Also include version sync jobs (both directions) — they write new files whose
-        # old counterparts dedup must not delete before the replacement lands.
-        cursor.execute(
-            "SELECT COUNT(*) FROM sync_jobs WHERE status IN ('in_progress','pending') "
-            "AND quality IN ('TVGapSync','GapSync','TVVersionSync','MovieVersionSync',"
-            "'TVReverseSync','MovieReverseSync')"
-        )
-        active_gap_jobs = cursor.fetchone()[0]
-        # Use UTC-aware comparison (completed_at now stored as UTC via datetime.utcnow)
-        # Deliberately excludes TVReverseSync/MovieReverseSync here (unlike the
-        # active-job check above): reverse syncs copy Unraid -> Synology, so a
-        # *completed* one never leaves a new/changed file on Unraid for dedup to
-        # race against. Including them caused a false-positive defer every single
-        # day 2026-07-19 to 07-22 while the known-bad-release restore project was
-        # running (it completes a ReverseSync most nights), silently growing the
-        # real duplicate backlog past DEDUP_SAFETY_LIMIT with zero dedup runs.
-        cursor.execute(
-            "SELECT COUNT(*) FROM sync_jobs WHERE quality IN ('TVGapSync','GapSync',"
-            "'TVVersionSync','MovieVersionSync') "
-            "AND status = 'success' "
-            "AND completed_at > strftime('%Y-%m-%dT%H:%M:%S', 'now', ?)",
-            (f'-{DEDUP_MIN_AGE_HOURS} hours',)
-        )
-        recent_gap_jobs = cursor.fetchone()[0]
-        conn.close()
-    except Exception as e:
-        logger.warning(f"Unraid dedup: could not check gap job status: {e}")
-        active_gap_jobs = 0
-        recent_gap_jobs = 0
-
-    if active_gap_jobs > 0:
-        msg = (f"Skipping dedup: {active_gap_jobs} gap-sync job(s) currently in progress/pending. "
-               f"Dedup will run tomorrow once the queue drains.")
-        logger.warning(f"Unraid dedup: {msg}")
+        protected_folders = _dedup_protected_folders(DB_PATH, settle_minutes=DEDUP_SETTLE_MINUTES)
+    except RuntimeError as e:
+        # Fail closed — can't confirm what's in flight, so don't dedup blind.
+        msg = f"Skipping dedup: {e}"
+        logger.error(f"Unraid dedup: {msg}")
         send_dedup_notification(title="Unraid Dedup DEFERRED", body=msg,
                           notify_type=apprise.NotifyType.WARNING)
         _write_dedup_status('deferred', msg)
         return
-
-    if recent_gap_jobs > 0 and not force:
-        msg = (f"Skipping dedup: {recent_gap_jobs} gap-sync job(s) completed in the last "
-               f"{DEDUP_MIN_AGE_HOURS}h — waiting for rsync queue to fully settle.")
-        logger.warning(f"Unraid dedup: {msg}")
-        send_dedup_notification(title="Unraid Dedup DEFERRED", body=msg,
-                          notify_type=apprise.NotifyType.WARNING)
-        _write_dedup_status('deferred', msg)
-        return
-    elif recent_gap_jobs > 0 and force:
-        logger.info(f"Unraid dedup: {recent_gap_jobs} recent gap-sync job(s) present, but "
-                     f"force=True (weekly guaranteed-drain run) — proceeding anyway.")
+    if protected_folders:
+        logger.info(f"Unraid dedup: {len(protected_folders)} title(s) currently in flight — "
+                    f"their duplicate groups will be skipped this run.")
 
     DRY_RUN = os.environ.get('DEDUP_DRY_RUN', 'false').lower() == 'true'
     # R3: Pre-dedup notification with pause window.
@@ -3351,6 +3450,17 @@ def nightly_unraid_dedup(force=False):
 
     # ── 5. Per-run cap ────────────────────────────────────────────────────────
     DEDUP_MAX_PER_RUN = int(os.environ.get('DEDUP_MAX_PER_RUN', '50'))
+    # Refresh the in-flight collision set right before deleting: the scan (up to
+    # 300s) and the 10-min warn window may have started new syncs since it was
+    # first built above. Union both so a title in flight at either point is safe.
+    try:
+        protected_folders = protected_folders | _dedup_protected_folders(
+            DB_PATH, settle_minutes=DEDUP_SETTLE_MINUTES)
+    except RuntimeError as e:
+        logger.error(f"Unraid dedup: aborting — {e}")
+        _write_dedup_status('deferred', f"Skipping dedup: {e}")
+        return
+    skipped_in_flight = 0
     # Flatten all groups for clean cap enforcement across all ftypes (Issue 1 fix:
     # iterating dict directly had no break at the ftype level, allowing overflow).
     for _, group in all_groups:
@@ -3361,6 +3471,16 @@ def nightly_unraid_dedup(force=False):
             continue
         if _dedup_is_multipart_group(group) or _dedup_is_always_protected_title(group.get('title', '')):
             logger.debug(f"Dedup: skipping multi-part/protected group '{group.get('title', '')}'")
+            continue
+        # Skip groups whose title is currently being synced (collision guard) —
+        # match on the library folder of any version file against the in-flight set.
+        group_folders = {_dedup_folder_from_agent_path(v.get('file_path', ''))
+                         for v in versions}
+        group_folders.discard('')
+        if group_folders & protected_folders:
+            skipped_in_flight += 1
+            logger.info(f"Dedup: skipping in-flight title '{group.get('title', '')}' "
+                        f"(sync active/recent for this folder)")
             continue
         # versions[0] is the keeper — either Radarr/Sonarr's actively-tracked file
         # (Profile Authority correction above) or, absent a tracked-file match,
@@ -3430,6 +3550,8 @@ def nightly_unraid_dedup(force=False):
     summary = f"{prefix}Removed {total_deleted} duplicate(s), freed {format_size(total_freed)}"
     if remaining > 0:
         summary += f" | {remaining} more deferred to next run"
+    if skipped_in_flight > 0:
+        summary += f" | {skipped_in_flight} group(s) skipped (title in flight)"
     if errors:
         summary += f" | {len(errors)} error(s)"
     logger.info(f"Unraid dedup: {summary}")
