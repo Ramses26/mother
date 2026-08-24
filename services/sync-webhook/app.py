@@ -1730,6 +1730,96 @@ def recover_orphaned_pending_jobs():
         logger.error(f"recover_orphaned_pending_jobs failed: {e}")
 
 
+def recover_orphaned_in_progress_jobs():
+    """Detect 'in_progress' jobs whose rsync is dead AND whose managing do_sync
+    thread is gone, so nothing will ever mark them terminal -- added 2026-08-24.
+
+    Companion to recover_orphaned_pending_jobs (which only covers 'pending' rows).
+    The stall watchdog (check_stalled_syncs) only handles in_progress jobs whose
+    rsync is still ALIVE-but-frozen: when validate_rsync_pid() finds the pid gone it
+    logs "completed normally" and skips the row, trusting do_sync to finalize it.
+    That holds when do_sync's thread is alive, but NOT when the thread itself died
+    (an exec-spawned thread that exited -- see recover_orphaned_pending_jobs
+    docstring for how that happens -- or a thread killed in a pid/thread-limit
+    flood). Then the row sits 'in_progress' forever: it inflates the reported active
+    count and, exactly like an orphaned pending row, blocks dedup (which defers while
+    any gap/version-sync job is in_progress) and blocks _is_already_queued re-queues
+    for that source path.
+
+    Detection (per-row, so it can run while real transfers are active -- unlike the
+    pending check it can't gate on an idle semaphore): the row has been in_progress
+    past ORPHAN_INPROGRESS_BUFFER_MINUTES, its rsync_pid is NULL or no longer a live
+    rsync for this job's source_path, AND it has shown no I/O progress within that
+    buffer. Such a row has neither a running transfer nor a thread about to finalize
+    it. The UPDATE is guarded by `status='in_progress'` so it no-ops if do_sync
+    finalizes the row in the race window. Marked failed so auto_retry_failed()
+    re-queues it. (A live-process thread-death can also leak the in-memory semaphore
+    slot; that's a separate, rarer issue not addressed here -- we can't safely
+    release a slot we can't prove we hold. The row cleanup is the important part.)
+    """
+    BUFFER_MIN = int(os.environ.get('ORPHAN_INPROGRESS_BUFFER_MINUTES', '10'))
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cutoff = (datetime.utcnow() - timedelta(minutes=BUFFER_MIN)).isoformat()
+        cursor.execute(
+            "SELECT id, title, source_path, rsync_pid, last_progress_at "
+            "FROM sync_jobs WHERE status = 'in_progress' "
+            "AND COALESCE(started_at, created_at) < ?",
+            (cutoff,)
+        )
+        candidates = [dict(row) for row in cursor.fetchall()]
+        orphaned = []
+        now = datetime.utcnow()
+        for job in candidates:
+            pid = job['rsync_pid']
+            # rsync still alive for THIS job? -> leave it to the stall watchdog.
+            if pid and validate_rsync_pid(pid, job['source_path']):
+                continue
+            # progressed within the buffer? (watchdog updated last_progress_at) ->
+            # give the managing thread a chance to finalize before we intervene.
+            lp = job['last_progress_at']
+            if lp:
+                try:
+                    if (now - datetime.fromisoformat(lp)).total_seconds() / 60 < BUFFER_MIN:
+                        continue
+                except (ValueError, TypeError):
+                    pass
+            orphaned.append(job)
+
+        if not orphaned:
+            conn.close()
+            return
+
+        recovered = 0
+        for job in orphaned:
+            cursor.execute(
+                "UPDATE sync_jobs SET status = 'failed', stall_killed = 0, "
+                "error_message = 'Orphaned in_progress job recovered (rsync dead, no live thread to finalize)', "
+                "completed_at = ? WHERE id = ? AND status = 'in_progress'",
+                (now.isoformat(), job['id'])
+            )
+            recovered += cursor.rowcount  # 0 if do_sync finalized it in the race window
+        conn.commit()
+        conn.close()
+
+        if recovered:
+            logger.warning(
+                f"Recovered {recovered} orphaned in_progress job(s) (rsync dead, no live "
+                f"thread) -- marked failed for auto-retry. Sample: "
+                f"{[j['title'] for j in orphaned[:5]]}"
+            )
+            send_notification(
+                title="Sync: Orphaned In-Progress Jobs Recovered",
+                body=f"{recovered} in_progress job(s) had a dead rsync and no live thread to "
+                     f"finalize them — marked failed, auto-retry will requeue within 15 minutes.",
+                notify_type=apprise.NotifyType.WARNING
+            )
+    except Exception as e:
+        logger.error(f"recover_orphaned_in_progress_jobs failed: {e}")
+
+
 # Add auto-retry job (every 15 minutes)
 scheduler.add_job(
     func=auto_retry_failed,
@@ -1748,6 +1838,18 @@ scheduler.add_job(
     minutes=15,
     id='recover_orphaned_pending',
     name='Recover orphaned pending syncs',
+    replace_existing=True
+)
+
+# Add orphaned-in_progress-job recovery (every 15 min) — catches in_progress rows
+# whose rsync died and whose managing thread is gone (the stall watchdog skips these
+# because it assumes a dead pid means the job completed normally).
+scheduler.add_job(
+    func=recover_orphaned_in_progress_jobs,
+    trigger='interval',
+    minutes=15,
+    id='recover_orphaned_in_progress',
+    name='Recover orphaned in-progress syncs',
     replace_existing=True
 )
 
