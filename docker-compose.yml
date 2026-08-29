@@ -953,6 +953,29 @@ services:
     networks:
       - mother_network
 
+  # unifi-exporter — polls both sites' UniFi controllers (Stuttler + Gomaa) for
+  # WAN/VPN health, exposes Prometheus metrics on :9110. Built 2026-08-29 after
+  # a VPN MSS/MTU throughput collapse went undetected for hours — closes that
+  # gap so a tunnel drop/WAN failover shows up within one scrape interval and
+  # can alert via Grafana -> Mother Notifications.
+  unifi-exporter:
+    build: ./services/unifi-exporter
+    container_name: unifi-exporter
+    labels:
+      - "autoheal=true"
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      - UNIFI_STUTTLER_GW=10.0.0.1
+      - UNIFI_STUTTLER_API_KEY=${UNIFI_STUTTLER_API_KEY}
+      - UNIFI_GOMAA_GW=192.168.1.1
+      - UNIFI_GOMAA_API_KEY=${UNIFI_GOMAA_API_KEY}
+      - UNIFI_POLL_INTERVAL=30
+    ports:
+      - "9110:9110"
+    networks:
+      - mother_network
+
   # autoheal — self-recovery layer. Restarts any labeled container Docker marks
   # "unhealthy" (a healthcheck failing). Complements each service's
   # restart: unless-stopped policy (which already covers hard crashes/exits):

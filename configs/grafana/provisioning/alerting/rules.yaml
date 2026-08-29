@@ -65,3 +65,99 @@ groups:
                 - evaluator:
                     type: gt
                     params: [3]
+
+  # Prometheus-backed: the Stuttler<->Gomaa site-to-site VPN going down (or a
+  # WAN failing at either gateway). unifi_tunnel_reachable is a real ping
+  # across the tunnel, not UniFi's own "vpn" health subsystem field — that
+  # field was found unreliable (reports status=error/0-active-tunnels even
+  # while traffic demonstrably flows, 2026-08-29) so don't alert on it.
+  # `for: 3m` requires 3 consecutive failed scrapes (90s at 30s poll) before
+  # firing, so a single blip doesn't page.
+  - orgId: 1
+    name: infra-unifi
+    folder: Infra Alerts
+    interval: 1m
+    rules:
+      - uid: unifi_tunnel_down
+        title: Stuttler<->Gomaa VPN tunnel down
+        condition: C
+        for: 3m
+        noDataState: Alerting
+        execErrState: Alerting
+        labels:
+          team: infra
+        annotations:
+          summary: "The site-to-site VPN tunnel appears down — {{ $labels.peer }} unreachable from Mother for 3+ minutes. Check UniFi gateway VPN status (10.0.0.1 / 192.168.1.1) and see the Stuttler Network wiki's UniFi doc."
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: "min(unifi_tunnel_reachable)"
+              instant: true
+              range: false
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              type: threshold
+              expression: A
+              refId: C
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [1]
+
+      - uid: unifi_wan_down
+        title: UniFi WAN down
+        condition: C
+        for: 3m
+        noDataState: OK
+        execErrState: OK
+        labels:
+          team: infra
+        annotations:
+          summary: "A primary WAN is reporting down on one of the UniFi sites (unifi_wan_status). Check the gateway."
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: "min(unifi_wan_status)"
+              instant: true
+              range: false
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              type: threshold
+              expression: A
+              refId: C
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [1]

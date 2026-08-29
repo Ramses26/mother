@@ -35,3 +35,7 @@ scrape_configs:
     relabel_configs:
       - target_label: instance
         replacement: mother
+
+  - job_name: unifi-exporter
+    static_configs:
+      - targets: [unifi-exporter:9110]
