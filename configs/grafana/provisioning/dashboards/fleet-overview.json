@@ -7,7 +7,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "time": {
     "from": "now-6h",
@@ -37,7 +37,7 @@
       "gridPos": {
         "x": 0,
         "y": 1,
-        "w": 6,
+        "w": 5,
         "h": 4
       },
       "targets": [
@@ -94,9 +94,9 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "x": 6,
+        "x": 5,
         "y": 1,
-        "w": 6,
+        "w": 5,
         "h": 4
       },
       "targets": [
@@ -147,15 +147,74 @@
     {
       "id": 4,
       "type": "stat",
-      "title": "Hosts shipping logs",
+      "title": "Mother Disk /",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 1,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100-(node_filesystem_avail_bytes{mountpoint=\"/\",fstype=\"ext4\"}/node_filesystem_size_bytes{mountpoint=\"/\",fstype=\"ext4\"}*100)",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 92
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Hosts logging",
       "datasource": {
         "type": "loki",
         "uid": "loki"
       },
       "gridPos": {
-        "x": 12,
+        "x": 15,
         "y": 1,
-        "w": 6,
+        "w": 4,
         "h": 4
       },
       "targets": [
@@ -190,6 +249,95 @@
       },
       "options": {
         "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 6,
+      "type": "alertlist",
+      "title": "Alerts",
+      "gridPos": {
+        "x": 19,
+        "y": 1,
+        "w": 5,
+        "h": 4
+      },
+      "options": {
+        "showOptions": "current",
+        "maxItems": 8,
+        "sortOrder": 1,
+        "dashboardAlerts": false,
+        "alertInstanceLabelFilter": ""
+      }
+    },
+    {
+      "id": 7,
+      "type": "row",
+      "title": "Sync Engine (Synology \u2192 Unraid)",
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Pending jobs",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sync_webhook_pending_jobs",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
         "graphMode": "area",
         "reduceOptions": {
           "calcs": [
@@ -200,37 +348,287 @@
       }
     },
     {
-      "id": 5,
-      "type": "alertlist",
-      "title": "Alerts",
+      "id": 9,
+      "type": "stat",
+      "title": "Active syncs",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "gridPos": {
-        "x": 18,
-        "y": 1,
-        "w": 6,
+        "x": 4,
+        "y": 6,
+        "w": 4,
         "h": 4
       },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sync_webhook_active_syncs",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
       "options": {
-        "showOptions": "current",
-        "maxItems": 10,
-        "sortOrder": 1,
-        "dashboardAlerts": false,
-        "alertInstanceLabelFilter": ""
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
       }
     },
     {
       "id": 10,
+      "type": "stat",
+      "title": "Succeeded (24h)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 6,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sync_webhook_success_jobs_24h",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Failed (24h)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sync_webhook_failed_jobs_24h",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Transfer rate",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 6,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(sync_webhook_bytes_transferred_total[5m])",
+          "legendFormat": "bytes/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Sync queue depth over time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sync_webhook_pending_jobs",
+          "legendFormat": "{{__name__}}"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sync_webhook_active_syncs",
+          "legendFormat": "{{__name__}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 14,
       "type": "row",
       "title": "Logs \u2014 all hosts",
       "gridPos": {
         "x": 0,
-        "y": 5,
+        "y": 15,
         "w": 24,
         "h": 1
       },
       "collapsed": false
     },
     {
-      "id": 11,
+      "id": 15,
       "type": "timeseries",
       "title": "Log rate by host",
       "datasource": {
@@ -239,8 +637,8 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 6,
-        "w": 12,
+        "y": 16,
+        "w": 8,
         "h": 8
       },
       "targets": [
@@ -256,9 +654,11 @@
       ],
       "fieldConfig": {
         "defaults": {
+          "unit": "short",
           "custom": {
-            "fillOpacity": 10,
-            "showPoints": "never"
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "lineWidth": 2
           }
         },
         "overrides": []
@@ -269,7 +669,8 @@
           "placement": "right",
           "calcs": [
             "mean",
-            "lastNotNull"
+            "lastNotNull",
+            "max"
           ]
         },
         "tooltip": {
@@ -278,7 +679,7 @@
       }
     },
     {
-      "id": 12,
+      "id": 16,
       "type": "timeseries",
       "title": "Error rate by host",
       "datasource": {
@@ -286,9 +687,9 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 12,
-        "y": 6,
-        "w": 12,
+        "x": 8,
+        "y": 16,
+        "w": 8,
         "h": 8
       },
       "targets": [
@@ -304,9 +705,11 @@
       ],
       "fieldConfig": {
         "defaults": {
+          "unit": "short",
           "custom": {
-            "fillOpacity": 10,
-            "showPoints": "never"
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "lineWidth": 2
           }
         },
         "overrides": []
@@ -317,7 +720,8 @@
           "placement": "right",
           "calcs": [
             "mean",
-            "lastNotNull"
+            "lastNotNull",
+            "max"
           ]
         },
         "tooltip": {
@@ -326,7 +730,7 @@
       }
     },
     {
-      "id": 13,
+      "id": 17,
       "type": "timeseries",
       "title": "Top services by log volume",
       "datasource": {
@@ -334,9 +738,9 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 0,
-        "y": 14,
-        "w": 12,
+        "x": 16,
+        "y": 16,
+        "w": 8,
         "h": 8
       },
       "targets": [
@@ -352,9 +756,11 @@
       ],
       "fieldConfig": {
         "defaults": {
+          "unit": "short",
           "custom": {
-            "fillOpacity": 10,
-            "showPoints": "never"
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "lineWidth": 2
           }
         },
         "overrides": []
@@ -365,7 +771,8 @@
           "placement": "right",
           "calcs": [
             "mean",
-            "lastNotNull"
+            "lastNotNull",
+            "max"
           ]
         },
         "tooltip": {
@@ -374,7 +781,7 @@
       }
     },
     {
-      "id": 14,
+      "id": 18,
       "type": "logs",
       "title": "Recent errors (all hosts)",
       "datasource": {
@@ -382,10 +789,10 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 12,
-        "y": 14,
-        "w": 12,
-        "h": 8
+        "x": 0,
+        "y": 24,
+        "w": 24,
+        "h": 9
       },
       "targets": [
         {
@@ -401,7 +808,7 @@
         "showTime": true,
         "wrapLogMessage": true,
         "enableLogDetails": true,
-        "dedupStrategy": "none",
+        "dedupStrategy": "exact",
         "sortOrder": "Descending"
       }
     }
