@@ -826,28 +826,55 @@ Before overwriting `app.py` on Unraid, diff it against this repo's copy first (`
 ### `services/tracearr/` (Tracearr — stream analytics)
 Node.js stream tracking service. Listens to Plex/Tautulli events and records per-stream metrics in TimescaleDB. Three containers: `tracearr` (3002), `tracearr-db` (TimescaleDB/PostgreSQL 18), `tracearr-redis` (Redis 8). Configured via env vars: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `COOKIE_SECRET`. Data persisted in `configs/tracearr-db/`, `configs/tracearr-redis/`.
 
-### Observability Stack (Loki + Grafana + Prometheus)
-Added 2026-04-14. All three custom services (curatorr, upgraderr, sync-webhook) write structured logs to files under `/opt/mother/data/logs/` which Promtail ships to Loki.
+### Observability Stack (Loki + Grafana + Prometheus + Alloy)
+Added 2026-04-14; **centralized across all hosts + given alerting/self-heal on 2026-08-29** (see the
+`observability_and_monitoring_2026_08_29` memory for the full write-up).
 
 | Component | Port | Config | Purpose |
 |---|---|---|---|
-| `grafana` | 3003 | `configs/grafana/` | Dashboards; login `admin` / env `GF_SECURITY_ADMIN_PASSWORD` |
+| `grafana` | 3003 | `configs/grafana/` | Dashboards + **Unified Alerting** (`configs/grafana/provisioning/alerting/`); login `admin` / env `GF_SECURITY_ADMIN_PASSWORD` |
 | `prometheus` | 9090 | `configs/prometheus/prometheus.yml` | Scrapes node-exporter (9100), cAdvisor (8090), all *arr `/metrics` |
-| `loki` | 3100 | `configs/loki/loki-config.yml` | Log storage; 30-day retention |
-| `promtail` | — | `configs/promtail/promtail-config.yml` | Scrapes Docker stdout/stderr + file logs |
+| `loki` | 3100 | `configs/loki/loki-config.yml` | **Central** log storage (30-day); reachable at `10.0.0.162:3100` from remote hosts |
+| `alloy` | 12345 | `configs/alloy/config.alloy` | **Grafana Alloy v1.19.2 (pinned)** — log shipper, **replaced Promtail 2026-08-29** |
 | `node-exporter` | 9100 | host network mode | Host CPU/RAM/disk/network metrics |
-| `cadvisor` | 8090 | — | Per-container CPU/RAM/network metrics |
+| `cadvisor` | 8090 | (compose `command:`) | Per-container metrics — reads from **containerd** (see cAdvisor note below) |
+| `autoheal` | — | (compose env) | Restarts any container Docker marks `unhealthy` (also on the download Synology) |
 
-**File logging**: Each custom service writes rotating log files inside its container. Host mount paths
-are **not uniform** — check the actual `docker-compose.yml` volume mount before assuming a path, since
-this was previously undocumented incorrectly (see below). `curatorr` and `upgraderr` map to
-`/opt/mother/data/logs/<service>/`; `sync-webhook` maps to `/opt/mother/configs/sync-webhook/logs/`
-instead (a legacy path from before `data/logs/` existed — functions correctly, Promtail's config points
-at the right place for each, just don't assume the `data/logs/` pattern applies to sync-webhook too).
-All three keep **7 files total** (current + 6 rotated backups, `backupCount=6` in each service's
-`RotatingFileHandler`/`RotatingFileHandler` setup — standardized 2026-07-19, was previously 10-11 files
-for upgraderr/curatorr and 5-10 for sync-webhook's two log streams). Promtail picks all of these up
-alongside Docker's own container-log scraping (see `configs/promtail/promtail-config.yml`).
+**Logging = Grafana Alloy on every host → one central Loki. Promtail is retired**
+(old config archived at `configs/_archived/promtail-config.yml.retired`). Alloy runs on **Mother**
+(`configs/alloy/config.alloy`), the **download Synology** (`remote-hosts/download-synology/alloy/`,
+`host=download-synology`, ships containers + the qbitmanage file log with a timestamp-parse stage) and
+**Unraid** (`remote-hosts/unraid/alloy/`, `host=unraid`, over VPN). All use the same Loki label schema
+`{host, service, job, compose_service}` (+ Alloy's `detected_level`, `service_name`). First Alloy start
+floods Loki with "timestamp too old" 400s replaying container history — benign, self-drains in ~90s.
+Reload a remote Alloy after a config edit with `curl -X POST http://<host>:12345/-/reload` (no restart).
+
+**File logging** (Mother): `curatorr`/`upgraderr` → `/opt/mother/data/logs/<service>/`; `sync-webhook` →
+`/opt/mother/configs/sync-webhook/logs/` (legacy path — Alloy's config points at the right place per
+service). All keep 7 files (current + 6 rotated, `backupCount=6`).
+
+**Alerting → "Mother Notifications" Telegram group (`-5498616604`)** — a dedicated infra/health channel,
+separate from the per-app content groups and from Terminus. Grafana Unified Alerting (provisioned in
+`configs/grafana/provisioning/alerting/`) routes any rule labeled `team: infra` to it via a Telegram
+contact point (bot token from `$__env{TELEGRAM_BOT_TOKEN}`, passed to grafana in compose). First live
+rule: **qbitmanage error watchdog** (`{service="qbitmanage"} |~ "[ERROR]|Traceback"` > 3 in 10m). The
+Loki datasource UID is pinned to `loki`.
+
+**Container-down detection + self-heal — REPLACES Dockhand notifications** (Dockhand's start/stop/kill
+stream was too noisy AND its 1.0.3 telegram sender is broken: hardcoded `parse_mode:"Markdown"`,
+unescaped → 400s. Don't debug it; disable its notifications). Three layers: (1) `restart:unless-stopped`
+(crashes), (2) `autoheal` (unhealthy), (3) **`scripts/container_watchdog.py`** (host cron `*/3`) —
+watches always-up containers via the docker API, auto-heals (`docker start/restart`, capped 3) and pages
+Mother Notifications ONLY on persistent problems (stuck exited/dead, running-but-unhealthy, crash-looping
+via RestartCount delta), one alert per incident + recovery all-clear. `/opt/mother/PAUSE_WATCHDOG`
+sentinel for maintenance. State in `data/watchdog/state.json` (gitignored).
+
+**cAdvisor note**: Mother's Docker uses the **containerd image store** (storage driver `overlayfs`), so
+cAdvisor's docker-mode writable-layer lookup fails and skips every container (no names/start-times). Fix
+(committed): read from containerd — `--containerd=/run/containerd/containerd.sock --containerd-namespace=moby
+--docker_only=true`, socket mounted ro. Caveat: series are keyed by `image` + container **id**, not the
+compose service name (compose labels aren't present in containerd's `moby` ns). Container up/down does
+NOT depend on cAdvisor — the watchdog uses the docker API directly.
 
 ### `reports/daily_report.py`
 Unified status report (sync progress, VPN traffic, errors, Upgraderr queue summary). Sends via Apprise to Telegram. Runs from cron every 2 hours. Auto-discovers the most recent sync scripts by embedded timestamp.
@@ -969,10 +996,11 @@ Note: sync-webhook times are Eastern (America/New_York, DST-aware). Other servic
 |---|---|---|
 | `grafana` | 3003 | Dashboards; provisioned with Loki + Prometheus datasources |
 | `prometheus` | 9090 | Metrics scraping; 30-day retention |
-| `loki` | 3100 | Log aggregation; receives from Promtail |
-| `promtail` | — | Log shipper; scrapes Docker container logs + `/opt/mother/data/logs` |
+| `loki` | 3100 | Central log aggregation; receives from Alloy on all hosts |
+| `alloy` | 12345 | Grafana Alloy log shipper (replaced Promtail 2026-08-29; also on Synology + Unraid) |
 | `node-exporter` | 9100 | Host metrics (CPU, RAM, disk, network) |
-| `cadvisor` | 8090 | Container-level metrics |
+| `cadvisor` | 8090 | Container-level metrics (reads from containerd — see Observability Stack) |
+| `autoheal` | — | Restarts `unhealthy` containers (self-heal; also on the download Synology) |
 | `tautulli` | 8181 | Plex watch history (Chris's instance; Ali has own on Terminus) |
 | `tracearr` | 3002 | Stream analytics; Node.js + TimescaleDB + Redis |
 | `tracearr-db` | — | TimescaleDB (PostgreSQL 18 + TimescaleDB 2.25) |
@@ -984,7 +1012,7 @@ Note: sync-webhook times are Eastern (America/New_York, DST-aware). Other servic
 | Service | Port | Purpose |
 |---|---|---|
 | `nginx-proxy-manager` | 80/443/81 | Reverse proxy + SSL termination |
-| `dockhand` | 3000 | Container auto-update watcher (removed Portainer 2026-07-19 — redundant, Dockhand covers this) |
+| `dockhand` | 3000 | Container/image lifecycle across hosts (removed Portainer 2026-07-19). **Its Telegram notifications are disabled/deprecated** — too noisy + its 1.0.3 sender is broken (`parse_mode:"Markdown"`, unescaped → 400s). Container-down alerting is now `scripts/container_watchdog.py` + Grafana alerting → Mother Notifications (see Observability Stack). |
 | `apprise` | 8000 | Notification hub (Telegram via `http://apprise:8000/notify/apprise`) |
 | `backrest` | 9898 | Restic backup UI (replaced Duplicati) |
 
