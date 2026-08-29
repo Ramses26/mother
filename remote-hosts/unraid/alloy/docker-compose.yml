@@ -1,0 +1,22 @@
+# Grafana Alloy on Unraid — ships all container logs to Mother's Loki
+# (10.0.0.162:3100) over the IPsec VPN. Managed as a compose.manager project
+# at /boot/config/plugins/compose.manager/projects/alloy/ on Unraid.
+# Version pinned deliberately (not :latest). Runs as root to read the socket
+# (root:docker 0660). Data dir persists Alloy positions across restarts.
+services:
+  alloy:
+    image: grafana/alloy:v1.19.2
+    container_name: alloy
+    restart: unless-stopped
+    user: "0:0"
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+    ports:
+      - "12345:12345/tcp"
+    volumes:
+      - /boot/config/plugins/compose.manager/projects/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /mnt/user/appdata/alloy/data:/var/lib/alloy/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro

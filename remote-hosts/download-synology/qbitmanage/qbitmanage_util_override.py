@@ -13,6 +13,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 import ruamel.yaml
@@ -93,6 +94,34 @@ def is_tag_in_torrent(check_tag, torrent_tags, exact=True):
                     if ctag in tag:
                         tags_to_remove.append(tag)
             return tags_to_remove
+
+
+def redact_passkey(url: str | None) -> str | None:
+    """Strip tracker passkey from a URL so it is safe to log.
+
+    Private-tracker announce URLs embed the user's passkey in the path
+    (BHD: ``/announce/<pk>``; Blutopia: ``/announce/<pk>``), the query
+    (HDBits: ``?passkey=<pk>``), or as a path prefix (BTN:
+    ``/<pk>/announce``). Logging the raw URL leaks the passkey to log
+    sinks and any downstream consumer (webhooks, notifications, etc.).
+
+    Returns ``<scheme>://<host>/announce[REDACTED]`` when any
+    suspect path or query is present; passes pristine ``/announce``-only
+    URLs and qBittorrent sentinels (``** [DHT] **`` etc.) through unchanged.
+    """
+    if not url or url.startswith("**"):
+        return url
+    try:
+        parsed = urlparse(url)
+    except (ValueError, AttributeError):
+        return "[REDACTED]"
+    if not parsed.scheme or not parsed.netloc:
+        return "[REDACTED]"
+    path = parsed.path.rstrip("/")
+    looks_clean = path in ("", "/announce")
+    if looks_clean and not parsed.query:
+        return url
+    return f"{parsed.scheme}://{parsed.netloc}/announce[REDACTED]"
 
 
 def format_stats_summary(stats: dict, config) -> list[str]:
@@ -332,8 +361,8 @@ class TorrentMessages:
     """Contains list of messages to check against a status of a torrent"""
 
     UNREGISTERED_MSGS = [
+        "NOT FOUND",  # bare tracker "Not Found" (e.g. TorrentLeech) -- local override re-added, see /opt/mother/CLAUDE.md qbitmanage section
         "UNREGISTERED",
-        "NOT FOUND",  # bare tracker "Not Found" (e.g. TorrentLeech) -- local override added 2026-07-19, see /opt/mother/CLAUDE.md
         "TORRENT NOT FOUND",
         "TORRENT IS NOT FOUND",
         "NOT REGISTERED",
@@ -553,7 +582,10 @@ def get_current_version():
 
         try:
             git_branch = Repo(path=".").head.ref.name  # noqa
-        except InvalidGitRepositoryError:
+        except (InvalidGitRepositoryError, TypeError, ValueError):
+            # TypeError/ValueError is raised when HEAD is a detached reference
+            # (e.g. when running from a specific commit checkout in CI or a
+            # PyInstaller-built binary run against a detached-HEAD clone).
             git_branch = None
     except ImportError:
         git_branch = None
@@ -696,11 +728,13 @@ class check:
                 yaml = YAML(self.config.config_path)
                 if subparent:
                     endline = f"\n{subparent} sub-attribute {attribute} added to config"
+                    if parent not in yaml.data or not isinstance(yaml.data[parent], dict):
+                        yaml.data[parent] = {}
                     if subparent not in yaml.data[parent] or not yaml.data[parent][subparent]:
                         yaml.data[parent][subparent] = {attribute: default}
-                    elif attribute not in yaml.data[parent]:
-                        if isinstance(yaml.data[parent][subparent], str):
-                            yaml.data[parent][subparent] = {attribute: default}
+                    elif isinstance(yaml.data[parent][subparent], str):
+                        yaml.data[parent][subparent] = {attribute: default}
+                    elif attribute not in yaml.data[parent][subparent]:
                         yaml.data[parent][subparent][attribute] = default
                     else:
                         endline = ""
@@ -870,11 +904,12 @@ def list_in_text(text, search_list, match_all=False):
         search_list = set(search_list)
     contains = {x for x in search_list if " " in x}
     exception = search_list - contains
+    words = text.split(" ")
     if match_all:
-        if all(x == m for m in text.split(" ") for x in exception) or all(x in text for x in contains):
+        if all(x in words for x in exception) and all(x in text for x in contains):
             return True
     else:
-        if any(x == m for m in text.split(" ") for x in exception) or any(x in text for x in contains):
+        if any(x in exception for x in words) or any(x in text for x in contains):
             return True
     return False
 
@@ -1096,6 +1131,9 @@ class CheckHardLinks:
                     self.inode_count[inode_no] += 1
                 else:
                     self.inode_count[inode_no] = 1
+        logger.debug(
+            f"Built inode count from {len(self.root_files)} file(s) in root_dir ({len(self.inode_count)} unique inode(s))."
+        )
 
     def nohardlink(self, file, notify, ignore_root_dir):
         """
@@ -1106,21 +1144,21 @@ class CheckHardLinks:
         This fixes the bug in #192
         """
 
-        def has_hardlinks(self, file, ignore_root_dir):
+        def has_hardlinks(file_stat, ignore_root_dir):
             """
             Check if a file has hard links.
 
             Args:
-                file (str): The path to the file.
-                ignore_root_dir (bool): Whether to ignore the root directory.
+                file_stat (os.stat_result): The cached stat result of the file.
+                ignore_root_dir (bool): Whether to ignore links that live inside root_dir.
 
             Returns:
                 bool: True if the file has hard links, False otherwise.
             """
             if ignore_root_dir:
-                return os.stat(file).st_nlink - self.inode_count.get(os.stat(file).st_ino, 1) > 0
+                return file_stat.st_nlink - self.inode_count.get(file_stat.st_ino, 1) > 0
             else:
-                return os.stat(file).st_nlink > 1
+                return file_stat.st_nlink > 1
 
         check_for_hl = True
         try:
@@ -1128,19 +1166,24 @@ class CheckHardLinks:
                 if os.path.islink(file):
                     logger.warning(f"Symlink found in {file}, unable to determine hardlinks. Skipping...")
                     return False
-                logger.trace(f"Checking file: {file}")
-                logger.trace(f"Checking file inum: {os.stat(file).st_ino}")
-                logger.trace(f"Checking no of hard links: {os.stat(file).st_nlink}")
-                logger.trace(f"Checking inode_count dict: {self.inode_count.get(os.stat(file).st_ino)}")
-                logger.trace(f"ignore_root_dir: {ignore_root_dir}")
+                file_stat = os.stat(file)
+                inode_count = self.inode_count.get(file_stat.st_ino, 1)
+                # Single compact trace line per file instead of one line per attribute (was too spammy).
+                logger.trace(
+                    f"Checking file '{file}' | inode: {file_stat.st_ino} | nlink: {file_stat.st_nlink} | "
+                    f"links inside root_dir: {inode_count} | ignore_root_dir: {ignore_root_dir}"
+                )
                 # https://github.com/StuffAnThings/qbit_manage/issues/291 for more details
-                if has_hardlinks(self, file, ignore_root_dir):
-                    logger.trace(f"Hardlinks found in {file}.")
+                if has_hardlinks(file_stat, ignore_root_dir):
                     check_for_hl = False
+                    logger.debug(
+                        f"Hardlinks found for '{file}': nlink={file_stat.st_nlink}, links inside root_dir={inode_count}, "
+                        f"ignore_root_dir={ignore_root_dir}."
+                    )
+                else:
+                    logger.debug(f"No hardlinks found for '{file}' (nlink={file_stat.st_nlink}).")
             else:
                 sorted_files = sorted(Path(file).rglob("*"), key=lambda x: os.stat(x).st_size, reverse=True)
-                logger.trace(f"Folder: {file}")
-                logger.trace(f"Files Sorted by size: {sorted_files}")
                 threshold = 0.1
                 if not sorted_files:
                     msg = (
@@ -1151,23 +1194,41 @@ class CheckHardLinks:
                     logger.warning(msg)
                 else:
                     largest_file_size = os.stat(sorted_files[0]).st_size
-                    logger.trace(f"Largest file: {sorted_files[0]}")
-                    logger.trace(f"Largest file size: {largest_file_size}")
+                    size_threshold = largest_file_size * threshold
+                    logger.trace(
+                        f"Checking folder '{file}' | files: {len(sorted_files)} | "
+                        f"largest file: '{sorted_files[0]}' ({largest_file_size} bytes) | "
+                        f"only checking files >= {threshold:.0%} of largest ({size_threshold:.0f} bytes)"
+                    )
                     for files in sorted_files:
                         if os.path.islink(files):
                             logger.warning(f"Symlink found in {files}, unable to determine hardlinks. Skipping...")
                             continue
-                        file_size = os.stat(files).st_size
-                        file_no_hardlinks = os.stat(files).st_nlink
-                        logger.trace(f"Checking file: {files}")
-                        logger.trace(f"Checking file inum: {os.stat(files).st_ino}")
-                        logger.trace(f"Checking file size: {file_size}")
-                        logger.trace(f"Checking no of hard links: {file_no_hardlinks}")
-                        logger.trace(f"Checking inode_count dict: {self.inode_count.get(os.stat(files).st_ino)}")
-                        logger.trace(f"ignore_root_dir: {ignore_root_dir}")
-                        if has_hardlinks(self, files, ignore_root_dir) and file_size >= (largest_file_size * threshold):
-                            logger.trace(f"Hardlinks found in {files}.")
+                        file_stat = os.stat(files)
+                        file_size = file_stat.st_size
+                        # sorted_files is sorted by size descending, so once we drop below the threshold no
+                        # remaining file can qualify -> stop checking (avoids checking/logging every small file).
+                        if file_size < size_threshold:
+                            logger.trace(
+                                f"Skipping remaining files in '{file}': '{files}' ({file_size} bytes) and smaller "
+                                f"are below the {threshold:.0%} size threshold."
+                            )
+                            break
+                        inode_count = self.inode_count.get(file_stat.st_ino, 1)
+                        logger.trace(
+                            f"Checking file '{files}' | size: {file_size} | inode: {file_stat.st_ino} | "
+                            f"nlink: {file_stat.st_nlink} | links inside root_dir: {inode_count} | "
+                            f"ignore_root_dir: {ignore_root_dir}"
+                        )
+                        if has_hardlinks(file_stat, ignore_root_dir):
                             check_for_hl = False
+                            logger.debug(
+                                f"Hardlinks found in folder '{file}' for file '{files}': nlink={file_stat.st_nlink}, "
+                                f"links inside root_dir={inode_count}, ignore_root_dir={ignore_root_dir}."
+                            )
+                            break
+                    if check_for_hl:
+                        logger.debug(f"No hardlinks found in folder '{file}'.")
         except PermissionError as perm:
             logger.warning(f"{perm} : file {file} has permission issues. Skipping...")
             return False
@@ -1222,10 +1283,17 @@ def get_root_files(root_dir, remote_dir, exclude_dir=None):
 
     root_files = []
 
+    def _path_is_under(path, parent):
+        if not parent:
+            return False
+        path_norm = os.path.normcase(os.path.normpath(path))
+        parent_norm = os.path.normcase(os.path.normpath(parent.rstrip("/\\")))
+        return path_norm == parent_norm or path_norm.startswith(parent_norm + os.sep)
+
     if is_same_path:
         # Fast path when paths are the same or remote_dir not provided
         for path, subdirs, files in os.walk(base_to_walk):
-            if local_exclude_dir and os.path.normcase(local_exclude_dir) in os.path.normcase(path):
+            if local_exclude_dir and _path_is_under(path, local_exclude_dir):
                 continue
             for name in files:
                 root_files.append(os.path.join(path, name))
@@ -1233,7 +1301,7 @@ def get_root_files(root_dir, remote_dir, exclude_dir=None):
         # Walk the accessible remote_dir and convert to root_dir representation once per directory
         for path, subdirs, files in os.walk(base_to_walk):
             replaced_path = path_replace(path, remote_dir, root_dir)
-            if local_exclude_dir and os.path.normcase(local_exclude_dir) in os.path.normcase(replaced_path):
+            if local_exclude_dir and _path_is_under(replaced_path, local_exclude_dir):
                 continue
             for name in files:
                 root_files.append(os.path.join(replaced_path, name))
@@ -1243,13 +1311,11 @@ def get_root_files(root_dir, remote_dir, exclude_dir=None):
 
 def load_json(file):
     """Load json file if exists"""
-    if os.path.isfile(truncate_filename(file)):
-        file = open(file)
-        data = json.load(file)
-        file.close()
-    else:
-        data = {}
-    return data
+    path = truncate_filename(file)
+    if not os.path.isfile(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
 
 
 def truncate_filename(filename, max_length=255, offset=0):

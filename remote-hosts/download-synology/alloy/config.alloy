@@ -1,0 +1,66 @@
+// ============================================================================
+// Grafana Alloy — Download Synology (10.0.1.203) log shipping
+// Ships all container logs + the qbitmanage file log to Mother's Loki over the
+// LAN. Same label schema as Mother { host, service, job, compose_service }.
+// host label = "download-synology".
+// ============================================================================
+
+loki.write "default" {
+  endpoint {
+    url = "http://10.0.0.162:3100/loki/api/v1/push"
+  }
+}
+
+// ---- Docker container logs (all containers on this host) --------------------
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+}
+
+discovery.relabel "docker" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_image"]
+    target_label  = "image"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "compose_service"
+  }
+  rule {
+    target_label = "host"
+    replacement  = "download-synology"
+  }
+  rule {
+    target_label = "job"
+    replacement  = "docker"
+  }
+}
+
+loki.source.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.docker.output
+  forward_to       = [loki.write.default.receiver]
+  refresh_interval = "5s"
+}
+
+// ---- qbitmanage file log (authoritative; powers the error alert rule) -------
+// Host /volume1/docker/qbitmanage/logs is mounted at /qbitmanage-logs.
+local.file_match "qbitmanage" {
+  path_targets = [{
+    __path__ = "/qbitmanage-logs/qbit_manage.log*",
+    service  = "qbitmanage",
+    job      = "file_log",
+    host     = "download-synology",
+  }]
+}
+loki.source.file "qbitmanage" {
+  targets    = local.file_match.qbitmanage.targets
+  forward_to = [loki.write.default.receiver]
+}

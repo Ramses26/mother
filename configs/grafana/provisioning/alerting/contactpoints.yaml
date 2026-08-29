@@ -1,0 +1,21 @@
+apiVersion: 1
+
+# Telegram contact point for the "Mother Notifications" group (-5498616604).
+# Bot token injected from the TELEGRAM_BOT_TOKEN env var passed to the grafana
+# container. Separate from the per-app content groups (sync/upgraderr/curatorr)
+# and from Terminus — this is Mother-side infrastructure/health alerting.
+contactPoints:
+  - orgId: 1
+    name: mother-notifications-telegram
+    receivers:
+      - uid: mother_notif_tg
+        type: telegram
+        settings:
+          bottoken: $__env{TELEGRAM_BOT_TOKEN}
+          chatid: "-5498616604"
+          message: |
+            🖥️ *Mother Infra Alert*
+            {{ range .Alerts }}*{{ .Labels.alertname }}* — {{ .Status }}
+            {{ .Annotations.summary }}
+            {{ end }}
+        disableResolveMessage: false

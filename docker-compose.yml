@@ -824,16 +824,25 @@ services:
       retries: 3
       start_period: 30s
 
-  promtail:
-    image: grafana/promtail:3.4.2
-    container_name: promtail
+  # Grafana Alloy — log shipper (replaces Promtail 2026-08). Same Loki label
+  # schema {host,service,job,compose_service}. Version pinned intentionally;
+  # bump deliberately, not via :latest (see qbitmanage override incident).
+  alloy:
+    image: grafana/alloy:v1.19.2
+    container_name: alloy
     restart: unless-stopped
     logging: *default-logging
-    command: -config.file=/etc/promtail/promtail-config.yml
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+    ports:
+      - "12345:12345"
     volumes:
-      - /opt/mother/configs/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /opt/mother/configs/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /opt/mother/data/alloy:/var/lib/alloy/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Host log paths for persistent file logs (survive docker rm)
       - /opt/mother/data/logs:/opt/mother/data/logs:ro
       - /opt/mother/configs/sync-webhook/logs:/opt/mother/configs/sync-webhook/logs:ro
     networks:
@@ -852,6 +861,8 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
+      # Consumed by provisioned Telegram contact point (Mother Notifications)
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
     volumes:
       - /opt/mother/data/grafana:/var/lib/grafana
       - /opt/mother/configs/grafana/provisioning:/etc/grafana/provisioning:ro

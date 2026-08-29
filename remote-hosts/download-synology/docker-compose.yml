@@ -142,6 +142,29 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
+  # Grafana Alloy — ships this host's container logs + qbitmanage file log to
+  # Mother's Loki (10.0.0.162:3100). Version pinned deliberately (not :latest).
+  # Runs as root: the Synology docker socket is root:root 0660.
+  alloy:
+    image: grafana/alloy:v1.19.2
+    container_name: alloy
+    restart: unless-stopped
+    user: "0:0"
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+    ports:
+      - "12345:12345/tcp"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /volume1/docker/alloy/data:/var/lib/alloy/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /volume1/docker/qbitmanage/logs:/qbitmanage-logs:ro
+    networks:
+      - media_net
+
 networks:
   media_net:
     external: true

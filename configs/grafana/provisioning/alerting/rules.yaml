@@ -1,0 +1,67 @@
+apiVersion: 1
+
+# Loki-backed alert: fires when qbitmanage logs repeated errors on the download
+# Synology. This is the watchdog for the 2026-08 silent-failure class (stale
+# util.py override → redact_passkey crash → 10 days of unnoticed non-removal).
+# Threshold >3 in 10m ignores single transient blips, catches sustained breakage.
+groups:
+  - orgId: 1
+    name: infra-qbitmanage
+    folder: Infra Alerts
+    interval: 1m
+    rules:
+      - uid: qbitmanage_error_watchdog
+        title: qbitmanage errors (download-synology)
+        condition: C
+        for: 0m
+        noDataState: OK
+        execErrState: OK
+        labels:
+          team: infra
+        annotations:
+          summary: "qbitmanage logged {{ $values.B.Value }} error line(s) in the last 10m on the download Synology. Removals may be broken again — check its logs / Loki {service=\"qbitmanage\"}."
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: loki
+            model:
+              datasource:
+                type: loki
+                uid: loki
+              editorMode: code
+              expr: "sum(count_over_time({service=\"qbitmanage\"} |~ \"\\\\[ERROR\\\\]|Traceback\" [10m]))"
+              queryType: instant
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              type: reduce
+              reducer: last
+              expression: A
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              type: threshold
+              expression: B
+              refId: C
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [3]
