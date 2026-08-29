@@ -128,3 +128,6 @@ traffic_stats/snapshots.csv
 # Claude Code local/personal settings — never shared, machine-specific
 .claude/settings.local.json
 .claude/*.lock
+
+# Alloy runtime state (positions, WAL)
+data/alloy/
