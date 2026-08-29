@@ -1,0 +1,25 @@
+// ============================================================================
+// Grafana Alloy — Nostromo (10.0.0.250, Chris's native Plex server) log shipping
+// Native install (no Docker on this host). Ships Plex Media Server logs to
+// Mother's Loki over the LAN. host = "nostromo".
+// ============================================================================
+
+loki.write "default" {
+  endpoint {
+    url = "http://10.0.0.162:3100/loki/api/v1/push"
+  }
+}
+
+local.file_match "plex" {
+  path_targets = [{
+    __path__ = "/var/lib/plexmediaserver/Library/Application Support/Plex Media Server/Logs/Plex Media Server.log*",
+    service  = "plex",
+    job      = "file_log",
+    host     = "nostromo",
+  }]
+}
+
+loki.source.file "plex" {
+  targets    = local.file_match.plex.targets
+  forward_to = [loki.write.default.receiver]
+}
