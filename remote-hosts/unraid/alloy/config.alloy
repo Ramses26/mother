@@ -1,12 +1,20 @@
 // ============================================================================
 // Grafana Alloy — Unraid (192.168.1.10) log shipping
-// Ships all container logs to Mother's Loki over the IPsec VPN. Same label
-// schema as Mother { host, service, job, compose_service }. host = "unraid".
+// Ships all container logs to TERMINUS's Loki (same Gomaa LAN, no VPN hop) --
+// changed 2026-08-29 from Mother's Loki. Rationale: shipping Gomaa-side logs
+// across the Stuttler<->Gomaa VPN made local visibility depend on the exact
+// link this session spent hours stabilizing (MTU blackhole, dynamic WAN2 IP,
+// once needed a full Mother reboot to clear) -- a circular dependency where
+// the logs explaining a VPN outage can't reach Loki because the VPN is down.
+// Same label schema as Mother { host, service, job, compose_service }.
+// host = "unraid". Cross-site VIEWING is via Grafana datasource federation
+// (each site's Grafana has the other's Loki as a second datasource) instead
+// of cross-site log replication.
 // ============================================================================
 
 loki.write "default" {
   endpoint {
-    url = "http://10.0.0.162:3100/loki/api/v1/push"
+    url = "http://192.168.1.14:3100/loki/api/v1/push"
   }
 }
 
