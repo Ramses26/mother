@@ -131,3 +131,6 @@ traffic_stats/snapshots.csv
 
 # Alloy runtime state (positions, WAL)
 data/alloy/
+
+# Container watchdog runtime state
+data/watchdog/

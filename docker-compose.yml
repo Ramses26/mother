@@ -927,6 +927,25 @@ services:
     networks:
       - mother_network
 
+  # autoheal — self-recovery layer. Restarts any container Docker marks
+  # "unhealthy" (a healthcheck failing). Complements each service's
+  # restart: unless-stopped policy (which already covers hard crashes/exits):
+  # autoheal covers the "running but hung / failing its healthcheck" case that
+  # a restart policy never catches. Mirrors the autoheal already on the download
+  # Synology. Only acts on containers that HAVE a healthcheck, so it's a no-op
+  # for the rest — safe to watch "all".
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+      - AUTOHEAL_INTERVAL=30
+      - AUTOHEAL_START_PERIOD=120
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
   # Backrest - Restic web UI for backup management
   backrest:
     image: garethgeorge/backrest:latest
