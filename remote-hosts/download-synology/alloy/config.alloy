@@ -62,5 +62,21 @@ local.file_match "qbitmanage" {
 }
 loki.source.file "qbitmanage" {
   targets    = local.file_match.qbitmanage.targets
+  forward_to = [loki.process.qbitmanage.receiver]
+}
+
+// Parse qbitmanage's real log timestamp ("[2026-08-29 05:18:05,109] ...") so
+// backfilled/rotated history keeps its true time instead of ingestion time.
+// Without this, replaying old error floods on (re)start stamps them "now" and
+// falsely trips the qbitmanage error alert. Log clock is ET (container TZ).
+loki.process "qbitmanage" {
   forward_to = [loki.write.default.receiver]
+  stage.regex {
+    expression = "^\\[(?P<ts>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}),\\d+\\]"
+  }
+  stage.timestamp {
+    source   = "ts"
+    format   = "2006-01-02 15:04:05"
+    location = "America/New_York"
+  }
 }
