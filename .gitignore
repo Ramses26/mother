@@ -18,6 +18,7 @@ configs/*
 !configs/apprise/
 !configs/qbitmanage/
 !configs/loki/
+!configs/alloy/
 !configs/promtail/
 !configs/prometheus/
 !configs/grafana/

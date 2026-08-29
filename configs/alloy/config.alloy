@@ -1,0 +1,108 @@
+// ============================================================================
+// Grafana Alloy — Mother host log shipping
+// Replaces Promtail (retired 2026-08). Replicates the same Loki label schema:
+//   { host, service, job, compose_service, image }
+// so existing Grafana dashboards/queries keep working unchanged.
+// ============================================================================
+
+// ---- Loki write endpoint (local, same host) --------------------------------
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+  external_labels = {}
+}
+
+// ---- UniFi syslog receiver ---------------------------------------------------
+// Both UDMs (Stuttler 10.0.0.1, Gomaa 192.168.1.1) forward remote syslog here
+// (UDP 51514, set via UniFi API 2026-08-29). Per-site host labeling by source
+// IP deferred (relabel_rules isn't valid here in v1.19.2 -- caused a config
+// load failure, reverted); refine later, query by __syslog_connection_ip_address
+// meanwhile if it's exposed as a regular label.
+loki.source.syslog "unifi" {
+  listener {
+    address  = "0.0.0.0:51514"
+    protocol = "udp"
+    labels   = {job = "syslog", service = "unifi", host = "unifi"}
+  }
+  forward_to = [loki.write.default.receiver]
+}
+
+// ---- Docker container logs (all containers on this host) --------------------
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+}
+
+discovery.relabel "docker" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_image"]
+    target_label  = "image"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "compose_service"
+  }
+  rule {
+    target_label = "host"
+    replacement  = "mother"
+  }
+  rule {
+    target_label = "job"
+    replacement  = "docker"
+  }
+}
+
+loki.source.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.docker.output
+  forward_to       = [loki.write.default.receiver]
+  refresh_interval = "5s"
+}
+
+// ---- Persistent file logs (survive docker rm) ------------------------------
+local.file_match "curatorr" {
+  path_targets = [{
+    __path__ = "/opt/mother/data/logs/curatorr/*.log*",
+    service  = "curatorr",
+    job      = "file_log",
+    host     = "mother",
+  }]
+}
+loki.source.file "curatorr" {
+  targets    = local.file_match.curatorr.targets
+  forward_to = [loki.write.default.receiver]
+}
+
+local.file_match "sync_webhook" {
+  path_targets = [{
+    __path__ = "/opt/mother/configs/sync-webhook/logs/*.log*",
+    service  = "sync-webhook",
+    job      = "file_log",
+    host     = "mother",
+  }]
+}
+loki.source.file "sync_webhook" {
+  targets    = local.file_match.sync_webhook.targets
+  forward_to = [loki.write.default.receiver]
+}
+
+local.file_match "upgraderr" {
+  path_targets = [{
+    __path__ = "/opt/mother/data/logs/upgraderr/*.log*",
+    service  = "upgraderr",
+    job      = "file_log",
+    host     = "mother",
+  }]
+}
+loki.source.file "upgraderr" {
+  targets    = local.file_match.upgraderr.targets
+  forward_to = [loki.write.default.receiver]
+}
