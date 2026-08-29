@@ -18,3 +18,16 @@ datasources:
     isDefault: true
     jsonData:
       timeInterval: 15s
+
+  # Federation (2026-08-29): view Terminus's (Gomaa-side) Loki from Mother's
+  # Grafana without replicating logs across the VPN. Live query only, on
+  # demand -- degrades gracefully if the VPN is down (this panel/query is
+  # empty, everything else on this dashboard is unaffected).
+  - name: Loki (Terminus)
+    type: loki
+    uid: loki-terminus
+    access: proxy
+    url: http://192.168.1.14:3100
+    isDefault: false
+    jsonData:
+      maxLines: 1000
