@@ -7,7 +7,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 2,
+  "version": 3,
   "refresh": "30s",
   "time": {
     "from": "now-6h",
@@ -282,7 +282,7 @@
       "title": "Sync Engine (Synology \u2192 Unraid)",
       "gridPos": {
         "x": 0,
-        "y": 5,
+        "y": 9,
         "w": 24,
         "h": 1
       },
@@ -298,7 +298,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 6,
+        "y": 10,
         "w": 4,
         "h": 4
       },
@@ -357,7 +357,7 @@
       },
       "gridPos": {
         "x": 4,
-        "y": 6,
+        "y": 10,
         "w": 4,
         "h": 4
       },
@@ -408,7 +408,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 6,
+        "y": 10,
         "w": 4,
         "h": 4
       },
@@ -459,7 +459,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 6,
+        "y": 10,
         "w": 4,
         "h": 4
       },
@@ -514,7 +514,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 6,
+        "y": 10,
         "w": 8,
         "h": 4
       },
@@ -565,7 +565,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 10,
+        "y": 14,
         "w": 24,
         "h": 5
       },
@@ -621,7 +621,7 @@
       "title": "Logs \u2014 all hosts",
       "gridPos": {
         "x": 0,
-        "y": 15,
+        "y": 19,
         "w": 24,
         "h": 1
       },
@@ -637,7 +637,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 16,
+        "y": 20,
         "w": 8,
         "h": 8
       },
@@ -688,7 +688,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 16,
+        "y": 20,
         "w": 8,
         "h": 8
       },
@@ -739,7 +739,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 16,
+        "y": 20,
         "w": 8,
         "h": 8
       },
@@ -790,7 +790,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 24,
+        "y": 28,
         "w": 24,
         "h": 9
       },
@@ -810,6 +810,124 @@
         "enableLogDetails": true,
         "dedupStrategy": "exact",
         "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 19,
+      "type": "stat",
+      "title": "Nostromo CPU",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{instance=\"nostromo\",mode=\"idle\"}[5m]))*100)",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 20,
+      "type": "stat",
+      "title": "Nostromo RAM",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 5,
+        "y": 5,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "(1-(node_memory_MemAvailable_bytes{instance=\"nostromo\"}/node_memory_MemTotal_bytes{instance=\"nostromo\"}))*100",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
       }
     }
   ],
