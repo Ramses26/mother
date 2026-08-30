@@ -7,7 +7,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 4,
+  "version": 5,
   "refresh": "30s",
   "time": {
     "from": "now-6h",
@@ -15,12 +15,506 @@
   },
   "panels": [
     {
+      "id": 28,
+      "type": "row",
+      "title": "Mother",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false
+    },
+    {
+      "id": 29,
+      "type": "stat",
+      "title": "Status",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "min(up{job=\"node-exporter\"})",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "green"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 30,
+      "type": "gauge",
+      "title": "CPU",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 1,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m]))*100)",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 31,
+      "type": "gauge",
+      "title": "Memory",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100*(1-(node_memory_MemAvailable_bytes{job=\"node-exporter\"}/node_memory_MemTotal_bytes{job=\"node-exporter\"}))",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 32,
+      "type": "gauge",
+      "title": "Disk (/)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100*(1-(node_filesystem_avail_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype=\"ext4\"}/node_filesystem_size_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype=\"ext4\"}))",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 92
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 33,
+      "type": "row",
+      "title": "Nostromo (Plex)",
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false
+    },
+    {
+      "id": 34,
+      "type": "stat",
+      "title": "Status",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "min(up{job=\"node-exporter-nostromo\"})",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "green"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 35,
+      "type": "gauge",
+      "title": "CPU",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 7,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{job=\"node-exporter-nostromo\",mode=\"idle\"}[5m]))*100)",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 36,
+      "type": "gauge",
+      "title": "Memory",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 7,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100*(1-(node_memory_MemAvailable_bytes{job=\"node-exporter-nostromo\"}/node_memory_MemTotal_bytes{job=\"node-exporter-nostromo\"}))",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 37,
+      "type": "gauge",
+      "title": "Disk (/)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 7,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100*(1-(node_filesystem_avail_bytes{job=\"node-exporter-nostromo\",mountpoint=\"/\",fstype=\"ext4\"}/node_filesystem_size_bytes{job=\"node-exporter-nostromo\",mountpoint=\"/\",fstype=\"ext4\"}))",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 92
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
       "id": 1,
       "type": "row",
       "title": "Fleet Health",
       "gridPos": {
         "x": 0,
-        "y": 0,
+        "y": 12,
         "w": 24,
         "h": 1
       },
@@ -36,7 +530,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 1,
+        "y": 13,
         "w": 5,
         "h": 4
       },
@@ -95,7 +589,7 @@
       },
       "gridPos": {
         "x": 5,
-        "y": 1,
+        "y": 13,
         "w": 5,
         "h": 4
       },
@@ -154,7 +648,7 @@
       },
       "gridPos": {
         "x": 10,
-        "y": 1,
+        "y": 13,
         "w": 5,
         "h": 4
       },
@@ -213,7 +707,7 @@
       },
       "gridPos": {
         "x": 15,
-        "y": 1,
+        "y": 13,
         "w": 4,
         "h": 4
       },
@@ -264,7 +758,7 @@
       "title": "Alerts",
       "gridPos": {
         "x": 19,
-        "y": 1,
+        "y": 13,
         "w": 5,
         "h": 4
       },
@@ -282,7 +776,7 @@
       "title": "Sync Engine (Synology \u2192 Unraid)",
       "gridPos": {
         "x": 0,
-        "y": 9,
+        "y": 21,
         "w": 24,
         "h": 1
       },
@@ -298,7 +792,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 10,
+        "y": 22,
         "w": 4,
         "h": 4
       },
@@ -357,7 +851,7 @@
       },
       "gridPos": {
         "x": 4,
-        "y": 10,
+        "y": 22,
         "w": 4,
         "h": 4
       },
@@ -408,7 +902,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 10,
+        "y": 22,
         "w": 4,
         "h": 4
       },
@@ -459,7 +953,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 10,
+        "y": 22,
         "w": 4,
         "h": 4
       },
@@ -514,7 +1008,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 10,
+        "y": 22,
         "w": 8,
         "h": 4
       },
@@ -565,7 +1059,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 14,
+        "y": 26,
         "w": 24,
         "h": 5
       },
@@ -621,7 +1115,7 @@
       "title": "Logs \u2014 all hosts",
       "gridPos": {
         "x": 0,
-        "y": 19,
+        "y": 31,
         "w": 24,
         "h": 1
       },
@@ -637,7 +1131,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 20,
+        "y": 32,
         "w": 8,
         "h": 8
       },
@@ -688,7 +1182,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 20,
+        "y": 32,
         "w": 8,
         "h": 8
       },
@@ -739,7 +1233,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 20,
+        "y": 32,
         "w": 8,
         "h": 8
       },
@@ -790,7 +1284,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 28,
+        "y": 40,
         "w": 24,
         "h": 9
       },
@@ -822,7 +1316,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 5,
+        "y": 17,
         "w": 5,
         "h": 4
       },
@@ -881,7 +1375,7 @@
       },
       "gridPos": {
         "x": 5,
-        "y": 5,
+        "y": 17,
         "w": 5,
         "h": 4
       },
@@ -936,7 +1430,7 @@
       "title": "Network / VPN (Stuttler <-> Gomaa)",
       "gridPos": {
         "x": 0,
-        "y": 37,
+        "y": 49,
         "w": 24,
         "h": 1
       },
@@ -952,7 +1446,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 38,
+        "y": 50,
         "w": 4,
         "h": 4
       },
@@ -1007,7 +1501,7 @@
       },
       "gridPos": {
         "x": 4,
-        "y": 38,
+        "y": 50,
         "w": 4,
         "h": 4
       },
@@ -1062,7 +1556,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 38,
+        "y": 50,
         "w": 4,
         "h": 4
       },
@@ -1121,7 +1615,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 38,
+        "y": 50,
         "w": 4,
         "h": 4
       },
@@ -1180,7 +1674,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 38,
+        "y": 50,
         "w": 4,
         "h": 4
       },
@@ -1235,7 +1729,7 @@
       },
       "gridPos": {
         "x": 20,
-        "y": 38,
+        "y": 50,
         "w": 4,
         "h": 4
       },
@@ -1282,7 +1776,50 @@
     }
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "host",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "query": {
+          "query": "label_values({job=\"docker\"}, host)",
+          "refId": "host-var"
+        },
+        "definition": "label_values({job=\"docker\"}, host)",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        },
+        "includeAll": true,
+        "multi": true,
+        "refresh": 2,
+        "regex": ""
+      },
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "query": {
+          "query": "label_values({job=\"docker\", host=~\"$host\"}, service)",
+          "refId": "service-var"
+        },
+        "definition": "label_values({job=\"docker\", host=~\"$host\"}, service)",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        },
+        "includeAll": true,
+        "multi": true,
+        "refresh": 2,
+        "regex": ""
+      }
+    ]
   },
   "annotations": {
     "list": []
