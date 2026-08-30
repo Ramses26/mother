@@ -21,13 +21,6 @@ scrape_configs:
       - target_label: instance
         replacement: nostromo
 
-  - job_name: cadvisor
-    static_configs:
-      - targets: [cadvisor:8080]
-    relabel_configs:
-      - target_label: instance
-        replacement: mother
-
   - job_name: sync-webhook
     static_configs:
       - targets: [sync-webhook:5000]
@@ -39,3 +32,10 @@ scrape_configs:
   - job_name: unifi-exporter
     static_configs:
       - targets: [unifi-exporter:9110]
+
+  - job_name: docker-stats-exporter
+    static_configs:
+      - targets: [docker-stats-exporter:9330]
+    relabel_configs:
+      - target_label: instance
+        replacement: mother

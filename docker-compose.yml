@@ -925,32 +925,35 @@ services:
       - /:/host:ro,rslave
     network_mode: host
 
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.52.1
-    container_name: cadvisor
+  # cAdvisor REMOVED 2026-08-29 -- replaced by docker-stats-exporter below.
+  # Root cause was never fully fixable: Mother's Docker uses the containerd
+  # image store, so cAdvisor's docker-mode writable-layer lookup fails
+  # ("failed to identify the read-write layer ID"). Pointing it at containerd
+  # directly (--containerd flags) worked *temporarily* but degraded again
+  # after some uptime -- confirmed on both Mother and Terminus, needing a
+  # periodic `docker restart cadvisor` forever. docker-stats-exporter talks
+  # to the Docker Engine API directly (what `docker stats` itself uses),
+  # which was never affected by this class of bug.
+
+  # docker-stats-exporter — replaces cAdvisor's role. Talks to the Docker Engine
+  # API directly (same API `docker stats` uses), not containerd, so it never
+  # hits cAdvisor's "failed to identify the read-write layer ID" bug (confirmed
+  # on both Mother and Terminus, 2026-08-29 -- restarting cAdvisor is only a
+  # temporary fix that degrades again after uptime). Deployed alongside
+  # cAdvisor to prove out before removing it.
+  docker-stats-exporter:
+    build: ./services/docker-stats-exporter
+    container_name: docker-stats-exporter
     labels:
       - "autoheal=true"
     restart: unless-stopped
     logging: *default-logging
-    command:
-      # Docker uses the containerd image store (overlayfs driver), which cAdvisor
-      # can't read via the docker layer layout. Point it at containerd directly
-      # (Docker's containers live in the 'moby' namespace). Test 2026-08-29.
-      - --containerd=/run/containerd/containerd.sock
-      - --containerd-namespace=moby
-      - --docker_only=true
+    environment:
+      - POLL_INTERVAL=30
     ports:
-      - "8090:8080"
+      - "9330:9330"
     volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
-    privileged: true
-    devices:
-      - /dev/kmsg
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - mother_network
 

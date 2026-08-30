@@ -27,5 +27,6 @@ Not documentation — working list for Ali. Check items off / delete as done.
 - **Version drift vs Mother**: Loki 2.9.8 (Mother: 3.4.2), Prometheus v2.51.2 (Mother: v3.3.1), Grafana `latest`/unpinned (Mother: pinned 11.6.0).
 - Mother's Uptime Kuma has only **1 monitor** vs Terminus's 8 — worth building out proper Mother-side coverage (services, VPN, key containers) to match.
 
-## Deferred from earlier (still open)
-- Swap flaky cAdvisor on Mother for a lighter docker-stats exporter (cosmetic, not blocking) — low priority.
+## Deferred from earlier
+- [x] Replaced cAdvisor on Mother with a custom `docker-stats-exporter` (talks to the Docker Engine API directly, sidesteps the containerd bug entirely — no more periodic restarts). cAdvisor container removed. Verified: real CPU/mem/network data for all 32 containers. Metrics: `docker_container_{up,cpu_percent,memory_usage_bytes,memory_limit_bytes,network_receive_bytes_total,network_transmit_bytes_total}`.
+- [ ] Same swap on Terminus (still has the flaky cAdvisor, currently working after a manual restart) — not done, that's their stack; can port the same service there if wanted.
