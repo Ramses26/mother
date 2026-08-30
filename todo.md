@@ -15,9 +15,46 @@ Not documentation — working list for Ali. Check items off / delete as done.
 - [ ] Terminus's `alloy/config.alloy` (syslog receiver, below) and `docker-compose.yml` (its port mapping) also have **uncommitted changes** now, same reason.
 
 ## Nostromo / Plex
-- [ ] Add an Uptime Kuma monitor for Nostromo's Plex (mirrors Terminus's existing "Plex on Hathor" pattern): **Mother's Uptime Kuma** → Add Monitor → HTTP → `http://10.0.0.250:32400/identity`.
+- [ ] Add an Uptime Kuma monitor for Nostromo's Plex — see the full Uptime Kuma section below (folded in there now instead of standalone).
 - [ ] Consider Plex's own **Settings → Troubleshooting → Optimize Database / Clean Bundles** periodically (official tooling; DB itself is healthy — 1.33GB, 208k media parts, `freelist_count=0` = no bloat, checked 2026-08-29).
 - [x] Nostromo Plex systemd hardened with `MemoryMax=12G`/`MemoryHigh=10G`/`WatchdogSec=300` (matches Hathor's pattern, Nostromo didn't have it before) — done, no restart needed to apply.
+
+## Uptime Kuma — build out Mother's coverage (currently 1 monitor vs Terminus's 8)
+Terminus's Kuma (`http://192.168.1.14:3001`) already has a good pattern worth mirroring: an `active` toggle per monitor, HTTP checks with `interval=60`/`retry_interval=60`, `ping` checks by hostname, and a `group` type used as a folder to nest related monitors. All URLs below verified reachable (2026-08-29) before listing — add these in **Mother's Uptime Kuma** (`http://10.0.0.162:3001`):
+
+**Group: "Mother Services"** — create this as a Group monitor first, then add each below with Parent = this group.
+
+| Name | Type | URL | Interval | Retry |
+|---|---|---|---|---|
+| sync-webhook | HTTP | `http://sync-webhook:5000/health` | 60 | 60 |
+| Curatorr | HTTP | `http://curatorr:8000/api/health` | 60 | 60 |
+| Upgraderr | HTTP | `http://upgraderr:5000/health` | 60 | 60 |
+| Radarr HD | HTTP | `http://radarr-hd:7878/ping` | 60 | 60 |
+| Radarr 4K | HTTP | `http://radarr-4k:7878/ping` | 60 | 60 |
+| Sonarr HD | HTTP | `http://sonarr-hd:8989/ping` | 60 | 60 |
+| Sonarr 4K | HTTP | `http://sonarr-4k:8989/ping` | 60 | 60 |
+| Prowlarr | HTTP | `http://prowlarr:9696/ping` | 60 | 60 |
+| Grafana | HTTP | `http://grafana:3000/api/health` | 60 | 60 |
+| Loki | HTTP | `http://loki:3100/ready` | 60 | 60 |
+| Prometheus | HTTP | `http://prometheus:9090/-/healthy` | 60 | 60 |
+| Dockhand | HTTP | `http://dockhand:3000/api/health` | 60 | 60 |
+
+Note: since Uptime Kuma runs as a container on `mother_network`, use the **container names** above (not `localhost`) — matches how the container actually reaches its neighbors. If you'd rather test from a browser first, the host-side equivalents (verified 200 today) are `http://10.0.0.162:<port><path>` for each (5001/9707/9706/7878/7879/8989/8990/9696/3003/3100/9090/3000 respectively).
+
+**Group: "Remote Hosts"** — cross-network reachability, mirrors Terminus's "Mother VM Monitoring" pattern (watch the *other* side's key host from here too):
+
+| Name | Type | Target | Interval | Retry |
+|---|---|---|---|---|
+| Nostromo (Plex) | HTTP | `http://10.0.0.250:32400/identity` | 60 | 60 |
+| Unraid | Ping | `192.168.1.10` | 60 | 60 |
+| Terminus | Ping | `192.168.1.14` | 60 | 60 |
+| Download Synology | Ping | `10.0.1.203` | 60 | 60 |
+| Stuttler UDM Gateway | Ping | `10.0.0.1` | 60 | 60 |
+| Gomaa UCG Gateway | Ping | `192.168.1.1` | 60 | 60 |
+
+The two gateway pings double as a rough site-to-site tunnel health signal (if the Gomaa UCG ping starts failing while Unraid's also unreachable, that's the tunnel, not just one host) — complements the Prometheus-based `unifi-exporter` alert, doesn't replace it.
+
+Not written directly to Kuma's DB — no safe REST API for this version (Socket.IO only, confirmed earlier), and direct SQLite writes risk not reflecting in its running state. Add via the UI: **+ Add New Monitor** for each row above.
 
 ## Terminus stack — findings from this session's audit (yours to triage, not touched)
 - **8 unhealthy containers**: workout-api, mealie, lubelogger, outline, cloudflare-ddns, dockhand, termix, dozzle. Outline is the one you actively use for the wiki — worth a first look.
