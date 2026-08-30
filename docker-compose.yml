@@ -921,8 +921,12 @@ services:
       - --path.procfs=/host/proc
       - --path.sysfs=/host/sys
       - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+      # textfile collector -- lets host cron jobs publish their own metrics
+      # (e.g. container_watchdog.py's heartbeat, see the watchdog_stale alert).
+      - --collector.textfile.directory=/textfile
     volumes:
       - /:/host:ro,rslave
+      - /opt/mother/data/node-exporter-textfile:/textfile:ro
     network_mode: host
 
   # cAdvisor REMOVED 2026-08-29 -- replaced by docker-stats-exporter below.

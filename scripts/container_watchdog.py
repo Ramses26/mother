@@ -24,6 +24,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -138,7 +139,33 @@ def try_heal(name, info, st):
     return True
 
 
+TEXTFILE_DIR = "/opt/mother/data/node-exporter-textfile"
+
+
+def _write_heartbeat():
+    """Publish a timestamp metric via node-exporter's textfile collector so
+    Grafana can alert if this cron job stops firing entirely (crashed,
+    cron itself disabled/broken, host-level issue) -- distinct from, and
+    complementary to, everything else this script does. Written FIRST,
+    before the PAUSE_WATCHDOG check, so a legitimate pause never looks like
+    a dead cron job; only a script that can't even start writes nothing."""
+    try:
+        os.makedirs(TEXTFILE_DIR, exist_ok=True)
+        tmp = os.path.join(TEXTFILE_DIR, ".container_watchdog.prom.tmp")
+        dest = os.path.join(TEXTFILE_DIR, "container_watchdog.prom")
+        with open(tmp, "w") as fh:
+            fh.write("# HELP watchdog_last_run_timestamp_seconds Unix time of the last "
+                     "container_watchdog.py run (heartbeat -- alerts if this goes stale)\n")
+            fh.write("# TYPE watchdog_last_run_timestamp_seconds gauge\n")
+            fh.write(f"watchdog_last_run_timestamp_seconds {time.time()}\n")
+        os.replace(tmp, dest)  # atomic, textfile collector never sees a partial write
+    except OSError as e:
+        print(f"heartbeat write failed: {e}", file=sys.stderr)
+
+
 def main():
+    _write_heartbeat()
+
     # Maintenance escape hatch (matches PAUSE_DEDUP / PAUSE_SYNC convention):
     # create this file before deliberately stopping containers so the watchdog
     # doesn't fight the operator or page for an intentional stop.
