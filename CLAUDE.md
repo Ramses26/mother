@@ -834,17 +834,34 @@ Added 2026-04-14; **centralized across all hosts + given alerting/self-heal on 2
 |---|---|---|---|
 | `grafana` | 3003 | `configs/grafana/` | Dashboards + **Unified Alerting** (`configs/grafana/provisioning/alerting/`); login `admin` / env `GF_SECURITY_ADMIN_PASSWORD` |
 | `prometheus` | 9090 | `configs/prometheus/prometheus.yml` | Scrapes node-exporter (9100), cAdvisor (8090), all *arr `/metrics` |
-| `loki` | 3100 | `configs/loki/loki-config.yml` | **Central** log storage (30-day); reachable at `10.0.0.162:3100` from remote hosts |
+| `loki` | 3100 | `configs/loki/loki-config.yml` | Log storage (30-day) for the **Stuttler side only**; reachable at `10.0.0.162:3100`. NOT a global central Loki — see the two-Loki split below |
 | `alloy` | 12345 | `configs/alloy/config.alloy` | **Grafana Alloy v1.19.2 (pinned)** — log shipper, **replaced Promtail 2026-08-29** |
 | `node-exporter` | 9100 | host network mode | Host CPU/RAM/disk/network metrics |
 | `cadvisor` | 8090 | (compose `command:`) | Per-container metrics — reads from **containerd** (see cAdvisor note below) |
 | `autoheal` | — | (compose env) | Restarts any container Docker marks `unhealthy` (also on the download Synology) |
 
-**Logging = Grafana Alloy on every host → one central Loki. Promtail is retired**
-(old config archived at `configs/_archived/promtail-config.yml.retired`). Alloy runs on **Mother**
-(`configs/alloy/config.alloy`), the **download Synology** (`remote-hosts/download-synology/alloy/`,
-`host=download-synology`, ships containers + the qbitmanage file log with a timestamp-parse stage) and
-**Unraid** (`remote-hosts/unraid/alloy/`, `host=unraid`, over VPN). All use the same Loki label schema
+**Logging = Grafana Alloy on every host → its OWN SITE'S Loki. There are TWO Lokis, not one
+central one.** Promtail is retired (old config archived at
+`configs/_archived/promtail-config.yml.retired`).
+
+| Site | Hosts shipping there | Loki |
+|---|---|---|
+| Stuttler (`10.0.0.0/23`) | Mother, download Synology, Nostromo, Stuttler UDM (syslog) | **Mother** `10.0.0.162:3100` |
+| Gomaa (`gomaafam.net`, `192.168.1.0/24`) | Terminus, Unraid, Gomaa UDM (syslog), hathor, wadjet | **Terminus** `192.168.1.14:3100` |
+
+**Everything on the Gomaa/`gomaafam.net` side ships to Terminus, never to Mother.** Cross-site
+viewing is done in Grafana via **datasource federation** (`loki-terminus` on Mother, `loki-mother`
+on Terminus — both live since 2026-08-29), not by pointing remote hosts at one collector. Keeping
+each site's logs local means a VPN/tunnel flap doesn't lose the logs — and the tunnel going down is
+exactly the event you most want logs for.
+
+**So a Gomaa-side host being absent from Mother's Loki is CORRECT, not a bug** — query Terminus
+(`ssh terminus`, or the `loki-terminus` datasource) before concluding anything is broken. This was
+misdiagnosed twice in one session on 2026-08-31; see [[unifi_syslog_per_site_design]].
+
+Alloy runs on **Mother** (`configs/alloy/config.alloy` → local Loki), the **download Synology**
+(`remote-hosts/download-synology/alloy/`, `host=download-synology` → Mother, same site) and
+**Unraid** (`remote-hosts/unraid/alloy/`, `host=unraid` → **Terminus**, same site). All use the same Loki label schema
 `{host, service, job, compose_service}` (+ Alloy's `detected_level`, `service_name`). First Alloy start
 floods Loki with "timestamp too old" 400s replaying container history — benign, self-drains in ~90s.
 Reload a remote Alloy after a config edit with `curl -X POST http://<host>:12345/-/reload` (no restart).
@@ -996,7 +1013,7 @@ Note: sync-webhook times are Eastern (America/New_York, DST-aware). Other servic
 |---|---|---|
 | `grafana` | 3003 | Dashboards; provisioned with Loki + Prometheus datasources |
 | `prometheus` | 9090 | Metrics scraping; 30-day retention |
-| `loki` | 3100 | Central log aggregation; receives from Alloy on all hosts |
+| `loki` | 3100 | Log aggregation for **Stuttler-side hosts only** (Mother, download Synology, Nostromo, Stuttler UDM). Gomaa-side hosts ship to Terminus's Loki — see Observability Stack |
 | `alloy` | 12345 | Grafana Alloy log shipper (replaced Promtail 2026-08-29; also on Synology + Unraid) |
 | `node-exporter` | 9100 | Host metrics (CPU, RAM, disk, network) |
 | `cadvisor` | 8090 | Container-level metrics (reads from containerd — see Observability Stack) |

@@ -24,9 +24,11 @@ loki.write "default" {
 // Because each Loki only ever holds one site's syslog, per-site labeling needs
 // no source-IP relabeling (relabel_rules isn't valid in this block in v1.19.2
 // anyway -- tried 2026-08-29, caused a config load failure). The host label is
-// simply hardcoded to the site this collector serves. Keep `service = "unifi"`
-// identical on both hosts so a federated {service="unifi"} query returns both
-// sites, with `host` telling them apart.
+// simply hardcoded to the site this collector serves: `stuttler-udm` here,
+// `gomaa-udm` on Terminus (that name was Terminus's convention first -- matched
+// here deliberately, don't rename one without the other). Keep
+// `service = "unifi"` identical on both hosts so a federated {service="unifi"}
+// query returns both sites, with `host` telling them apart.
 //
 // syslog_format MUST be rfc3164 (2026-08-31). Alloy defaults to rfc5424, but
 // UniFi/UDM emits legacy BSD-style RFC3164 -- every packet was rejected with
@@ -38,7 +40,7 @@ loki.source.syslog "unifi" {
     address       = "0.0.0.0:51514"
     protocol      = "udp"
     syslog_format = "rfc3164"
-    labels        = {job = "syslog", service = "unifi", host = "unifi-stuttler"}
+    labels        = {job = "syslog", service = "unifi", host = "stuttler-udm"}
   }
   forward_to = [loki.write.default.receiver]
 }
