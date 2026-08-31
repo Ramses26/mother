@@ -19,11 +19,18 @@ loki.write "default" {
 // IP deferred (relabel_rules isn't valid here in v1.19.2 -- caused a config
 // load failure, reverted); refine later, query by __syslog_connection_ip_address
 // meanwhile if it's exposed as a regular label.
+//
+// syslog_format MUST be rfc3164 (2026-08-31). Alloy defaults to rfc5424, but
+// UniFi/UDM emits legacy BSD-style RFC3164 -- every packet was rejected with
+// "expecting a version value in the range 1-999 [col 4]" and ZERO UniFi lines
+// ever reached Loki between 2026-08-29 and 2026-08-31. Found on Terminus first,
+// identical bug here. Do not remove this line.
 loki.source.syslog "unifi" {
   listener {
-    address  = "0.0.0.0:51514"
-    protocol = "udp"
-    labels   = {job = "syslog", service = "unifi", host = "unifi"}
+    address       = "0.0.0.0:51514"
+    protocol      = "udp"
+    syslog_format = "rfc3164"
+    labels        = {job = "syslog", service = "unifi", host = "unifi"}
   }
   forward_to = [loki.write.default.receiver]
 }
