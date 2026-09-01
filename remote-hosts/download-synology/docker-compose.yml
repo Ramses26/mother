@@ -162,6 +162,10 @@ services:
       - /volume1/docker/alloy/data:/var/lib/alloy/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /volume1/docker/qbitmanage/logs:/qbitmanage-logs:ro
+      # qBittorrent's own log — the only record of torrent add/remove/content-removed
+      # events (it writes nothing to stdout). Added 2026-09-01 after the decluttarr HnR
+      # incident, where we had no client-side trace of 82 deleted TorrentLeech torrents.
+      - /volume1/docker/qbittorrent/qBittorrent/logs:/qbittorrent-logs:ro
     networks:
       - media_net
 

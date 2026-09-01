@@ -411,31 +411,18 @@ services:
     networks:
       - mother_network
 
-  # Decluttarr - Radarr/Sonarr/qBittorrent queue hygiene (stalled/failed/orphaned
-  # removal). Deployed 2026-07-19 in test_run (dry-run) mode — review logs before
-  # flipping general.test_run to false in configs/decluttarr/config.yaml. Deliberately
-  # does NOT own search-triggering (search_unmet_cutoff/search_missing) — Upgraderr
-  # already owns that decision for this stack via its 7-tier classification.
-  decluttarr:
-    image: ghcr.io/manimatter/decluttarr:latest
-    container_name: decluttarr
-    labels:
-      - "autoheal=true"
-    volumes:
-      - ${CONFIG_PATH}/decluttarr:/app/config
-    environment:
-      - TZ=${TZ}
-      - SONARR_HD_API_KEY=${SONARR_HD_API_KEY}
-      - SONARR_4K_API_KEY=${SONARR_4K_API_KEY}
-      - RADARR_HD_API_KEY=${RADARR_HD_API_KEY}
-      - RADARR_4K_API_KEY=${RADARR_4K_API_KEY}
-      - QBITMANAGE_QBT_HOST=${QBITMANAGE_QBT_HOST}
-      - QBITMANAGE_QBT_USER=${QBITMANAGE_QBT_USER}
-      - QBITMANAGE_QBT_PASS=${QBITMANAGE_QBT_PASS}
-    restart: unless-stopped
-    logging: *default-logging
-    networks:
-      - mother_network
+  # Decluttarr - REMOVED 2026-09-01. It deleted 306 torrents in 29 days (82 of them
+  # TorrentLeech) via `removeFromClient: True`, which is hardcoded in every one of its
+  # removal paths — that is what an HnR is, and every one of our 8 indexers is private,
+  # so its `private_tracker_handling` setting (default "remove") governed 100% of our
+  # traffic. Its `remove_orphans` job alone accounted for 48 of the 82 and was deleting
+  # healthy in-flight downloads that re-grabbed and imported fine days later.
+  # Replacement: a queue-janitor inside Upgraderr that removes the *arr queue item with
+  # removeFromClient=false + blocklist=true, leaving the torrent seeding so qbitmanage's
+  # existing 120d share-limit group retires it well past TorrentLeech's 144h HnR window.
+  # Retired config kept at configs/_archived/decluttarr-config.yaml.retired (its curated
+  # failed-import message_patterns are the part worth porting).
+  # See docs/research/queue-janitor-design.md.
 
   # Uptime Kuma - Health Monitoring & Alerts
   uptime-kuma:
@@ -761,6 +748,16 @@ services:
       - DEDUP_WARN_MINUTES=${DEDUP_WARN_MINUTES:-10}
       - DEDUP_MIN_AGE_HOURS=${DEDUP_MIN_AGE_HOURS:-24}
       - TIER7_PENDING_PATH=${TIER7_PENDING_PATH:-/data/upgraderr_ro/tier7_pending.json}
+      # Pause sentinels — found 2026-08-30 that /opt/mother isn't bind-mounted into
+      # this container at all, so the code's default paths (/opt/mother/PAUSE_*)
+      # were silently unreachable from inside the container the whole time (the
+      # PAUSE_DEDUP/PAUSE_VERSION_SYNC sentinels documented in CLAUDE.md as working
+      # could never actually have been seen by this process). Redirected into /data,
+      # which IS mounted, instead of adding a new /opt/mother bind mount (which would
+      # also expose .env/secrets to the container).
+      - PAUSE_DEDUP_FILE=/data/PAUSE_DEDUP
+      - PAUSE_VERSION_SYNC_FILE=/data/PAUSE_VERSION_SYNC
+      - PAUSE_WEBHOOK_RETRY_FILE=/data/PAUSE_WEBHOOK_RETRY
       # Stuck-state alerter (2026-08-01) — escalate the silent-failure family to Telegram
       - STUCK_DEDUP_DAYS=${STUCK_DEDUP_DAYS:-3}
       - STUCK_PENDING_HOURS=${STUCK_PENDING_HOURS:-12}
@@ -776,6 +773,9 @@ services:
       # Unraid CIFS mount (destination for forward sync, source for reverse sync)
       # rslave: host remount propagates in without a container restart (host
       # mount is `shared`). See deploy/host/ for the host-side ensure-mount unit.
+      # RESTORED 2026-08-30 after a Mother reboot force-cleared a stuck CIFS/SMB3
+      # session that a plain umount/remount couldn't touch — see
+      # unraid_mount_estale_incident_2026_08_30 memory for the full trail.
       - /mnt/unraid/media:/mnt/unraid/media:rslave
       # Persistent logs and database
       - ${CONFIG_PATH}/sync-webhook/logs:/logs
