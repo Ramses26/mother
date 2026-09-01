@@ -16,6 +16,7 @@ import signal
 import logging
 import sqlite3
 import threading
+import collections
 from datetime import datetime, timedelta
 from functools import wraps
 from pathlib import Path
@@ -300,6 +301,32 @@ def init_database():
             streaming_only   INTEGER DEFAULT 0,
             checked_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        -- Queue janitor (2026-09-01) — replaces decluttarr, which was removed after
+        -- it deleted 306 torrents in 29 days (82 TorrentLeech) and produced 55 HnRs.
+        -- Phase 1 is report-only: rows are written with action='reported' and nothing
+        -- is mutated. See docs/research/queue-janitor-design.md.
+        -- created_at is Python isoformat (T-separated) — compare with
+        -- strftime('%Y-%m-%dT%H:%M:%S','now',...), never bare datetime('now',...).
+        CREATE TABLE IF NOT EXISTS janitor_actions (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            instance      TEXT NOT NULL,
+            download_id   TEXT NOT NULL,
+            media_id      INTEGER,
+            episode_ids   TEXT,
+            title         TEXT,
+            class         TEXT NOT NULL,
+            status_msg    TEXT,
+            action        TEXT NOT NULL,
+            blocklisted   INTEGER DEFAULT 0,
+            seeding_time  INTEGER,
+            ratio         REAL,
+            hnr_safe      INTEGER,
+            qb_state      TEXT,
+            created_at    TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_janitor_target ON janitor_actions(instance, media_id, episode_ids);
+        CREATE INDEX IF NOT EXISTS idx_janitor_dl     ON janitor_actions(download_id);
+        CREATE INDEX IF NOT EXISTS idx_janitor_created ON janitor_actions(created_at);
     """)
     conn.commit()
 
@@ -460,6 +487,7 @@ NOTIFY_KEYS = {
     'notify_errors':         ('Errors (instance unreachable, etc.)',    'true'),
     'notify_bad_import':     ('Bad release imported (CRITICAL — keep on)',  'true'),
     'notify_no_source_found': ('No acceptable release found (informational, long-interval recheck)', 'true'),
+    'notify_janitor':        ('Queue janitor summary (report-only findings / actions)', 'true'),
 }
 
 def _notify_enabled(category):
@@ -485,6 +513,27 @@ def send_telegram(message, category='notify_sweep_summary'):
 _QB_CIRCUIT_KEY = 'qbt_circuit_open_until'
 _QB_CIRCUIT_MINUTES = 90  # back off for 90 min after a ban/failure
 
+
+def _qb_login_ok(resp) -> bool:
+    """True if a qBittorrent /auth/login response means success.
+
+    qBittorrent <5 answered 200 with the body 'Ok.'; **5.x answers 204 with an
+    EMPTY body**. The old check was `body in ('Ok.', 'Ok')`, so after the 5.2.3
+    upgrade every successful login was read as a failure — which then opened the
+    90-minute circuit breaker, so `_qb_tag_torrent` never tagged anything and the
+    `upgraderr-skip` path in `_flag_if_bad_import()` was silently dead. Confirmed
+    2026-09-01 from Loki: 193 consecutive `[qbt] login failed: ''` lines over 25
+    days and not one success.
+
+    Failure modes to keep rejecting: 200 with body 'Fails.' (bad credentials) and
+    403 (IP banned for too many attempts).
+    """
+    if resp.status_code == 403:
+        return False
+    if resp.status_code not in (200, 204):
+        return False
+    return not resp.text.strip().lower().startswith('fail')
+
 def _qb_tag_torrent(infohash: str, tag: str = QB_TAG) -> bool:
     """Login to qBittorrent and add a tag to the torrent identified by infohash."""
     if not QB_USER or not infohash:
@@ -500,9 +549,8 @@ def _qb_tag_torrent(infohash: str, tag: str = QB_TAG) -> bool:
         s = requests.Session()
         r = s.post(f"{QB_URL}/api/v2/auth/login",
                    data={'username': QB_USER, 'password': QB_PASS}, timeout=10)
-        resp = r.text.strip()
-        if resp not in ('Ok.', 'Ok'):
-            log.warning(f"[qbt] login failed: {resp!r}")
+        if not _qb_login_ok(r):
+            log.warning(f"[qbt] login failed: HTTP {r.status_code} {r.text.strip()!r}")
             # Open circuit: don't retry for 90 min
             open_until = (datetime.utcnow() + timedelta(minutes=_QB_CIRCUIT_MINUTES)).isoformat()
             set_config(_QB_CIRCUIT_KEY, open_until)
@@ -2037,15 +2085,52 @@ def _sweep_sonarr(inst, budget, trigger, tier_counts):
 # ---------------------------------------------------------------------------
 
 def create_backup(label='scheduled'):
+    """Back up the DB using SQLite's online backup API, and verify the result.
+
+    This used to be `shutil.copy2(DB_PATH, dest)`. Copying a live WAL-mode SQLite
+    file byte-for-byte is not safe: the WAL holds committed pages that the main
+    file does not yet contain, so the copy can be stale or torn. That is why the
+    long-running "upgraderr DB corrupted, restored from backup" pattern kept
+    recurring — **the backups were not trustworthy either.**
+
+    Confirmed 2026-09-01: the DB corrupted around the 2026-08-30 Mother reboot and
+    every nightly backup from 08-30 onward was itself malformed (08-23..08-29 were
+    clean). Corruption was isolated to `sqlite_sequence`; all user tables were
+    intact and the DB was rebuilt table-by-table with zero row loss.
+
+    `Connection.backup()` takes a proper transactional snapshot including WAL
+    content. The `quick_check` afterwards means a corrupt source can no longer
+    silently produce a corrupt backup that only fails when it is needed.
+    """
     Path(BACKUP_DIR).mkdir(parents=True, exist_ok=True)
     ts = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
     dest = Path(BACKUP_DIR) / f"upgraderr_{label}_{ts}.db"
-    shutil.copy2(DB_PATH, dest)
-    log.info(f"Backup created: {dest}")
+
+    src = sqlite3.connect(DB_PATH, timeout=60)
+    try:
+        dst = sqlite3.connect(str(dest))
+        try:
+            src.backup(dst)
+            status = dst.execute("PRAGMA quick_check").fetchone()[0]
+        finally:
+            dst.close()
+    finally:
+        src.close()
+
+    if status != 'ok':
+        dest.unlink(missing_ok=True)
+        msg = f"Backup FAILED verification (quick_check={status}) — discarded {dest.name}"
+        log.error(msg)
+        send_telegram(f"🚨 *Upgraderr backup failed verification*\n`{status}`\n"
+                      f"The live DB is likely corrupt. Do not assume older backups are good — "
+                      f"check each one before restoring.", category='notify_errors')
+        raise sqlite3.DatabaseError(msg)
+
+    log.info(f"Backup created and verified: {dest}")
     # Keep only the last 10 backups
     backups = sorted(Path(BACKUP_DIR).glob('upgraderr_*.db'))
-    for old in backups[:-10]:
-        old.unlink()
+    for stale in backups[:-10]:
+        stale.unlink()
     return str(dest)
 
 def list_backups():
@@ -2329,6 +2414,337 @@ def _graceful_shutdown(signum, frame):
 signal.signal(signal.SIGTERM, _graceful_shutdown)
 
 # ---------------------------------------------------------------------------
+# Queue Janitor — replaces decluttarr (removed 2026-09-01)
+# ---------------------------------------------------------------------------
+#
+# Decluttarr deleted 306 torrents in 29 days (82 TorrentLeech), producing 55
+# Hit-and-Runs, because every one of its removal paths hardcodes
+# removeFromClient=True. This does the opposite by construction.
+#
+# THE INVARIANT (docs/research/queue-janitor-design.md §3):
+#   Never remove a torrent from the download client unless it has already
+#   satisfied the strictest HnR rule we are subject to — seeding_time >= 144h
+#   OR ratio >= 1.0 (TorrentLeech's published rule). Both fields come straight
+#   from qBittorrent, so the check is local and needs no tracker API.
+#
+# The default action is ALWAYS the *arr queue delete with removeFromClient=false,
+# which was measured on 2026-09-01 to clear the queue item while leaving the
+# torrent seeding, and to persist as DownloadHistory EventType 4 (survives an
+# *arr restart). See §2 of the design doc for the full measurements.
+#
+# PHASE 1 (current): janitor_report_only=true — classify, record, mutate nothing.
+# Import rejection reasons do not appear in *arr logs at Info level; they exist
+# only in the transient queue statusMessages, so the real failure taxonomy can
+# only be built by observing. That is what this phase is for.
+#
+# Deliberately absent: any equivalent of decluttarr's remove_orphans. Its
+# detection was a whole-dict equality diff between two live queue fetches and it
+# deleted healthy in-flight downloads (Uncharted killed 08-19, imported fine
+# 08-20). Do not add it back.
+
+JANITOR_CLASSES = ('already_imported', 'failed_import', 'stalled', 'missing_files', 'unclassified')
+
+# Curated from ~6 weeks of real failures under decluttarr — the one genuinely
+# valuable artifact it left behind. Matched case-insensitively as substrings
+# against queue statusMessages. Retired source: configs/_archived/decluttarr-config.yaml.retired
+_FAILED_IMPORT_PATTERNS = (
+    'not a custom format upgrade for existing',
+    'not an upgrade for existing',
+    'found potentially dangerous file with extension',
+    'invalid video file',
+    'no files found are eligible for import',      # the qbitmanage orphan-data race
+    'one or more episodes expected in this release were not imported',
+    'episode file on disk contains more episodes than this file contains',
+    'invalid season or episode',
+    'found matching series via grab history, but release was matched to series by id',
+)
+
+_ALREADY_IMPORTED_PATTERNS = (
+    'already imported',
+)
+
+# Matches get_queue_ids()' notion of a permanently dead download.
+_STALLED_PATTERNS = ('stalled',)
+
+
+def _janitor_cfg(key, default):
+    return get_cfg(key, default)
+
+
+def _janitor_enabled():
+    return _janitor_cfg('janitor_enabled', 'false') == 'true'
+
+
+def _janitor_report_only():
+    return _janitor_cfg('janitor_report_only', 'true') == 'true'
+
+
+def _qb_login_session():
+    """Shared qBittorrent login honouring the same circuit breaker as _qb_tag_torrent."""
+    if not QB_USER:
+        return None
+    # get_cfg/set_cfg, NOT get_config/set_config — the latter go through Flask's
+    # request-scoped `g` and raise "Working outside of application context" when
+    # called from an APScheduler thread, which is where this always runs.
+    circuit_until = get_cfg(_QB_CIRCUIT_KEY, '')
+    if circuit_until and datetime.utcnow().isoformat() < circuit_until:
+        log.debug("[janitor] qBit circuit open, skipping torrent lookup")
+        return None
+    try:
+        s = requests.Session()
+        r = s.post(f"{QB_URL}/api/v2/auth/login",
+                   data={'username': QB_USER, 'password': QB_PASS}, timeout=10)
+        if not _qb_login_ok(r):
+            open_until = (datetime.utcnow() + timedelta(minutes=_QB_CIRCUIT_MINUTES)).isoformat()
+            set_cfg(_QB_CIRCUIT_KEY, open_until)
+            log.warning(f"[janitor] qBit login failed: HTTP {r.status_code} {r.text.strip()!r} — opening circuit")
+            return None
+        set_cfg(_QB_CIRCUIT_KEY, '')
+        return s
+    except Exception as e:
+        log.warning(f"[janitor] qBit login error: {e}")
+        return None
+
+
+def _qb_torrent_map(session):
+    """infohash(lower) -> {state, ratio, seeding_time, progress, name}. Empty dict on failure.
+
+    Failing to reach qBittorrent must never be read as 'this torrent is safe to
+    touch' — callers treat a missing entry as NOT HnR-safe.
+    """
+    if session is None:
+        return {}
+    try:
+        r = session.get(f"{QB_URL}/api/v2/torrents/info", timeout=45)
+        r.raise_for_status()
+        return {
+            t['hash'].lower(): {
+                'state': t.get('state'),
+                'ratio': t.get('ratio', 0.0),
+                'seeding_time': t.get('seeding_time', 0),
+                'progress': t.get('progress', 0.0),
+                'name': t.get('name', ''),
+            }
+            for t in r.json()
+        }
+    except Exception as e:
+        log.warning(f"[janitor] qBit torrents/info failed: {e}")
+        return {}
+
+
+def _janitor_hnr_safe(tor):
+    """The §3 invariant. Unknown torrent => NOT safe."""
+    if not tor:
+        return False
+    min_h = float(_janitor_cfg('janitor_hnr_min_seed_hours', '144'))
+    min_r = float(_janitor_cfg('janitor_hnr_min_ratio', '1.0'))
+    return tor.get('seeding_time', 0) >= min_h * 3600 or tor.get('ratio', 0.0) >= min_r
+
+
+def _janitor_messages(record):
+    """Flatten a queue record's statusMessages + errorMessage into one list of strings."""
+    out = []
+    if record.get('errorMessage'):
+        out.append(str(record['errorMessage']))
+    for sm in (record.get('statusMessages') or []):
+        if sm.get('title'):
+            out.append(str(sm['title']))
+        for m in (sm.get('messages') or []):
+            out.append(str(m))
+    return out
+
+
+def _janitor_classify(record, tor):
+    """Return (class, blocklist, skip_redownload) or (None, ...) if nothing to do.
+
+    Ordering matters: 'already imported' is checked before the generic failed-import
+    patterns because it is benign (the file IS in the library) and must never be
+    blocklisted — blocklisting it would stop the *arr ever grabbing that release again
+    for a legitimate future need.
+    """
+    msgs = ' | '.join(_janitor_messages(record)).lower()
+    state = (record.get('trackedDownloadState') or '').lower()
+    status = (record.get('trackedDownloadStatus') or '').lower()
+
+    if any(p in msgs for p in _ALREADY_IMPORTED_PATTERNS):
+        return 'already_imported', False, True
+
+    if any(p in msgs for p in _STALLED_PATTERNS):
+        return 'stalled', True, False
+
+    if state in ('importblocked', 'importfailed', 'importpending') and \
+            any(p in msgs for p in _FAILED_IMPORT_PATTERNS):
+        return 'failed_import', True, False
+
+    if tor and tor.get('state') == 'missingFiles':
+        return 'missing_files', False, True
+
+    # Anything else that the *arr itself flags as unhealthy is recorded but not
+    # acted on. This is the point of Phase 1 — the taxonomy in §4.1 of the design
+    # doc is incomplete by construction and can only be extended by observation.
+    if status in ('warning', 'error'):
+        return 'unclassified', False, True
+
+    return None, False, False
+
+
+def _janitor_record(conn, instance, dl_id, rec, cls, action, tor, blocklisted=0):
+    conn.execute(
+        """INSERT INTO janitor_actions
+           (instance, download_id, media_id, episode_ids, title, class, status_msg,
+            action, blocklisted, seeding_time, ratio, hnr_safe, qb_state, created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (instance,
+         dl_id,
+         rec.get('movieId') or rec.get('seriesId'),
+         json.dumps(sorted(rec.get('_episode_ids', []))) if rec.get('_episode_ids') else None,
+         rec.get('title'),
+         cls,
+         ' | '.join(_janitor_messages(rec))[:2000],
+         action,
+         blocklisted,
+         (tor or {}).get('seeding_time'),
+         (tor or {}).get('ratio'),
+         1 if _janitor_hnr_safe(tor) else 0,
+         (tor or {}).get('state'),
+         datetime.utcnow().isoformat()),
+    )
+
+
+def _janitor_fetch_queue(inst):
+    """Full queue for one instance, including items the *arr can't map to a title.
+
+    Deliberately ONE fetch. decluttarr's orphan detection diffed two separate
+    fetches of a live queue by whole-dict equality and deleted the difference,
+    which is what killed healthy downloads. Never reintroduce that.
+    """
+    param = 'includeUnknownMovieItems' if inst['type'] == 'radarr' else 'includeUnknownSeriesItems'
+    head = arr_get(inst, '/queue', params={param: 'true', 'page': 1, 'pageSize': 1})
+    if not head:
+        return []
+    total = head.get('totalRecords', 0)
+    if total == 0:
+        return []
+    data = arr_get(inst, '/queue',
+                   params={param: 'true', 'page': 1, 'pageSize': total}, timeout=60)
+    return (data or {}).get('records', [])
+
+
+def _janitor_group_by_download(records):
+    """Collapse queue rows to one entry per downloadId.
+
+    A season pack surfaces as one row per episode sharing a downloadId; deleting
+    any single row clears them all (measured 2026-09-01: 12 rows, one DELETE).
+    Acting per-row would issue N redundant deletes and miscount actions.
+    """
+    groups = {}
+    for r in records:
+        dl = (r.get('downloadId') or '').strip()
+        if not dl:
+            continue
+        g = groups.setdefault(dl, dict(r))
+        g.setdefault('_episode_ids', [])
+        g.setdefault('_queue_ids', [])
+        if r.get('episodeId'):
+            g['_episode_ids'].append(r['episodeId'])
+        g['_queue_ids'].append(r['id'])
+    return groups
+
+
+def janitor_scan(trigger='scheduled'):
+    """Classify unhealthy *arr queue items. Phase 1 records only."""
+    if not _janitor_enabled():
+        return {}
+
+    report_only = _janitor_report_only()
+    session = _qb_login_session()
+    torrents = _qb_torrent_map(session)
+    if not torrents:
+        # No qBittorrent view means no HnR-safety check is possible. Report-only
+        # is still fine (nothing is mutated); acting would not be.
+        if not report_only:
+            log.error("[janitor] qBittorrent unreachable — refusing to act without the HnR safety check")
+            send_telegram("⚠️ *Queue Janitor* — qBittorrent unreachable, skipped this run "
+                          "(refusing to act without the HnR safety check).",
+                          category='notify_janitor')
+            return {}
+        log.warning("[janitor] qBittorrent unreachable — recording without torrent state")
+
+    summary = collections.Counter()
+    details = []
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    try:
+        for inst in get_instances_from_db().values():
+            if not inst.get('enabled'):
+                continue
+            try:
+                records = _janitor_fetch_queue(inst)
+            except Exception as e:
+                log.error(f"[janitor] {inst['name']}: queue fetch failed: {e}")
+                continue
+
+            for dl_id, rec in _janitor_group_by_download(records).items():
+                tor = torrents.get(dl_id.lower())
+                cls, want_blocklist, _skip_redl = _janitor_classify(rec, tor)
+                if not cls:
+                    continue
+                summary[f"{inst['name']}:{cls}"] += 1
+                summary[cls] += 1
+                if report_only:
+                    _janitor_record(conn, inst['name'], dl_id, rec, cls, 'reported', tor)
+                    details.append((inst['name'], cls, rec.get('title', '?'),
+                                    _janitor_hnr_safe(tor), (tor or {}).get('state')))
+                # Phase 2+ acts here. Until janitor_report_only is flipped to
+                # 'false' this function is strictly read-only against the *arrs
+                # and qBittorrent.
+        conn.commit()
+    finally:
+        conn.close()
+
+    if summary:
+        log.info(f"[janitor] {trigger} — "
+                 + ', '.join(f"{k}={v}" for k, v in sorted(summary.items()) if ':' not in k)
+                 + (' (report-only)' if report_only else ''))
+    return dict(summary)
+
+
+def janitor_digest():
+    """Weekly Telegram digest of what the janitor saw / would have done."""
+    if not _janitor_enabled():
+        return
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            """SELECT class, COUNT(DISTINCT download_id) AS n
+                 FROM janitor_actions
+                WHERE created_at > strftime('%Y-%m-%dT%H:%M:%S','now','-7 days')
+             GROUP BY class ORDER BY n DESC"""
+        ).fetchall()
+        unclass = conn.execute(
+            """SELECT title, status_msg
+                 FROM janitor_actions
+                WHERE class='unclassified'
+                  AND created_at > strftime('%Y-%m-%dT%H:%M:%S','now','-7 days')
+             GROUP BY status_msg ORDER BY MAX(created_at) DESC LIMIT 8"""
+        ).fetchall()
+    finally:
+        conn.close()
+
+    if not rows:
+        return
+    mode = 'REPORT-ONLY' if _janitor_report_only() else 'LIVE'
+    lines = [f"🧹 *Queue Janitor* — 7-day digest ({mode})", ""]
+    lines += [f"• `{r['class']}` — {r['n']} download(s)" for r in rows]
+    if unclass:
+        lines += ["", "*Unclassified (candidates for new rules):*"]
+        for r in unclass:
+            lines.append(f"• {(r['title'] or '?')[:55]}\n    _{(r['status_msg'] or '')[:110]}_")
+    lines += ["", "_Nothing was modified._" if _janitor_report_only() else ""]
+    send_telegram('\n'.join(lines), category='notify_janitor')
+
+
+# ---------------------------------------------------------------------------
 # APScheduler
 # ---------------------------------------------------------------------------
 
@@ -2384,8 +2800,26 @@ def start_scheduler():
         next_run_time=datetime.utcnow() + timedelta(minutes=1),
     )
 
+    # Queue janitor (2026-09-01) — replaces decluttarr. Runs on its own interval
+    # rather than inside do_sweep() so a slow/failing scan can never delay or
+    # abort a sweep, and so it keeps running while the sweep is paused (a paused
+    # sweep is exactly when a stuck queue is most likely to go unnoticed).
+    scheduler.add_job(
+        lambda: janitor_scan('scheduled'),
+        'interval', minutes=int(get_cfg('janitor_interval_minutes', '30')),
+        id='janitor_scan', replace_existing=True,
+        next_run_time=datetime.utcnow() + timedelta(minutes=3),
+    )
+    scheduler.add_job(
+        janitor_digest,
+        'cron', day_of_week='sun', hour=9, minute=30,
+        id='janitor_digest', replace_existing=True,
+    )
+
     scheduler.start()
-    log.info(f"Scheduler started — sweep every {sweep_interval}m, backup at {backup_hour:02d}:00 UTC")
+    log.info(f"Scheduler started — sweep every {sweep_interval}m, backup at {backup_hour:02d}:00 UTC, "
+             f"janitor {'report-only' if _janitor_report_only() else 'LIVE'}"
+             f"{'' if _janitor_enabled() else ' (disabled)'}")
 
 # ---------------------------------------------------------------------------
 # Jinja2 helpers
@@ -2774,6 +3208,50 @@ def api_resume():
     set_cfg('paused', 'false')
     send_telegram("▶ Upgraderr resumed by user", category='notify_pause_resume')
     return jsonify({'status': 'resumed'})
+
+@app.route('/api/janitor/scan', methods=['POST'])
+def api_janitor_scan():
+    """Run the queue janitor on demand. Honours janitor_report_only."""
+    if not _service_or_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not _janitor_enabled():
+        return jsonify({'error': 'janitor_enabled is false'}), 400
+    return jsonify({'report_only': _janitor_report_only(),
+                    'summary': janitor_scan('manual')})
+
+
+@app.route('/api/janitor/findings')
+def api_janitor_findings():
+    """Recent janitor findings, newest first. ?days=N&cls=<class>&limit=N"""
+    if not _service_or_auth():
+        return jsonify({'error': 'Unauthorized'}), 401
+    days  = max(1, min(int(request.args.get('days', 7)), 90))
+    limit = max(1, min(int(request.args.get('limit', 200)), 2000))
+    cls   = request.args.get('cls')
+    # created_at is Python isoformat (T-separated) — strftime keeps the comparison
+    # in the same shape. A bare datetime('now',...) would compare space-vs-T and
+    # silently degrade to a same-calendar-day test. See CLAUDE.md.
+    sql = ("SELECT * FROM janitor_actions "
+           "WHERE created_at > strftime('%Y-%m-%dT%H:%M:%S','now',?) ")
+    args = [f'-{days} days']
+    if cls in JANITOR_CLASSES:
+        sql += "AND class = ? "
+        args.append(cls)
+    sql += "ORDER BY created_at DESC LIMIT ?"
+    args.append(limit)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = [dict(r) for r in conn.execute(sql, args).fetchall()]
+        counts = {r['class']: r['n'] for r in conn.execute(
+            "SELECT class, COUNT(DISTINCT download_id) AS n FROM janitor_actions "
+            "WHERE created_at > strftime('%Y-%m-%dT%H:%M:%S','now',?) GROUP BY class",
+            [f'-{days} days'])}
+    finally:
+        conn.close()
+    return jsonify({'report_only': _janitor_report_only(),
+                    'days': days, 'counts': counts, 'findings': rows})
+
 
 @app.route('/api/sweep', methods=['POST'])
 def api_sweep():
