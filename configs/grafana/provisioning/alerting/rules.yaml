@@ -1,303 +1,564 @@
 apiVersion: 1
 
-# Loki-backed alert: fires when qbitmanage logs repeated errors on the download
-# Synology. This is the watchdog for the 2026-08 silent-failure class (stale
-# util.py override → redact_passkey crash → 10 days of unnoticed non-removal).
-# Threshold >3 in 10m ignores single transient blips, catches sustained breakage.
+# Alert rules for Mother's infra. Anything labelled team:infra routes to the
+# "Mother Notifications" Telegram group via the provisioned contact point.
+#
+# The four rules added 2026-09-01 each watch a signal this stack was ALREADY
+# emitting and nobody was reading. Two bugs found that day had been logging
+# loudly for a long time with no alert attached:
+#   * _db_health_check logged "database disk image is malformed" every 15
+#     minutes for 3 days -- 797 times -- and went unnoticed.
+#   * "[qbt] login failed" logged 193 times in 25 days; qBittorrent tagging
+#     had been dead since it was written on 2026-06-17.
+# The detection existed. The alert did not. That is the gap these close.
+
 groups:
-  - orgId: 1
-    name: infra-qbitmanage
-    folder: Infra Alerts
-    interval: 1m
-    rules:
-      - uid: qbitmanage_error_watchdog
-        title: qbitmanage errors (download-synology)
-        condition: C
-        for: 0m
-        noDataState: OK
-        execErrState: OK
-        labels:
-          team: infra
-        annotations:
-          summary: "qbitmanage logged {{ $values.B.Value }} error line(s) in the last 10m on the download Synology. Removals may be broken again — check its logs / Loki {service=\"qbitmanage\"}."
-        data:
-          - refId: A
-            relativeTimeRange:
-              from: 600
-              to: 0
-            datasourceUid: loki
-            model:
-              datasource:
-                type: loki
-                uid: loki
-              editorMode: code
-              expr: "sum(count_over_time({service=\"qbitmanage\"} |~ \"\\\\[ERROR\\\\]|Traceback\" [10m]))"
-              queryType: instant
-              intervalMs: 1000
-              maxDataPoints: 43200
-              refId: A
-          - refId: B
-            relativeTimeRange:
-              from: 600
-              to: 0
-            datasourceUid: __expr__
-            model:
-              datasource:
-                type: __expr__
-                uid: __expr__
-              type: reduce
-              reducer: last
-              expression: A
-              refId: B
-          - refId: C
-            relativeTimeRange:
-              from: 600
-              to: 0
-            datasourceUid: __expr__
-            model:
-              datasource:
-                type: __expr__
-                uid: __expr__
-              type: threshold
-              expression: B
-              refId: C
-              conditions:
-                - evaluator:
-                    type: gt
-                    params: [3]
-
-  # Prometheus-backed: the Stuttler<->Gomaa site-to-site VPN going down (or a
-  # WAN failing at either gateway). unifi_tunnel_reachable is a real ping
-  # across the tunnel, not UniFi's own "vpn" health subsystem field — that
-  # field was found unreliable (reports status=error/0-active-tunnels even
-  # while traffic demonstrably flows, 2026-08-29) so don't alert on it.
-  # `for: 3m` requires 3 consecutive failed scrapes (90s at 30s poll) before
-  # firing, so a single blip doesn't page.
-  - orgId: 1
-    name: infra-unifi
-    folder: Infra Alerts
-    interval: 1m
-    rules:
-      - uid: unifi_tunnel_down
-        title: Stuttler<->Gomaa VPN tunnel down
-        condition: C
-        for: 3m
-        noDataState: Alerting
-        execErrState: Alerting
-        labels:
-          team: infra
-        annotations:
-          summary: "The site-to-site VPN tunnel appears down — {{ $labels.peer }} unreachable from Mother for 3+ minutes. Check UniFi gateway VPN status (10.0.0.1 / 192.168.1.1) and see the Stuttler Network wiki's UniFi doc."
-        data:
-          - refId: A
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: prometheus
-            model:
-              datasource:
-                type: prometheus
-                uid: prometheus
-              editorMode: code
-              expr: "min(unifi_tunnel_reachable)"
-              instant: true
-              range: false
-              refId: A
-          - refId: C
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: __expr__
-            model:
-              datasource:
-                type: __expr__
-                uid: __expr__
-              type: threshold
-              expression: A
-              refId: C
-              conditions:
-                - evaluator:
-                    type: lt
-                    params: [1]
-
-      - uid: unifi_wan_down
-        title: UniFi WAN down
-        condition: C
-        for: 3m
-        noDataState: OK
-        execErrState: OK
-        labels:
-          team: infra
-        annotations:
-          summary: "A primary WAN is reporting down on one of the UniFi sites (unifi_wan_status). Check the gateway."
-        data:
-          - refId: A
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: prometheus
-            model:
-              datasource:
-                type: prometheus
-                uid: prometheus
-              editorMode: code
-              expr: "min(unifi_wan_status)"
-              instant: true
-              range: false
-              refId: A
-          - refId: C
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: __expr__
-            model:
-              datasource:
-                type: __expr__
-                uid: __expr__
-              type: threshold
-              expression: A
-              refId: C
-              conditions:
-                - evaluator:
-                    type: lt
-                    params: [1]
-
-  # Three "on top of things" gaps closed 2026-08-29: (1) a container-down
-  # alert wired into Grafana's own alerting (previously only
-  # container_watchdog.py's independent Telegram send handled this -- this
-  # is a second, independent detection path, not a replacement); (2) disk
-  # space, previously visible on the dashboard but nothing paged on it;
-  # (3) a dead-man's-switch on container_watchdog.py's own cron -- the exact
-  # "watchdog silently stops working" failure class that has bitten this
-  # project multiple times before (qbitmanage's stale override, orphaned
-  # sync jobs). All three -> Mother Notifications.
-  - orgId: 1
-    name: infra-mother
-    folder: Infra Alerts
-    interval: 1m
-    rules:
-      - uid: mother_container_down
-        title: Container down (Mother)
-        condition: C
-        for: 10m
-        noDataState: OK
-        execErrState: OK
-        labels:
-          team: infra
-        annotations:
-          summary: "Container {{ $labels.name }} has been down for 10+ minutes on Mother. autoheal/container_watchdog.py should have already acted -- if you're only seeing this alert and not their Telegram message, something in that path may itself be broken."
-        data:
-          - refId: A
-            relativeTimeRange:
-              from: 600
-              to: 0
-            datasourceUid: prometheus
-            model:
-              datasource:
-                type: prometheus
-                uid: prometheus
-              editorMode: code
-              expr: 'min by (name) (docker_container_up)'
-              instant: true
-              range: false
-              refId: A
-          - refId: C
-            relativeTimeRange:
-              from: 600
-              to: 0
-            datasourceUid: __expr__
-            model:
-              datasource:
-                type: __expr__
-                uid: __expr__
-              type: threshold
-              expression: A
-              refId: C
-              conditions:
-                - evaluator:
-                    type: lt
-                    params: [1]
-
-      - uid: mother_disk_space_low
-        title: Disk space low
-        condition: C
-        for: 10m
-        noDataState: OK
-        execErrState: OK
-        labels:
-          team: infra
-        annotations:
-          summary: "{{ $labels.job }}'s root filesystem is over 90% full. Check what's consuming space before it fills completely."
-        data:
-          - refId: A
-            relativeTimeRange:
-              from: 600
-              to: 0
-            datasourceUid: prometheus
-            model:
-              datasource:
-                type: prometheus
-                uid: prometheus
-              editorMode: code
-              expr: '100*(1-(node_filesystem_avail_bytes{mountpoint="/",fstype="ext4"}/node_filesystem_size_bytes{mountpoint="/",fstype="ext4"}))'
-              instant: true
-              range: false
-              refId: A
-          - refId: C
-            relativeTimeRange:
-              from: 600
-              to: 0
-            datasourceUid: __expr__
-            model:
-              datasource:
-                type: __expr__
-                uid: __expr__
-              type: threshold
-              expression: A
-              refId: C
-              conditions:
-                - evaluator:
-                    type: gt
-                    params: [90]
-
-      - uid: mother_watchdog_heartbeat_stale
-        title: container_watchdog.py heartbeat stale
-        condition: C
-        for: 5m
-        noDataState: Alerting
-        execErrState: Alerting
-        labels:
-          team: infra
-        annotations:
-          summary: "container_watchdog.py hasn't reported a heartbeat in 15+ minutes (cron runs every 3 min). Either its cron entry stopped firing, the script is crashing before it can write the heartbeat, or node-exporter itself is down (no-data also alerts here for that reason). Check `crontab -l`, /opt/mother/data/logs/watchdog.log, and node-exporter's own status."
-        data:
-          - refId: A
-            relativeTimeRange:
-              from: 900
-              to: 0
-            datasourceUid: prometheus
-            model:
-              datasource:
-                type: prometheus
-                uid: prometheus
-              editorMode: code
-              expr: 'time() - max(watchdog_last_run_timestamp_seconds)'
-              instant: true
-              range: false
-              refId: A
-          - refId: C
-            relativeTimeRange:
-              from: 900
-              to: 0
-            datasourceUid: __expr__
-            model:
-              datasource:
-                type: __expr__
-                uid: __expr__
-              type: threshold
-              expression: A
-              refId: C
-              conditions:
-                - evaluator:
-                    type: gt
-                    params: [900]
+- orgId: 1
+  name: infra-qbitmanage
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: qbitmanage_error_watchdog
+    title: qbitmanage errors (download-synology)
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: qbitmanage logged {{ $values.B.Value }} error line(s) in the last 10m on the download Synology.
+        Removals may be broken again — check its logs / Loki {service="qbitmanage"}.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="qbitmanage"} |~ "\\[ERROR\\]|Traceback" [10m]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 3
+- orgId: 1
+  name: infra-unifi
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: unifi_tunnel_down
+    title: Stuttler<->Gomaa VPN tunnel down
+    condition: C
+    for: 3m
+    noDataState: Alerting
+    execErrState: Alerting
+    labels:
+      team: infra
+    annotations:
+      summary: The site-to-site VPN tunnel appears down — {{ $labels.peer }} unreachable from Mother for
+        3+ minutes. Check UniFi gateway VPN status (10.0.0.1 / 192.168.1.1) and see the Stuttler Network
+        wiki's UniFi doc.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasourceUid: prometheus
+      model:
+        datasource:
+          type: prometheus
+          uid: prometheus
+        editorMode: code
+        expr: min(unifi_tunnel_reachable)
+        instant: true
+        range: false
+        refId: A
+    - refId: C
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: A
+        refId: C
+        conditions:
+        - evaluator:
+            type: lt
+            params:
+            - 1
+  - uid: unifi_wan_down
+    title: UniFi WAN down
+    condition: C
+    for: 3m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: A primary WAN is reporting down on one of the UniFi sites (unifi_wan_status). Check the
+        gateway.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasourceUid: prometheus
+      model:
+        datasource:
+          type: prometheus
+          uid: prometheus
+        editorMode: code
+        expr: min(unifi_wan_status)
+        instant: true
+        range: false
+        refId: A
+    - refId: C
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: A
+        refId: C
+        conditions:
+        - evaluator:
+            type: lt
+            params:
+            - 1
+- orgId: 1
+  name: infra-mother
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: mother_container_down
+    title: Container down (Mother)
+    condition: C
+    for: 10m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: Container {{ $labels.name }} has been down for 10+ minutes on Mother. autoheal/container_watchdog.py
+        should have already acted -- if you're only seeing this alert and not their Telegram message,
+        something in that path may itself be broken.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        datasource:
+          type: prometheus
+          uid: prometheus
+        editorMode: code
+        expr: min by (name) (docker_container_up)
+        instant: true
+        range: false
+        refId: A
+    - refId: C
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: A
+        refId: C
+        conditions:
+        - evaluator:
+            type: lt
+            params:
+            - 1
+  - uid: mother_disk_space_low
+    title: Disk space low
+    condition: C
+    for: 10m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: '{{ $labels.job }}''s root filesystem is over 90% full. Check what''s consuming space before
+        it fills completely.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        datasource:
+          type: prometheus
+          uid: prometheus
+        editorMode: code
+        expr: 100*(1-(node_filesystem_avail_bytes{mountpoint="/",fstype="ext4"}/node_filesystem_size_bytes{mountpoint="/",fstype="ext4"}))
+        instant: true
+        range: false
+        refId: A
+    - refId: C
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: A
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 90
+  - uid: mother_watchdog_heartbeat_stale
+    title: container_watchdog.py heartbeat stale
+    condition: C
+    for: 5m
+    noDataState: Alerting
+    execErrState: Alerting
+    labels:
+      team: infra
+    annotations:
+      summary: container_watchdog.py hasn't reported a heartbeat in 15+ minutes (cron runs every 3 min).
+        Either its cron entry stopped firing, the script is crashing before it can write the heartbeat,
+        or node-exporter itself is down (no-data also alerts here for that reason). Check `crontab -l`,
+        /opt/mother/data/logs/watchdog.log, and node-exporter's own status.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: prometheus
+      model:
+        datasource:
+          type: prometheus
+          uid: prometheus
+        editorMode: code
+        expr: time() - max(watchdog_last_run_timestamp_seconds)
+        instant: true
+        range: false
+        refId: A
+    - refId: C
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: A
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 900
+- orgId: 1
+  name: infra-upgraderr-db
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: upgraderr_db_corruption
+    title: Upgraderr DB corruption
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: 'Upgraderr SQLite reports corruption ({{ $values.B.Value }} hits/15m). This has now happened
+        6 times. DO NOT blindly restore a backup - several past backups were themselves corrupt because
+        create_backup used to raw-copy a live WAL database. Corruption is often isolated to a single object
+        (2026-08-30: only sqlite_sequence, every user table intact), so try a table-by-table rebuild before
+        accepting data loss. Runbook: upgraderr_db_corruption_pattern memory.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="upgraderr"} |~ "malformed|Health check itself failed" [15m]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+- orgId: 1
+  name: infra-qbittorrent-auth
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: qbittorrent_auth_failure
+    title: qBittorrent auth failing
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: A service failed to authenticate to qBittorrent {{ $values.B.Value }} time(s) in 30m. Torrent
+        tagging and any queue-janitor HnR safety check are blind while this persists. Note qBittorrent
+        5.x answers a SUCCESSFUL login with HTTP 204 and an EMPTY body - a check expecting the literal
+        "Ok." reads every success as a failure (that exact bug ran undetected from 2026-06-17 to 2026-09-01).
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 1800
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service=~"upgraderr|curatorr|sync-webhook"} |~ "login failed|qBit login
+          failed" [30m]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 1800
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 1800
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 2
+- orgId: 1
+  name: infra-hnr-watchdog
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: hnr_content_removed
+    title: Torrent CONTENT deleted (Hit-and-Run risk)
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: '{{ $values.B.Value }} torrent(s) had their CONTENT deleted in the last hour. Expected
+        ONLY from qbitmanage share-limit cleanup at 120d, or a deliberate purge. Any other source is deleting
+        data out from under a seeding torrent, which is exactly what produced 55 TorrentLeech Hit-and-Runs
+        via decluttarr on 2026-09-01. Cross-check the qbitmanage log for a matching cleanup before assuming
+        it is benign.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="qbittorrent"} |= "Torrent content removed" [1h]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 25
+- orgId: 1
+  name: infra-upgraderr-backup
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: upgraderr_backup_failed
+    title: Upgraderr backup failed verification
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: An Upgraderr DB backup failed its post-write quick_check and was discarded rather than
+        stored. The live DB is probably already corrupt - investigate now, while a clean older backup
+        still exists.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 86400
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="upgraderr"} |~ "Backup FAILED verification" [24h]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 86400
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 86400
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
