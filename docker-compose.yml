@@ -880,6 +880,9 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       # Consumed by provisioned Telegram contact point (Mother Notifications)
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      # Consumed by the mother_agent_bridge webhook receiver in
+      # provisioning/alerting/contactpoints.yaml via $__env{AGENT_BRIDGE_TOKEN}
+      - AGENT_BRIDGE_TOKEN=${AGENT_BRIDGE_TOKEN}
     volumes:
       - /opt/mother/data/grafana:/var/lib/grafana
       - /opt/mother/configs/grafana/provisioning:/etc/grafana/provisioning:ro

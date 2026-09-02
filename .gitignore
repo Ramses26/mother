@@ -142,3 +142,7 @@ data/node-exporter-textfile/
 # Mother rebuild is possible, protected by restic encryption in the backup.
 # It must NEVER reach the git remote.
 data/host-state/
+
+# Agent bridge runtime state + maintenance sentinel
+data/agent-bridge/
+PAUSE_AGENT_BRIDGE

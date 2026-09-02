@@ -19,3 +19,29 @@ contactPoints:
             {{ .Annotations.summary }}
             {{ end }}
         disableResolveMessage: false
+
+  # Second receiver on the SAME contact point: besides the human-readable
+  # Telegram message above, POST the alert to the agent bridge so a read-only
+  # Claude triage run starts immediately instead of waiting for Ali to read the
+  # alert and relay it by hand (which has taken hours).
+  #
+  # 172.18.0.1 is the mother_mother_network bridge gateway — reachable from this
+  # container and from the host, but NOT from the LAN, which has no route to
+  # 172.18.0.0/16. Verified: `curl http://10.0.0.162:8600/health` from the LAN
+  # gets nothing. The token is defence in depth on top of that.
+  #
+  # The bridge ignores `status: resolved`, de-duplicates by fingerprint, and caps
+  # runs per incident and per hour — a flapping alert cannot spawn a run per
+  # firing. See scripts/agent_bridge.py.
+      - uid: mother_agent_bridge
+        type: webhook
+        settings:
+          url: http://172.18.0.1:8600/alert
+          httpMethod: POST
+          # HTTP Basic, NOT a custom header. Grafana 11.6.0 stores a `headers`
+          # map on a webhook receiver but never sends it — verified by logging
+          # the headers that actually arrived (only Accept-Encoding,
+          # Content-Length, Content-Type, Host, User-Agent). Basic auth works.
+          username: grafana
+          password: $__env{AGENT_BRIDGE_TOKEN}
+        disableResolveMessage: true
