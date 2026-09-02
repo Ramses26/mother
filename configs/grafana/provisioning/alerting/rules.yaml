@@ -887,3 +887,132 @@ groups:
             type: gt
             params:
             - 2
+- orgId: 1
+  name: infra-plex-backup
+  folder: Infra Alerts
+  interval: 5m
+  rules:
+  - uid: plex_backup_failed
+    title: Plex backup failed or aborted
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: The Plex backup on Nostromo reported a failure or abort in the last 6h ({{ $values.B.Value }}
+        occurrences). An ABORT means the pre-flight check refused to run - Plex was NOT stopped, which is the
+        safe outcome, but no backup was taken. Check {service="plexbackup"} in Loki and /var/log/plexbackup.log
+        on Nostromo. This rule exists because both Apprise instances are non-functional, so the script's own
+        notifications do not arrive.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 21600
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="plexbackup"} |~ "ABORT|FAILED|failed integrity check" [6h]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 21600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 21600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+- orgId: 1
+  name: infra-plex-backup-stale
+  folder: Infra Alerts
+  interval: 30m
+  rules:
+  - uid: plex_backup_stale
+    title: Plex backup has not completed in 36h
+    condition: C
+    for: 0m
+    noDataState: Alerting
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: No "Database backup complete" line from Nostromo's Plex backup in 36h. The job runs nightly at
+        03:30, so 36h means at least one run was missed entirely - which is the failure mode that went unnoticed
+        for 5 months on Hathor (silently broken, no error, nobody looking). noDataState is Alerting on purpose -
+        silence is exactly the symptom here.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 129600
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="plexbackup"} |= "Database backup complete" [36h]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 129600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 129600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: lt
+            params:
+            - 1

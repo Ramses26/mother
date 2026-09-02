@@ -23,3 +23,27 @@ loki.source.file "plex" {
   targets    = local.file_match.plex.targets
   forward_to = [loki.write.default.receiver]
 }
+
+// ----------------------------------------------------------------------------
+// Plex backup script log (/home/stutch/plexbackup.sh writes here on every run).
+//
+// This is the alerting path for the backup, deliberately in place of a
+// notification credential: Mother's and Terminus's Apprise instances are both
+// non-functional (their YAML uses ${VAR} placeholders, which Apprise does not
+// expand), and putting a Telegram bot token on this host is not warranted when
+// the log already ships here. Grafana rules `plex_backup_failed` and
+// `plex_backup_stale` watch {service="plexbackup"}.
+// ----------------------------------------------------------------------------
+local.file_match "plexbackup" {
+  path_targets = [{
+    __path__ = "/var/log/plexbackup.log",
+    service  = "plexbackup",
+    job      = "file_log",
+    host     = "nostromo",
+  }]
+}
+
+loki.source.file "plexbackup" {
+  targets    = local.file_match.plexbackup.targets
+  forward_to = [loki.write.default.receiver]
+}
