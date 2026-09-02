@@ -361,7 +361,7 @@ The nightly dedup (`nightly_unraid_dedup` in `app.py`) caused a mass-deletion in
 
 **PAUSE_DEDUP should exist while the batch sync screen is running.** Remove it only once the batch sync is complete and verified. **Status: `PAUSE_DEDUP` was removed 2026-07-02** — it had been continuously active since 2026-06-17 (2+ weeks), meaning dedup had not run at all in that window regardless of any `DEDUP_*` env var tuning.
 
-**IMPORTANT — the `DEDUP_*` env vars in this table were documented and set in `.env` but never actually wired into `docker-compose.yml`'s `sync-webhook` service** until 2026-07-02 — the container always ran on the Python code's hardcoded defaults (200/50/false/10/24) no matter what `.env` said. Fixed by adding explicit `environment:` entries for all five in `docker-compose.yml`. **If you change any `DEDUP_*` value in `.env`, you must `docker compose up -d sync-webhook` to recreate the container — editing `.env` alone does nothing.** `DEDUP_SAFETY_LIMIT` raised to **700** on 2026-07-02 specifically to drain a 669-file backlog that accumulated during the `PAUSE_DEDUP` window. That backlog was **not** drained before this doc was last touched — dedup then went silent for 11 more days (see Min age row above), and a 2026-07-19 dry-run found the backlog had grown to **3,134** deletable duplicates, tripping the 700 limit outright. Raised to **3500** on 2026-07-19 as a one-time drain (same pattern as before) — **revert to 200 once confirmed drained, check this before assuming 3500 is still needed.**
+**IMPORTANT — the `DEDUP_*` env vars in this table were documented and set in `.env` but never actually wired into `docker-compose.yml`'s `sync-webhook` service** until 2026-07-02 — the container always ran on the Python code's hardcoded defaults (200/50/false/10/24) no matter what `.env` said. Fixed by adding explicit `environment:` entries for all five in `docker-compose.yml`. **If you change any `DEDUP_*` value in `.env`, you must `docker compose up -d sync-webhook` to recreate the container — editing `.env` alone does nothing.** `DEDUP_SAFETY_LIMIT` went through several one-time-drain bumps (700 on 2026-07-02, 3500 on 2026-07-19) chasing a backlog that kept regrowing faster than it drained. **Verified 2026-09-01: it is now `500` in `.env`, and steady-state dedup has been succeeding daily since 2026-08-30** (`dedup_status.json` shows e.g. "Removed 50 duplicate(s), freed 332.8 GB" on 2026-09-01) at the `DEDUP_MAX_PER_RUN=50` per-run cap. The backlog is not fully drained — several runs in late August still hit the 500 safety limit and skipped all deletions (1948 deletable found on 08-23) — but it is draining 50/day rather than stuck. Check `dedup_status.json` for the current trend before assuming either "3500" or "drained" from this doc; both are now wrong.
 
 **Dedup status reporting**: `reports/daily_report.py`'s Dedup section used to only check the `PAUSE_DEDUP` sentinel and always said "✅ Enabled" — this is why the 11-day silent defer above went unnoticed. Fixed 2026-07-19: `nightly_unraid_dedup()` now writes its actual outcome (ran/deferred/paused/blocked/error + reason) to `configs/sync-webhook/data/dedup_status.json` on every attempt, and the report reads it. If you ever see "no run recorded yet" in the report, the status file is missing or stale — check `sync-webhook` logs directly.
 
@@ -517,13 +517,14 @@ when the tier was added 2026-07-23) had only accumulated **88 queued items after
 the old default (5/instance, 10 global) — on the order of months to fully classify the backlog,
 worse once the stuck-`found`-row fix above reopened 147 more movies into the same queue.
 
-**Raised 2026-07-25**: `UPGRADERR_SEARCHES_PER_HOUR` 5→20, `UPGRADERR_DOWNLOADS_PER_DAY` 10→40
-in `.env`, specifically to drain this backlog — same temporary-bump pattern as
-`DEDUP_SAFETY_LIMIT` elsewhere in this doc. **Revert to 5/10 once the backlog is confirmed
-drained** (check `SELECT priority_tier, status, COUNT(*) FROM upgrade_queue GROUP BY 1,2` — once
-tier8 and the reopened `found` rows have worked through, there's no reason to keep searching
-this aggressively for ongoing steady-state). Don't assume 20/40 is the intended long-term value
-without checking this first.
+**Raised 2026-07-25**: `UPGRADERR_SEARCHES_PER_HOUR` 5→20, `UPGRADERR_DOWNLOADS_PER_DAY` 10→40 to
+drain the backlog. **Verified 2026-09-01: these are now `2` and `3` in `.env`** — lower than even
+the original 5/10 default, not the 20/40 bump this section describes. Tier 9 (release-group
+quality, added 2026-08-14, see below) is now the dominant queue item at **6,992 of ~8,000 total**
+— that scale is almost certainly why the budget was throttled down rather than left at 20/40,
+but that reasoning isn't recorded anywhere, so treat it as unconfirmed. Check
+`SELECT priority_tier, COUNT(*) FROM upgrade_queue GROUP BY 1` and the current `.env` values
+before assuming any number in this section is still live.
 
 ### qbitmanage Orphaned-Data Race Condition (READ BEFORE MANUALLY RECOVERING A STUCK IMPORT)
 
@@ -734,7 +735,8 @@ Scans media directories, extracts quality metadata from filenames via regex, out
 ### `services/upgraderr/app.py` (Flask app)
 Custom quality upgrade automation service replacing Huntarr. Handles:
 - Discovery sweep every 30 min: classifies all 4 *arr instances into 7 upgrade tiers
-- **7 Tiers**: m2ts/BDMV (1), non-MKV container (2), 720p/SD (3), TMDB BluRay available (4), no surround audio (5), low TRaSH score (6), quality profile mismatch (7 — file quality not in the assigned profile's allowed list; Radarr/Sonarr won't auto-search because `cutoffNotMet=false`; Upgraderr forces search **regardless of whether the current file scores higher than the profile allows — see Profile Authority above**). Tier 7 covers **both Radarr and Sonarr** as of 2026-07-02 (`_build_profile_allowed()` + the per-episode check in `_sweep_sonarr()`) — Sonarr had no equivalent before that.
+- **9 Tiers** (was 7; Tier 8 added 2026-07-23, Tier 9 added 2026-08-14 — see `tier9_release_group_quality_2026_08_14` memory for the full write-up, not repeated here): m2ts/BDMV (1), non-MKV container (2), 720p/SD (3), TMDB BluRay available (4), no surround audio (5), low TRaSH score (6), quality profile mismatch (7 — file quality not in the assigned profile's allowed list; Radarr/Sonarr won't auto-search because `cutoffNotMet=false`; Upgraderr forces search **regardless of whether the current file scores higher than the profile allows — see Profile Authority above**), x265 without HDR/DV at 1080p (8), **release-group quality (9 — `_tier9_candidate()`, assesses a file's release group against TRaSH's group tiers for its source family; unrecognized/Tier-2-3 groups and known-bad groups are candidates regardless of raw score)**. Tier 7 covers **both Radarr and Sonarr** as of 2026-07-02 (`_build_profile_allowed()` + the per-episode check in `_sweep_sonarr()`) — Sonarr had no equivalent before that. **Tier 9 is live** (`tier9_report_only=false`) and is by far the largest queue segment — verified 2026-09-01 at 6,992 of ~8,000 total `upgrade_queue` rows. A **Tier 10 (search for entirely missing movies/episodes) was designed but deliberately shelved 2026-09-01** at Ali's direction — it would add significant download volume; see `docs/PROJECT_TODO.md` §3b for the filter design (age cutoff, genre exclusions, per-series cap) if it's picked back up. Ali's preferred alternative is unmonitoring low-value shows in Sonarr directly rather than filtering around them in Upgraderr.
+- **Queue janitor (2026-09-01, Phase 1/report-only)** — separate concern from the tiers above: instead of deciding "should this file be better", it clears stuck *arr queue items (already-imported, failed-import, stalled) using `removeFromClient=false` so the torrent keeps seeding. Replaces `decluttarr` (removed the same day — see below). Design + measured *arr API semantics: `docs/research/queue-janitor-design.md`. Phase 2 gate is 2026-09-15, tracked in `docs/PROJECT_TODO.md` §1.
 - **Post-import safety net** (`_flag_if_bad_import`): independent of the tier system — after any webhook-recorded import, checks whether the *newly imported* file is itself objectively bad (matches Tiers 1-6, or a known-bad release group). If so, alerts via Telegram and tags `upgraderr-skip`. Does NOT alert on score drop alone — a Tier-7 profile-enforced swap is supposed to lower the raw score sometimes, and that's correct, not a bug.
 - APScheduler tasks: sweep (every 30min), TMDB scan (02:30 UTC daily), DB backup (03:00 UTC daily), search log prune (04:00 UTC daily, keeps 90 days), **stale queue validation (05:00 UTC daily)** — removes queue entries whose upgrade reason no longer applies (e.g., show was upgraded outside the sweep flow)
 - Global pause toggle + per-instance budget (searches/day from `config` table)
@@ -875,7 +877,33 @@ separate from the per-app content groups and from Terminus. Grafana Unified Aler
 `configs/grafana/provisioning/alerting/`) routes any rule labeled `team: infra` to it via a Telegram
 contact point (bot token from `$__env{TELEGRAM_BOT_TOKEN}`, passed to grafana in compose). First live
 rule: **qbitmanage error watchdog** (`{service="qbitmanage"} |~ "[ERROR]|Traceback"` > 3 in 10m). The
-Loki datasource UID is pinned to `loki`.
+Loki datasource UID is pinned to `loki`. **14 rules total as of 2026-09-01** (`rules.yaml`), added after
+auditing 7 days of logs across both Lokis and finding that the two worst incidents that day —
+Upgraderr DB corruption (797 occurrences over 3 days) and qBittorrent auth failure (193 occurrences over
+25 days) — had both been logging loudly the whole time with nothing watching. **The recurring lesson:
+before writing new intelligence for a failure class, check whether the signal is already in Loki and
+just needs a rule** — this was true for every incident found that day. Newer rules also cover: an
+Unraid mount going missing from sync-webhook's view, an *arr indexer getting disabled, Plex going
+unreachable from Tautulli/Tracearr, *arr SQLite lock/corruption, and — the direct tripwire for the
+decluttarr failure mode — a spike in qBittorrent's own `Torrent content removed` log line (see
+qBittorrent File Logging below). A triggered-headless-Claude-agent design (Grafana alert → `claude -p`
+in `/opt/mother`, findings posted back to this Telegram group, **Ali can reply to the alert message in
+Telegram to continue the investigation** — works today with no bot config change, since Telegram
+delivers replies to a bot's own messages even with privacy mode on) is written up with measured
+cost/mechanics in `docs/PROJECT_TODO.md` §2, not yet built.
+
+**qBittorrent file logging (2026-09-01)** — qBittorrent's container emits **zero stdout**, so Alloy's
+docker-log discovery ships nothing for it; its actual log is a file
+(`/volume1/docker/qbittorrent/qBittorrent/logs/qbittorrent.log` on the download Synology — note a decoy
+stale copy exists at `.../data/logs/` from before a path change, don't confuse the two), now tailed
+directly by Alloy (`libtorrent "Performance alert:` lines, ~90% of volume, are dropped at the source).
+The pair `Torrent removed` + `Torrent content removed` for the same torrent is the Hit-and-Run
+fingerprint — content-removed without a matching qbitmanage 120d cleanup means something deleted seeded
+data. **Separately: qBittorrent 5.x answers a SUCCESSFUL `/auth/login` with HTTP 204 and an EMPTY
+body** (pre-5.x returned `200 "Ok."`) — any code checking for the literal `"Ok."` reads every success
+as a failure. This broke Upgraderr's qBittorrent tagging from the day it was written (2026-06-17) until
+found and fixed 2026-09-01; check `_qb_login_ok()` in `services/upgraderr/app.py` for the accepted
+pattern before writing any new qBittorrent-API integration.
 
 **Container-down detection + self-heal — REPLACES Dockhand notifications** (Dockhand's start/stop/kill
 stream was too noisy AND its 1.0.3 telegram sender is broken: hardcoded `parse_mode:"Markdown"`,
@@ -1030,7 +1058,7 @@ Note: sync-webhook times are Eastern (America/New_York, DST-aware). Other servic
 | `nginx-proxy-manager` | 80/443/81 | Reverse proxy + SSL termination |
 | `dockhand` | 3000 | Container/image lifecycle across hosts (removed Portainer 2026-07-19). **Its Telegram notifications are disabled/deprecated** — too noisy + its 1.0.3 sender is broken (`parse_mode:"Markdown"`, unescaped → 400s). Container-down alerting is now `scripts/container_watchdog.py` + Grafana alerting → Mother Notifications (see Observability Stack). |
 | `apprise` | 8000 | Notification hub (Telegram via `http://apprise:8000/notify/apprise`) |
-| `backrest` | 9898 | Restic backup UI (replaced Duplicati) |
+| `backrest` | 9898 | Restic backup UI. **Found 2026-09-01 to have never run a single backup since 2026-03-21** (no repos/plans configured, 0 oplog rows) despite showing healthy — fixed the same day: repo `synology` on a restic REST server on the download Synology (`10.0.1.203:8500`, storage at `/volume1/PlexBackup/mother-restic/`), plan `mother-full` backing up `/opt/mother` nightly at 04:00 (excludes MediaCover/Tautulli-cache/Loki/Prometheus — regenerable or huge), retention 14d/8w/12m. **`http://mother:9898` currently has NO authentication and exposes the repo password in plaintext to anyone on the LAN — set one in Settings.** Freshness is checked by `scripts/backup_freshness_check.py` (cron 09:00) rather than a Loki alert, since a backup system that fails by doing nothing emits no error lines — that's exactly how the original gap went undetected for 5 months. Host state outside `/opt/mother` (crontab, `/etc/fstab`, SSH keys, systemd units) is captured separately by `scripts/snapshot_host_state.sh` into `data/host-state/` (gitignored — holds private keys) so it rides along in the same backup. **The restic repo password lives only in `.env`, whose only off-box copy is inside the very backup it encrypts — it must be copied to a password manager separately, or the backups become permanently unreadable if Mother is lost first.** Full detail: `docs/PROJECT_TODO.md` §3a. |
 
 **Not on Mother (external/migrated):**
 - qBittorrent — migrated to Synology RS2821RP+ at `10.0.1.203:8080`
@@ -1178,11 +1206,15 @@ can't introduce new false-negatives, only catch cases upstream already misses. *
 `qbitmanage` image version** — if upstream restructures this file, the override could silently stop
 applying or (worse) revert to an older match list.
 
-**`decluttarr`** (`ghcr.io/manimatter/decluttarr`) — added to Mother's own `docker-compose.yml`
-2026-07-19 for Radarr/Sonarr/qBittorrent queue hygiene (stalled/failed-import/orphaned/metadata-missing
-removal). Config at `configs/decluttarr/config.yaml`. Deliberately does **not** own search-triggering
-(`search_unmet_cutoff`/`search_missing` left disabled) — Upgraderr already owns that decision for this
-stack. Started in `test_run: true` (dry-run); flip to `false` only after reviewing logs.
+**`decluttarr` — REMOVED 2026-09-01.** Was added 2026-07-19 for Radarr/Sonarr/qBittorrent queue
+hygiene. In 29 days it removed 306 torrents (82 on TorrentLeech) because every one of its removal
+paths hardcodes `removeFromClient: True` with no override, and its only guard
+(`private_tracker_handling`) is moot when all 8 indexers are private — that produced 55 Hit-and-Runs.
+Its `remove_orphans` job alone deleted 48 of the 82, and was found to delete *healthy* in-flight
+downloads (a whole-dict equality diff between two separate live queue fetches). Replaced by a
+queue-janitor built into Upgraderr — see `docs/research/queue-janitor-design.md` and
+`docs/PROJECT_TODO.md` §1. Retired config at `configs/_archived/decluttarr-config.yaml.retired`
+(its curated failed-import message patterns were the one part worth keeping).
 
 **`hawser`** (`ghcr.io/finsys/hawser`) — Dockhand's own remote-agent, already deployed on this Synology
 (not something we added) but **found stopped for 6 days** on 2026-07-19 (`Exited (0)`, clean shutdown,
@@ -1215,8 +1247,14 @@ Analysis scripts use: `tqdm` (optional, for progress bars). Some scripts use `pa
 
 ## Key Documentation
 
+**`docs/PROJECT_TODO.md` is the single place for open items and audit state — read it first**
+when picking up work on this project. Dated checkpoints, what's shelved and why, and the
+standing answers on things like Postgres-vs-SQLite and local AI live there, not here.
+
 | File | Purpose |
 |------|---------|
+| `docs/PROJECT_TODO.md` | **Open items, audit state, dated checkpoints — start here** |
+| `docs/research/queue-janitor-design.md` | Queue janitor design + measured *arr API semantics |
 | `docs/OPERATIONS.md` | Day-to-day operations, monitoring, troubleshooting |
 | `docs/CURATORR.md` | Curatorr user guide — navigation, scoring, duplicates, rules, deletion |
 | `services/upgraderr/README.md` | Upgraderr service — setup, tiers, webhooks, env vars |
