@@ -26,6 +26,7 @@ groups:
     execErrState: OK
     labels:
       team: infra
+      alertclass: noisy
     annotations:
       summary: qbitmanage logged {{ $values.B.Value }} error line(s) in the last 10m on the download Synology.
         Removals may be broken again — check its logs / Loki {service="qbitmanage"}.
@@ -224,6 +225,7 @@ groups:
     execErrState: OK
     labels:
       team: infra
+      alertclass: advisory
     annotations:
       summary: '{{ $labels.job }}''s root filesystem is over 90% full. Check what''s consuming space before
         it fills completely.'
@@ -770,6 +772,7 @@ groups:
     execErrState: OK
     labels:
       team: infra
+      alertclass: noisy
     annotations:
       summary: '{{ $values.B.Value }} SQLite contention/corruption errors in an *arr in the last hour.
         A steady low rate of "database is locked" is normal under load; a spike, or any "malformed", means

@@ -1,16 +1,48 @@
 apiVersion: 1
 
 # Notification routing. The default receiver is left as grafana-default-email
-# (unconfigured / no-op) so we don't hijack global routing. A nested route
-# sends anything labeled team=infra to the Mother Notifications Telegram group.
+# (unconfigured / no-op) so we don't hijack global routing. Nested routes send
+# anything labeled team=infra to the Mother Notifications Telegram group.
+#
+# repeat_interval, 2026-09-02 -- mirrors the model already in use on Terminus.
+# This file previously used a blanket 4h for EVERY infra rule, chronic and
+# high-risk alike. That was set by a prior session on 2026-08-29, not a
+# considered choice. Ali's standing rule, confirmed 2026-09-02: a long repeat is
+# reserved for the chronic/advisory class ONLY -- he has already missed a real
+# alert because of a 4h repeat, so anything meaning "something is actively
+# broken right now" repeats every 10m until it is dealt with.
+#
+# Routes are evaluated IN ORDER and the first match wins, so the specific
+# alertclass routes MUST stay above the catch-all.
 policies:
   - orgId: 1
     receiver: grafana-default-email
     group_by: ["grafana_folder", "alertname"]
     routes:
+      # Chronic: slow-moving conditions that can legitimately stay true for days
+      # (a disk does not stop filling because you were paged about it).
+      - receiver: mother-notifications-telegram
+        object_matchers:
+          - ["team", "=", "infra"]
+          - ["alertclass", "=", "advisory"]
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 24h
+
+      # Noisy: a low steady rate is normal and only a sustained spike matters,
+      # so repeating every 10m would train the alert to be ignored.
+      - receiver: mother-notifications-telegram
+        object_matchers:
+          - ["team", "=", "infra"]
+          - ["alertclass", "=", "noisy"]
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 12h
+
+      # Everything else labelled team=infra: something is actively broken.
       - receiver: mother-notifications-telegram
         object_matchers:
           - ["team", "=", "infra"]
         group_wait: 30s
         group_interval: 5m
-        repeat_interval: 4h
+        repeat_interval: 10m
