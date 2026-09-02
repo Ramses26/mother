@@ -110,6 +110,33 @@ confirm one clean night, and only add a Grafana mute timing if the weekly full s
 
 ---
 
+## 4b. TIME-SENSITIVE — Hathor's own Plex backup will fail tomorrow (2026-09-03 02:15)
+
+Found while comparing Chris's script against Ali's. Two facts that only matter together:
+
+1. **`/mnt/plexbackup` on Hathor is ESTALE.** The NFS4 mount to
+   `unraid.gomaafam.net:/mnt/user/Home/Backups/Plex` is still *listed* in `mount`, but any
+   access returns `Stale file handle` and `mountpoint -q` fails. Same failure class as the
+   2026-08-30 Mother incident (`unraid_mount_estale_incident_2026_08_30`).
+2. **The rewritten script has never run yet.** It was created Friday 2026-08-28 and is
+   scheduled `15 2 * * 4` (Thursdays). No Thursday has occurred since. `/var/log/plexbackup.log`
+   does not exist, which confirms zero runs. **First-ever scheduled run is 2026-09-03 02:15.**
+
+So tomorrow's first run hits a stale mount. **The pre-flight check will do exactly what it was
+written to do** — abort before touching Plex and send an Apprise failure notification, rather
+than repeating the 5-month silent failure. That is the 2026-08-28 rewrite paying off on its
+first outing. But the backup still will not happen.
+
+**Action:** clear the stale mount on Hathor before 02:15 tomorrow —
+`sudo umount -l /mnt/plexbackup && sudo mount /mnt/plexbackup`, then verify with
+`ls /mnt/plexbackup`. Needs a password-bearing sudo session, so it has to be Ali.
+
+Note: Hathor has **no passwordless sudo**, so `sudo -n crontab -l` returns nothing and looks
+like an empty root crontab. That is a sudo failure, not evidence the cron entry is missing —
+do not "fix" a missing schedule on that basis.
+
+---
+
 ## 5. Separately confirmed and already fixed — not today's cause
 
 Nostromo Plex also crash-looped **602 times over 2.5 days** (Aug 30 → Sep 1 13:03),
