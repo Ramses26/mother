@@ -614,6 +614,12 @@ def check_stalled_syncs():
 
 def recover_interrupted_jobs():
     """On startup, recover interrupted jobs and retry unresolved failures"""
+    pause_file = os.environ.get('PAUSE_WEBHOOK_RETRY_FILE', '/opt/mother/PAUSE_WEBHOOK_RETRY')
+    if os.path.exists(pause_file):
+        logger.warning(f"Startup recovery: {pause_file} sentinel exists — skipping re-queue "
+                        f"(interrupted/failed jobs stay as-is; orphan recovery still marks them "
+                        f"'failed' for auto-retry to pick up once unpaused). Remove the file to re-enable.")
+        return 0
     try:
         conn = sqlite3.connect(DB_PATH, timeout=30)
         conn.row_factory = sqlite3.Row
@@ -1547,6 +1553,11 @@ def get_retry_wait_minutes(retry_count):
 def auto_retry_failed():
     """Automatically retry failed jobs with exponential backoff"""
     global _error_alert_sent
+    pause_file = os.environ.get('PAUSE_WEBHOOK_RETRY_FILE', '/opt/mother/PAUSE_WEBHOOK_RETRY')
+    if os.path.exists(pause_file):
+        logger.warning(f"Auto-retry: {pause_file} sentinel exists — skipping this cycle. "
+                        f"Remove the file to re-enable.")
+        return
     logger.info("Auto-retry: checking for failed jobs...")
     try:
         conn = sqlite3.connect(DB_PATH, timeout=30)
