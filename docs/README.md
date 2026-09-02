@@ -16,6 +16,7 @@ Project Mother is a media management and synchronization system consolidating tw
 | [Profile Authority](PROFILE_AUTHORITY.md) | The #1 cross-cutting rule — assigned profile wins over raw score, everywhere |
 | [Service Reference](SERVICES.md) | Every container, its port, and how they fit together |
 | [Operations Guide](OPERATIONS.md) | Day-to-day operations, monitoring, troubleshooting |
+| [Agent Bridge Build Guide](AGENT_BRIDGE_BUILD.md) | Portable guide to rebuilding the alert-triggered Claude triage agent on another host |
 | [Workflow Diagrams](WORKFLOW.md) | Full system data flow, Upgraderr pipeline, network topology |
 | [Sync Guide](SYNC_GUIDE.md) | Sync strategy, what is and is NOT synced, sentinel files |
 | [Curatorr Guide](CURATORR.md) | Curatorr navigation, scoring, sync status, duplicates, rules, deletion |
