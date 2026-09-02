@@ -92,12 +92,9 @@ fixed 2026-08-28 but the client mount still held the pre-fix handle). Alloy on H
 compose was missing (without it the container cannot see the file and the tail silently
 matches nothing). Both mirrored into `remote-hosts/hathor/`.
 
-**Remaining:** root crontab still says `15 2 * * 4` (weekly). Needs Ali's sudo:
-```bash
-sudo crontab -l | sed 's|^15 2 \* \* 4 /home/alig/plexbackup.sh|30 3 * * * /home/alig/plexbackup.sh|' | sudo crontab -
-```
-Until then it runs correctly, just weekly. Last backup on Unraid is 2026-03-12, so tonight is
-the first in 5.5 months.
+**Done.** Cron confirmed nightly by Ali: `30 3 * * * /home/alig/plexbackup.sh`. First run
+executed manually 2026-09-02 10:18 — **22s downtime, 3.1 GB** — and confirmed arriving in
+Terminus's Loki. That was the first Hathor Plex backup since **2026-03-12**, 5.5 months.
 
 ### Alerting — Loki, not a notification credential
 
@@ -113,37 +110,37 @@ rules there (see §4c).
 
 ---
 
-## 4b. FIXED 2026-09-02 — Apprise had never delivered a single notification
+## 4b. REMOVED 2026-09-02 — Mother's Apprise container
 
-Found while verifying the backup script's failure alerts would actually arrive. **Both**
-Apprise instances were dead:
+Found while verifying the backup script's failure alerts would arrive: **the container had
+never delivered a single notification.** `apprise.yml` held literal `${TELEGRAM_BOT_TOKEN}`
+placeholders and **Apprise does not expand environment variables in its YAML config** — every
+URL logged `Unparseable Telegram URL`, and every POST was answered **HTTP 204 while delivering
+nothing**. 204 is also the success code, which is why it hid for months.
 
-- `apprise.yml` held literal `${TELEGRAM_BOT_TOKEN}` / `${..._CHAT_ID}` placeholders, and
-  **Apprise does not expand environment variables inside its YAML config.** Every URL logged
-  `Unparseable Telegram URL`.
-- Passing the vars into the container does **not** help — the expansion simply does not exist.
-- Every POST was answered **HTTP 204 while delivering nothing**. 204 is also the success
-  response, which is exactly why this hid for months.
+Fixed it first (git-tracked template + a render step + an `apprise-init` container), then
+established nothing wants it, and removed it at Ali's direction. 31 → 29 services.
 
-**Nothing broke visibly** because nothing actually depends on the container: Grafana,
-`container_watchdog.py` and `agent_bridge.py` post to `api.telegram.org` directly,
-`sync-webhook` uses the Apprise *python library* in-process, and `daily_report.py` silently
-falls back to direct Telegram when the POST fails. That is the answer to "how am I getting
-notifications" — you never were, from this container.
+**Why nothing broke:** Grafana, `container_watchdog.py` and `agent_bridge.py` post to
+`api.telegram.org` **direct**; `sync-webhook`, `upgraderr` and `curatorr` use the **apprise
+python library in-process** (keep it — unrelated to the container); `daily_report.py` and the
+host shell scripts post to **Terminus's** Apprise (`192.168.1.14:8000`), which works and
+returns **200**. That 200-vs-204 difference matters: `send_apprise()` checks `status == 200`,
+so it succeeded against Terminus and always read as failure against Mother.
 
-**Fix:** `configs/apprise/apprise.yml.template` stays git-tracked with placeholders;
-`configs/apprise/render.sh` substitutes real values into a **gitignored** `apprise.yml`; a new
-`apprise-init` alpine container runs it to completion before apprise starts
-(`service_completed_successfully`). It fails loudly on any unset var or leftover placeholder
-rather than writing a half-rendered config. Added the missing `infra`/`servers` tag → Mother
-Notifications.
+**Terminus's Apprise is fine and was left alone.** An earlier read of it as "broken" was wrong
+— its `/config/apprise.yml` is a 0-byte reference file with the real config in the API store;
+a live POST returns 200 and `Sent Telegram notification.`
 
-**Verified:** 0 config errors, 5 targets resolve, real send returns `Sent Telegram
-notification.` exit 0. Confirmed the previously-committed apprise.yml never held a real token,
-so nothing leaked historically.
+Host-level alerting is Loki + Grafana instead. `nostromo/plexbackup.sh`'s `notify()` is now a
+documented no-op; all 8 failure paths still write a logmsg the Grafana rules match.
+**Do not re-add a notification-hub container without first checking whether a Grafana rule
+over shipped logs covers the need.**
 
-**Terminus's Apprise is still broken** — same symptom class, not yet diagnosed. Asked its
-Claude to check (§4c). `daily_report.py` posts there, so it has been running on its fallback.
+Side effect worth knowing: the one-shot `apprise-init` container tripped
+`mother_container_down`, because that rule used `min by (name) (docker_container_up)` with no
+concept of a container that is *supposed* to exit. Now excludes `.*-init`.
+`container_watchdog.py` had it right already — it only watches `always`/`unless-stopped`.
 
 ---
 
@@ -153,6 +150,41 @@ The two Claude sessions **can** message each other — `ListAgents` shows Termin
 Remote Control, and `SendMessage` reaches it by name (`terminus-rustling-octopus`). Sent it a
 request covering: the two `{service="plexbackup"}` alert rules for Hathor, the Apprise root
 cause and fix, and whether `{host="hathor"}` is arriving in Terminus's Loki. Awaiting reply.
+
+## 4d. ⚠️ Sunday 2026-09-06 — a large automatic deletion will happen
+
+The weekly full backup runs on both hosts and then prunes `buplex-*.tar.*` to `retainFull=2`.
+The **old** backups match that same glob, so they are in scope:
+
+| Host | Matching files today | Size | After Sunday |
+|---|---|---|---|
+| Nostromo `/mnt/PLEX` | 14 | **1.4 TB** | 2 (new + newest old) |
+| Hathor `/mnt/plexbackup` | 9 | **1.3 TB** | 2 |
+
+≈ **2.4 TB freed**, which is almost certainly wanted (Unraid is at 92%), but it is a big
+irreversible delete and should not be a surprise. Hathor's are Jan–Mar 2026; Nostromo's are
+August. After Sunday each host holds 2 full + 30 nightly DB archives.
+
+**If more history is wanted, raise `retainFull` in both scripts before Sunday.**
+
+---
+
+## 4e. Alert cadence — Mother now mirrors Terminus
+
+`policies.yaml` used a blanket `repeat_interval: 4h` for every `team: infra` rule. Ali's
+standing rule (he has already missed a real alert because of a 4h repeat): long intervals are
+for the chronic/advisory class **only**.
+
+| Class | Repeat | Rules |
+|---|---|---|
+| `advisory` | 24h | `mother_disk_space_low` |
+| `noisy` | 12h | `arr_database_locked`, `qbitmanage_error_watchdog` |
+| default | **10m** | the other 14 |
+
+Routes are evaluated in order and first match wins, so the two specific routes **must** stay
+above the catch-all.
+
+---
 
 ## 5. Separately confirmed and already fixed — not today's cause
 
