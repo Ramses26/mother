@@ -136,3 +136,9 @@ data/alloy/
 # Container watchdog runtime state
 data/watchdog/
 data/node-exporter-textfile/
+
+# Host-state snapshot for disaster recovery (scripts/snapshot_host_state.sh).
+# Contains PRIVATE SSH KEYS and CIFS credentials — captured deliberately so a
+# Mother rebuild is possible, protected by restic encryption in the backup.
+# It must NEVER reach the git remote.
+data/host-state/

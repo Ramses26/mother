@@ -92,6 +92,30 @@ def last_success():
     return datetime.fromtimestamp(row[0] / 1000, tz=timezone.utc), total
 
 
+def recent_failures(hours=48):
+    """Count backup operations that ERRORED recently.
+
+    Staleness alone is not enough: a plan that runs on schedule but fails every
+    time produces no new snapshot, so the staleness check only notices once the
+    threshold elapses. An explicit error count catches it on the next poll and
+    says what actually happened.
+    Status 5 = ERROR, 6 = SYSTEM_CANCELLED, 7 = USER_CANCELLED.
+    """
+    if not os.path.exists(OPLOG):
+        return 0
+    since = int((datetime.now(timezone.utc) - timedelta(hours=hours)).timestamp() * 1000)
+    con = sqlite3.connect(f"file:{OPLOG}?mode=ro", uri=True)
+    try:
+        return con.execute(
+            "SELECT COUNT(*) FROM operations WHERE status IN (5, 6) "
+            "AND start_time_ms > ?", (since,)
+        ).fetchone()[0]
+    except sqlite3.Error:
+        return 0
+    finally:
+        con.close()
+
+
 def load_state():
     try:
         with open(STATE) as fh:
@@ -126,6 +150,15 @@ def main():
                f"({ts.strftime('%Y-%m-%d %H:%M UTC')}), threshold {MAX_AGE_HOURS}h.\n"
                "Check Backrest at http://mother:9898 and the rest-server container "
                "on the download Synology (10.0.1.203:8500).")
+
+    fails = recent_failures()
+    if fails and ok:
+        # Snapshots are still landing but something is erroring — worth saying so
+        # even though freshness passes.
+        msg = (f"⚠️ Backup: {fails} failed/cancelled operation(s) in the last 48h, "
+               f"though the last successful snapshot is only {age_h:.1f}h old. "
+               "Check http://mother:9898 for which task is failing.")
+        ok = False
 
     if not ok and not alerting:
         notify(msg)

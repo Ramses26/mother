@@ -91,6 +91,33 @@ Ali replies in Telegram ──▶ getUpdates poll ────┤
 5. Map one Telegram thread → one `session_id`, persisted, so replies continue rather than
    restart the investigation.
 
+### Cost — measured 2026-09-01, and it is controllable
+
+| Run | Cost | Where it goes |
+|---|---|---|
+| Opus, cold | **$0.5637** | `cache_creation: 54,965` tokens |
+| Sonnet, cold | **$0.2226** | `cache_creation: 54,965` tokens |
+| Sonnet, immediately again | $0.2141 | still `cache_creation: 52,762` — **a separate `-p` invocation does NOT reuse the previous run's cache** |
+
+**Almost none of the cost is the prompt — it is writing ~55k tokens of context to cache, and
+`CLAUDE.md` alone is 97.9 KB (~25k tokens).** That reframes the optimisation entirely:
+
+1. **Ordinary Telegram alerts cost nothing.** Grafana → Telegram is a plain HTTP post. Only an
+   *agent invocation* costs money. This is not a per-alert charge.
+2. **Use Sonnet for triage** — 2.5× cheaper for the same context, and triage is not the part
+   that needs Opus.
+3. **Shrink the agent's context.** Run it in a dedicated directory with a focused
+   incident-runbook CLAUDE.md instead of the full 98 KB one. This is the single biggest lever,
+   since context *is* the bill.
+4. **Follow-ups are cheap.** Within one `--resume` session the context is cache-*read*, not
+   re-created, so a Telegram back-and-forth costs a fraction of the first message.
+5. **Rate-limit and de-duplicate — this is a cost control, not just hygiene.** One run per
+   incident. An ungated flapping alert firing 100 times is $21 of Sonnet runs.
+6. **Gate on severity** so only genuinely serious alerts wake the agent.
+
+Realistically: a handful of real incidents a month at ~$0.21 each is cents. The failure mode
+to engineer against is a loop, not the unit price.
+
 **Local LLM — hardware is no longer the objection.** Mother's ESXi host is a ProLiant DL380
 Gen10, 2× Xeon Gold 6246R (64 logical CPUs), **191 GB RAM with 161 GB free**, 5.29 TB free,
 3 VMs. Plenty of headroom. The remaining objections are:
@@ -170,35 +197,62 @@ Revisit only if it starts costing something.
 
 ---
 
-## 3a. CRITICAL — there is no file-level backup running
+## 3a. Backups — FIXED 2026-09-01, two actions left for Ali
 
-**Found 2026-09-01. Backrest has never backed up anything.**
+Backrest had **never backed up anything** (running since 2026-03-21, healthy in `docker ps`,
+no repos, no plans, 0 rows in its oplog). Now working and verified.
 
-It has run since 2026-03-21 and looks healthy in `docker ps`, which is exactly why this went
-unnoticed — it presents as "we have backups". Evidence:
+**Live:** restic REST server on the download Synology (`10.0.1.203:8500`, htpasswd auth) →
+repo at `/volume1/PlexBackup/mother-restic/` — its own subfolder, entirely separate from the
+`buplex-*.tar.gz` Plex tarballs at that share's root. Nightly 04:00, retention 14 daily /
+8 weekly / 12 monthly, prune 14d, check 30d. First snapshot `3f5ab864`, 10.9 GiB.
+Verified by restore, not just by "it ran": `restic dump` recovered `.env` with all 156
+lines, and 6 service databases are in the snapshot.
 
-- No `config.json` anywhere in its data dir — **no repos and no plans are configured**.
-- `oplog.sqlite` → `operations` table: **0 rows**. Not one backup operation, ever.
-- Its only recurring log line is `running task {"task": "collect garbage"}` on an empty log.
-- No restic repository exists on disk.
+### ⬜ ACTION FOR ALI — copy the restic password off-box
 
-Its mounts are already correct (`/opt/mother` → `/backups/mother`, `/opt/mother/data` →
-`/backups/data`), so only a repo + plan is missing.
+```
+grep BACKREST_RESTIC_REPO_PASSWORD /opt/mother/.env    # → password manager
+grep BACKREST_REST_PASSWORD        /opt/mother/.env    # → password manager
+```
 
-**So the current off-box protection is: VMware snapshots, plus git for whatever is committed.**
-Not covered by either: `.env` (gitignored, holds every API key), all four *arr `/config`
-databases, Upgraderr/Curatorr SQLite, Grafana/Prometheus/Loki data, and `configs/` content
-that is gitignored.
+**This is a chicken-and-egg risk, not housekeeping.** The repo password lives in `.env`, and
+`.env`'s only off-box copy is *inside the encrypted repo it unlocks*. If Mother is lost
+before that password is written down somewhere else, **the backups are permanently
+unreadable.** Nothing else in the backup system matters until this is done.
 
-**Needs a decision from Ali before it can be finished** — restic destination:
-1. Local path on Mother (weakest — same VM, dies with it)
-2. NFS/SMB to the Synology or Unraid (good, off-box, no credentials to manage)
-3. Cloud (B2/S3 — best durability, needs an account + keys)
+### ⬜ ACTION FOR ALI (lower priority) — Backrest UI has no authentication
 
-**Then:** a plan covering `/backups/mother` + `/backups/data`, a retention policy, and a
-"last successful backup is older than N days" check. A Loki alert will NOT work for this —
-backrest logs nothing when idle, which is the whole failure mode. It needs an active check
-(`operations` table freshness) in `container_watchdog.py` or a small cron.
+`http://mother:9898` returns HTTP 200 with no credentials, and its config contains the restic
+repo password in plaintext. Anyone reaching that port on the LAN can read it, and restore or
+delete backups. Set a password in the Backrest UI (Settings → auth), or drop the published
+port and reach it through nginx-proxy-manager.
+
+### Failure detection
+
+`scripts/backup_freshness_check.py`, cron 09:00 daily, alerts to Mother Notifications.
+Deliberately an **active check, not a Loki rule** — a backup system that fails by doing
+nothing emits no error lines to match on, which is exactly how this went unnoticed for five
+months. It covers two distinct failures:
+- **stale** — no successful snapshot within `BACKUP_MAX_AGE_HOURS` (36)
+- **erroring** — any operation with status 5/6 in the last 48h, *even if freshness passes*,
+  because a plan that runs and fails every time keeps looking fine until the staleness
+  threshold finally elapses
+
+Requires `status IN (3,4)` **and** a non-empty `snapshot_id`: status 1 rows are FUTURE
+scheduled tasks whose `start_time_ms` is in the future, so counting them would make a system
+that has never backed up look perpetually fresh. Both paths tested.
+
+### Host state outside /opt/mother
+
+`scripts/snapshot_host_state.sh`, cron 03:50 (ten minutes before the backup), captures into
+`data/host-state/` — which is inside the backup and gitignored (it holds private keys):
+crontab, `/etc/fstab`, `~/.ssh` keys, `ssh_config`, systemd units, plus container/mount/
+package inventories. Without these a restore returns the application but not a working host.
+
+One thing it **cannot** capture: `/etc/samba/credentials_unraid` is `0600 root:root`. The
+script writes `MISSING-credentials_unraid.txt` into the snapshot so a restore is told to
+recreate it rather than silently missing it.
 
 ---
 
