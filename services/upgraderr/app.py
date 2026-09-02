@@ -2453,7 +2453,13 @@ _FAILED_IMPORT_PATTERNS = (
     'found potentially dangerous file with extension',
     'invalid video file',
     'no files found are eligible for import',      # the qbitmanage orphan-data race
-    'one or more episodes expected in this release were not imported',
+    # Deliberately truncated to cover BOTH wordings: Sonarr says "One or more
+    # episodes expected in this release were not imported or missing from the
+    # release", Radarr says "movies". The list inherited from decluttarr only had
+    # the Sonarr variant, so every Radarr occurrence fell through to
+    # 'unclassified' -- which Phase 1 surfaced on its first day (7 of 7
+    # unclassified findings were exactly this, on radarr-hd).
+    'expected in this release were not imported',
     'episode file on disk contains more episodes than this file contains',
     'invalid season or episode',
     'found matching series via grab history, but release was matched to series by id',

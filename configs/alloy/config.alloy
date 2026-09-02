@@ -123,3 +123,24 @@ loki.source.file "upgraderr" {
   targets    = local.file_match.upgraderr.targets
   forward_to = [loki.write.default.receiver]
 }
+
+// ---- agent bridge (2026-09-01) ---------------------------------------------
+// The alert-triggered Claude triage bridge (scripts/agent_bridge.py) logs here.
+// Shipping it is not optional: the bridge is the thing that INVESTIGATES silent
+// failures, so it failing silently would be the worst version of the exact
+// pattern this stack keeps getting caught by (backrest ran for 5 months backing
+// up nothing; qBittorrent auth was broken for 2.5 months). Its failure modes --
+// expired `claude` OAuth credentials, Telegram send failures, repeated agent
+// timeouts -- all produce log lines and no other outward signal.
+local.file_match "agent_bridge" {
+  path_targets = [{
+    __path__ = "/opt/mother/data/logs/agent_bridge.log",
+    service  = "agent_bridge",
+    job      = "file_log",
+    host     = "mother",
+  }]
+}
+loki.source.file "agent_bridge" {
+  targets    = local.file_match.agent_bridge.targets
+  forward_to = [loki.write.default.receiver]
+}

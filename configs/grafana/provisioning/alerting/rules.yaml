@@ -821,3 +821,69 @@ groups:
             type: gt
             params:
             - 120
+- orgId: 1
+  name: infra-agent-bridge
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: agent_bridge_failing
+    title: Agent bridge failing
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: 'The alert-triage agent bridge logged {{ $values.B.Value }} failure(s) in the last hour.
+        It is the thing that investigates other failures, so it failing silently is the worst case --
+        likely causes: expired `claude` OAuth credentials (~/.claude/.credentials.json), Telegram send
+        errors, or repeated agent timeouts. Check `{service="agent_bridge"}` in Loki and `pgrep -f agent_bridge.py`
+        on Mother. Maintenance switch: /opt/mother/PAUSE_AGENT_BRIDGE.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="agent_bridge"} |~ "worker error|FATAL|agent exited|agent timed
+          out|telegram .* failed|unparseable" [1h]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 2
