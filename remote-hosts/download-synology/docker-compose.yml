@@ -169,6 +169,42 @@ services:
     networks:
       - media_net
 
+  # ---------------------------------------------------------------------------
+  # restic REST server — backup target for Mother's Backrest (added 2026-09-01)
+  # ---------------------------------------------------------------------------
+  # Found 2026-09-01 that Backrest on Mother had NEVER run a backup: no repos, no
+  # plans, 0 rows in its oplog since 2026-03-21. This is the destination that fixes
+  # that. Ali chose this Synology.
+  #
+  # Why REST and not the obvious alternatives:
+  #   * SFTP (restic's usual remote backend) is NOT usable here — DSM has the SSH
+  #     sftp subsystem disabled ("subsystem request failed on channel 0"), which is
+  #     the same limitation already noted for scp in CLAUDE.md.
+  #   * A new NFS export would need DSM Control Panel access; a compose service can
+  #     be deployed over plain SSH, which already works.
+  #
+  # Storage lives under /volume1/PlexBackup — the share already designated for
+  # backups (the nightly ~104 GB buplex tarball lands there). Deliberately NOT under
+  # /volume1/Downloads: that is qbitmanage's root_dir with rem_orphaned enabled, so a
+  # repo there would be swept into orphaned_data and eventually deleted.
+  #
+  # The repo is restic-encrypted, so the data is unreadable without
+  # BACKREST_RESTIC_REPO_PASSWORD even by someone who reaches this port.
+  rest-server:
+    image: restic/rest-server:0.13.0
+    container_name: rest-server
+    restart: unless-stopped
+    environment:
+      - DISABLE_AUTHENTICATION=
+      - OPTIONS=--prometheus
+    ports:
+      - "8500:8000"
+    volumes:
+      - /volume1/PlexBackup/mother-restic:/data
+      - /volume1/docker/rest-server/.htpasswd:/data/.htpasswd:ro
+    networks:
+      - media_net
+
 networks:
   media_net:
     external: true
