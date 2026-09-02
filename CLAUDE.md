@@ -948,7 +948,6 @@ curl http://localhost:9706/health                     # Upgraderr health
 ```
 */2 * * * *  /opt/mother/vpn_ping_monitor.sh                    # VPN health (ping 192.168.1.10; Telegram on state change)
 */10 * * * * /opt/mother/scripts/check-sync-health.sh           # Batch sync health
-30 * * * *   /opt/mother/sync_stall_check.sh                    # Stall detection
 0 0,2,4,6,8,10,12,14,16,18,20,22 * * * /opt/mother/reports/daily_report.py  # Status report (every 2h)
 58 23 * * *  /opt/mother/reports/daily_report.py                # End-of-day report
 ```

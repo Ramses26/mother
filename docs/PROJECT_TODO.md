@@ -74,13 +74,93 @@ runbook → triggered diagnose-only agent → (only then) consider anything that
 | Priority | Item |
 |---|---|
 | Medium | **34 entries left in `orphaned_data` (~496 GB).** The 86 provably-safe ones were deleted (362 GiB reclaimed). What remains is mostly `cross-seed/` hardlink copies plus 4 standalone .mkv files. Needs a per-item check against the library before deletion. qbitmanage auto-empties at 120 days regardless. |
-| Medium | **`sync_stall_check.sh` is in CLAUDE.md's cron table but NOT in the live crontab.** Either it was deliberately retired (then fix the doc) or it was lost. Verify which. |
+| ~~Medium~~ | ~~`sync_stall_check.sh` cron drift~~ — **RESOLVED 2026-09-01: obsolete, correctly retired.** Written 2026-02-02 to alert if <100 MB/hour moved *during batch sync*; both batch syncs are complete and sentinel-disabled, and it last ran 2026-07-04. Its job is now covered by sync-webhook's own `check_stalled_syncs` (per-rsync, every 15 min). CLAUDE.md's cron table was the stale part and has been corrected. |
 | Medium | **Radarr/Sonarr `database is locked` ~54/day.** Benign at this rate but it is the same SQLite-under-load theme as the Upgraderr corruption. Now alerted above background. |
-| Medium | **Mother root filesystem at 78%** (32 GB free of 145 GB). Alert fires at 90%. Worth trimming before it gets there. |
+| ~~Medium~~ | ~~Mother root filesystem at 78%~~ — **RESOLVED 2026-09-01: 78% -> 54%**, 36 GB reclaimed (31.5 GB unused images + 4.7 GB build cache). No VM expansion needed. **Dangling volumes were deliberately NOT pruned** — 4.9 GB, but they include `mother_tracearr_postgres` / `mother_tracearr_data` / `overseerr-data`, which may hold historical data. Not worth the risk. |
 | Low | **`hawser` on the download Synology emits zero stdout**, so it cannot be observed in Loki. It has a healthcheck + autoheal, and it has silently exited for 6 days before (2026-07-19). Consider an Uptime Kuma docker-container monitor. |
 | Low | **Stale Loki host labels** `unifi` and `unifi-stuttler` (0 lines/24h); `stuttler-udm` is the live one at ~67k lines/24h. Cosmetic, ages out at 30d retention. |
 | Low | **Tautulli/Tracearr lose Plex periodically.** Now alerted at a high threshold. Watch history is not backfilled, so sustained outages lose data permanently. |
 | Low | **12,787 rotated `qbittorrent.log.bak*` files (850 MB)** still on the download Synology. `file_log_max_size` is fixed (65 KiB → 10 MiB) so it won't regrow; the existing backlog is Ali's call. |
+
+
+
+---
+
+## 3b. Shelved / parked (Ali, 2026-09-01)
+
+### Tier 10 — search for missing content — **SHELVED**
+Deliberately not built: it would add a lot of downloads and disk usage, and the other work
+comes first. Research is done and the filter is already sized against the live library, so
+this is ready to pick up whenever wanted.
+
+**Better approach Ali proposed — do this instead of the filters:** *unmonitor the junk shows
+in Sonarr.* That fixes the data at the source rather than working around it, and it benefits
+Sonarr's own searches, Curatorr and the reports too — not just Upgraderr. If the library is
+cleaned up that way, Tier 10 becomes a thin "search monitored+missing" tier with almost no
+filtering logic.
+
+Measured 2026-09-01 (keep — it is the sizing argument):
+
+```
+8,073 missing episodes (sonarr-hd)          82 released monitored+missing movies (radarr-hd)
+  -3,926  aired >20y ago .... Looney Tunes 681, Doctor Who 556, El Chapulin 260, Garfield 180
+  -1,799  reality/game show/talk show/news
+  -1,037  series with >100 missing .... Ridiculousness 991, Dateline 209
+= 1,311 episodes across 90 shows
+```
+
+Note: **Dateline is genre `Crime/Documentary`, so a genre filter alone does not catch it** —
+it takes the per-series volume cap. Radarr needs no age filter (only 82 items).
+
+### Release-group statistics — **parked, wanted**
+Ali's idea: show which release groups the library holds and how many of each, the same way
+codecs/resolutions are already broken out. Natural home is **Curatorr** (it is the analysis
+/ browsing layer and already computes library-wide stats); Upgraderr's `_tier9_candidate`
+already reads `releaseGroup` and the TRaSH group-tier custom formats, so the tier mapping to
+join against exists. Would make Tier 9's behaviour legible — "we hold N files from Tier-3
+groups" — instead of a 6,993-item queue with no visible shape.
+
+### Dozzle — **keep**
+Asked whether it is redundant now everything ships to Loki. It overlaps, but keep it:
+- It costs ~39 MB RAM and 0.9% CPU.
+- It is an **independent path**. Grafana/Loki only helps when the Loki pipeline is working;
+  the failures this project actually hits (Alloy config error taking the agent down, a bad
+  Loki datasource, a wedged container) are exactly when Dozzle is the thing that still works.
+- Live tail with no LogQL is faster for "what is this container doing right now".
+
+Revisit only if it starts costing something.
+
+---
+
+## 3a. CRITICAL — there is no file-level backup running
+
+**Found 2026-09-01. Backrest has never backed up anything.**
+
+It has run since 2026-03-21 and looks healthy in `docker ps`, which is exactly why this went
+unnoticed — it presents as "we have backups". Evidence:
+
+- No `config.json` anywhere in its data dir — **no repos and no plans are configured**.
+- `oplog.sqlite` → `operations` table: **0 rows**. Not one backup operation, ever.
+- Its only recurring log line is `running task {"task": "collect garbage"}` on an empty log.
+- No restic repository exists on disk.
+
+Its mounts are already correct (`/opt/mother` → `/backups/mother`, `/opt/mother/data` →
+`/backups/data`), so only a repo + plan is missing.
+
+**So the current off-box protection is: VMware snapshots, plus git for whatever is committed.**
+Not covered by either: `.env` (gitignored, holds every API key), all four *arr `/config`
+databases, Upgraderr/Curatorr SQLite, Grafana/Prometheus/Loki data, and `configs/` content
+that is gitignored.
+
+**Needs a decision from Ali before it can be finished** — restic destination:
+1. Local path on Mother (weakest — same VM, dies with it)
+2. NFS/SMB to the Synology or Unraid (good, off-box, no credentials to manage)
+3. Cloud (B2/S3 — best durability, needs an account + keys)
+
+**Then:** a plan covering `/backups/mother` + `/backups/data`, a retention policy, and a
+"last successful backup is older than N days" check. A Loki alert will NOT work for this —
+backrest logs nothing when idle, which is the whole failure mode. It needs an active check
+(`operations` table freshness) in `container_watchdog.py` or a small cron.
 
 ---
 
