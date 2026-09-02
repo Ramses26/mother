@@ -1,0 +1,110 @@
+# Hathor (192.168.1.52) - Plex Server Stack
+# Deploy to: ~/hathor/docker-compose.yml on Hathor
+#
+# Services:
+#   - dcgm-exporter   : NVIDIA GPU metrics (Prometheus)
+#   - docker-stats-exporter : Docker container metrics (Prometheus) -- replaced
+#     cAdvisor 2026-08-30, see docker-stats-exporter/app.py docstring
+#   - scrutiny-collector : SMART disk monitoring (reports to Terminus hub)
+#   - hawser          : Dockhand remote agent (manage this host from Terminus)
+#   - alloy           : ships container logs to Terminus's Loki (NOC project)
+#
+# Note: node-exporter and smartctl_exporter run as native systemd services on
+# Hathor (not Docker) -- already scraped by Terminus's Prometheus as
+# plex-host-node / plex-smartctl, nothing to add here for those.
+
+services:
+
+  # ---- NVIDIA GPU Metrics ----
+  dcgm-exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.8-3.6.0-ubuntu22.04
+    container_name: dcgm-exporter
+    restart: unless-stopped
+    ports:
+      - "9400:9400"
+    environment:
+      DCGM_EXPORTER_LISTEN: ":9400"
+      DCGM_EXPORTER_KUBERNETES: "false"
+    cap_add:
+      - SYS_ADMIN
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # ---- Docker Container Metrics ----
+  # Replaced cAdvisor 2026-08-30 -- its --containerd workaround for
+  # containerd-backed storage degrades after uptime and needs periodic
+  # restarts (found via the same bug on Project Mother + Terminus). Talks
+  # to the Docker Engine API directly instead. Source at
+  # docker-stats-exporter/ alongside this file.
+  docker-stats-exporter:
+    build: ./docker-stats-exporter
+    container_name: docker-stats-exporter
+    restart: unless-stopped
+    ports:
+      - "9330:9330"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  # ---- Scrutiny Disk SMART Collector ----
+  scrutiny-collector:
+    image: ghcr.io/starosdev/scrutiny:latest-collector
+    container_name: scrutiny-collector
+    restart: unless-stopped
+    cap_add:
+      - SYS_RAWIO
+      - SYS_ADMIN
+    devices:
+      - /dev/sda
+    volumes:
+      - /run/udev:/run/udev:ro
+    environment:
+      TZ: America/New_York
+      COLLECTOR_API_ENDPOINT: http://192.168.1.14:8080
+      COLLECTOR_HOST_ID: hathor
+      COLLECTOR_CRON_SCHEDULE: "0 */6 * * *"
+      COLLECTOR_RUN_STARTUP: "true"
+
+  # ---- Hawser - Dockhand Remote Agent ----
+  # Note: TOKEN intentionally omitted — LAN-only host, no inbound from internet.
+  # Hawser v0.2.29 bug: with TOKEN set, /events requires token as query param
+  # but Dockhand sends it as a header, causing 401 on the events stream.
+  hawser:
+    image: ghcr.io/finsys/hawser:latest
+    container_name: hawser
+    restart: unless-stopped
+    ports:
+      - "2375:2375"
+    environment:
+      PORT: "2375"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - hawser-stacks:/data/stacks
+
+  # ---- Grafana Alloy - Log shipping to Terminus's Loki ----
+  # Version pinned to match Terminus/Unraid (bump deliberately, not :latest).
+  alloy:
+    image: grafana/alloy:v1.19.2
+    container_name: alloy
+    restart: unless-stopped
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy-data:/var/lib/alloy/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Host logs. Needed for the plexbackup file tail in config.alloy --
+      # without this the container cannot see /var/log/plexbackup.log at all
+      # and the tail silently matches nothing. Added 2026-09-02.
+      - /var/log:/var/log:ro
+
+volumes:
+  hawser-stacks:
+  alloy-data:

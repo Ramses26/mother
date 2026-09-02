@@ -1,0 +1,78 @@
+// ============================================================================
+// Grafana Alloy — Hathor host log shipping
+// Ships all container logs to Terminus's Loki. Same label schema as
+// Terminus/Unraid: { host, service, job, compose_service, image }.
+// ============================================================================
+
+loki.write "default" {
+  endpoint {
+    url = "http://192.168.1.14:3100/loki/api/v1/push"
+  }
+  external_labels = {}
+}
+
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+}
+
+discovery.relabel "docker" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_image"]
+    target_label  = "image"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "compose_service"
+  }
+  rule {
+    target_label = "host"
+    replacement  = "hathor"
+  }
+  rule {
+    target_label = "job"
+    replacement  = "docker"
+  }
+}
+
+loki.source.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.docker.output
+  forward_to       = [loki.write.default.receiver]
+  refresh_interval = "5s"
+}
+// ----------------------------------------------------------------------------
+// APPEND THIS to /etc/alloy/config.alloy on Hathor, then:
+//     sudo systemctl reload alloy   (or: curl -X POST http://localhost:12345/-/reload)
+//
+// Ships the Plex backup script's log to Terminus's Loki, so the backup has an
+// alerting path. This is deliberately in place of a notification credential:
+// BOTH Apprise instances (Mother and Terminus) are non-functional — their
+// apprise.yml uses ${VAR} placeholders and Apprise does NOT expand environment
+// variables in YAML config, so every URL is "Unparseable" and every POST is
+// accepted with a silent 204 that delivers nothing. Verified 2026-09-02.
+//
+// Mirror of Nostromo's, which ships to Mother's Loki instead (same-site rule).
+// Once this is in, add the equivalent of Mother's `plex_backup_failed` and
+// `plex_backup_stale` rules to Terminus's Grafana against {service="plexbackup"}.
+// ----------------------------------------------------------------------------
+local.file_match "plexbackup" {
+  path_targets = [{
+    __path__ = "/var/log/plexbackup.log",
+    service  = "plexbackup",
+    job      = "file_log",
+    host     = "hathor",
+  }]
+}
+
+loki.source.file "plexbackup" {
+  targets    = local.file_match.plexbackup.targets
+  forward_to = [loki.write.default.receiver]
+}

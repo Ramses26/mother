@@ -146,3 +146,6 @@ data/host-state/
 # Agent bridge runtime state + maintenance sentinel
 data/agent-bridge/
 PAUSE_AGENT_BRIDGE
+
+# Rendered from apprise.yml.template by configs/apprise/render.sh — holds the real bot token
+configs/apprise/apprise.yml
