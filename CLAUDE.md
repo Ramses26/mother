@@ -1057,8 +1057,19 @@ Note: sync-webhook times are Eastern (America/New_York, DST-aware). Other servic
 |---|---|---|
 | `nginx-proxy-manager` | 80/443/81 | Reverse proxy + SSL termination |
 | `dockhand` | 3000 | Container/image lifecycle across hosts (removed Portainer 2026-07-19). **Its Telegram notifications are disabled/deprecated** — too noisy + its 1.0.3 sender is broken (`parse_mode:"Markdown"`, unescaped → 400s). Container-down alerting is now `scripts/container_watchdog.py` + Grafana alerting → Mother Notifications (see Observability Stack). |
-| `apprise` | 8000 | Notification hub (Telegram via `http://apprise:8000/notify/apprise`) |
 | `backrest` | 9898 | Restic backup UI. **Found 2026-09-01 to have never run a single backup since 2026-03-21** (no repos/plans configured, 0 oplog rows) despite showing healthy — fixed the same day: repo `synology` on a restic REST server on the download Synology (`10.0.1.203:8500`, storage at `/volume1/PlexBackup/mother-restic/`), plan `mother-full` backing up `/opt/mother` nightly at 04:00 (excludes MediaCover/Tautulli-cache/Loki/Prometheus — regenerable or huge), retention 14d/8w/12m. **`http://mother:9898` currently has NO authentication and exposes the repo password in plaintext to anyone on the LAN — set one in Settings.** Freshness is checked by `scripts/backup_freshness_check.py` (cron 09:00) rather than a Loki alert, since a backup system that fails by doing nothing emits no error lines — that's exactly how the original gap went undetected for 5 months. Host state outside `/opt/mother` (crontab, `/etc/fstab`, SSH keys, systemd units) is captured separately by `scripts/snapshot_host_state.sh` into `data/host-state/` (gitignored — holds private keys) so it rides along in the same backup. **The restic repo password lives only in `.env`, whose only off-box copy is inside the very backup it encrypts — it must be copied to a password manager separately, or the backups become permanently unreadable if Mother is lost first.** Full detail: `docs/PROJECT_TODO.md` §3a. |
+
+**Removed 2026-09-02 — `apprise` (notification hub).** It had never delivered a
+single notification: `apprise.yml` held literal `${TELEGRAM_BOT_TOKEN}` placeholders and
+**Apprise does not expand environment variables in its YAML config**, so every URL was
+`Unparseable` and every POST was answered HTTP 204 while delivering nothing (204 is also
+the success code, which is why it hid for months). Nothing depended on it — Grafana,
+`container_watchdog.py` and `agent_bridge.py` post to `api.telegram.org` directly;
+`sync-webhook`, `upgraderr` and `curatorr` use the **apprise python library** in-process
+(unaffected, keep it); and `daily_report.py` plus the host shell scripts post to
+**Terminus's** Apprise at `192.168.1.14:8000`, which does work and returns 200. Host-level
+alerting is now Loki + Grafana instead. Do not re-add a notification-hub container without
+checking whether a Grafana rule over shipped logs covers the need first.
 
 **Not on Mother (external/migrated):**
 - qBittorrent — migrated to Synology RS2821RP+ at `10.0.1.203:8080`

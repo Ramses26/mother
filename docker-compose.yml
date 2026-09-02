@@ -439,48 +439,6 @@ services:
     networks:
       - mother_network
 
-  # Apprise - Centralized Notification Service
-  # All containers can send notifications via: http://apprise:8000/notify/{key}
-  # Renders apprise.yml from the git-tracked template, substituting the real
-  # token/chat ids. Runs to completion before apprise starts. Needed because
-  # Apprise does NOT expand ${VAR} inside its YAML config -- see
-  # configs/apprise/apprise.yml.template for the full history.
-  apprise-init:
-    image: alpine:3
-    container_name: apprise-init
-    environment:
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
-      - UPGRADERR_TELEGRAM_CHAT_ID=${UPGRADERR_TELEGRAM_CHAT_ID}
-      - CURATORR_TELEGRAM_CHAT_ID=${CURATORR_TELEGRAM_CHAT_ID}
-      - MOTHER_NOTIFICATIONS_CHAT_ID=${MOTHER_NOTIFICATIONS_CHAT_ID}
-    volumes:
-      - ${CONFIG_PATH}/apprise:/config
-    command: ["sh", "/config/render.sh"]
-    restart: "no"
-    networks:
-      - mother_network
-
-  apprise:
-    image: caronc/apprise:latest
-    container_name: apprise
-    depends_on:
-      apprise-init:
-        condition: service_completed_successfully
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-    volumes:
-      - ${CONFIG_PATH}/apprise:/config
-    ports:
-      - "${APPRISE_PORT:-8000}:8000"
-    restart: unless-stopped
-    logging: *default-logging
-    networks:
-      - mother_network
-
-  # Tracearr - Media Server Monitoring (Plex/Jellyfin/Emby)
-  # Stream tracking, library analytics, account sharing detection
   tracearr:
     image: ghcr.io/connorgallopo/tracearr:latest
     container_name: tracearr

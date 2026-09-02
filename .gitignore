@@ -12,10 +12,9 @@ configs/*/*.db
 configs/*/*.db-shm
 configs/*/*.db-wal
 
-# Ignore all configs EXCEPT recyclarr, apprise, qbitmanage, observability stack, decluttarr, and shared scoring
+# Ignore all configs EXCEPT recyclarr, qbitmanage, observability stack, decluttarr, and shared scoring
 configs/*
 !configs/recyclarr/
-!configs/apprise/
 !configs/qbitmanage/
 !configs/loki/
 !configs/alloy/
@@ -147,5 +146,3 @@ data/host-state/
 data/agent-bridge/
 PAUSE_AGENT_BRIDGE
 
-# Rendered from apprise.yml.template by configs/apprise/render.sh — holds the real bot token
-configs/apprise/apprise.yml

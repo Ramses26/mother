@@ -61,8 +61,6 @@ retainDb=30                             # nightly DB backups to keep (~1 month)
 retainFull=2                            # weekly full backups to keep
 fullBackupDay=7                         # 7 = Sunday (date +%u)
 
-appriseUrl="http://10.0.0.162:8000/notify/apprise"
-appriseTag="servers"
 
 ts() { date '+%Y-%b-%d at %k:%M:%S'; }
 
@@ -73,9 +71,17 @@ logmsg() {
 }
 
 notify() {
-    # Best-effort: a notification failure must never break the backup.
-    curl -fsS -m 10 -X POST "${appriseUrl}?tag=${appriseTag}" \
-        -d "title=$1" -d "body=$2" -d "type=$3" >/dev/null 2>&1 || true
+    # Deliberately a no-op. Mother's Apprise container was removed 2026-09-02:
+    # nothing depended on it, and this script's alerting goes through Loki
+    # instead -- every line below is written to $localLog, shipped by Alloy, and
+    # watched by the Grafana rules `plex_backup_failed` (ABORT|FAILED|failed
+    # integrity check) and `plex_backup_stale` (no completion in 36h).
+    #
+    # Kept as a stub rather than deleting the call sites so the failure paths
+    # stay readable, and so a future notification transport only needs this one
+    # function filled in. Every notify call is paired with a logmsg carrying the
+    # same information -- do not remove those.
+    :
 }
 
 if [[ $EUID -ne 0 ]]; then
