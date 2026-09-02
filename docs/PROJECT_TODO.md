@@ -48,10 +48,48 @@ only, gated on the HnR invariant) — see the design doc.
 Ali's ask: an alert should be able to start an investigation without waiting for him to
 relay it, which can take hours.
 
-**Agreed direction (not yet built):** an alert webhook that launches a *diagnose-only*
-headless Claude Code run with the repo + CLAUDE.md as context, posting findings to the
-Mother Notifications Telegram group. Read-only first; no write access until it has proven
-itself over real incidents.
+**Agreed direction:** an alert launches a *diagnose-only* headless Claude Code run with the
+repo + CLAUDE.md as context, posting findings to the Mother Notifications Telegram group —
+and Ali can reply in Telegram to continue the conversation. Read-only first; no write access
+until it has proven itself over real incidents.
+
+### Mechanics — all verified on Mother 2026-09-01, nothing here is assumed
+
+| Piece | Verified |
+|---|---|
+| `claude` CLI | **2.1.257**, at `/home/alig/.local/bin/claude` |
+| Headless run | `claude -p "..." --output-format json` → `{"result": "...", "session_id": "...", "is_error": false}` |
+| **Multi-turn** | the returned `session_id` feeds `--resume <id>`, so a Telegram thread maps 1:1 to a Claude session |
+| Constraining it | `--allowed-tools`, `--permission-mode`, `--append-system-prompt`, `--add-dir` all present |
+| Telegram bot | `BishopPrimeBot`, `can_join_groups: true` |
+| **Ali replying works today** | `can_read_all_group_messages` is **false** (privacy mode on), BUT Telegram still delivers *replies to the bot's own messages* and `@mentions`. Since every alert is a bot message, **replying to an alert reaches the bot with no BotFather change.** Disabling privacy via `/setprivacy` is optional, not required. |
+| Receiving | no webhook is set and `pending_update_count` is 0, so `getUpdates` long-polling is free to use — **no inbound port, no public HTTPS, no nginx-proxy-manager entry needed** |
+
+### Shape
+
+```
+Grafana alert ──▶ contact point (webhook) ──▶ agent-bridge (container on Mother)
+                                                │
+Ali replies in Telegram ──▶ getUpdates poll ────┤
+                                                ▼
+                            claude -p / --resume <session_id>
+                              cwd /opt/mother, read-only tools
+                                                │
+                                                ▼
+                              answer ──▶ Mother Notifications
+```
+
+### Non-negotiables when building it
+
+1. **Authorise the sender by Telegram user id.** Without this, anyone who reaches the group
+   or the bot can run it. This is the single most important control.
+2. **Read-only to start** — `--allowed-tools` limited to Read/Grep/Glob and specific
+   read-only Bash. Diagnosis has no blast radius; earn write access over real incidents.
+3. **Rate-limit and de-duplicate.** A flapping alert must not spawn a run per firing.
+4. **Cost is real.** A trivial verified run cost **$0.56**, because every invocation loads
+   the full CLAUDE.md context. Budget per-incident, not per-alert-evaluation.
+5. Map one Telegram thread → one `session_id`, persisted, so replies continue rather than
+   restart the investigation.
 
 **Local LLM — hardware is no longer the objection.** Mother's ESXi host is a ProLiant DL380
 Gen10, 2× Xeon Gold 6246R (64 logical CPUs), **191 GB RAM with 161 GB free**, 5.29 TB free,
