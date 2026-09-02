@@ -10,8 +10,9 @@
 # so ~75 min of watch history is permanently lost each night.
 #
 # WHAT ACTUALLY NEEDS BACKING UP (measured on Nostromo 2026-09-02):
-#   Plug-in Support/Databases   20 G   <-- the ONLY irreplaceable data.
-#                                          main library.db is just 1.36 GB.
+#   Plug-in Support/Databases   20 G   <-- the ONLY irreplaceable data, but only
+#                                          4.25 GB of it is live -- the rest is Plex's
+#                                          own dated rolling copies. library.db is 1.36 GB.
 #   Metadata                    67 G   regenerable (artwork/posters), slow to refetch
 #   Cache                       32 G   regenerable, already excluded
 #   Media/localhost             24 G   regenerable thumbnails/bundles
@@ -96,10 +97,10 @@ if [[ ! -d "$plexDatabase" ]]; then
     exit 1
 fi
 
-# Need room on / for the staging copy of Databases (~20 GB).
+# Need room on / for the staging copy of the live databases (~4.3 GB).
 availKb=$(df -Pk / | awk 'NR==2{print $4}')
-if (( availKb < 40000000 )); then
-    logmsg "ABORT: less than 40 GB free on / for staging (${availKb}K available)."
+if (( availKb < 15000000 )); then
+    logmsg "ABORT: less than 15 GB free on / for staging (${availKb}K available)."
     notify "Plex Backup FAILED (Nostromo)" "Insufficient free space on / to stage the DB copy. Plex was not touched." "failure"
     exit 1
 fi
@@ -117,9 +118,19 @@ logmsg "Pre-flight OK. Stopping Plex for database copy."
 downStart=$(date +%s)
 service plexmediaserver stop >> "$localLog" 2>&1
 
-mkdir -p "$staging"
+mkdir -p "$staging/Databases"
 copyExit=0
-cp -a "$plexDatabase/Plug-in Support/Databases" "$staging/Databases" 2>>"$localLog" || copyExit=$?
+# Copy only the LIVE databases. Plex keeps its own dated rolling copies
+# (com.plexapp.plugins.library.db-2026-08-20 etc) in the same directory -- those
+# are 15.7 GB of the 20 GB and we do not need them, because this script keeps
+# $retainDb nightly archives of its own. Skipping them cuts what gets copied
+# while Plex is down from 20 GB to 4.25 GB (measured 2026-09-02).
+#
+# Plex is stopped at this point, so the SQLite files are closed and consistent;
+# any -wal/-shm are copied alongside for completeness.
+find "$plexDatabase/Plug-in Support/Databases" -maxdepth 1 -type f \
+     ! -name '*.db-20??-??-??' -print0 2>>"$localLog" \
+  | xargs -0 -r cp -a -t "$staging/Databases" 2>>"$localLog" || copyExit=$?
 cp -a "$plexDatabase/Preferences.xml"           "$staging/"          2>>"$localLog" || true
 
 # Plex comes back up immediately -- compression happens with it running.
