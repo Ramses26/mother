@@ -196,7 +196,7 @@ groups:
           type: prometheus
           uid: prometheus
         editorMode: code
-        expr: min by (name) (docker_container_up)
+        expr: min by (name) (docker_container_up{name!~".*-init"})
         instant: true
         range: false
         refId: A
