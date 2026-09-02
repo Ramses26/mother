@@ -562,3 +562,262 @@ groups:
             type: gt
             params:
             - 0
+- orgId: 1
+  name: infra-sync-nfs
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: sync_webhook_nfs_missing
+    title: 'sync-webhook: Unraid mount missing'
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: 'sync-webhook cannot see the Unraid CIFS mount ({{ $values.B.Value }} hits/15m) - every
+        sync is failing right now and the only outward sign is a Telegram "Sync Failed" per job. This
+        fired 407 times on 2026-08-29/30 with no alert attached; that was the ESTALE incident that needed
+        a full Mother reboot. Check: timeout 10 ls "/mnt/unraid/media/Movies/Heat (1995)/" - a slow root
+        ls is NORMAL, only a hanging subfolder listing means stale.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="sync-webhook"} |~ "NFS mount issues|Destination mount missing"
+          [15m]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+- orgId: 1
+  name: infra-indexer-disabled
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: arr_indexer_disabled
+    title: Indexer disabled by *arr
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: An indexer has been auto-disabled after repeated failures, or is refusing downloads ({{
+        $values.B.Value }} hits/h). Grabs silently stop coming from that tracker while this persists.
+        Check Prowlarr, then the tracker itself (expired session, ratio/HnR gate, or maintenance).
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service=~"sonarr-hd|sonarr-4k|radarr-hd|radarr-4k|prowlarr"} |~ "Indexer
+          is disabled till|Download Access Denied" [1h]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 20
+- orgId: 1
+  name: infra-plex-unreachable
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: plex_unreachable
+    title: Plex unreachable (Tautulli/Tracearr)
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: Tautulli and/or Tracearr cannot reach Plex on Nostromo ({{ $values.B.Value }} hits/30m).
+        Watch history and stream analytics stop being recorded while this lasts - the data is not backfilled.
+        Short blips during a Plex restart are normal, which is why this threshold is high; sustained firing
+        means Plex or Nostromo needs attention.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 1800
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service=~"tautulli|tracearr"} |~ "Connection refused|ECONNREFUSED|timeout
+          exceeded" [30m]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 1800
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 1800
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 200
+- orgId: 1
+  name: infra-arr-db-locked
+  folder: Infra Alerts
+  interval: 1m
+  rules:
+  - uid: arr_database_locked
+    title: '*arr SQLite database is locked'
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: '{{ $values.B.Value }} SQLite contention/corruption errors in an *arr in the last hour.
+        A steady low rate of "database is locked" is normal under load; a spike, or any "malformed", means
+        the DB is in trouble. Radarr/Sonarr keep their own backups under /config/Backups.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service=~"sonarr-hd|sonarr-4k|radarr-hd|radarr-4k"} |~ "database is
+          locked|database disk image is malformed" [1h]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 120
