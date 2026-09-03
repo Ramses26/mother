@@ -186,6 +186,46 @@ above the catch-all.
 
 ---
 
+## 4f. FIXED 2026-09-03 — Radarr's recycle bin was broken, blocking every movie import
+
+Found during a routine morning health check: `radarr-hd` had logged **97,975**
+`RecycleBinProvider` errors in 14h, starting **2026-08-31 22:00**.
+
+**Cause:** three of the four *arr recycle-bin directories did not exist on the host.
+`hd-movies`, `4kmovies` and `4ktv` had been deleted into Synology's `#recycle` on
+2026-09-01 20:34 (`hd-tv` survived, which is why Sonarr-HD was unaffected). Two compounding
+details:
+
+1. The `.env` paths (`DELETED_MOVIES_PATH` etc.) pointed at the now-missing directories.
+2. Recreating the directories was **not enough** — the containers held **stale bind mounts**
+   to the deleted inodes, so `/deleted-movies` was still "No such file or directory" inside
+   the container even once the host path was back. `docker restart` does not re-resolve a
+   bind mount; the containers had to be **recreated** (`up -d --force-recreate`).
+
+**Impact — no data loss.** Radarr throws `RecycleBinException` when it cannot create the
+recycle folder, which **aborts the delete**, so the files survived (spot-checked four titles
+from the error log: all still present with their video file). But the aborted delete blocked
+the import that needed it, leaving **36 items stuck in `importBlocked`** on radarr-hd. That
+is the real cost: movie imports had been silently failing for ~2.5 days.
+
+**Fix:** recreated the three directories (mode 777, matching the working `hd-tv`), then
+force-recreated `radarr-hd`, `radarr-4k`, `sonarr-4k`. Verified all four recycle bins
+writable, last error 08:52:16 vs container recreate 08:52:41, and **zero** errors since. The
+36 items moved `importBlocked` -> `importPending` immediately.
+
+**Worth knowing: 17.6 TB is still sitting in Synology's `#recycle`** from that 2026-09-01
+deletion (`hd-movies` 11 TB, `Movies` 6.3 TB, `4kmovies` 305 GB, `tvshows` 33 GB). Whoever
+deleted those folders freed no space — DSM intercepted it. Volume is at 54% so it is not
+urgent, but that space is recoverable by emptying `#recycle` on the download Synology.
+
+**Lesson for next time:** an *arr silently failing every import looks like a download or
+indexer problem. The signal was a specific, loud, repeating log line — 97,975 of them —
+that nothing was watching. Same pattern as every other incident on this system. A Grafana
+rule on `{service=~"radarr.*|sonarr.*"} |= "RecycleBinProvider"` would have caught this on
+day one; consider adding it at the 2026-09-08 alert-tuning checkpoint.
+
+---
+
 ## 5. Separately confirmed and already fixed — not today's cause
 
 Nostromo Plex also crash-looped **602 times over 2.5 days** (Aug 30 → Sep 1 13:03),
