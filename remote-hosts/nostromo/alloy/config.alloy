@@ -47,3 +47,23 @@ loki.source.file "plexbackup" {
   targets    = local.file_match.plexbackup.targets
   forward_to = [loki.write.default.receiver]
 }
+
+// ----------------------------------------------------------------------------
+// One-shot Plex maintenance script (/home/stutch/plex-eae-refresh.sh, cron 04:00).
+// Ships its log so the outcome is visible without SSHing in -- it may DEFER for
+// several nights in a row if someone is streaming at 04:00, and that silence
+// would otherwise be indistinguishable from it having run.
+// ----------------------------------------------------------------------------
+local.file_match "plexmaint" {
+  path_targets = [{
+    __path__ = "/var/log/plex-maintenance.log",
+    service  = "plex-maintenance",
+    job      = "file_log",
+    host     = "nostromo",
+  }]
+}
+
+loki.source.file "plexmaint" {
+  targets    = local.file_match.plexmaint.targets
+  forward_to = [loki.write.default.receiver]
+}
