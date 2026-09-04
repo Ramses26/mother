@@ -1019,3 +1019,70 @@ groups:
             type: lt
             params:
             - 1
+- orgId: 1
+  name: infra-plex-audio-decode
+  folder: Infra Alerts
+  interval: 5m
+  rules:
+  - uid: plex_audio_decode_storm
+    title: Plex audio decode failing (EAE/E-AC3)
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: Plex's Easy Audio Encoder is failing to decode E-AC3 audio ({{ $values.B.Value }} errors/15m).
+        A transcode session floods the log at tens of thousands of errors per MINUTE and playback fails for
+        that viewer, while the server itself stays up and reachable - so this reads as "Plex is broken" to
+        whoever is watching, but shows nothing in container/service health. Seen 2026-08-30 (46k) and
+        2026-09-03 (56k). Find the session in {service="plex"} |= "Cannot group in blocks of 6" and the file
+        via the nearby "Using local file path instead of URL" line.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="plex"} |~ "Cannot group in blocks of 6|Error submitting packet
+          to decoder" [15m]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 500
