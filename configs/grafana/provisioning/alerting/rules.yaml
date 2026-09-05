@@ -855,7 +855,7 @@ groups:
           uid: loki
         editorMode: code
         expr: sum(count_over_time({service="agent_bridge"} |~ "worker error|FATAL|agent exited|agent timed
-          out|telegram .* failed|unparseable" [1h]))
+          out|telegram .* failed|unparseable" != "409" != "Conflict" [1h]))
         queryType: instant
         intervalMs: 1000
         maxDataPoints: 43200
@@ -1086,3 +1086,71 @@ groups:
             type: gt
             params:
             - 500
+- orgId: 1
+  name: infra-agent-bridge-tg-conflict
+  folder: Infra Alerts
+  interval: 30m
+  rules:
+  - uid: agent_bridge_tg_conflict
+    title: Agent bridge cannot poll Telegram (bot token shared)
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+      alertclass: advisory
+    annotations:
+      summary: Mother's agent bridge is getting HTTP 409 Conflict from Telegram getUpdates
+        ({{ $values.B.Value }} in 6h), so REPLYING to an alert to continue an investigation does not work
+        on this host. Alert SENDING is unaffected. Cause - Telegram allows exactly one getUpdates poller
+        per bot token, and Terminus runs the same bridge on the same token (verified by hash 2026-09-04),
+        so whichever starts second loses forever. Fix - create a second bot with BotFather, add it to the
+        same group, and set AGENT_BRIDGE_BOT_TOKEN on one of the two hosts. This is deliberately
+        alertclass=advisory (24h repeat) because it is a standing config issue, not an outage.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 21600
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="agent_bridge"} |= "getUpdates failed" |~ "409|Conflict" [6h]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 21600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 21600
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 5
