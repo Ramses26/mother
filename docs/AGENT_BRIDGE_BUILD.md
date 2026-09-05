@@ -214,6 +214,36 @@ unauthorized sender so it can be added:
 
 Reply once, copy the ID, add it, restart. **VERIFIED working end to end.**
 
+### Gotcha 7 — the bot token MUST be unique per bridge
+
+**Telegram allows exactly ONE `getUpdates` long-poller per bot token.** If a second bridge
+starts against the same token, whichever loses the race gets `HTTP Error 409: Conflict`
+forever — and replies to *its* alerts are silently consumed by the other host's poller, which
+has no matching message id and drops them.
+
+**VERIFIED the hard way (2026-09-05).** Terminus was built from this guide and reused the
+shared `TELEGRAM_BOT_TOKEN`. Mother lost the race and logged a 409 every ~5 minutes for a day
+before anyone noticed *why*. The failure is quiet in the worst way: **sending is completely
+unaffected** (`sendMessage` has no such restriction), so alerts keep arriving normally and only
+the reply-to-continue feature is dead.
+
+Give each bridge its own bot: create one with BotFather, add it to the same group, and read it
+from a dedicated variable with a fallback:
+
+```python
+BOT_TOKEN = SEC.get("AGENT_BRIDGE_BOT_TOKEN") or SEC.get("TELEGRAM_BOT_TOKEN", "")
+```
+
+**Alert on the 409 specifically, and label it advisory, not acute.** It is a standing config
+error, not an outage, so it should repeat on the order of a day. Two traps if you don't:
+
+- A generic `telegram .* failed` pattern matches it, so a permanently-true condition re-pages
+  at whatever your acute interval is — 10 minutes, in Mother's case.
+- Worse, the alert reaches the bridge, which spawns an agent to investigate *its own failure*.
+  The per-incident run cap stops the runaway, but only after it has already spent real money.
+
+---
+
 ### Use HTML, not Markdown
 
 Log lines are full of `_` and `*`. Use `parse_mode: HTML` with `html.escape()` on the body.
@@ -263,6 +293,8 @@ sum(count_over_time({service="agent_bridge"}
 6. Wire the Grafana contact point (Basic auth) and fire a real test through it.
 7. Test dedup: fire the same fingerprint twice → second is suppressed.
 8. Add your Telegram ID via the bootstrap message; reply and confirm `--resume` continues.
+   If another bridge exists anywhere, confirm this one has its OWN bot token first (§5, Gotcha 7)
+   — otherwise this step appears to work and then silently stops.
 9. Install the keepalive; run it 3× and confirm exactly one process.
 10. Ship its logs to Loki and add the alert.
 
