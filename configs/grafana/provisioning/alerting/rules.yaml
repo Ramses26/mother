@@ -1154,3 +1154,71 @@ groups:
             type: gt
             params:
             - 5
+- orgId: 1
+  name: infra-plex-transcode-stall
+  folder: Infra Alerts
+  interval: 5m
+  rules:
+  - uid: plex_transcode_stall
+    title: Plex hardware transcode stalling (nvenc muxer)
+    condition: C
+    for: 0m
+    noDataState: OK
+    execErrState: OK
+    labels:
+      team: infra
+    annotations:
+      summary: A Plex NVENC transcode session is stalling ({{ $values.B.Value }} errors/15m) - "Too many
+        packets buffered for output stream" means the muxer cannot drain, so playback breaks for that viewer
+        while the server stays up and every health check stays green. Same user-visible shape as the EAE
+        audio bug, different cause. Checked 2026-09-05 - the GPU itself is fine (Quadro P2000, 0 Xid/NVRM
+        errors in 7d), so this is a per-session stall, usually a client that stopped consuming without the
+        session being torn down. Bursts seen 2026-08-30 (9,794) and 2026-09-04 (42,154). Find it with
+        {service="plex"} |= "Too many packets buffered" and check the session/client in the nearby lines.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: loki
+      model:
+        datasource:
+          type: loki
+          uid: loki
+        editorMode: code
+        expr: sum(count_over_time({service="plex"} |~ "Too many packets buffered|Error submitting a packet
+          to the muxer" [15m]))
+        queryType: instant
+        intervalMs: 1000
+        maxDataPoints: 43200
+        refId: A
+    - refId: B
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: reduce
+        reducer: last
+        expression: A
+        refId: B
+    - refId: C
+      relativeTimeRange:
+        from: 900
+        to: 0
+      datasourceUid: __expr__
+      model:
+        datasource:
+          type: __expr__
+          uid: __expr__
+        type: threshold
+        expression: B
+        refId: C
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 500
